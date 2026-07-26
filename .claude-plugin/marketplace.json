@@ -1,0 +1,31 @@
+{
+  "name": "entelekheia",
+  "owner": {
+    "name": "Danilo Borges",
+    "email": "contato@daniloborg.es"
+  },
+  "metadata": {
+    "description": "Personal Claude Code plugins by Danilo Borges",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "vibe-ops",
+      "source": "./",
+      "description": "Born-organized repos: scaffold new repos/monorepos and author their governance docs from one shared source of truth.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Danilo Borges"
+      },
+      "category": "development",
+      "keywords": [
+        "scaffold",
+        "monorepo",
+        "governance",
+        "adr",
+        "rfc",
+        "agents-md"
+      ]
+    }
+  ]
+}
