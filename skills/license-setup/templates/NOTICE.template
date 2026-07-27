@@ -1,0 +1,7 @@
+{{PROJECT_NAME}}
+Copyright (c) {{YEAR}} The {{PROJECT_NAME}} Authors (see AUTHORS)
+
+This product includes software developed by {{ORIGIN_AUTHOR}} as part of
+{{ORIGIN_PROJECT}} ({{ORIGIN_URL}}), originally licensed under the {{ORIGIN_LICENSE}}.
+
+Portions Copyright (c) {{ORIGIN_YEAR}} {{ORIGIN_AUTHOR}}

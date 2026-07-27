@@ -1,7 +1,7 @@
 {
   "name": "vibe-ops",
-  "version": "0.1.0",
-  "description": "Born-organized repos: scaffold new repos/monorepos and author their governance docs (AGENTS.md, ADR, RFC, tasks, learnings) from one shared source of truth.",
+  "version": "0.2.0",
+  "description": "Born-organized repos: scaffold new repos/monorepos and author their governance docs (AGENTS.md, ADR, RFC, tasks, license, README) from one shared source of truth.",
   "author": {
     "name": "Danilo Borges",
     "url": "https://github.com/daniloborges"
@@ -14,7 +14,8 @@
     "adr",
     "rfc",
     "agents-md",
-    "repo-ops"
+    "repo-ops",
+    "license"
   ],
   "skills": "./skills/"
 }

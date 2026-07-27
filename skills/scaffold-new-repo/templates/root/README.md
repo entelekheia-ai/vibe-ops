@@ -2,7 +2,9 @@
 
 {{ONE_LINE_DESCRIPTION}}
 
-> Written for someone who has never heard of this project — name the boundary and the API explicitly.
+<!-- One short paragraph: the problem this solves / the boundary of what it does, for a reader who has
+     never heard of this project. See /vibe-ops:authoring-readme for the full canonical shape and the
+     anti-patterns to avoid (decision history, process leakage, running status commentary). -->
 
 ## Install
 
@@ -10,9 +12,13 @@
 npm install {{PKG_NAME}}
 ```
 
+## Quickstart
+
+<!-- The smallest example that actually runs and shows the value. One example, not several. -->
+
 ## Usage
 
-<!-- Minimal, real example. -->
+<!-- The handful of entry points most users need. Link to docs/reference/ for the rest. -->
 
 ## Development
 
@@ -22,14 +28,14 @@ npm run typecheck
 npm test
 ```
 
-## Repository
+<!-- For a monorepo: replace this section with a table — package → one-line purpose → link to its own
+     README — instead of a Development block here. -->
 
-<!-- For a monorepo, a one-line-per-package table pointing at each package's own README. -->
+## Requirements
 
-- Governance & decisions: [`project/`](project/) — RFCs, ADRs, tasks (see [`GOVERNANCE.md`](GOVERNANCE.md))
-- Documentation: [`docs/`](docs/) (Diátaxis)
-- Agent tooling: install the `vibe-ops` plugin; repo-specific skills, if any, live in `.agents/skills/`.
+<!-- Runtime/version requirements. -->
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+{{LICENSE_ID}} — see [LICENSE](LICENSE). Governance & decisions: [`project/`](project/) (see
+[`GOVERNANCE.md`](GOVERNANCE.md)). Docs: [`docs/`](docs/). Agent tooling: install the `vibe-ops` plugin.

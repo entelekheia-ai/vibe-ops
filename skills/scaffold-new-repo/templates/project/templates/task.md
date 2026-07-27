@@ -10,9 +10,9 @@
 
 <!--
  TASK DOSSIER TEMPLATE — copy to tasks/<NNN>-<slug>.md (NNN = the GitHub issue number).
- A dossier is the detailed WORKING LOG for one issue, for work already decided (see tasks/AGENTS.md).
- If the design is still open, write an RFC first. The dossier is EPHEMERAL: committed live, then
- deleted at closure after its lessons are distilled into the issue + research/learnings/.
+ A dossier is the detailed WORKING LOG for one issue, for work already decided (see the project/**
+ governance rule). If the design is still open, write an RFC first. The dossier is EPHEMERAL: committed
+ live, then closed via /vibe-ops:close-task (write-back to the source doc, then distill + delete).
  Delete these comments before committing.
 -->
 
@@ -55,7 +55,7 @@ P1:  …
 
 ## Closure
 
-<!-- At Done: distill the executive summary + durable learnings into the ISSUE and, for reusable
-     lessons, research/learnings/ (/vibe-ops:new-learning). Record the breadcrumb in the issue:
-       git show <sha>:project/tasks/NNN-slug.md
-     (get <sha> from `git rev-parse HEAD` before deleting). Then `git rm` this file. -->
+<!-- At Done, run /vibe-ops:close-task — do not just delete this file. It writes back to the doc that
+     started this work, propagates to living docs, spawns an ADR if a decision emerged, then distills
+     the summary + breadcrumb (git show <sha>:project/tasks/NNN-slug.md) into the issue before removing
+     this dossier. -->

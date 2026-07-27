@@ -1,6 +1,6 @@
 ---
 name: scaffold-new-repo
-description: Scaffold a new repository — single-package or npm-workspaces monorepo — born organized, with English docs. Creates the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/research with per-folder AGENTS.md), a docs/ Diátaxis skeleton, and the AGENTS.md config map. Use when the user asks to create/start/bootstrap/scaffold a new repo, monorepo, or package.
+description: Scaffold a new repository — single-package or npm-workspaces monorepo — born organized, with English docs. Creates the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. Use when the user asks to create/start/bootstrap/scaffold a new repo, monorepo, or package.
 argument-hint: "<repo-name>"
 effort: inherit
 ---
@@ -12,8 +12,8 @@ the detailed authoring to sibling skills. The goal is that every new repo/packag
 governance, docs, and config so nothing has to be retrofitted later.
 
 **Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/scaffold-new-repo/templates/`. Copy from
-there; never invent structure from memory. Files named `gitignore`/`editorconfig` are copied to
-`.gitignore`/`.editorconfig`; `{{PLACEHOLDERS}}` are substituted (Step 3).
+there; never invent structure from memory. Files named `gitignore`/`editorconfig`/`gitkeep` are copied to
+`.gitignore`/`.editorconfig`/`.gitkeep`; `{{PLACEHOLDERS}}` are substituted (Step 3).
 
 ---
 
@@ -37,23 +37,28 @@ Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skill
 **Root (always):**
 - `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`, `TPL/root/CLAUDE.md` → `CLAUDE.md`
 - `TPL/root/editorconfig` → `.editorconfig`, `TPL/root/gitignore` → `.gitignore`
-- `${CLAUDE_PLUGIN_ROOT}/LICENSE` → `LICENSE` (Apache-2.0)
 
 **Package/build baseline:**
 - **Monorepo:** `TPL/pkg/package.workspace.json` → root `package.json`; for each package
   `packages/<name>/`: `TPL/pkg/package.pkg.json` → `package.json`, `TPL/pkg/tsconfig.base.json` →
   `tsconfig.json`, `TPL/pkg/tsconfig.build.json` → `tsconfig.build.json`, plus `src/index.ts` and
-  `test/` (empty), and a short `README.md` (OSS-quality, written for an outsider).
+  `test/` (empty).
 - **Single-package:** `TPL/pkg/package.pkg.json` → root `package.json`; `TPL/pkg/tsconfig.base.json` →
   `tsconfig.json`; `TPL/pkg/tsconfig.build.json` → `tsconfig.build.json`; `src/index.ts`; `test/`.
 
 **`project/` governance skeleton:**
 - `TPL/project/templates/{adr,rfc,task}.md` → `project/templates/`
-- `TPL/project/adr/AGENTS.md` → `project/adr/AGENTS.md`
-- `TPL/project/rfc/AGENTS.md` → `project/rfc/AGENTS.md`; create `project/rfc/implemented/.gitkeep` and `project/rfc/rejected/.gitkeep`
-- `TPL/project/tasks/AGENTS.md` → `project/tasks/AGENTS.md`
-- `TPL/project/pre-release/AGENTS.md` → `project/pre-release/AGENTS.md`
-- `TPL/project/research/AGENTS.md` → `project/research/AGENTS.md`; create `project/research/learnings/.gitkeep`
+- `TPL/project/{adr,rfc,tasks,research,log}/.gitkeep` → same paths — empty folders that need a placeholder
+  to survive git; there is **no per-folder `AGENTS.md`** (see the rules bridge below, which replaces them)
+- Create `project/rfc/implemented/.gitkeep` and `project/rfc/rejected/.gitkeep`
+
+**Rules bridge** (replaces per-folder `AGENTS.md`s with one path-scoped rule):
+- `TPL/agents/rules/governance.md` → `.agents/rules/governance.md`; symlink
+  `ln -s ../../.agents/rules/governance.md .claude/rules/governance.md`
+- `TPL/agents/rules/repo-guardrails.md` → `.agents/rules/repo-guardrails.md` (seed file — leave its `TODO`
+  placeholder for the user to fill in or delete, don't invent guardrails); same symlink pattern into
+  `.claude/rules/repo-guardrails.md`
+- `TPL/agents/skills/.gitkeep` → `.agents/skills/.gitkeep` (empty — repo-specific skills land here later)
 
 **`docs/` Diátaxis skeleton:** `TPL/docs/**` → `docs/` (index + `reference/ explanation/ how-to/ tutorials/` READMEs).
 
@@ -61,35 +66,48 @@ Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skill
 
 Replace across the copied files:
 - `{{REPO_NAME}}` → repo name · `{{PKG_NAME}}` → `<scope>/<name>` (per package) ·
-  `{{PKG_DESCRIPTION}}` / `{{ONE_LINE_DESCRIPTION}}` → the descriptions.
+  `{{PKG_DESCRIPTION}}` / `{{ONE_LINE_DESCRIPTION}}` → the descriptions · `{{LICENSE_ID}}` → the license
+  chosen in Step 4 (default `Apache-2.0`).
 Verify no `{{` remains: `grep -rn '{{' <repo>` should be empty.
 
-## Step 4 — Author AGENTS.md (+ CLAUDE.md is already `@AGENTS.md`)
+## Step 4 — License
 
-Follow the **`authoring-agents-md`** skill to write the repo's root `AGENTS.md` — self-contained to this
-repo (no references to any parent workspace), a map of the layout (packages, `project/`, `docs/`), the
-source-of-truth table, and the "keeping this file current" loop. For a monorepo, note each package has its
-own `AGENTS.md`/README. The `.agents/`↔`.claude/` bridge section applies **only if** this repo adds
-repo-wide rules/skills later — document it, don't create empty dirs now. The per-folder `project/*/AGENTS.md`
-already carry the lifecycle guidance (they load on-demand in-folder).
+Run **`license-setup`** (defaults: Apache-2.0, not a fork; ask enforcement level per that skill's own Step 1
+question 3) to write `LICENSE` and the `AGENTS.md` license-rules section. Do this **before** Step 5 so the
+license section exists when `authoring-agents-md` assembles the rest of the file.
 
-## Step 5 — Seed first records (optional)
+## Step 5 — Author AGENTS.md and READMEs
+
+- Follow **`authoring-agents-md`** to write the repo's root `AGENTS.md` — self-contained to this repo, a map
+  of the layout (packages, `project/`, `docs/`, the `.agents/`↔`.claude/` bridge already in place from Step
+  2), the source-of-truth table, and the "keeping this file current" loop. For a monorepo, note each package
+  has its own `AGENTS.md`/README.
+- Follow **`authoring-readme`** to fill in `README.md` (root, and each package's README for a monorepo) —
+  it defines the canonical section order and strips the anti-patterns (decision history, process leakage)
+  that tend to leak into a freshly-written README.
+
+## Step 6 — Seed first records (optional)
 
 Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**, and an initial RFC via
 **`new-rfc`** if there's an open design. Skip if the user prefers to start empty.
 
-## Step 6 — Initialize & hand off
+## Step 7 — Initialize & hand off
 
 - `git init`; stage; **do not commit** unless the user asks.
 - Print next steps: review `AGENTS.md`, `npm install && npm run typecheck`, `gh repo create` when ready, and
-  "agent tooling is the `vibe-ops` plugin — no per-repo skill copies."
+  "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
+  `/vibe-ops:close-task`, not a plain delete."
 
 ## Checklist
 
 - [ ] Target has `README.md`, `GOVERNANCE.md`, `AGENTS.md`, `CLAUDE.md`(@AGENTS.md), `LICENSE`, `.gitignore`, `.editorconfig`
 - [ ] Build baseline present; monorepo root `package.json` has `workspaces`, each package has its own `package.json` + tsconfig(.build)
-- [ ] `project/` skeleton with per-folder `AGENTS.md` (adr, rfc, tasks, pre-release, research) each linking `../../GOVERNANCE.md`; `project/templates/{adr,rfc,task}.md` present
+- [ ] `project/` skeleton present (`adr rfc tasks research log templates`, each non-empty via `.gitkeep` if no
+      content yet); `project/templates/{adr,rfc,task}.md` present; **no** per-folder `AGENTS.md` (that's the rule's job)
+- [ ] `.agents/rules/{governance,repo-guardrails}.md` exist, each symlinked from `.claude/rules/`; `.agents/skills/` present (empty)
 - [ ] `docs/` Diátaxis skeleton present
 - [ ] No `{{PLACEHOLDER}}` remains (`grep -rn '{{'`)
+- [ ] `license-setup` completed (real `LICENSE` text, not the plugin's own; `AGENTS.md` license-rules section present)
 - [ ] `AGENTS.md` passes the `authoring-agents-md` before-commit checklist (self-contained; no personal-memory slugs)
+- [ ] `README.md` (and each package's) passes the `authoring-readme` checklist
 - [ ] `git init` done; not committed unless asked

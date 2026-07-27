@@ -1,6 +1,6 @@
 ---
 name: new-task
-description: Create a task dossier under project/tasks/, linked 1:1 to a GitHub issue, following the hybrid md+issue model. Use when the user asks to start a task, open a work item, track a piece of work, or "/new-task <topic>". Also carries the closure ritual (distill up, drop a git breadcrumb, delete the dossier).
+description: Create a task dossier under project/tasks/, linked 1:1 to a GitHub issue, following the hybrid md+issue model. Use when the user asks to start a task, open a work item, track a piece of work, or "/new-task <topic>". For closing a finished task, use /vibe-ops:close-task instead.
 disable-model-invocation: true
 argument-hint: "<task topic>"
 effort: inherit
@@ -65,29 +65,15 @@ Keep the issue lean: it holds the one-line intent + a link to the dossier, not t
 Commit the dossier as you work (`git add <TASK_DIR>/<file> && git commit`). Update it freely during the task —
 it is the living log. Status moves `Planned → In Progress → Done`.
 
-## Step 5 — Closure ritual (when the work merges)
+## Step 5 — Closing the dossier
 
-Do these in order, then stop:
-
-1. **Distill upward** — write the executive summary + any durable lessons into the **issue** (comment or
-   body). For a reusable lesson, also run `/vibe-ops:new-learning` to file it in `research/learnings/`.
-2. **Drop the breadcrumb** — before deleting, capture the ref so the full log is recoverable without
-   archaeology. Get the SHA of the commit that still contains the dossier and record, **in the issue**, the
-   canonical form:
-
-   ```
-   git show <sha>:project/tasks/NNN-slug.md
-   ```
-
-   Get `<sha>` with `git rev-parse HEAD` (the commit before the deletion). Paste that exact
-   `git show <sha>:<path>` line into the issue so anyone can retrieve the detail.
-3. **Delete the dossier** — `git rm <TASK_DIR>/<file>` and commit (`chore(tasks): close <slug>, archived in
-   history`). The working tree returns to showing only live tasks.
+When the work is done, don't just delete the dossier — run **`/vibe-ops:close-task`**. It writes back to the
+doc that started the work (so intent doesn't drift from outcome), propagates to living docs, spawns an ADR
+if a decision emerged, then distills the summary + breadcrumb into the issue before removing the dossier.
 
 ## Checklist
 
 - [ ] Dossier at `<TASK_DIR>/<NNN>-<slug>.md` (or `<slug>.md` if no issue yet), from the repo's template
 - [ ] `Status`/`Created`/`Author` set; `Issue:` line links to the issue (or "pending")
 - [ ] Issue holds the one-line intent + link to the dossier; the two don't duplicate the full plan
-- [ ] (At closure only) exec-summary + learnings distilled into the issue / `research/learnings/`
-- [ ] (At closure only) `git show <sha>:project/tasks/NNN-slug.md` breadcrumb recorded in the issue, then dossier `git rm`'d
+- [ ] Closure goes through `/vibe-ops:close-task`, not a plain delete
