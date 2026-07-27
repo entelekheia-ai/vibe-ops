@@ -57,7 +57,8 @@ section order, formatting, and any license block or repo-specific tables.
 
 ## Step 5 — Fill the RFC
 
-From the exact template content:
+From the exact template content. **Write every section in English, regardless of the conversation's
+language.**
 
 - Keep any license block; delete the template's instruction/guidance HTML comments.
 - Heading → `# RFC-<NNNN>: <Title>`.
@@ -82,3 +83,4 @@ Write the file to `<RFC_DIR>/<NNNN>-<slug>.md`. Then perform any follow-up `<RFC
 - [ ] `Depends on`/`Related` removed unless populated
 - [ ] Summary written; other sections empty; no template/placeholder text left
 - [ ] Repo-specific sections/follow-ups done per `<RFC_DIR>/AGENTS.md` (or none required)
+- [ ] Content written in English

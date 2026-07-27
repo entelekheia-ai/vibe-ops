@@ -79,7 +79,8 @@ is being circulated for ratification first. If unclear, ask; default to `Accepte
 
 ## Step 7 — Fill the ADR
 
-Starting from the exact template content:
+Starting from the exact template content. **Write every section in English, regardless of the
+conversation's language.**
 
 - Keep any license comment block at the top unchanged.
 - Delete the template's instruction/guidance HTML comments.
@@ -117,3 +118,4 @@ project's decision history.
 - [ ] `Sunset & reversal` present only if the decision expires
 - [ ] If superseding: old ADR `Status`/`Superseded by` updated, body untouched
 - [ ] No template/placeholder text left in the body
+- [ ] Content written in English

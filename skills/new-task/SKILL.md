@@ -51,7 +51,8 @@ for t in project/templates/task.md templates/task.md; do [ -f "$t" ] && echo "TA
 
 ## Step 3 — Build the dossier
 
-Start from `<TASK_TPL>` (delete its guidance comments). Set the header:
+Start from `<TASK_TPL>` (delete its guidance comments). **Write every section in English, regardless of
+the conversation's language** — this applies to the dossier body and the issue text alike. Set the header:
 
 - `Status: Planned` · `Created:` (from `date +%Y-%m-%d`) · `Author:` (`git config user.name`).
 - **Issue link** — add a line `Issue: <repo-url>/issues/NNN` (or "pending" if not opened yet). The dossier
@@ -77,3 +78,4 @@ if a decision emerged, then distills the summary + breadcrumb into the issue bef
 - [ ] `Status`/`Created`/`Author` set; `Issue:` line links to the issue (or "pending")
 - [ ] Issue holds the one-line intent + link to the dossier; the two don't duplicate the full plan
 - [ ] Closure goes through `/vibe-ops:close-task`, not a plain delete
+- [ ] Content written in English
