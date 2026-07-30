@@ -14,6 +14,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-30
+
 ### Changed
 
 - **Every skill is now model-invocable.** `disable-model-invocation: true` was removed from the seven
