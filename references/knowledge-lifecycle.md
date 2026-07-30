@@ -39,6 +39,13 @@ can eliminate it; the fourth routes what survives.
    With one obligation attached: **prove the guard fails.** A check that has stopped detecting anything
    produces output identical to a clean repository, so a guard nobody has ever watched fail is not yet
    evidence of anything. Run it against something broken on purpose, and keep that fixture.
+
+   Two failure modes to check for, because both look like a passing guard. A guard that reads **state it
+   does not own** — a shared temp directory, the clock, the network — fails for reasons that have nothing
+   to do with the defect, and a check people learn to re-run is off. A guard whose isolation is a **no-op
+   on someone's platform** never fails at all there; prove it fails on the platform you are on, not the
+   one you assume. Re-run a new guard enough times to see it is stable, then break the thing on purpose
+   and watch it catch that.
 4. **Blast radius** — where it lands, routed by what the fact *is*. That routing table is
    [`instruction-surfaces.md`](instruction-surfaces.md#where-each-fact-goes); do not restate it here.
 

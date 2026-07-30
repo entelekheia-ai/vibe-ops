@@ -96,7 +96,13 @@ WORKDIR=""
 
 make_workdir() {
   [ -n "$WORKDIR" ] && return 0
-  WORKDIR=$(mktemp -d) || { echo "cannot create a temporary directory" >&2; exit 2; }
+  # An explicit template rooted at $TMPDIR, because BSD `mktemp -d` with no template ignores TMPDIR
+  # and goes to the system directory regardless. GNU honours it, so without this the script places
+  # the directory differently on macOS and Linux — and the self-test's isolation would be a no-op on
+  # exactly one of them.
+  local base="${TMPDIR:-/tmp}"
+  WORKDIR=$(mktemp -d "${base%/}/vibe-ops.XXXXXXXX") || {
+    echo "cannot create a temporary directory" >&2; exit 2; }
   chmod 700 "$WORKDIR"
   trap 'rm -rf "$WORKDIR"' EXIT
   trap 'rm -rf "$WORKDIR"; exit 130' INT TERM HUP
@@ -236,12 +242,16 @@ compose_denylist() {
 # The second half is running it; this is the first half, so the claim is not taken on trust.
 
 self_test() {
-  local expected got rc irc before after tmproot tmp_before tmp_after
+  local expected got rc irc before after leftover
   # not local: the EXIT trap runs after this function has returned
   tmp=$(mktemp -d) || exit 2
   denylist=$(mktemp) || exit 2
   fragdir=$(mktemp -d) || exit 2
-  trap 'rm -rf "$tmp" "$denylist" "$fragdir"' EXIT
+  # a TMPDIR of its own for the runs under test. Asserting against the shared one would mean asserting
+  # that nothing else on the machine wrote a temporary file during those two seconds, which is not true
+  # and made this check fail about one run in six.
+  runtmp=$(mktemp -d) || exit 2
+  trap 'rm -rf "$tmp" "$denylist" "$fragdir" "$runtmp"' EXIT
 
   git -C "$tmp" init -q
   mkdir -p "$tmp/.agents/rules" "$tmp/.claude/rules"
@@ -267,10 +277,8 @@ self_test() {
   # known point rather than by racing a timer
   printf 'check_selfdestruct() { head_; kill -TERM $$; }\n' > "$fragdir/99-selfdestruct.sh"
 
-  tmproot="${TMPDIR:-/tmp}"
-  tmp_before=$(ls -A "$tmproot" 2>/dev/null | sort)
   before=$(find "$tmp" | sort)
-  got=$(AGENTS_MD_MAX_LINES=150 PRIVATE_NAME_LIST="$denylist" "$0" "$tmp" 2>&1)
+  got=$(AGENTS_MD_MAX_LINES=150 PRIVATE_NAME_LIST="$denylist" TMPDIR="$runtmp" "$0" "$tmp" 2>&1)
   rc=$?
   after=$(find "$tmp" | sort)
 
@@ -310,16 +318,16 @@ self_test() {
 
   # and an interrupted run leaves nothing behind either — the composed artifact is a list of private
   # names, so "we were killed" is not an acceptable reason for it to outlive the run
-  PRIVATE_NAME_LIST="$denylist" VIBE_OPS_CHECK_DIRS="$fragdir" "$0" "$tmp" >/dev/null 2>&1
+  PRIVATE_NAME_LIST="$denylist" VIBE_OPS_CHECK_DIRS="$fragdir" TMPDIR="$runtmp" "$0" "$tmp" >/dev/null 2>&1
   irc=$?
   if [ "$irc" -eq 0 ]; then
     echo "SELF-TEST FAILED: the interrupted run reported success"
     return 1
   fi
-  tmp_after=$(ls -A "$tmproot" 2>/dev/null | sort)
-  if [ "$tmp_before" != "$tmp_after" ]; then
-    echo "SELF-TEST FAILED: a run left something behind in $tmproot"
-    diff <(printf '%s\n' "$tmp_before") <(printf '%s\n' "$tmp_after")
+  leftover=$(ls -A "$runtmp" 2>/dev/null)
+  if [ -n "$leftover" ]; then
+    echo "SELF-TEST FAILED: a run left something behind in its temporary directory"
+    printf '%s\n' "$leftover"
     return 1
   fi
 
