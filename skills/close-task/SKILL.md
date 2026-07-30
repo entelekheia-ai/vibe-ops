@@ -52,6 +52,16 @@ exists.
 
 Skip anything that didn't change. This is not a full documentation audit — only what this task touched.
 
+Then check that the edits did not break anything mechanically:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" .
+```
+
+Links are the reason: propagating a change is where a doc gets moved or a section renamed, and a link that
+stopped resolving is invisible in a diff. It reads the repository and writes nothing into it. Skip it only
+if this task touched no markdown at all.
+
 ## Step 4 — ADR, if a decision emerged
 
 If the work settled something hard to reverse that wasn't already an ADR (a library choice, an API shape,
@@ -112,7 +122,8 @@ and what the breadcrumb is, and wait.
 ## Checklist
 
 - [ ] Source doc updated with what actually happened (Step 2) — not skipped because "the issue has it"
-- [ ] Docs that the work made stale are updated (README / `docs/` / `AGENTS.md`), or confirmed none did
+- [ ] Docs that the work made stale are updated (README / `docs/` / `AGENTS.md`), or confirmed none did,
+      and `check-agents-md.sh` is green afterwards
 - [ ] ADR written if a hard-to-reverse decision emerged; paired `project/log/` entry if there's context an
       ADR can't carry
 - [ ] Every `Surprises & Discoveries` entry routed through the promotion test — promoted, guarded, left in

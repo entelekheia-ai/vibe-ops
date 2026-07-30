@@ -38,17 +38,19 @@ Decide what this file covers, because it decides everything else:
 Read the current file and produce a gap list before writing:
 
 ```bash
-wc -l AGENTS.md; ls -a; ls .agents/rules .claude/rules 2>/dev/null
+"${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" .   # budget, links, the bridge, rule frontmatter
+ls -a; ls .agents/rules .claude/rules 2>/dev/null
 ```
 
-Three checks, all mechanical:
+The script is the mechanical half of the survey (Step 9 explains what it covers). It reads the repository
+and writes nothing into it. Two kinds of drift it cannot see, and you must:
 
-1. **Does every path it names still exist?** A described folder that is gone, or a folder on disk that is
-   undescribed, is drift.
-2. **Is it over budget?** See Step 4.
-3. **Does anything in it fail the content filter?** See Step 3.
+1. **A folder on disk that nothing describes.** The script verifies that what the file *names* resolves;
+   the reverse direction is judgement.
+2. **Content that fails the filter.** See Step 3.
 
-If the user asked for an `audit`, report the gap list with the verb you would apply to each and stop.
+If the user asked for an `audit`, report the gap list — the script's findings included — with the verb you
+would apply to each, and stop.
 
 ## Step 3 — The content filter: what earns a line
 
@@ -134,19 +136,38 @@ Bake a section into the file that makes updating it **part of any task that touc
 Ensure a `CLAUDE.md` exists containing `@AGENTS.md`, plus only content another agent would ignore or
 misread. If there is none, one line is the correct end state — not a stub.
 
+## Step 9 — Verify mechanically
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" .
+```
+
+The line budget, every relative link resolving inside the repository, `.claude/` holding real symlinks
+(including the case where git checked one out as text, which reads as a working rule file containing one
+line of nonsense), every rule declaring a `description:`, and no personal-memory link in tracked markdown.
+It reads the repository and writes nothing into it, so it is safe against a repo you do not own.
+
+If this repository has names that must never appear in it, supply them for the run — `PRIVATE_NAMES='one
+name per line' "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" .` — they are held in a temporary file for
+the run and deleted when it ends. **Never write that list into the repository**; a command that spells out
+private names in order to grep for them has already leaked them.
+
+A finding is not advisory. Fix it, or state why the run is expected to fail, before reporting done.
+
 ## Checklist
 
-- [ ] Every path named exists; every folder on disk that matters is named
+The mechanical items are gone from this list because the script above enforces them; what is left is what
+someone still has to judge.
+
+- [ ] Step 9 run, and green — or every finding addressed
+- [ ] No folder on disk that matters is left undescribed (the direction the script cannot check)
 - [ ] Self-contained — no parent workspace, sibling repo, machine path, or personal state
-- [ ] No personal-memory slug (`[[…]]`, `feedback_…`, `project_…`) anywhere in the diff
 - [ ] Every line passes the Step 3 filter — nothing a lint/type/test/hook already enforces, no file-by-file
       description, no status or history
-- [ ] `wc -l` at or under 150; anything cut was **relocated**, not deleted, unless it failed the filter
+- [ ] Anything cut to get under budget was **relocated**, not deleted, unless it failed the filter
 - [ ] Entries are one line pointing at a source of truth rather than restating it
 - [ ] No fact appears both here and in a rule — the two load identically
 - [ ] If a nested `AGENTS.md` was written: something actually loads it (sibling `CLAUDE.md`, `@`-import, or
       it should have been a path-scoped rule)
-- [ ] If rules/skills exist: canonical file in `.agents/`, symlink verified with `test -L`, **no** real file
-      under `.claude/`; rules have a `description:`
 - [ ] A "keeping this file current" section is present, with trigger conditions specific to this repo
 - [ ] `CLAUDE.md` exists and imports `@AGENTS.md`

@@ -129,8 +129,10 @@ target; declining writes nothing.
 
 **T6 — Make it visible.** The validator moves from the README's "This repository" table, where it reads as
 internal machinery, into what the plugin *does*. Written only after T3, because announcing a capability
-that has no invocation path is a promise rather than a feature. Acceptance: a reader who has installed the
-plugin and never opened this repository can tell what the check does and how it runs.
+that has no invocation path is a promise rather than a feature — and, per the finding below, the
+invocation path does not exist in **any** install until a release is cut, which makes cutting one part of
+this track. Acceptance: a reader who has installed the plugin and never opened this repository can tell
+what the check does and how it runs, and the version they have on disk contains `scripts/`.
 
 **T7 — Close the routing hole.** Plan-001's own retrospective found that the knowledge-routing step lives
 only in `close-task`, so a plan that ships without ever spawning a task dossier reaches its end and routes
@@ -170,8 +172,20 @@ its `Surprises & Discoveries` entries get routed.
       reports its provenance (`list:2`, `inline:1`) and never the string. A missing or git-tracked
       source is exit 2, not a passing check. The self-test now also asserts nothing survives a normal
       **or** an interrupted run; stripping both cleanup traps makes it fail with the leftovers named.
-- [ ] T3 — invocation steps in the three skills that change instruction surfaces.
-- [ ] T4 — apply the four demotions blocked in Plan-001.
+- [x] (2026-07-30) T3 — `authoring-agents-md` runs it in the survey (Step 2, so its findings enter the
+      gap list and the `audit` report) and again as a new Step 9 after writing; `repo-setup` runs it in
+      Step 0's survey and in Step 7 after staging, with the note that a red run there means the skeleton
+      it just laid down is broken; `close-task` runs it after Step 3's propagation, because propagating
+      is where a doc moves and a link that stopped resolving is invisible in a diff. The four event
+      skills do not, as planned.
+- [x] (2026-07-30) T4 — the four hand-checked items are gone from the `authoring-agents-md` checklist,
+      which drops from 11 items to 10 while gaining the invocation. Two were deleted outright — the
+      symlink/`description:` item, which the `bridge` and `frontmatter` checks cover completely, and the
+      personal-memory item, whose `[[…]]` half is now the `memory-slugs` check and whose remainder
+      already lives in `references/authoring-style.md`. Two were narrowed to the half the script cannot
+      see: "every path named exists" became "no folder on disk is left undescribed" (the reverse
+      direction is judgement), and the `wc -l` item became "anything cut was **relocated**", which was
+      always the part worth checking.
 - [ ] T5 — the CI copy as an explicit offer.
 - [ ] T6 — README, after T3.
 - [x] (2026-07-30) T7 — resolved as a **`close-plan` skill** (`effort: high`,
@@ -207,6 +221,18 @@ its `Surprises & Discoveries` entries get routed.
   Evidence: agent descriptions on this machine average **1,223 characters** against a skill's 424, roughly
   three times as much, because the convention is to carry `<example>` blocks. Agent listings load the same
   way skill listings do.
+
+- Observation: `${CLAUDE_PLUGIN_ROOT}` points at the **released** clone, not at this working tree — so
+  every path this plugin has added since its last release is unreachable from a skill running today.
+  Evidence: the installed plugin is a git clone pinned to a commit
+  (`installed_plugins.json` records `gitCommitSha: 2ebf680`, the v0.3.0 release) and materialized at
+  `~/.claude/plugins/cache/entelekheia/vibe-ops/0.3.0/`. `git ls-tree 2ebf680` has five entries; `HEAD`
+  has seventeen. `references/` and `scripts/` are among the twelve that only exist here.
+  Consequence: it is not a packaging bug — the whole repository ships, so both directories will be there
+  once a version is cut. But every `${CLAUDE_PLUGIN_ROOT}/references/...` pointer written by Plan-001, and
+  every validator invocation added in T3, resolves to nothing for anyone on 0.3.0. That makes cutting a
+  release a **precondition for T6**: announcing the validator as a capability while the invocation path
+  does not exist in any install is exactly the promise-not-a-feature failure T6 was written to avoid.
 
 - Observation: this repository's `AGENTS.md` listed the `SKILL.md` frontmatter fields and was wrong by
   omission — including on the field that answers the question that prompted the measurement.

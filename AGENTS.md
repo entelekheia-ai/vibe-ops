@@ -33,6 +33,11 @@ which loads on its own. Not repeated here.
   (append-only, no update mode). See [`references/convergence-policy.md`](references/convergence-policy.md).
 - **Everything this plugin writes into a target repo is in English**, regardless of the conversation's
   language. That is a product guarantee, stated in the README.
+- **`${CLAUDE_PLUGIN_ROOT}` resolves to the *released* clone, not this working tree.** The plugin is
+  installed as a git clone pinned to the version in `plugin.json`
+  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so a path added since the last release —
+  `references/`, `scripts/` — does not exist for an installed user until a release is cut. Adding one is
+  fine; expecting today's install to find it is not.
 - **A guard, not a line.** Anything mechanically checkable becomes a fragment under `scripts/checks/`
   instead of being written here — and a line here that a new guard makes redundant gets deleted
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)). This file is budgeted at 150 lines; over

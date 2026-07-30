@@ -33,7 +33,13 @@ or *conflicting*, with the verb to apply:
 
 ```bash
 ls -a "$TARGET"; ls "$TARGET/project" "$TARGET/.agents/rules" "$TARGET/.claude/rules" 2>/dev/null
+"${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" "$TARGET"   # skip if $TARGET is not a git repo yet
 ```
+
+The script reports the mechanical part of the drift — the `AGENTS.md` budget, links that no longer
+resolve, and a `.claude/` entry that is a real file where a symlink belongs. Its findings are **part of
+the gap list**, not a separate report; each one still needs a verb. It reads the target and writes
+nothing into it.
 
 Two divergences are `adopt` by default, not `migrate` — a governance folder that uses a different but
 consistent name (`rfcs/` for `rfc/`, a top-level `plans/`), and a `project/` subfolder holding something
@@ -122,6 +128,15 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 ## Step 7 — Initialize & hand off
 
 - `git init`; stage; **do not commit** unless the user asks.
+- Verify the baseline mechanically — the checks run against tracked files, so this comes after staging:
+
+  ```bash
+  "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" "$TARGET"
+  ```
+
+  A red run here means the skeleton this skill just laid down is broken — most often a `.claude/` symlink
+  that git checked out as text on a machine with `core.symlinks=false`. Fix it before handing off; a
+  baseline handed over broken is worse than none, because it looks done.
 - Print next steps: review `AGENTS.md`, `npm install && npm run typecheck`, `gh repo create` when ready, and
   "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
   `/vibe-ops:close-task`, not a plain delete."
@@ -137,6 +152,7 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 - [ ] `docs/` Diátaxis skeleton present
 - [ ] No `{{PLACEHOLDER}}` remains (`grep -rn '{{'`)
 - [ ] `license-setup` completed (real `LICENSE` text, not the plugin's own; `AGENTS.md` license-rules section present)
+- [ ] `check-agents-md.sh` run against the target after staging, and green
 - [ ] `AGENTS.md` passes the `authoring-agents-md` before-commit checklist (self-contained; no personal-memory slugs)
 - [ ] `README.md` (and each package's) passes the `authoring-readme` checklist
 - [ ] `git init` done; not committed unless asked
