@@ -53,9 +53,20 @@ P0:  …
 P1:  …
 ```
 
+## Surprises & Discoveries
+
+<!-- Optional, but fill it WHILE the work happens — reconstructed from memory at the end it is worthless.
+     One entry per non-obvious fact the work turned up; closure routes each one somewhere durable instead
+     of deleting it with this file. If the task came from a plan, keep the entries in the plan's own
+     section instead of duplicating them here.
+
+     Observation: <the non-obvious fact>
+     Evidence: <what proves it — the error, the measurement, the doc that says so> -->
+
 ## Closure
 
 <!-- At Done, run /vibe-ops:close-task — do not just delete this file. It writes back to the doc that
-     started this work, propagates to living docs, spawns an ADR if a decision emerged, then distills
-     the summary + breadcrumb (git show <sha>:project/tasks/NNN-slug.md) into the issue before removing
-     this dossier. -->
+     started this work, propagates to living docs, spawns an ADR if a decision emerged, routes each
+     Surprises & Discoveries entry through the promotion test (and checks whether a new guard makes an
+     existing instruction line redundant), then distills the summary + breadcrumb
+     (git show <sha>:project/tasks/NNN-slug.md) into the issue before removing this dossier. -->

@@ -1,6 +1,6 @@
 ---
 name: close-task
-description: Close a finished task dossier — write back to the source doc with what actually happened, propagate the change to living docs, spawn an ADR if a decision emerged, then distill and delete the dossier. Use when a task/issue is done, when the user says "wrap this up" or "close the task", or before deleting a project/tasks/ dossier.
+description: Close a finished task dossier — write back to the source doc with what actually happened, propagate the change to living docs, spawn an ADR if a decision emerged, route what the work taught to where the next agent will read it, then distill and delete the dossier. Use when a task/issue is done, when the user says "wrap this up" or "close the task", or before deleting a project/tasks/ dossier.
 disable-model-invocation: true
 argument-hint: "<task slug or issue number>"
 effort: inherit
@@ -16,7 +16,7 @@ distilling and deleting, go back and update the doc that started the work.**
 **Usage:** `/close-task <slug or issue number>` — e.g. `/close-task 042` or `/close-task migrate-storage`.
 
 **This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one unit
-of work, once. Routing what the work *taught* is governed by
+of work, once. Routing what the work *taught* happens in Step 5 and is governed by
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
 promotion test lives there, not in this file.
 
@@ -60,7 +60,39 @@ a rejected alternative worth recording), run `/vibe-ops:new-adr` now, before clo
 rich context an ADR is too terse to carry (dead ends, why an alternative was rejected in detail), write a
 paired `project/log/<slug>.md` linked to the ADR.
 
-## Step 5 — Distill and delete
+## Step 5 — Route what the work taught
+
+Step 4 captures a *decision*. This step captures a *learning* — the non-obvious fact discovered while
+doing the work, which has no home in any of the artifacts above and evaporates when the dossier is deleted.
+
+**Input:** every entry under `Surprises & Discoveries` — in the source doc if it is a plan, and in the
+dossier itself. If neither has entries and the work genuinely surprised no one, say so and move on; an
+empty routing step is a legitimate outcome, a skipped one is not.
+
+**Per entry, apply the promotion test** in
+[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test).
+Four questions, in order — the first three can eliminate the entry, the fourth routes what survives:
+
+1. **Recurrence** — would it burn a fresh agent more than once?
+2. **Non-discoverability** — would a competent agent reading the code find it in a few minutes?
+3. **Not already enforced** — does a test, type, lint rule or hook already make the mistake impossible?
+   If one *could*, **write the guard, not the prose.**
+4. **Blast radius** — where it lands, by what the fact is
+   ([the routing table](../../references/instruction-surfaces.md#where-each-fact-goes)).
+
+Do not restate the questions' reasoning here or in the repo you are closing work in — read the reference.
+An entry that fails 1 or 2 is not discarded: it stays in `project/log/`, which exists for the rich context
+of one unit of work whether or not a decision came out of it.
+
+**Then the demotion check**, which is question 3 applied backwards and is the only reason the file ever
+shrinks: *did this work add a test, type, lint rule or hook that now makes an existing `AGENTS.md` line or
+always-on rule unnecessary?* If so, **delete that line**. Nothing detects this automatically, and without
+it the instruction file only grows — which is not free, because the always-on block passes a relevance gate
+as a whole and a redundant line degrades the ones that still matter.
+
+Report what was promoted, where, and what was demoted, before continuing.
+
+## Step 6 — Distill and delete
 
 1. **Distill upward** — write the executive summary into the **issue** (comment or body): what shipped, in a
    few lines, for someone who never reads the dossier.
@@ -79,6 +111,9 @@ paired `project/log/<slug>.md` linked to the ADR.
 - [ ] Docs that the work made stale are updated (README / `docs/` / `AGENTS.md`), or confirmed none did
 - [ ] ADR written if a hard-to-reverse decision emerged; paired `project/log/` entry if there's context an
       ADR can't carry
+- [ ] Every `Surprises & Discoveries` entry routed through the promotion test — promoted, guarded, left in
+      `project/log/`, or explicitly dropped; none silently deleted with the dossier
+- [ ] Demotion check done: any `AGENTS.md` line or rule this work made redundant is deleted
 - [ ] Executive summary distilled into the issue
 - [ ] Breadcrumb `git show <sha>:project/tasks/NNN-slug.md` recorded in the issue
 - [ ] Dossier `git rm`'d and committed

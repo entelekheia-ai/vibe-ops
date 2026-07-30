@@ -38,7 +38,8 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 - **Authors governance artifacts** through focused skills. Each skill reads the *target repo's own* templates
   and conventions, so one skill adapts to every repo instead of being copied and drifting.
 - **Closes the loop.** A task doesn't just get deleted when it's done — closing it writes back to the doc
-  that started the work, so plans stay honest about what actually shipped.
+  that started the work, so plans stay honest about what actually shipped, and routes what the work *taught*
+  to wherever the next agent will actually read it instead of deleting it with the dossier.
 
 ## Skills
 
@@ -51,7 +52,7 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 | `/vibe-ops:new-rfc` | Scaffold an RFC (design proposal) from the repo's own template. |
 | `/vibe-ops:new-plan` | Scaffold an implementation plan (tracks/tasks breakdown) from the repo's own template, including migrating an existing briefing/RFC into plan form. |
 | `/vibe-ops:new-task` | Open a task dossier linked one-to-one with a GitHub issue, following a hybrid Markdown-plus-issue workflow. |
-| `/vibe-ops:close-task` | Close a finished task: write back to the doc that started it, propagate to living docs, spawn an ADR if a decision emerged, then distill and delete the dossier. |
+| `/vibe-ops:close-task` | Close a finished task: write back to the doc that started it, propagate to living docs, spawn an ADR if a decision emerged, route each learning to a durable surface, then distill and delete the dossier. |
 | `/vibe-ops:license-setup` | Set up `LICENSE` (+ `NOTICE`/`AUTHORS` for a fork with dual attribution), the license-rules section of `AGENTS.md`, and optional pre-commit + CI header enforcement. |
 
 Skills are namespaced `/vibe-ops:<name>`, invocable by you or automatically by Claude when the task fits.
@@ -61,6 +62,19 @@ Skills are namespaced `/vibe-ops:<name>`, invocable by you or automatically by C
 The plugin ships the **skills**; each scaffolded repo keeps its **own** templates, license choice, and a
 single path-scoped rule carrying its governance lifecycle — which the skills read. One installed plugin —
 no per-repo copies to maintain, and every repo's conventions stay the repo's own.
+
+## This repository
+
+The plugin is kept in the shape it scaffolds — the skills are applied to it, not just shipped from it.
+
+| File | What's in it |
+|---|---|
+| [`GOVERNANCE.md`](GOVERNANCE.md) | Which artifact answers which question, and what a GitHub issue owns when one is paired with a file. |
+| [`AGENTS.md`](AGENTS.md) | The entry map for an agent working *on* the plugin. |
+| [`references/`](references/README.md) | The policy the skills point at instead of restating — convergence, knowledge lifecycle, instruction surfaces, authoring style. |
+| [`CHANGELOG.md`](CHANGELOG.md) | [Keep a Changelog](https://keepachangelog.com/en/1.0.0/); `[Unreleased]` holds what has landed but not shipped. |
+| [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) | The external work these practices build on. |
+| `scripts/check-agents-md.sh` | Mechanical checks on the instruction files — line budget, link resolution, the `.agents`/`.claude` symlink bridge, rule frontmatter. Runs in CI; `--self-test` proves it still fails on a repository that is broken. |
 
 ## Requirements
 

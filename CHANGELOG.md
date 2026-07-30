@@ -44,10 +44,37 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The plan artifact** — a `plan.md` template, a `project/plans/` directory in the scaffold, and four
   living sections (`Progress`, `Surprises & Discoveries`, `Decision Log`, `Outcomes & Retrospective`)
   maintained while the work happens rather than written at the end.
+- **Closing a task routes what the work taught.** `close-task` gained a step that takes every
+  `Surprises & Discoveries` entry through the promotion test — recurrence, discoverability, whether a guard
+  already covers it, and where it lands — plus the demotion check that deletes an instruction line a new
+  guard has made redundant. A learning is no longer deleted along with the dossier.
+- **`scripts/check-agents-md.sh`** — the maintenance loop stops depending on someone remembering. Checks
+  the line budget, that every relative link resolves and none escapes the repository, that `.claude/`
+  holds resolving symlinks (including the case where git checked one out as text), and that every rule
+  declares a `description`. Runs in CI, and `--self-test` builds a deliberately broken repository to prove
+  the checks still fire.
+- **Three more decision records** — a size budget on generated artifacts with guards replacing prose
+  ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)); derived knowledge consumed through a
+  detected capability rather than a named product
+  ([ADR-0005](project/adr/0005-derived-knowledge-via-detected-capability.md)); and the task model of a
+  GitHub issue plus an ephemeral dossier
+  ([ADR-0006](project/adr/0006-task-as-issue-plus-ephemeral-dossier.md)).
 - **This repository's own governance** — `AGENTS.md`, `GOVERNANCE.md`, `ACKNOWLEDGEMENTS.md`, `project/`
-  with three ADRs and two research notes, and the `.agents/`↔`.claude/` bridge. The plugin now follows what
+  with six ADRs and two research notes, and the `.agents/`↔`.claude/` bridge. The plugin now follows what
   it prescribes.
 - This changelog.
+
+### Fixed
+
+- **The governance model described four artifact types while five creation skills existed.** The plan is
+  now in `GOVERNANCE.md` and in the `project/**` rule, with its own lifecycle — permanent, never deleted,
+  four living sections.
+- **`project/log/` had one documented reason to exist and needed two.** It is the narrative an ADR is too
+  terse to carry *and* the rich context of one unit of work, decision or not — otherwise a real learning
+  that is too local to promote has nowhere to go.
+- **Only tasks had a stated issue↔file split.** Both governance documents now say what the issue owns and
+  what the file owns for each artifact that can pair with one, including the part that does not carry over
+  from tasks: a plan's issue closes, and the plan file does not.
 
 ## [0.3.0] — 2026-07-27
 

@@ -13,6 +13,8 @@ repo *is* the distributable, loaded by Claude Code straight from this tree.
 | [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) | Manifest — name, version, `"skills": "./skills/"`. |
 | [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) | Marketplace entry for installing this plugin. |
 | [`project/`](project/) | This repo's own governance records (ADR / RFC / tasks / plans / research / log). |
+| [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below — budget, link resolution, the symlink bridge, rule frontmatter. Run it before committing a change to any instruction file; `--self-test` asserts it still fails on a broken repo. |
+| [`.github/workflows/`](.github/workflows/) | CI: the validator and its self-test, on every push and PR. |
 | [`.agents/`](.agents/) | This repo's own agent config (rules), mirrored into `.claude/` by relative symlink. |
 | [`GOVERNANCE.md`](GOVERNANCE.md) | Which artifact answers which question. |
 
@@ -31,6 +33,10 @@ which loads on its own. Not repeated here.
   (append-only, no update mode). See [`references/convergence-policy.md`](references/convergence-policy.md).
 - **Everything this plugin writes into a target repo is in English**, regardless of the conversation's
   language. That is a product guarantee, stated in the README.
+- **A guard, not a line.** Anything mechanically checkable goes into `scripts/check-agents-md.sh` instead
+  of being written here — and a line here that a new guard makes redundant gets deleted
+  ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)). This file is budgeted at 150 lines; over
+  budget, relocate content and leave a pointer rather than compressing prose.
 - **Frontmatter fields Claude Code honors** in a `SKILL.md`: `name`, `description`,
   `disable-model-invocation`, `argument-hint`, `effort`. `description` is what triggers the skill — it
   must name the situations the skill applies to, not just what it does.
@@ -73,8 +79,8 @@ plugin exists to prevent.
    A skill listed here that no longer exists, or a folder on disk that isn't described, is the signal.
 2. **Trigger conditions:** a skill is added, renamed, or removed; a skill gains or loses a `templates/`
    folder; a file is added to `references/` or a skill stops pointing at one; an invariant above stops
-   being true; a rule is added under `.agents/` (verify it follows the bridge); the plugin gains a build
-   step or a manifest field worth knowing about.
+   being true; a rule is added under `.agents/` (verify it follows the bridge); a check is added to or
+   removed from the validator; the plugin gains a build step or a manifest field worth knowing about.
 3. **Update in place** — adjust the one affected line, keep entries to one line, point at the real
    source of truth instead of restating it.
 4. **Fold it into the current task** and mention the edit.

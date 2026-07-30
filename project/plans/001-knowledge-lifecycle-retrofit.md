@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
 | Tracking issue | [#1](https://github.com/entelekheia-ai/vibe-ops/issues/1) — owns status and the executive summary; this file owns the design and the working record |
@@ -175,9 +175,10 @@ Run from the repository root:
 - `grep -rn 'scaffold-new-repo' --exclude-dir=.git --exclude-dir=project . ` returns only `CHANGELOG.md`
   (T3). The old name must survive in exactly two places — the decision records under `project/`, and the
   release note that tells a user their invocation broke. Anywhere else is a missed reference.
-- No private repository name appears anywhere in the published tree. The T8 validator carries the pattern
-  so this file does not have to: a plan that spells out the names in order to check for them has already
-  leaked them.
+- No private repository name appears anywhere in the published tree. Neither this file nor the validator
+  carries the names — spelling them out in order to check for them has already leaked them. The check reads
+  a deny-list from `PRIVATE_NAME_LIST`, which lives outside the repository:
+  `PRIVATE_NAME_LIST=<path> bash scripts/check-agents-md.sh`.
 - `wc -l AGENTS.md` is at most 150.
 - Every skill's `description` states whether it is target-state or event (T2, T6).
 - `ls project/templates/` shows `adr.md rfc.md task.md plan.md`, and `GOVERNANCE.md` describes all four (T4, T7).
@@ -215,12 +216,26 @@ Run from the repository root:
       `CHANGELOG.md` was created — the repo had none — in Keep a Changelog format, with the break at the
       top of `[Unreleased]`. **No version bump**: see the Decision Log. Verified: `scaffold-new-repo` now
       appears only inside `project/` and in that release note.
-- [ ] T5 — knowledge routing in `close-task`. Not started. Unblocked: the promotion test now lives in
-      `references/knowledge-lifecycle.md` and `close-task` already points at it; what remains is the step
-      itself and the demotion check.
-- [ ] T7 — governance catches up. Not started.
-- [ ] T8 — validator. Not started.
-- [ ] T9 — three remaining ADRs. Not started.
+- [x] (2026-07-30) T5 — `close-task` gained Step 5, "Route what the work taught": the four questions named
+      in order, the entry-not-promoted-goes-to-`project/log/` rule, and the demotion check, all pointing at
+      `references/knowledge-lifecycle.md` rather than restating the reasoning. Two checklist items added.
+      The task template gained an optional `Surprises & Discoveries` section — without it the step had no
+      input for a task that did not come from a plan.
+- [x] (2026-07-30) T7 — `GOVERNANCE.md` and the `project/**` rule now describe five artifacts, not four.
+      Added: the plan's lifecycle (`Backlog → In Progress → Shipped`, never deleted, four living sections);
+      `project/log/`'s second reason to exist; and an issue-pairing table covering both artifacts that pair
+      with an issue, including that a plan's issue closes while the plan file does not. Propagated to the
+      `repo-setup` templates, and the plan template gained a `Tracking issue` row.
+- [x] (2026-07-30) T8 — `scripts/check-agents-md.sh` written: budget, link resolution, links escaping the
+      repository, the `.claude/` symlink bridge (both the regular-file and the checked-out-as-text cases),
+      rule `description:`, a private-name deny-list, and personal-memory links. Passes on this repository
+      (6 checks); `--self-test` builds a broken fixture and asserts every check fires. Wired into CI at
+      `.github/workflows/check.yml`, which runs the self-test *before* the real check.
+- [x] (2026-07-30) T9 — ADR-0004 (budgeted artifacts, guard instead of a line), ADR-0005 (derived knowledge
+      through a detected capability), ADR-0006 (task = issue + ephemeral dossier). Each with its rejected
+      alternatives and the risks accepted.
+- [x] (2026-07-30) README pass — `GOVERNANCE.md`, `references/`, `CHANGELOG.md`, `ACKNOWLEDGEMENTS.md` and
+      the validator were all invisible from the README; added as a "This repository" table.
 - [x] (2026-07-30) T1, T4, T2 and T6 committed as `20947ae` on branch
       `feat/knowledge-lifecycle-retrofit`, off `main` at `2ebf680`. Not pushed.
 
@@ -308,6 +323,40 @@ Run from the repository root:
   path. The rule file then appears to exist and contains one line of nonsense. Recorded as a risk in
   ADR-0003 and as a check for the T8 validator.
 
+- Observation: this plan's success criterion for the private-name check asked the validator to carry the
+  pattern — and the authoring-style reference written two tracks earlier says that a validation command
+  spelling out private names in order to grep for them has already leaked them.
+  Evidence: the criterion and the reference are both this plan's output, three days apart in the same
+  branch, and they contradict each other outright. The plan even said the script should carry the pattern
+  "so this file does not have to", which moves the leak rather than removing it. Resolved by having the
+  script read a deny-list from `PRIVATE_NAME_LIST` outside the tree, never echo a matched string, and fail
+  if the list is ever tracked by git. With no list configured the check reports itself **skipped**, not
+  passed.
+
+- Observation: the step added in T5 had no input for a task that did not come from a plan.
+  Evidence: the four living sections live in the plan template; the task template had `Context`,
+  `Work items`, `Implementation order` and `Closure`, and nowhere to write down a surprise. `close-task`
+  would have read `Surprises & Discoveries` from a source doc that only sometimes exists. The task template
+  gained an optional section — with the instruction to keep entries in the plan instead when there is one,
+  so the two do not both hold half the list.
+
+- Observation: two copies of the plan lifecycle disagreed within one sitting.
+  Evidence: the template's status comment says `Backlog → In Progress → Shipped`; the governance rule
+  written minutes later said `Backlog → In Progress → Complete`. Nobody had been careless — the second
+  author simply did not have the first file open. This is the drift the reference set exists to prevent,
+  observed at the smallest possible time scale, and it is the argument for one copy stated more concretely
+  than any of the prose about it.
+
+- Observation: a mechanical check can pass because it is not looking, and the output is identical to a
+  check that passed because the tree is clean.
+  Evidence: the validator's first link extraction used `sed -n 's/.*](\([^)]*\)).*/\1/p'`, whose greedy
+  `.*` silently discards every link on a line but the last. It reported the repository clean, which was
+  also true, so nothing about the output revealed the bug. Caught only by running against a fixture built
+  to fail. This is why `--self-test` exists and why CI runs it *before* the real check: a guard nobody has
+  ever seen fail is not yet evidence of anything. The corrected version then failed on **this file**,
+  reporting a broken link inside a backtick-quoted `sed` expression — a check strict enough to be useful is
+  also strict enough to need to understand code spans and fenced blocks, which it now strips first.
+
 ## Decision Log
 
 - Decision: record the architecture as three ADRs rather than a fourth artifact type or a style guide.
@@ -380,6 +429,34 @@ Run from the repository root:
   one won.
   Date / Author: 2026-07-30 / Danilo Borges
 
+- Decision: the private-name deny-list lives **outside** this repository, read from `PRIVATE_NAME_LIST`,
+  and its absence makes the check report `SKIP` rather than pass.
+  Rationale: a check that carries the strings it is looking for publishes them; a check that silently
+  passes when unconfigured is worse than no check, because it produces a green line that means nothing.
+  The script also fails outright if the list is ever tracked by git, and never echoes a matched string —
+  a CI log is as public as the repository.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: the validator runs in **CI**, plus on demand; not as a git hook. Resolves the last open question.
+  Rationale: a git hook lives on one machine, is not installed by cloning, and is skipped by `--no-verify`,
+  so it cannot be the guard a public repository relies on. CI is the top rung of the enforcement ladder
+  this plan argues for, and the checks are fast enough that there is no reason to trade correctness for
+  latency. `license-setup`'s pre-commit option remains a per-repository choice, not a precedent for this.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: CI runs `--self-test` *before* the real check, and a failing self-test fails the job.
+  Rationale: the link check shipped with a bug that made it examine only the last link on each line, and
+  it reported a clean tree either way. A guard that has stopped detecting anything is indistinguishable
+  from a clean repository unless something forces it to fail on demand.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: do **not** ship the validator in the `repo-setup` templates in this plan.
+  Rationale: it is repository-agnostic and would work, but adding it means every scaffolded repository
+  carries a script and a CI job it did not ask for. That is a change to the product's baseline, which is a
+  separate decision from retrofitting this repository, and it deserves its own plan rather than riding
+  along in this one.
+  Date / Author: 2026-07-30 / Danilo Borges
+
 - Decision: attribute external and original work explicitly, inline, in every research note and decision
   record.
   Rationale: the first draft blurred the boundary in both directions — under-crediting sources, and
@@ -390,21 +467,42 @@ Run from the repository root:
 
 ## Outcomes & Retrospective
 
-*Too early — T1 and T4 are complete, seven tracks remain. To be filled as each track lands.*
+All nine tracks landed. Measured against the five goals: every practice the plugin prescribes is now applied
+to it (1); a learning has one place to be written while the work happens and a written test that decides
+where it goes afterwards (2); every skill declares its kind in its own `description`, so whether running it
+twice is correct can be answered without opening the file (3); `AGENTS.md` is filtered, budgeted at 150
+lines and checked by a script (4); and no private repository name appears in the published tree, with the
+deny-list deliberately kept outside it (5).
 
-One early observation worth keeping: T1 was intended purely as a dogfood, and it produced six of the seven
-entries under `Surprises & Discoveries` above. Applying the plugin to itself found gaps that reading its
-skills had not, which is itself evidence for the loop this plan installs.
+Three things are worth carrying forward.
+
+**Dogfooding found what reading could not.** T1 was scoped as a formality — lay down the structure the
+plugin scaffolds — and it produced six of the first seven entries under `Surprises & Discoveries`. Every
+one of them was a gap that had been sitting in the skills, readable, for as long as the skills had existed.
+
+**This plan's own acceptance criteria were wrong three times**, and each time the criterion was wrong in the
+same direction: written from an assumption about the state of the tree that turned out to be false. T6
+predicted zero changes and produced three. T3 forbade the old name anywhere outside `project/`, which would
+have meant shipping a rename nobody was told about. T8 asked the validator to carry exactly the pattern the
+plugin's own style reference forbids writing down. A criterion is a prediction, and a plan that tracks its
+surprises catches its own bad predictions — which is the thing being installed here, working on itself.
+
+**The remaining gap is other repositories.** What ships here is tooling and the decision records behind it.
+The migrations were explicitly out of scope, and every repository that adopts this baseline will produce its
+own `adopt` decisions. The one thing this plan can hand them is the shape of the work: run the target-state
+skill in `audit` mode first, and treat its gap list as the input to a plan rather than as a to-do list.
 
 ---
 
 ## Open questions
 
-- Whether the T8 validator should run as a git hook, in CI, or only on demand from a skill. The plugin has
-  never shipped a hook it installs into the repository it is working on, and `license-setup` offering
-  pre-commit enforcement is the nearest precedent.
-*(Two of the three original open questions are now answered — see the `Decision Log` for where `references/`
-lives and for `audit` as an argument.)*
+*All three original open questions are answered — see the `Decision Log` for where `references/` lives, for
+`audit` as an argument, and for CI over a git hook.*
+
+One question this plan deliberately did **not** answer: whether `scripts/check-agents-md.sh` should ship in
+the `repo-setup` templates so every scaffolded repository gets it. It is written to be repository-agnostic
+and would work, but shipping it means every scaffolded repo carries a script it may never run, and the CI
+job to go with it. That is a product decision, not a retrofit, and it belongs to whoever opens the next plan.
 
 ## Related
 

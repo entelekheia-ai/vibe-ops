@@ -34,6 +34,7 @@
 | Created | YYYY-MM-DD |
 | Author | Your Name |
 | Depends on | <!-- Plan-MMM / RFC-MMMM, or remove this row --> |
+| Tracking issue | <!-- #NNN — owns status and the executive summary; this file owns the design and the working record. Remove this row if the plan has no issue. --> |
 | Related | <!-- ADRs, RFCs, issues, or remove this row --> |
 
 <!-- Status lifecycle: Backlog → In Progress → Shipped. The file is never deleted; it is the record. -->

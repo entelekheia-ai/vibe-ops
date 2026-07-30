@@ -122,6 +122,10 @@ English, regardless of the conversation's language.**
 - Heading → `# Plan-<NNN>: <Title>`.
 - Metadata: `Status: Backlog`, `Created` (from `date +%Y-%m-%d` — never guess), `Author` (from Step 1).
   Delete `Depends on` / `Related` rows unless there is a confirmed dependency or known related doc.
+- `Tracking issue` — keep the row only if the plan already has an issue, and state the split on it: **the
+  issue owns status and the executive summary; this file owns the design and the working record.** Do not
+  open an issue as part of this skill, and do not invent a number. Unlike a task's, a plan's issue closes
+  while the plan file stays — see the repo's `project/**` governance rule.
 - **Summary** — one paragraph in plain terms. No invented technical detail. If migrating, preserve the
   existing summary text as-is.
 - **Goals** — 3–5 concrete, checkable outcomes. If migrating, extract existing goals unmodified.
@@ -168,7 +172,7 @@ State plainly, in the report, what now keeps the plan alive — it is the part m
 - [ ] License block (if the template has one) intact; all guidance comments removed
 - [ ] Heading is exactly `# Plan-<NNN>: <Title>`
 - [ ] Metadata table has `Status: Backlog`, correct `Created` (from `date`), correct `Author`
-- [ ] `Depends on` and `Related` rows removed unless populated
+- [ ] `Depends on`, `Tracking issue` and `Related` rows removed unless populated; no issue number invented
 - [ ] All section headers from the template are present, **including the four living sections**
 - [ ] Self-contained: no "as decided previously"; no relative path pointing outside this repo; every
       non-obvious term defined where first used
