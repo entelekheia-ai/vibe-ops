@@ -154,7 +154,14 @@ its `Surprises & Discoveries` entries get routed.
 
 ## Progress
 
-- [ ] T1 — target-agnostic script and fragment composition.
+- [x] (2026-07-30) T1 — the six checks moved into versioned fragments under `scripts/checks/`
+      (`NN-<id>.sh` defining `check_<id>`); the driver composes them, refuses a fragment that defines
+      nothing, and prints what it assembled and from where. `ROOT` with no argument is now
+      `git rev-parse --show-toplevel` of the current directory, and a non-repository is a usage error
+      rather than a run that quietly checks nothing. `VIBE_OPS_CHECK_DIRS` composes extra directories
+      after the built-ins — the seam T2 needs. Verified against a scratch repository from the plugin
+      root: it reported on that repository, and `git status --porcelain` plus a full `find` were
+      identical before and after.
 - [ ] T2 — composed deny-list in a temporary directory.
 - [ ] T3 — invocation steps in the three skills that change instruction surfaces.
 - [ ] T4 — apply the four demotions blocked in Plan-001.
@@ -249,6 +256,22 @@ its `Surprises & Discoveries` entries get routed.
   it invocable also makes it observable: there is a thing you ran, or did not.
   Date / Author: 2026-07-30 / Danilo Borges
 
+- Decision: no fragment manifest — the run prints the composed list, and that is the audit trail.
+  Resolves the second open question.
+  Rationale: a manifest is a second place stating which checks exist, and the first thing to drift from
+  the directory it describes. The printed list is generated from what was actually sourced, so it cannot
+  disagree with the run; a fragment composed from outside the plugin prints its absolute path, which makes
+  "this check did not come from the plugin" visible without anyone maintaining a list. A fragment that
+  defines no check function is a hard error, so composition cannot silently drop one either.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: "writes nothing into the target" is asserted by the self-test, not promised in a comment.
+  Rationale: it is the whole basis on which a skill may run this against someone's repository, and it is
+  exactly the kind of claim that stays true until one fragment gets careless. The self-test snapshots the
+  fixture with `find` before and after and fails on any difference, so a fragment that starts writing is
+  caught by the run that already exists in CI rather than by a reviewer reading it.
+  Date / Author: 2026-07-30 / Danilo Borges
+
 - Decision: the CI copy is offered, not installed by default.
   Rationale: CI is the only consumer that cannot reach the plugin, so a real copy is unavoidable there —
   but a scaffolded repository acquiring a script and a workflow it never asked for is the opposite of the
@@ -263,11 +286,8 @@ its `Surprises & Discoveries` entries get routed.
 
 ## Open questions
 
-- Where the routing step belongs for a plan that never spawns a task dossier (T7). A step in `new-plan`'s
-  maintenance contract, a `close-plan` skill, and a checklist item in the `project/**` governance rule are
-  all plausible; the first two add an artifact, the third relies on being read.
-- Whether the fragment composition needs a manifest, or whether the printed list of composed fragments is
-  enough of an audit trail on its own.
+*Both answered — see the Decision Log: the routing step became `close-plan` (T7), and the composition
+prints its own list instead of carrying a manifest (T1).*
 
 ## Related
 
