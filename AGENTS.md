@@ -6,17 +6,16 @@ repo *is* the distributable, loaded by Claude Code straight from this tree.
 
 ## Layout
 
-| Path | What it is |
+A row earns its place here by saying something `ls` does not. Folders whose names explain themselves are
+deliberately absent; where a file is the authority on something, it is named in **Source of truth** below
+instead of twice.
+
+| Path | What is not obvious about it |
 |---|---|
-| [`skills/<name>/SKILL.md`](skills/) | **The product.** One folder per skill; `templates/` beside a SKILL.md holds files that skill copies at runtime. |
+| [`skills/<name>/SKILL.md`](skills/) | **The product** — what the plugin ships and what Claude Code loads. A `templates/` folder beside a SKILL.md holds files that skill copies at runtime; it is never inlined into the SKILL.md. |
 | [`references/`](references/) | Shared policy the skills point at instead of restating — the single copy of any rule governing more than one skill. |
-| [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) | Manifest — name, version, `"skills": "./skills/"`. |
-| [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) | Marketplace entry for installing this plugin. |
-| [`project/`](project/) | This repo's own governance records (ADR / RFC / tasks / plans / research / log). |
+| [`project/`](project/) | This repo's own governance records, and the one folder with a **path-scoped rule** ([`.agents/rules/governance.md`](.agents/rules/governance.md)) that auto-loads only while you are working inside it. |
 | [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below. Checks **the repo you point it at**, composing one fragment per check from [`scripts/checks/`](scripts/checks/); `--list` shows what it assembled, `--self-test` asserts it still fails on a broken repo. |
-| [`.github/workflows/`](.github/workflows/) | CI: the validator and its self-test, on every push and PR. |
-| [`.agents/`](.agents/) | This repo's own agent config (rules), mirrored into `.claude/` by relative symlink. |
-| [`GOVERNANCE.md`](GOVERNANCE.md) | Which artifact answers which question. |
 
 ## How this repo works — not obvious from the code
 
@@ -48,13 +47,12 @@ which loads on its own. Not repeated here.
   `allowed-tools`, `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`,
   `shell`, `when_to_use`. `model` and `effort` are **per skill** — scaffolding a template and routing a
   learning do not deserve the same budget.
-- **`disable-model-invocation: true` removes a skill from the model's listing entirely** — zero context
-  cost, and in exchange the model can never trigger it. A user-invoked skill is therefore free: adding one
-  is not a context decision. Which side a skill belongs on is decided by its **failure mode**: omit the
-  flag where the failure is *forgetting* (`repo-setup`, `close-task`, `close-plan` — nobody forgets to
-  want an ADR, everybody forgets to close the loop), keep it where the failure would be *acting
-  uninvited* (the `new-*` records, and anything that rewrites a file a human owns). A model-invocable
-  skill must confirm before any irreversible step, since the user may not have asked for the run.
+- **No skill sets `disable-model-invocation`.** The flag removes a skill from the model's listing
+  entirely — zero context cost, and in exchange it can only ever fire from a typed `/command`, including
+  when the user asks for exactly that job in plain language. That failure is silent and looks like the
+  skill not working. All ten are model-invocable; the listing costs ~3,850 of the 8,000-character budget,
+  so the trade was not close. **A model-invocable skill must confirm before any irreversible step**, since
+  the user may not have asked for the run — that obligation is now on every skill here, not a subset.
 - **Never set `model:` in a shipped skill.** It silently overrides the user's own session choice. `effort`
   is a per-task budget hint and is fine; the model is the user's call. A small model in particular
   fabricates sections to fill a template even with no source material — exactly what `new-plan`'s
