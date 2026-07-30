@@ -24,7 +24,8 @@
 #
 # Environment:
 #   AGENTS_MD_MAX_LINES       line budget for AGENTS.md (default 150)
-#   PRIVATE_NAME_LIST         path to a deny-list of strings that must not appear in the tree
+#   PRIVATE_NAME_LIST         path to a file of names that must not appear in the tree, one per line
+#   PRIVATE_NAMES             the same, inline, newline- or colon-separated
 #   VIBE_OPS_CHECK_DIRS       colon-separated extra fragment directories, composed after the built-ins
 #
 # Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.
@@ -82,6 +83,20 @@ tracked_md() {
 # A fragment named NN-<id>.sh must define check_<id>, with '-' as '_'. It may use fail/pass/skip,
 # head_, norm_rel, tracked_md and $ROOT; it must not write anything into $ROOT.
 
+# Everything composed for a single run lives here and nowhere else: mode 700, created on first use,
+# removed on exit however the run ends. A signal handler as well as an EXIT trap, because the artifact
+# this holds is a list of private names and "we were interrupted" is not an acceptable reason for it to
+# survive. It is never created inside $ROOT — the repository being checked is read-only to this script.
+WORKDIR=""
+
+make_workdir() {
+  [ -n "$WORKDIR" ] && return 0
+  WORKDIR=$(mktemp -d) || { echo "cannot create a temporary directory" >&2; exit 2; }
+  chmod 700 "$WORKDIR"
+  trap 'rm -rf "$WORKDIR"' EXIT
+  trap 'rm -rf "$WORKDIR"; exit 130' INT TERM HUP
+}
+
 COMPOSED_IDS=()
 COMPOSED_SRC=()
 
@@ -132,16 +147,96 @@ run_checks() {
   done
 }
 
+# --- the composed deny-list ---------------------------------------------------------------------
+# Which names are private is supplied, never inferred — an agent guessing is wrong in both directions.
+# What is composed is the *spelling*: one supplied name becomes its separator variants, because a name
+# leaks as readily hyphenated as spaced. That expansion is mechanical, so it is composition and not
+# inference.
+#
+# The composed file is `<label>\t<pattern>` per line. The label is where the entry came from — never
+# the name itself, so a failure can be traced back to a line of the user's source without the run,
+# or a CI log, ever repeating the string it is looking for.
+
+VIBE_OPS_DENYLIST=""
+
+name_variants() { # $1 = one supplied name
+  local n="$1"
+  {
+    printf '%s\n' "$n"
+    case "$n" in
+      *[\ _-]*)
+        printf '%s\n' "$(printf '%s' "$n" | tr '_-' '  ')"
+        printf '%s\n' "$(printf '%s' "$n" | tr ' _' '--')"
+        printf '%s\n' "$(printf '%s' "$n" | tr ' -' '__')"
+        printf '%s\n' "$(printf '%s' "$n" | tr -d ' _-')"
+        ;;
+    esac
+  } | sort -u
+}
+
+compose_denylist_from() { # $1 = label prefix, reads names on stdin, appends to the composed file
+  local prefix="$1" line lineno=0 variant added=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    lineno=$((lineno + 1))
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [ -z "$line" ] && continue
+    case "$line" in \#*) continue ;; esac
+    while IFS= read -r variant; do
+      printf '%s:%s\t%s\n' "$prefix" "$lineno" "$variant" >> "$VIBE_OPS_DENYLIST"
+    done <<EOF
+$(name_variants "$line")
+EOF
+    added=$((added + 1))
+  done
+  echo "$added"
+}
+
+compose_denylist() {
+  local sources="" n
+
+  if [ -z "${PRIVATE_NAME_LIST:-}" ] && [ -z "${PRIVATE_NAMES:-}" ]; then
+    return 0
+  fi
+
+  make_workdir
+  VIBE_OPS_DENYLIST="$WORKDIR/private-names"
+  : > "$VIBE_OPS_DENYLIST"
+  chmod 600 "$VIBE_OPS_DENYLIST"
+
+  if [ -n "${PRIVATE_NAME_LIST:-}" ]; then
+    # A misconfigured deny-list is a usage error, not a check failure. Reporting "no private name found"
+    # after failing to read the list is the one outcome that must not be possible.
+    [ -f "$PRIVATE_NAME_LIST" ] || {
+      echo "PRIVATE_NAME_LIST points at $PRIVATE_NAME_LIST, which does not exist" >&2; exit 2; }
+    if git -C "$ROOT" ls-files --error-unmatch "$PRIVATE_NAME_LIST" >/dev/null 2>&1; then
+      echo "the deny-list is tracked by git — it must live outside the published tree" >&2
+      exit 2
+    fi
+    n=$(compose_denylist_from list < "$PRIVATE_NAME_LIST")
+    sources="$n from a file outside the tree"
+  fi
+
+  if [ -n "${PRIVATE_NAMES:-}" ]; then
+    n=$(printf '%s\n' "${PRIVATE_NAMES//:/$'\n'}" | compose_denylist_from inline)
+    sources="${sources:+$sources, }$n supplied inline"
+  fi
+
+  printf 'composed deny-list: %s, expanded to %s patterns, held in a temporary directory for this run\n\n' \
+    "$sources" "$(wc -l < "$VIBE_OPS_DENYLIST" | tr -d ' ')"
+}
+
 # --- self-test ----------------------------------------------------------------------------------
 # Acceptance for this script is "fails on a deliberately broken copy and passes on this repository".
 # The second half is running it; this is the first half, so the claim is not taken on trust.
 
 self_test() {
-  local expected got rc before after
+  local expected got rc irc before after tmproot tmp_before tmp_after
   # not local: the EXIT trap runs after this function has returned
   tmp=$(mktemp -d) || exit 2
   denylist=$(mktemp) || exit 2
-  trap 'rm -rf "$tmp" "$denylist"' EXIT
+  fragdir=$(mktemp -d) || exit 2
+  trap 'rm -rf "$tmp" "$denylist" "$fragdir"' EXIT
 
   git -C "$tmp" init -q
   mkdir -p "$tmp/.agents/rules" "$tmp/.claude/rules"
@@ -155,9 +250,15 @@ self_test() {
   printf -- '---\npaths: ["x/**"]\n---\n\nno description above.\n' > "$tmp/.agents/rules/nodesc.md"
   printf 'not a symlink\n' > "$tmp/.claude/rules/nodesc.md"
   git -C "$tmp" add -A >/dev/null 2>&1
-  # a deny-list living outside the fixture, matching a string the fixture does contain
-  printf '# comment line, ignored\npadding line\n' > "$denylist"
+  # a deny-list living outside the fixture. "padding line" is in the fixture spelled with a space; the
+  # entry here is hyphenated, so a hit proves the composed spelling variants are what got searched for.
+  printf '# comment line, ignored\npadding-line\n' > "$denylist"
+  # a fragment that raises a signal partway through a run, so the interrupted case is exercised at a
+  # known point rather than by racing a timer
+  printf 'check_selfdestruct() { head_; kill -TERM $$; }\n' > "$fragdir/99-selfdestruct.sh"
 
+  tmproot="${TMPDIR:-/tmp}"
+  tmp_before=$(ls -A "$tmproot" 2>/dev/null | sort)
   before=$(find "$tmp" | sort)
   got=$(AGENTS_MD_MAX_LINES=150 PRIVATE_NAME_LIST="$denylist" "$0" "$tmp" 2>&1)
   rc=$?
@@ -177,6 +278,16 @@ self_test() {
       return 1
     fi
   done
+  # a hit must be traceable without the string being repeated: the deny-list line is named, the name is not
+  if ! printf '%s\n' "$got" | grep -q 'private-names.*source: list:2'; then
+    echo "SELF-TEST FAILED: the private-name hit did not name the deny-list line it came from"
+    return 1
+  fi
+  if printf '%s\n' "$got" | grep -q 'padding-line'; then
+    echo "SELF-TEST FAILED: the run echoed a deny-listed name"
+    return 1
+  fi
+
   # the target is read, never written: a validator that edits the repository it is judging would be
   # doing the one thing the skills invoking it promise not to do
   if [ "$before" != "$after" ]; then
@@ -185,7 +296,24 @@ self_test() {
     diff "$tmp.before" "$tmp.after"; rm -f "$tmp.before" "$tmp.after"
     return 1
   fi
-  echo "SELF-TEST PASSED: every check fired on the broken fixture, which is unchanged by the run"
+
+  # and an interrupted run leaves nothing behind either — the composed artifact is a list of private
+  # names, so "we were killed" is not an acceptable reason for it to outlive the run
+  PRIVATE_NAME_LIST="$denylist" VIBE_OPS_CHECK_DIRS="$fragdir" "$0" "$tmp" >/dev/null 2>&1
+  irc=$?
+  if [ "$irc" -eq 0 ]; then
+    echo "SELF-TEST FAILED: the interrupted run reported success"
+    return 1
+  fi
+  tmp_after=$(ls -A "$tmproot" 2>/dev/null | sort)
+  if [ "$tmp_before" != "$tmp_after" ]; then
+    echo "SELF-TEST FAILED: a run left something behind in $tmproot"
+    diff <(printf '%s\n' "$tmp_before") <(printf '%s\n' "$tmp_after")
+    return 1
+  fi
+
+  echo "SELF-TEST PASSED: every check fired on the broken fixture; the target and the temporary"
+  echo "                 directory are unchanged, after a normal run and after an interrupted one"
   return 0
 }
 
@@ -230,6 +358,7 @@ compose_checks
 
 printf 'check-agents-md — %s\n\n' "$ROOT"
 report_composition
+compose_denylist
 run_checks
 
 printf '\n%d checks, %d failed\n' "$CHECKS" "$FAILURES"

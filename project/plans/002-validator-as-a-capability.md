@@ -162,7 +162,14 @@ its `Surprises & Discoveries` entries get routed.
       after the built-ins — the seam T2 needs. Verified against a scratch repository from the plugin
       root: it reported on that repository, and `git status --porcelain` plus a full `find` were
       identical before and after.
-- [ ] T2 — composed deny-list in a temporary directory.
+- [x] (2026-07-30) T2 — the deny-list is composed into a `mktemp -d` (mode 700, file mode 600) from
+      either `PRIVATE_NAME_LIST` (a file outside every tree) or `PRIVATE_NAMES` (inline), removed by an
+      `EXIT` trap and by an `INT`/`TERM`/`HUP` handler. Composition expands each supplied name into its
+      separator variants, so a name supplied hyphenated is caught spelled with a space — verified in the
+      self-test, where the fixture says `padding line` and the deny-list says `padding-line`. A hit
+      reports its provenance (`list:2`, `inline:1`) and never the string. A missing or git-tracked
+      source is exit 2, not a passing check. The self-test now also asserts nothing survives a normal
+      **or** an interrupted run; stripping both cleanup traps makes it fail with the leftovers named.
 - [ ] T3 — invocation steps in the three skills that change instruction surfaces.
 - [ ] T4 — apply the four demotions blocked in Plan-001.
 - [ ] T5 — the CI copy as an explicit offer.
@@ -263,6 +270,21 @@ its `Surprises & Discoveries` entries get routed.
   disagree with the run; a fragment composed from outside the plugin prints its absolute path, which makes
   "this check did not come from the plugin" visible without anyone maintaining a list. A fragment that
   defines no check function is a hard error, so composition cannot silently drop one either.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: composition expands **spellings**, never membership. Which names are private is supplied;
+  each supplied name is then expanded into its space / hyphen / underscore / squashed variants.
+  Rationale: the scope line "the list is supplied, never derived" is about *which* names, and it holds.
+  A name leaks as readily hyphenated as spaced, and expanding a given string by a fixed rule is
+  mechanical — nothing is being guessed, so it is composition rather than inference. It also removes the
+  most likely way the check quietly passes: the user wrote the name one way and the repository spelled
+  it another.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: a deny-list that cannot be read is exit 2, not a failed check.
+  Rationale: the one outcome that must be impossible is reporting "no private name found" after failing
+  to read the list of names to look for. A missing file, or one that turns out to be tracked by git, is
+  a misconfigured run rather than a defective repository, and the exit code should say which.
   Date / Author: 2026-07-30 / Danilo Borges
 
 - Decision: "writes nothing into the target" is asserted by the self-test, not promised in a comment.
