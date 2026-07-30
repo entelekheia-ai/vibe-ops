@@ -210,8 +210,9 @@ Run from the repository root:
 - [ ] T7 — governance catches up. Not started.
 - [ ] T8 — validator. Not started.
 - [ ] T9 — three remaining ADRs. Not started.
-- [ ] Nothing in this plan has been committed. The working tree carries all of T1 and T4 as untracked or
-      modified files.
+- [x] (2026-07-30) T1, T4, T2 and T6 committed as `20947ae` on branch
+      `feat/knowledge-lifecycle-retrofit`, off `main` at `2ebf680` (v0.3.0). Not pushed. No version bump —
+      the bump goes with T3, which carries the breaking change.
 
 ## Surprises & Discoveries
 
