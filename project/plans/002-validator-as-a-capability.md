@@ -1,0 +1,227 @@
+<!--
+ Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ https://www.apache.org/licenses/LICENSE-2.0
+-->
+
+# Plan-002: The Validator as a Capability
+
+| Field | Value |
+|---|---|
+| Status | Backlog |
+| Created | 2026-07-30 |
+| Author | Danilo Borges |
+| Depends on | [Plan-001](001-knowledge-lifecycle-retrofit.md) |
+| Related | [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) |
+
+---
+
+## Summary
+
+[Plan-001](001-knowledge-lifecycle-retrofit.md) produced `scripts/check-agents-md.sh` and left it where it
+could only ever check one repository: this one. The checks it performs are exactly the ones every skill in
+this plugin currently asks an agent to perform by hand, in every repository it touches. This plan turns the
+script from a file this repository owns into a **capability the plugin applies to whatever repository it is
+working on** — invoked by the skills that change instruction surfaces, composed at runtime for what the
+target repository actually contains, and never writing anything into that repository unless the user asks
+for the CI copy.
+
+## Goals
+
+1. A skill that changes an instruction surface verifies its own work mechanically, in the target
+   repository, without the plugin writing a file there.
+2. Anything the validator now enforces is **deleted** from the prose checklists that hand-check it — the
+   demotion Plan-001 identified and could not apply.
+3. Private names never touch the target repository's working tree, at any point, including as an input to
+   the check that looks for them.
+4. A composed check is auditable: what ran is reconstructable from versioned fragments, not from a model's
+   memory of what it wrote.
+5. The validator is discoverable as a feature by someone who installs the plugin, not only by someone
+   reading this repository.
+
+## Scope
+
+### In scope
+
+`scripts/check-agents-md.sh` and its fragments; the invocation steps in `repo-setup`,
+`authoring-agents-md` and `close-task`; the runtime composition in a temporary directory; the opt-in CI
+installation; the `README.md` entry; and the checklist demotions in `authoring-agents-md`.
+
+### Out of scope
+
+**Making the validator part of the scaffolded baseline by default.** A scaffolded repository does not
+silently acquire a script and a CI job. The CI copy is offered, once, and declining is a normal outcome.
+
+**Checks for anything other than instruction surfaces.** No linting, no formatting, no package-manifest
+validation. The script's subject is the files agents read at session start; a general-purpose repo linter
+is a different tool with a different name.
+
+**Inferring the private-name deny-list.** An agent guessing which names are private is wrong in both
+directions — it omits what matters and includes what does not. The list is supplied, never derived.
+
+## Design
+
+The script already takes a repository root as its first argument and drives everything through
+`git -C "$ROOT"`, so it can check a repository it does not live in. Three things follow from that.
+
+**It runs from the plugin, and is not copied.** Skills invoke
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh <target>`. Copying it into each repository would freeze
+it at the version of the day it was written — the greedy-`sed` bug found in Plan-001 would still be live in
+every repository that took a copy — and it would contradict the plugin's own promise of no per-repo copies
+to maintain. The default for `ROOT` changes from "the directory above this script" to the working tree of
+the current directory, so an invocation without an argument means the target rather than the plugin.
+
+**What is composed is composed in a temporary directory and deleted.** Two things cannot live in the
+plugin because they depend on what is on disk or on who is running: the assembled private-name deny-list,
+and checks derived from the target's shape. These are written to `mktemp -d` (mode 700), consumed, and
+removed by a `trap` on exit, so an interrupted run leaves nothing behind. This is strictly better than a
+persistent user-level config for the deny-list: a permanent file of private names is a standing exposure,
+where a temporary one exists only for the duration of a run.
+
+**Composition assembles versioned fragments; it does not author checks.** A check written freehand at
+runtime and deleted afterwards cannot be diffed, reviewed, or trusted — and if it silently stops detecting
+something, no evidence survives. That is the failure ADR-0004 exists to avoid, wearing a shell script's
+clothes. Fragments live in the plugin under version control, the composition step only selects and
+parameterizes them, and the run prints which fragments it composed.
+
+The CI case is the one consumer that genuinely needs a copy, because CI does not have the plugin installed.
+That stays an explicit offer in `repo-setup`, with the copy's nature stated: it is a snapshot, and it will
+not receive fixes.
+
+## Tracks
+
+**T1 — Make the script target-agnostic.** Today an invocation without an argument checks the directory
+above the script, which is correct only when the script is being run from inside the repository it belongs
+to. Change the default to the enclosing working tree, add a fragment-composition entry point, and make the
+run report which checks it assembled and from where. At the end, running the script from the plugin against
+an unrelated repository is the ordinary case rather than a special one. Acceptance: run from the plugin
+root against a scratch repository, it reports on that repository and writes nothing into it.
+
+**T2 — The composed deny-list.** The private-name check currently reads `PRIVATE_NAME_LIST` and skips when
+unset, which is honest but puts the burden on the user to have created a file somewhere. Add a composition
+step that assembles the list into a temporary file for the duration of the run, from a source the user
+supplies once, and deletes it on exit. At the end the names exist on disk only while the check runs, and
+never inside any repository being checked. Acceptance: the temporary directory is gone after both a
+successful and an interrupted run, and the check still refuses to print a matched string.
+
+**T3 — Skills invoke the check.** `authoring-agents-md` (after writing), `repo-setup` (final step, and as
+part of the `audit` report), and `close-task` (after propagating to living docs) each run the validator
+against the target repository. The four event skills do not — they write into `project/` and touch no
+instruction surface, so a check there is latency against a risk that does not exist. Acceptance: each of
+the three names the invocation; a run of `repo-setup audit` against a drifted repository shows validator
+findings inside its gap list.
+
+**T4 — Apply the blocked demotions.** With the guard reachable from any repository, the four hand-checked
+items in the `authoring-agents-md` checklist that the validator now enforces are deleted and replaced by
+the invocation. This is the demotion identified in Plan-001 and deliberately left unapplied. At the end the
+checklist contains only what a human or an agent must still judge. Acceptance: no checklist item restates
+something the script checks; the checklist is shorter than it was.
+
+**T5 — The CI copy, as an offer.** A step in `repo-setup` that offers to write the script and a workflow
+into the target repository, stating that the copy is a snapshot which will not receive later fixes.
+Declining is a normal outcome and leaves no trace. Acceptance: accepting produces a passing CI job on the
+target; declining writes nothing.
+
+**T6 — Make it visible.** The validator moves from the README's "This repository" table, where it reads as
+internal machinery, into what the plugin *does*. Written only after T3, because announcing a capability
+that has no invocation path is a promise rather than a feature. Acceptance: a reader who has installed the
+plugin and never opened this repository can tell what the check does and how it runs.
+
+**T7 — Close the routing hole.** Plan-001's own retrospective found that the knowledge-routing step lives
+only in `close-task`, so a plan that ships without ever spawning a task dossier reaches its end and routes
+nothing — which is what happened to Plan-001 itself. Decide where the step belongs for a plan (a step in
+`new-plan`'s maintenance contract, a `close-plan` skill, or a checklist item in the governance rule) and
+write it down. Acceptance: shipping a plan with no task dossier has a stated, discoverable point at which
+its `Surprises & Discoveries` entries get routed.
+
+## Success criteria
+
+- `${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh <some-other-repo>` reports on that repository, and
+  `git -C <some-other-repo> status --porcelain` is unchanged afterwards.
+- `./scripts/check-agents-md.sh --self-test` still passes, and CI still runs it before the real check.
+- No temporary directory survives an interrupted run.
+- The `authoring-agents-md` checklist has no item that the script also checks.
+- `grep -c '' README.md` shows the validator described as a capability, outside the "This repository"
+  section.
+- Shipping a plan without a task dossier has a documented routing point (T7).
+
+---
+
+## Progress
+
+- [ ] T1 — target-agnostic script and fragment composition.
+- [ ] T2 — composed deny-list in a temporary directory.
+- [ ] T3 — invocation steps in the three skills that change instruction surfaces.
+- [ ] T4 — apply the four demotions blocked in Plan-001.
+- [ ] T5 — the CI copy as an explicit offer.
+- [ ] T6 — README, after T3.
+- [ ] T7 — where routing happens for a plan with no task dossier.
+
+## Surprises & Discoveries
+
+*Nothing yet — the plan has not started. Entries go here **while** the work happens; one written from
+memory at the end is worth nothing.*
+
+## Decision Log
+
+- Decision: the validator runs from the plugin against the target repository, and is not copied into it.
+  Rationale: a copy freezes at the version of the day it was taken — the greedy-`sed` bug found in
+  Plan-001 would still be live in every repository holding one — and per-repo copies are exactly what this
+  plugin's design exists to avoid. The script already accepts a repository root, so nothing about it needs
+  to change for this to work.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: composed artifacts — the assembled deny-list, checks derived from the target's shape — live in
+  a temporary directory for the duration of the run and are removed by a `trap`, rather than in a
+  persistent user-level config file.
+  Rationale: a permanent file containing private names is a standing exposure; a temporary one exists only
+  while it is being read. This supersedes an earlier suggestion of `~/.config/vibe-ops/private-names`
+  within this planning conversation — it was proposed and dropped before any of it was written.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: runtime composition selects and parameterizes **versioned fragments**; it never authors a check.
+  Rationale: a check generated fresh each run and deleted cannot be diffed or reviewed, and if it stops
+  detecting something the evidence goes with it. ADR-0004 argues a guard beats prose because it executes
+  regardless of who read what; a guard rewritten by a model on every run is judgement again, in a shell
+  script's clothing.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: templates keep being written into the target repository and are **not** part of the temporary
+  composition.
+  Rationale: `new-adr`, `new-rfc`, `new-plan` and `new-task` read the *target repository's own* template,
+  which is the entire mechanism by which one skill serves every repository without becoming a copy. A
+  template materialized in a temporary directory and deleted is not there for the next session. Temporary
+  space is a staging area for placeholder expansion; the end state is still a committed file.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: the CI copy is offered, not installed by default.
+  Rationale: CI is the only consumer that cannot reach the plugin, so a real copy is unavoidable there —
+  but a scaffolded repository acquiring a script and a workflow it never asked for is the opposite of the
+  baseline this plugin claims to lay down. The offer states that the copy is a snapshot.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+## Outcomes & Retrospective
+
+*Not started.*
+
+---
+
+## Open questions
+
+- Where the routing step belongs for a plan that never spawns a task dossier (T7). A step in `new-plan`'s
+  maintenance contract, a `close-plan` skill, and a checklist item in the `project/**` governance rule are
+  all plausible; the first two add an artifact, the third relies on being read.
+- Whether the fragment composition needs a manifest, or whether the printed list of composed fragments is
+  enough of an audit trail on its own.
+
+## Related
+
+- [Plan-001 — Knowledge Lifecycle Retrofit](001-knowledge-lifecycle-retrofit.md), whose open question about
+  shipping the validator this plan answers, and whose retrospective supplies T4 and T7.
+- [ADR-0004 — Budgeted artifacts, and a guard instead of a line](../adr/0004-budgeted-artifacts-and-guards.md)
+- [`references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the promotion test, and
+  the obligation to prove a guard fails.
