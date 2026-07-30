@@ -137,6 +137,27 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   A red run here means the skeleton this skill just laid down is broken — most often a `.claude/` symlink
   that git checked out as text on a machine with `core.symlinks=false`. Fix it before handing off; a
   baseline handed over broken is worse than none, because it looks done.
+
+- **Offer the CI copy — do not install it.** Ask once, and take no for an answer:
+
+  > CI cannot reach an installed plugin, so running this check on every push means copying it into the
+  > repository. The copy is a **snapshot**: it will not receive later fixes, and refreshing it is a manual
+  > re-copy. Add it?
+
+  Only if the user accepts:
+
+  ```bash
+  mkdir -p scripts .github/workflows
+  cp "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" scripts/
+  cp -R "${CLAUDE_PLUGIN_ROOT}/scripts/checks" scripts/
+  chmod +x scripts/check-agents-md.sh
+  cp "${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates/github/workflows/check.yml" .github/workflows/
+  ./scripts/check-agents-md.sh --self-test && ./scripts/check-agents-md.sh
+  ```
+
+  Both must pass before you stage them — a CI job added red is a broken window on day one. Declining is a
+  normal outcome and writes nothing; the skill still works without it, because the skills that change
+  instruction surfaces run the check from the plugin.
 - Print next steps: review `AGENTS.md`, `npm install && npm run typecheck`, `gh repo create` when ready, and
   "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
   `/vibe-ops:close-task`, not a plain delete."
@@ -153,6 +174,8 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 - [ ] No `{{PLACEHOLDER}}` remains (`grep -rn '{{'`)
 - [ ] `license-setup` completed (real `LICENSE` text, not the plugin's own; `AGENTS.md` license-rules section present)
 - [ ] `check-agents-md.sh` run against the target after staging, and green
+- [ ] The CI copy was **offered once**; if accepted, both CI steps pass locally before staging — if
+      declined, the target has no `scripts/` and no `.github/workflows/check.yml`
 - [ ] `AGENTS.md` passes the `authoring-agents-md` before-commit checklist (self-contained; no personal-memory slugs)
 - [ ] `README.md` (and each package's) passes the `authoring-readme` checklist
 - [ ] `git init` done; not committed unless asked

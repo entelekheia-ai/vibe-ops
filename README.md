@@ -40,6 +40,12 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 - **Closes the loop.** A task doesn't just get deleted when it's done — closing it writes back to the doc
   that started the work, so plans stay honest about what actually shipped, and routes what the work *taught*
   to wherever the next agent will actually read it instead of deleting it with the dossier.
+- **Checks its own work.** Every skill that changes a file an agent reads at session start runs a validator
+  against your repository afterwards — the `AGENTS.md` line budget, every relative link still resolving,
+  the `.agents`/`.claude` symlinks intact (including the case where git checked one out as text), every
+  rule carrying a `description:`. It runs from the plugin, reads your repository and **writes nothing into
+  it**, so there is no per-repo copy to keep up to date. If you want the same check on every push, one step
+  in `repo-setup` offers to copy it in as a CI job, and tells you the copy is a snapshot.
 
 ## Skills
 
@@ -75,7 +81,7 @@ The plugin is kept in the shape it scaffolds — the skills are applied to it, n
 | [`references/`](references/README.md) | The policy the skills point at instead of restating — convergence, knowledge lifecycle, instruction surfaces, authoring style. |
 | [`CHANGELOG.md`](CHANGELOG.md) | [Keep a Changelog](https://keepachangelog.com/en/1.0.0/); `[Unreleased]` holds what has landed but not shipped. |
 | [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) | The external work these practices build on. |
-| `scripts/check-agents-md.sh` | Mechanical checks on the instruction files — line budget, link resolution, the `.agents`/`.claude` symlink bridge, rule frontmatter. Runs in CI; `--self-test` proves it still fails on a repository that is broken. |
+| [`scripts/`](scripts/) | The validator described above, applied to this repo too. One fragment per check under [`scripts/checks/`](scripts/checks/); `--list` shows what a run composed, `--self-test` proves it still fails on a repository that is broken. CI runs the self-test first, so a check that has quietly stopped detecting anything fails loudly instead of reporting a clean tree. |
 
 ## Requirements
 

@@ -186,8 +186,18 @@ its `Surprises & Discoveries` entries get routed.
       see: "every path named exists" became "no folder on disk is left undescribed" (the reverse
       direction is judgement), and the `wc -l` item became "anything cut was **relocated**", which was
       always the part worth checking.
-- [ ] T5 — the CI copy as an explicit offer.
-- [ ] T6 — README, after T3.
+- [x] (2026-07-30) T5 — an offer at the end of `repo-setup` Step 7, worded as a question with the
+      snapshot nature stated in it, copying `scripts/check-agents-md.sh`, `scripts/checks/` and a new
+      `templates/github/workflows/check.yml`; both CI steps must pass locally before staging. Declining
+      writes nothing. The script itself carries the provenance note, so a copy explains what it is
+      wherever it is read, rather than the offer injecting a banner into it. Verified end to end against
+      a scratch repository shaped like a freshly scaffolded one: self-test green, real run 6/0.
+- [~] (2026-07-30) T6 — README done: the validator is now a bullet under **What it does**, described by
+      what it does for the reader's repository (checks it, writes nothing into it, no per-repo copy) with
+      the CI copy mentioned as an offer; the "This repository" row is now about `scripts/` as this repo's
+      own application of it. **The release is not cut**, and that is the rest of this track — until a
+      version ships, `${CLAUDE_PLUGIN_ROOT}/scripts/` does not exist in any install and the README
+      describes something no installed user can run. Owner's call, not the agent's.
 - [x] (2026-07-30) T7 — resolved as a **`close-plan` skill** (`effort: high`,
       `disable-model-invocation: true`), not a checklist item and not a step folded into `new-plan`. It
       carries the retrospective-against-goals, the routing pass, the demotion check, and the rule that a
@@ -233,6 +243,15 @@ its `Surprises & Discoveries` entries get routed.
   every validator invocation added in T3, resolves to nothing for anyone on 0.3.0. That makes cutting a
   release a **precondition for T6**: announcing the validator as a capability while the invocation path
   does not exist in any install is exactly the promise-not-a-feature failure T6 was written to avoid.
+
+- Observation: the shipped `project/templates/*.md` stamp **this plugin author's** copyright into every
+  repository scaffolded from them.
+  Evidence: all four carry `Copyright (c) 2026 Danilo Borges` as a literal in the template's HTML comment,
+  and `new-adr`/`new-rfc`/`new-plan`/`new-task` are each instructed to keep the license block unchanged.
+  For the maintainer's own repositories that is correct; for anyone else installing the plugin it is not.
+  Consequence: noticed while writing the CI workflow template, and deliberately left alone — the fix is a
+  placeholder plus a substitution rule, which belongs with `license-setup` rather than inside a plan about
+  the validator. The new template carries no copyright line at all, so this plan adds nothing to the pile.
 
 - Observation: this repository's `AGENTS.md` listed the `SKILL.md` frontmatter fields and was wrong by
   omission — including on the field that answers the question that prompted the measurement.

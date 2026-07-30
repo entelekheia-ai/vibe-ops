@@ -17,6 +17,11 @@
 # It checks the repository you point it at, not the one it lives in — run it from an installed
 # plugin against any working tree.
 #
+# If you are reading this inside a repository that is not vibe-ops, it is a snapshot: CI cannot reach
+# an installed Claude Code plugin, so the script was copied here to run there. It does not update
+# itself. The original is scripts/ in https://github.com/entelekheia-ai/vibe-ops — refresh by copying
+# that directory again from a newer release.
+#
 # Usage:
 #   check-agents-md.sh [repo-root]     # default: the working tree containing the current directory
 #   check-agents-md.sh --list          # print the checks that would run, and their source files
