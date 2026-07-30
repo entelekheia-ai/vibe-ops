@@ -14,6 +14,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-07-30
+
+### Fixed
+
+- **The `memory-slugs` check no longer reports `[[…]]` written inside code.** A TOML array-of-tables in a
+  fenced block — `[[language]]` in a Helix config snippet — was reported as a personal-memory pointer, so
+  any repository documenting an editor config carried a red line it could not clear without mangling its
+  own docs. Inline code spans are stripped too, which also stops the rule that *documents* the
+  prohibition from being reported as violating itself. The self-test now asserts exactly one hit against
+  a fixture carrying both decoys beside a real slug. ([#6](https://github.com/entelekheia-ai/vibe-ops/issues/6))
+- **The `links` check no longer breaks on filenames containing spaces.** It iterated with command
+  substitution, which word-splits: `agent - adapter generation.md` became three nonexistent paths and
+  `awk` failed on each.
+
+### Changed
+
+- The governance rule and its shipped template now state **what scope artifact numbering is monotonic
+  in** — per repository, not across a workspace. Two repos both holding an `ADR-0001` is normal; skipping
+  a number to avoid the appearance of a collision leaves a permanent gap explained by nothing.
+
 ## [0.5.0] — 2026-07-30
 
 ### Changed
