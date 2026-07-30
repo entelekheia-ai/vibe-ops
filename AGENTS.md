@@ -35,9 +35,11 @@ which loads on its own. Not repeated here.
   language. That is a product guarantee, stated in the README.
 - **`${CLAUDE_PLUGIN_ROOT}` resolves to the *released* clone, not this working tree.** The plugin is
   installed as a git clone pinned to the version in `plugin.json`
-  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so a path added since the last release —
-  `references/`, `scripts/` — does not exist for an installed user until a release is cut. Adding one is
-  fine; expecting today's install to find it is not.
+  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so a path that has landed but not shipped
+  reaches nobody. Adding one is fine; expecting today's install to find it is not — which is why a feature
+  whose invocation path is a new file only counts as delivered once a release is cut. That the path exists
+  *here* is checked by `plugin-root-paths`; that it existed at the last release is the part you must think
+  about.
 - **A guard, not a line.** Anything mechanically checkable becomes a fragment under `scripts/checks/`
   instead of being written here — and a line here that a new guard makes redundant gets deleted
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)). This file is budgeted at 150 lines; over

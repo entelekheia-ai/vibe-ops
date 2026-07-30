@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | Shipped |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
 | Depends on | [Plan-001](001-knowledge-lifecycle-retrofit.md) |
@@ -148,8 +148,9 @@ its `Surprises & Discoveries` entries get routed.
 - `./scripts/check-agents-md.sh --self-test` still passes, and CI still runs it before the real check.
 - No temporary directory survives an interrupted run.
 - The `authoring-agents-md` checklist has no item that the script also checks.
-- `grep -c '' README.md` shows the validator described as a capability, outside the "This repository"
-  section.
+- The README describes the validator as a capability, outside the "This repository" section. *(This
+  criterion originally proposed `grep -c '' README.md`, a line count, which could not have shown it —
+  see the retrospective.)*
 - Shipping a plan without a task dossier has a documented routing point (T7).
 
 ---
@@ -192,12 +193,12 @@ its `Surprises & Discoveries` entries get routed.
       writes nothing. The script itself carries the provenance note, so a copy explains what it is
       wherever it is read, rather than the offer injecting a banner into it. Verified end to end against
       a scratch repository shaped like a freshly scaffolded one: self-test green, real run 6/0.
-- [~] (2026-07-30) T6 — README done: the validator is now a bullet under **What it does**, described by
-      what it does for the reader's repository (checks it, writes nothing into it, no per-repo copy) with
-      the CI copy mentioned as an offer; the "This repository" row is now about `scripts/` as this repo's
-      own application of it. **The release is not cut**, and that is the rest of this track — until a
-      version ships, `${CLAUDE_PLUGIN_ROOT}/scripts/` does not exist in any install and the README
-      describes something no installed user can run. Owner's call, not the agent's.
+- [x] (2026-07-30) T6 — the validator is now a bullet under the README's **What it does**, written from
+      the reader's side (it checks your repository, writes nothing into it, no per-repo copy to maintain)
+      with the CI copy named as an offer; the "This repository" row is now about `scripts/` as this repo
+      applying its own tool. And the release is cut in the same change — **0.4.0**, the first real one —
+      because until a version ships, `${CLAUDE_PLUGIN_ROOT}/scripts/` exists in no install and the README
+      would be describing something nobody could run.
 - [x] (2026-07-30) T7 — resolved as a **`close-plan` skill** (`effort: high`,
       `disable-model-invocation: true`), not a checklist item and not a step folded into `new-plan`. It
       carries the retrospective-against-goals, the routing pass, the demotion check, and the rule that a
@@ -347,7 +348,54 @@ its `Surprises & Discoveries` entries get routed.
 
 ## Outcomes & Retrospective
 
-*Not started.*
+All seven tracks landed. Against the five goals:
+
+1. **A skill verifies its own work mechanically, in the target repository, without writing a file there.**
+   Met. `authoring-agents-md`, `repo-setup` and `close-task` invoke the script from the plugin; the
+   read-only property is asserted by the self-test rather than promised, and it fails if a fragment ever
+   starts writing.
+2. **Anything the validator enforces is deleted from the prose that hand-checked it.** Met, and this is
+   the first demotion this repository has actually applied rather than identified. Two checklist items
+   deleted outright, two narrowed to the half no script can see.
+3. **Private names never touch the target's working tree, including as an input.** Met, and improved on
+   the goal: the names now need not exist in a persistent file at all — `PRIVATE_NAMES` supplies them for
+   one run into a temporary directory that is removed however the run ends.
+4. **A composed check is auditable from versioned fragments.** Met. Composition selects and orders; it
+   never authors. The run prints what it assembled and where each fragment came from, so a fragment from
+   outside the plugin is visible as such.
+5. **The validator is discoverable by someone who installs the plugin.** Met only because the release was
+   cut in the same change. Without 0.4.0 the README would have described a capability whose invocation
+   path exists in no install — the goal was written as a documentation task and turned out to be a
+   distribution one.
+
+**A success criterion that was wrong.** "`grep -c '' README.md` shows the validator described as a
+capability" — a line count cannot show that. What was verified instead is the thing the criterion was
+reaching for: the description moved out of "This repository" and is written from the reader's side. The
+criterion was a proxy chosen because it was easy to state, and it would have passed no matter what the
+README said.
+
+**What the plan did not anticipate.** The two largest findings were not on any track: that
+`${CLAUDE_PLUGIN_ROOT}` resolves to the released clone rather than the working tree, which decided when
+this work becomes real for anyone; and that the shipped `project/templates/*.md` stamp the plugin author's
+copyright into every repository scaffolded from them.
+
+**Carried forward, not dropped:**
+
+- **The templates' hardcoded copyright.** Correct for the maintainer's own repositories, wrong for any
+  third party, and the fix — a placeholder plus a substitution rule — belongs with `license-setup`, not
+  with a plan about the validator. Unblocked by opening it as its own task.
+- **A release-aware half of `plugin-root-paths`.** The check verifies a `${CLAUDE_PLUGIN_ROOT}` path
+  exists *here*; the failure that actually happened is a path that exists here and not in the last
+  release. That check needs a release tag to compare against, and until this plan there were none.
+  Unblocked now that 0.4.0 is tagged.
+
+**Routing pass.** Six entries under `Surprises & Discoveries`: two were promoted into `AGENTS.md` (the
+`disable-model-invocation` cost, and the corrected frontmatter field list) during the work that found
+them; one became a guard (`plugin-root-paths`, proven to fail on the fixture) plus the one line about
+release pinning that no guard can carry; two — the listing budget arithmetic and the cost of subagents —
+stay here, because they are the evidence for a decision already recorded and there is no budget pressure
+to act on; one, the template copyright, is carried forward above. **Demotion check:** the new guard makes
+no existing line redundant, and the line it comes with was narrowed to the half it does not cover.
 
 ---
 

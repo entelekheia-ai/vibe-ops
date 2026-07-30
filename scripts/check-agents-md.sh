@@ -251,6 +251,7 @@ self_test() {
     echo '- [gone](docs/does-not-exist.md)'
     echo '- [escape](../../etc/passwd)'
     echo '- [memory](x) see [[project_something]]'
+    echo '- run `${CLAUDE_PLUGIN_ROOT}/scripts/does-not-ship.sh` — a path in a command, not a link'
   } >> "$tmp/AGENTS.md"
   printf -- '---\npaths: ["x/**"]\n---\n\nno description above.\n' > "$tmp/.agents/rules/nodesc.md"
   printf 'not a symlink\n' > "$tmp/.claude/rules/nodesc.md"
@@ -277,7 +278,7 @@ self_test() {
     echo "SELF-TEST FAILED: the script passed a repository that is broken in five ways"
     return 1
   fi
-  for expected in budget links bridge frontmatter private-names memory-slugs; do
+  for expected in budget links bridge frontmatter private-names memory-slugs plugin-root-paths; do
     if ! printf '%s\n' "$got" | grep -q "FAIL  \[$expected\]"; then
       echo "SELF-TEST FAILED: check '$expected' did not fire on the fixture"
       return 1

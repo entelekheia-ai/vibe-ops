@@ -5,12 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **No version has been tagged or released yet.** The entries below `[Unreleased]` record the versions the
-> manifest has carried, dated by the commit that set them. They exist in history, not on a release page —
-> so the version in `.claude-plugin/plugin.json` moves only when a release is actually cut, not when work
-> lands.
+> **0.4.0 is the first cut release.** The entries below it record versions the manifest carried before
+> that: they exist in history, not on a release page, because each was bumped by the commit that added
+> the feature. From 0.4.0 on, the version in `.claude-plugin/plugin.json` moves only when a release is
+> actually cut. That distinction is not bookkeeping — the plugin is installed as a git clone **pinned to
+> a released version**, so anything that has landed but not shipped is unreachable from
+> `${CLAUDE_PLUGIN_ROOT}` in every install.
 
 ## [Unreleased]
+
+## [0.4.0] — 2026-07-30
 
 ### Changed
 
@@ -86,6 +90,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     detecting anything fails loudly instead of reporting a clean tree.
   - **`repo-setup` offers a CI copy**, once, saying in the question that the copy is a snapshot which will
     not receive later fixes. Declining writes nothing.
+  - **Every `${CLAUDE_PLUGIN_ROOT}` path a skill names is checked to exist.** Those paths live inside
+    fenced commands, where the link check cannot see them — so the files a skill tells an agent to copy or
+    execute were the ones nothing verified.
 - **Three more decision records** — a size budget on generated artifacts with guards replacing prose
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)); derived knowledge consumed through a
   detected capability rather than a named product
