@@ -13,6 +13,11 @@ it discovers them from the repo, so the same skill works across every repo you o
 
 **Usage:** `/new-adr <decision topic>` — e.g. `/new-adr REST-first API surface`. If no topic is given, ask.
 
+**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records one
+decision, taken at a point in time. It has **no update mode**: an accepted ADR is immutable, and changing a
+decision means writing a *new* ADR that supersedes it — never editing the old one. Running this skill twice
+correctly produces two records.
+
 ---
 
 ## Step 0 — Locate the repo's ADR setup
@@ -28,10 +33,10 @@ for t in project/templates/adr.md templates/adr.md .agents/templates/adr.md; do 
 
 - If no ADR directory exists, ask the user whether to create one (default `project/adr/`).
 - If no template exists, ask before proceeding — do not invent a structure. (A repo scaffolded by
-  `/vibe-ops:scaffold-new-repo` always has both.)
+  `/vibe-ops:repo-setup` always has both.)
 - **Numbering/lifecycle authority, in order:** `<ADR_DIR>/AGENTS.md` if it exists (older repos, may define a
   custom scheme like `DA<minor>-<seq>`) → else `.agents/rules/governance.md` if present (repos scaffolded by
-  `/vibe-ops:scaffold-new-repo`) → else the default `NNNN` scheme in Step 2. Follow whichever is found over
+  `/vibe-ops:repo-setup`) → else the default `NNNN` scheme in Step 2. Follow whichever is found over
   anything in this skill.
 
 ## Step 1 — Collect inputs
@@ -44,8 +49,8 @@ Do not proceed until both are known.
 
 ## Step 2 — Determine the next id
 
-Follow `<ADR_DIR>/AGENTS.md` if it defines a scheme (e.g. dot-agent's `DA<minor>-<seq>`). Otherwise use the
-**default `NNNN` scheme**:
+Follow `<ADR_DIR>/AGENTS.md` if it defines a scheme — some repos tie ADR ids to a release train rather than
+a flat counter (`<prefix><minor>-<seq>`). Otherwise use the **default `NNNN` scheme**:
 
 ```bash
 ls "$ADR_DIR" | grep -oE '^[0-9]{4}' | sort -n | tail -1

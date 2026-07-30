@@ -1,0 +1,29 @@
+# Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  agents-md:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The validator's own acceptance criterion: it must fail on a repository that is broken.
+      # Running this first means a check that has silently stopped detecting anything fails loudly
+      # instead of reporting a clean tree.
+      - name: Validator self-test
+        run: ./scripts/check-agents-md.sh --self-test
+
+      - name: Instruction files
+        run: ./scripts/check-agents-md.sh

@@ -21,6 +21,10 @@ in-flight work.
 
 **Usage:** `/new-task <topic>` — e.g. `/new-task migrate storage adapter`. If no topic, ask.
 
+**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It opens one unit
+of work, at a point in time, and has **no update mode** — a task advances through its issue and is closed
+with `/vibe-ops:close-task`, which is what deletes the dossier.
+
 ---
 
 ## Step 0 — Locate the tasks setup

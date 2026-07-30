@@ -13,6 +13,11 @@ steps from the repo — nothing about a particular project is baked in here.
 
 **Usage:** `/new-rfc <topic>` — e.g. `/new-rfc streaming output format`. If no topic is given, ask.
 
+**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records one
+proposal, at a point in time. It has **no update mode**: an RFC moves through the stage gates defined in the
+target repo's own governance rule (`Draft → Review → Accepted → Implemented`, or `Rejected`), and advancing
+it is editing the file directly — not re-running this skill.
+
 ---
 
 ## Step 0 — Locate the repo's RFC setup
@@ -23,10 +28,10 @@ for t in project/templates/rfc.md templates/rfc.md .agents/templates/rfc.md; do 
 ```
 
 - No RFC directory → ask whether to create one (default `project/rfc/`).
-- No template → ask before proceeding; do not invent structure. (A `/vibe-ops:scaffold-new-repo` repo has both.)
+- No template → ask before proceeding; do not invent structure. (A `/vibe-ops:repo-setup` repo has both.)
 - **Numbering/lifecycle authority, in order:** `<RFC_DIR>/AGENTS.md` if present (older repos; may define a
   custom scheme or repo-specific extras like a package-impact table or `INDEX.md` to update) → else
-  `.agents/rules/governance.md` if present (repos scaffolded by `/vibe-ops:scaffold-new-repo`) → else this
+  `.agents/rules/governance.md` if present (repos scaffolded by `/vibe-ops:repo-setup`) → else this
   skill's repo-agnostic default. Follow whichever is found.
 
 ## Step 1 — Collect inputs
