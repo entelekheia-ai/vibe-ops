@@ -1,7 +1,6 @@
 ---
 name: authoring-agents-md
 description: Create or refresh an AGENTS.md — the agent-facing entry map for a repo or workspace — and the CLAUDE.md that imports it. Applies a content filter (only what an agent cannot discover on its own), a size budget, the .agents/ ↔ .claude/ config bridge, and a self-maintenance loop. Use when adding an AGENTS.md to a repo or folder, standardizing its agent config (rules/skills), reconciling one that has drifted from what is on disk, or cutting one that has grown past its budget.
-disable-model-invocation: true
 argument-hint: "[path, default repo root] [audit]"
 effort: high
 ---
@@ -96,7 +95,13 @@ cost tokens — it raises the chance the lines that mattered are discounted with
 Pick what fits; do not pad. Each entry is one line pointing at the real source of truth.
 
 - **What this is** — one short paragraph. For a workspace, that its folders are independent.
-- **Layout** — a table, one row per folder or package, each pointing at that project's own doc.
+- **Layout** — a table of the folders whose *role* is not obvious from their name. A row earns its place
+  by saying what a directory listing does not: which folder is authoritative for what, where to start
+  reading, or a constraint invisible from outside. Omit folders that explain themselves — an agent reads
+  the tree anyway, and a row that restates it is the least useful content measured
+  ([research](../../project/research/context-file-practices.md)). **Not** one row per folder.
+  The exception is a multi-project workspace, where the table maps *boundaries between independent
+  projects* — which no listing conveys, so there every project gets a row.
 - **How this repo works** — the invariants and non-obvious mechanics. This is the section the filter in
   Step 3 exists to fill, and the reason the file is worth reading at all.
 - **Source of truth** — a table mapping *what* → *where*.

@@ -1,93 +1,116 @@
-# vibe-ops
+<h1 align="center">vibe-ops</h1>
 
-A [Claude Code](https://code.claude.com) plugin that makes new repositories **start organized**. Install it
-once and, in every repo you open, get a scaffolder for consistent repos and monorepos plus a set of skills
-for authoring the governance, license, and documentation a project needs — architecture decisions, RFCs,
-plans, tasks, licensing, and READMEs — in English, from one shared source.
+<p align="center">
+  <b>Repositories that start organized — and stay honest as they grow.</b><br>
+  A Claude Code plugin. One command lays down the governance, docs, licensing and agent config a project
+  needs; the rest of the skills keep them true as the work moves.
+</p>
+
+<p align="center">
+  <a href="https://github.com/entelekheia-ai/vibe-ops/actions/workflows/check.yml"><img src="https://github.com/entelekheia-ai/vibe-ops/actions/workflows/check.yml/badge.svg" alt="check"></a>
+  <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License">
+  <img src="https://img.shields.io/badge/Claude%20Code-plugin-000?logo=anthropic&logoColor=white" alt="Claude Code plugin">
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#what-repo-setup-produces">What it produces</a> ·
+  <a href="#skills">Skills</a> ·
+  <a href="#it-checks-its-own-work">Self-checking</a> ·
+  <a href="GOVERNANCE.md">Governance</a>
+</p>
+
+---
+
+<p align="center">
+  <img src="docs/images/slash-commands.png" alt="The vibe-ops slash commands listed in Claude Code" width="820">
+</p>
+
+## Why
+
+Scaffolding a repository is the easy half, and most tools stop there. The cost arrives three months later:
+the conventions live in one person's head, `AGENTS.md` describes a folder that was renamed, and whatever
+the last piece of work *taught* was deleted along with its notes.
+
+This plugin is aimed at that second half. Closing a task writes back to the document that started it, so a
+plan cannot quietly claim work that never shipped. Each learning is routed to a surface where the next
+agent will actually read it — or, when it is mechanically checkable, turned into a guard instead of a
+sentence, because a sentence is only followed by whoever read it.
 
 ## Install
 
 ```bash
-# Try it from a local checkout:
-claude --plugin-dir ./vibe-ops
-claude plugin details vibe-ops
-
-# From the marketplace:
 claude plugin marketplace add entelekheia-ai/vibe-ops
 claude plugin install vibe-ops@entelekheia
 ```
 
-## Quickstart
+Or try it from a local checkout with `claude --plugin-dir ./vibe-ops`.
 
-Open any repo (new or existing) and run:
+## What `repo-setup` produces
 
 ```
 /vibe-ops:repo-setup
 ```
 
-That's the entry point — it lays down the package/build baseline, the `project/` governance skeleton, a
-license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the individual skills below (e.g.
-`/vibe-ops:new-adr`) as the repo grows.
+An empty directory becomes:
 
-## What it does
+```
+my-lib/
+├── AGENTS.md                       the map an AI collaborator reads first
+├── CLAUDE.md                       one line: @AGENTS.md
+├── GOVERNANCE.md                   which artifact answers which question
+├── README.md · LICENSE
+├── .agents/
+│   └── rules/
+│       ├── governance.md           path-scoped — loads only inside project/
+│       └── repo-guardrails.md
+├── .claude/rules/                  relative symlinks back into .agents/ — one copy, two frameworks
+├── project/
+│   ├── adr/ rfc/ tasks/ plans/ research/ log/
+│   └── templates/{adr,rfc,plan,task}.md
+├── docs/                           Diátaxis: tutorials · how-to · reference · explanation
+├── src/ · test/
+└── package.json · tsconfig.json · tsconfig.build.json
+```
 
-- **Sets up — or reconciles —** a born-organized repo or npm-workspaces monorepo: a TypeScript (ESM)
-  package/build baseline, a `project/` governance skeleton driven by a single path-scoped rule (not a file
-  per folder), a license, a `docs/` skeleton following the [Diátaxis](https://diataxis.fr/) framework, and
-  an `AGENTS.md` map for AI collaborators. An empty directory and a repo that has drifted are the same job.
-- **Authors governance artifacts** through focused skills. Each skill reads the *target repo's own* templates
-  and conventions, so one skill adapts to every repo instead of being copied and drifting.
-- **Closes the loop.** A task doesn't just get deleted when it's done — closing it writes back to the doc
-  that started the work, so plans stay honest about what actually shipped, and routes what the work *taught*
-  to wherever the next agent will actually read it instead of deleting it with the dossier.
-- **Checks its own work.** Every skill that changes a file an agent reads at session start runs a validator
-  against your repository afterwards — the `AGENTS.md` line budget, every relative link still resolving,
-  the `.agents`/`.claude` symlinks intact (including the case where git checked one out as text), every
-  rule carrying a `description:`. It runs from the plugin, reads your repository and **writes nothing into
-  it**, so there is no per-repo copy to keep up to date. If you want the same check on every push, one step
-  in `repo-setup` offers to copy it in as a CI job, and tells you the copy is a snapshot.
+Point it at a repository that already exists and it does the same job: it reports what is missing, what
+diverged and what it will leave alone, then asks before writing. Pass `audit` to get that report and no
+changes at all. An empty directory is just the maximum-gap case.
 
 ## Skills
 
-| Skill | What it does |
+`repo-setup` is the entry point. The rest are invoked directly, or picked up by Claude when the task fits.
+
+| | |
 |---|---|
-| `/vibe-ops:repo-setup` | Set up **or reconcile** a single-package repo or npm-workspaces monorepo — build baseline, a `project/` skeleton (ADR / RFC / tasks / plans / research / log) governed by a path-scoped rule, the `.agents`/`.claude` rules bridge, a license, a Diátaxis `docs/` skeleton, and the `AGENTS.md` / `CLAUDE.md` entry map. Pass `audit` to report the gaps without writing. |
-| `/vibe-ops:authoring-agents-md` | Create or refresh an `AGENTS.md` — the agent-facing entry map for a repo or workspace: self-contained scope, the `.agents/` ↔ `.claude/` config bridge, and a keep-it-current loop. |
-| `/vibe-ops:authoring-readme` | Write or clean up a README as pure presentation and usage — strips decision history, process leakage, and status narrative into the right place instead. |
-| `/vibe-ops:new-adr` | Scaffold an Architecture Decision Record from the repo's own template and numbering scheme. |
-| `/vibe-ops:new-rfc` | Scaffold an RFC (design proposal) from the repo's own template. |
-| `/vibe-ops:new-plan` | Scaffold an implementation plan (tracks/tasks breakdown) from the repo's own template, including migrating an existing briefing/RFC into plan form. |
-| `/vibe-ops:new-task` | Open a task dossier linked one-to-one with a GitHub issue, following a hybrid Markdown-plus-issue workflow. |
-| `/vibe-ops:close-task` | Close a finished task: write back to the doc that started it, propagate to living docs, spawn an ADR if a decision emerged, route each learning to a durable surface, then distill and delete the dossier. |
-| `/vibe-ops:close-plan` | Close a finished plan: retrospective against the original goals, route every learning, run the demotion check, close the tracking issue — and keep the plan file, which is the permanent record. |
-| `/vibe-ops:license-setup` | Set up `LICENSE` (+ `NOTICE`/`AUTHORS` for a fork with dual attribution), the license-rules section of `AGENTS.md`, and optional pre-commit + CI header enforcement. |
+| `/vibe-ops:repo-setup` | Set up **or reconcile** a repo or npm-workspaces monorepo. `audit` reports without writing. |
+| `/vibe-ops:new-adr` · `new-rfc` · `new-plan` · `new-task` | Open one governance record, using the *target repo's* own template and numbering. |
+| `/vibe-ops:close-task` · `close-plan` | Close the loop — write back, propagate, route what the work taught. A task dossier is distilled and deleted; a plan is kept, because it is the permanent record. |
+| `/vibe-ops:authoring-agents-md` · `authoring-readme` | Write or repair the two files a newcomer — human or agent — reads first. |
+| `/vibe-ops:license-setup` | `LICENSE`, fork attribution, and optional header enforcement. |
 
-Skills are namespaced `/vibe-ops:<name>`, invocable by you or automatically by Claude when the task fits.
+Each skill reads the **target repository's own** templates and conventions, so one installed plugin adapts
+to every repo instead of being copied into each and drifting. Everything it writes into your repository is
+in English, whatever language you are working in.
 
-## How it fits together
+## It checks its own work
 
-The plugin ships the **skills**; each scaffolded repo keeps its **own** templates, license choice, and a
-single path-scoped rule carrying its governance lifecycle — which the skills read. One installed plugin —
-no per-repo copies to maintain, and every repo's conventions stay the repo's own.
+Every skill that touches a file an agent reads at session start runs a validator against your repository
+afterwards: the `AGENTS.md` line budget, every relative link still resolving, the `.agents`/`.claude`
+symlinks intact — including the case where git checked one out as plain text, which reads as a working
+rule file containing one line of nonsense — and every rule carrying a `description:`.
 
-## This repository
-
-The plugin is kept in the shape it scaffolds — the skills are applied to it, not just shipped from it.
-
-| File | What's in it |
-|---|---|
-| [`GOVERNANCE.md`](GOVERNANCE.md) | Which artifact answers which question, and what a GitHub issue owns when one is paired with a file. |
-| [`AGENTS.md`](AGENTS.md) | The entry map for an agent working *on* the plugin. |
-| [`references/`](references/README.md) | The policy the skills point at instead of restating — convergence, knowledge lifecycle, instruction surfaces, authoring style. |
-| [`CHANGELOG.md`](CHANGELOG.md) | [Keep a Changelog](https://keepachangelog.com/en/1.0.0/); `[Unreleased]` holds what has landed but not shipped. |
-| [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) | The external work these practices build on. |
-| [`scripts/`](scripts/) | The validator described above, applied to this repo too. One fragment per check under [`scripts/checks/`](scripts/checks/); `--list` shows what a run composed, `--self-test` proves it still fails on a repository that is broken. CI runs the self-test first, so a check that has quietly stopped detecting anything fails loudly instead of reporting a clean tree. |
+It runs from the plugin, reads your repository and **writes nothing into it**, so there is no per-repo copy
+to keep up to date. If you want the same check on every push, `repo-setup` offers to copy it in as a CI
+job, and tells you that copy is a snapshot.
 
 ## Requirements
 
-- Claude Code with plugin support.
-- Scaffolded repos target Node ≥ 22 and TypeScript (ESM) by default — adjust to taste.
+Claude Code with plugin support. Scaffolded repos default to Node ≥ 22 and TypeScript (ESM) — adjust to
+taste.
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE](LICENSE). How this repository is organized and governed:
+[GOVERNANCE.md](GOVERNANCE.md) · [AGENTS.md](AGENTS.md) · [CHANGELOG.md](CHANGELOG.md) ·
+[ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).

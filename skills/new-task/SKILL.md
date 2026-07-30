@@ -1,7 +1,6 @@
 ---
 name: new-task
 description: Create a task dossier under project/tasks/, linked 1:1 to a GitHub issue, following the hybrid md+issue model. Use when the user asks to start a task, open a work item, track a piece of work, or "/new-task <topic>". For closing a finished task, use /vibe-ops:close-task instead.
-disable-model-invocation: true
 argument-hint: "<task topic>"
 effort: low
 ---

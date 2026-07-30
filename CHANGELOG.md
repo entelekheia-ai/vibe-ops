@@ -14,6 +14,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Every skill is now model-invocable.** `disable-model-invocation: true` was removed from the seven
+  skills that carried it (`authoring-agents-md`, `authoring-readme`, `license-setup`, `new-adr`,
+  `new-plan`, `new-rfc`, `new-task`). The flag hid them from the model entirely, so asking for the job in
+  plain language — "write an ADR for this" — did nothing unless the `/command` was typed. All ten skills
+  confirm before any irreversible step.
+- **README rewritten** as presentation: a claim, verifiable badges, a navigation row, a screenshot of the
+  command surface, and the directory tree `repo-setup` actually produces. The repository-layout table is
+  gone; `AGENTS.md` is the only place it lives.
+- `authoring-readme` gained a step that gathers what a repository cannot supply — the canonical claim
+  (from the project's site, if it has one), the proof artefact, and which badges are true — plus a rule
+  choosing the proof by the project's output medium, and a brief to issue before requesting a screenshot.
+- `authoring-agents-md` no longer asks for one `Layout` row per folder. A row must now say what a
+  directory listing does not; a multi-project workspace is the stated exception.
+
 ## [0.4.0] — 2026-07-30
 
 ### Changed
