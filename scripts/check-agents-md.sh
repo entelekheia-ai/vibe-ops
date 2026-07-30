@@ -263,6 +263,17 @@ self_test() {
     echo '- [memory](x) see [[project_something]]'
     echo '- run `${CLAUDE_PLUGIN_ROOT}/scripts/does-not-ship.sh` — a path in a command, not a link'
   } >> "$tmp/AGENTS.md"
+  # `[[...]]` shapes that are NOT memory links, beside one that is. A fixture with only the real slug
+  # would pass whether or not the check distinguishes them, so the two decoys are what give the assertion
+  # below its meaning: exactly one hit, and it is the one on the un-fenced, un-quoted line.
+  {
+    echo '# decoys'
+    echo '```toml'
+    echo '[[language]]'
+    echo 'name = "description"'
+    echo '```'
+    echo 'inline `[[also_not_a_link]]` quoted as code'
+  } > "$tmp/decoys.md"
   printf -- '---\npaths: ["x/**"]\n---\n\nno description above.\n' > "$tmp/.agents/rules/nodesc.md"
   printf 'not a symlink\n' > "$tmp/.claude/rules/nodesc.md"
   # a shipped template attributing a real person, in a repository that is not theirs
@@ -297,6 +308,16 @@ self_test() {
       return 1
     fi
   done
+  # the memory-slug check must fire once — on the real slug — and not on the TOML array-of-tables inside a
+  # fence or the slug quoted as inline code. A check that reports those is one people learn to ignore.
+  if [ "$(printf '%s\n' "$got" | grep -c 'FAIL  \[memory-slugs\]')" -ne 1 ]; then
+    echo "SELF-TEST FAILED: memory-slugs should report exactly one hit; the fenced and inline decoys must not count"
+    return 1
+  fi
+  if printf '%s\n' "$got" | grep -q 'memory-slugs.*\(language\|also_not_a_link\)'; then
+    echo "SELF-TEST FAILED: memory-slugs matched a [[...]] that was quoted as code"
+    return 1
+  fi
   # a hit must be traceable without the string being repeated: the deny-list line is named, the name is not
   if ! printf '%s\n' "$got" | grep -q 'private-names.*source: list:2'; then
     echo "SELF-TEST FAILED: the private-name hit did not name the deny-list line it came from"

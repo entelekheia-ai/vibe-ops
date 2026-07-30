@@ -9,7 +9,10 @@
 check_links() {
   head_
   local id="links" bad=0 escaped=0 file dir link target norm
-  for file in $(tracked_md); do
+  # Fed by process substitution rather than `for file in $(tracked_md)`: command substitution word-splits,
+  # so a filename containing a space becomes several nonexistent files and the reader below fails on each.
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
     dir=$(dirname "$file")
     # ](path) — every occurrence on every line, not just the last. Fenced blocks and inline code spans
     # are stripped first: link syntax quoted as code is not a link. Skip external links, anchors, mail,
@@ -29,6 +32,6 @@ check_links() {
         bad=$((bad + 1))
       fi
     done
-  done
+  done < <(tracked_md)
   [ $((bad + escaped)) -eq 0 ] && pass "$id" "every relative link in tracked markdown resolves inside the repository"
 }
