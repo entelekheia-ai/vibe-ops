@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | Shipped |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
 
@@ -410,6 +410,40 @@ folder", a negation that is clearer for a reader than an equivalent phrased to d
 criterion as a string search made the string, rather than the behaviour, the target. The behaviour is
 checked by criterion 7 instead: applying the skill to this repository yields the four-row table Track 4
 produced. Left as written, with this note, rather than edited after the fact.
+
+**Routing of `Surprises & Discoveries`, entry by entry.** Seven were promoted into the two skills, where
+they now apply to every repository rather than to this one. Four were left in the plan file, which is
+their home. One is blocked, on another repository.
+
+| Entry | Outcome |
+|---|---|
+| `AGENTS.md` Layout was compliance, not drift | **Promoted** — `authoring-agents-md` Step 5 is now an admission criterion |
+| House banner convention; neither mark survives a theme switch | **Promoted** — `authoring-readme` Step 1: the mark is optional, and `<picture>` when present |
+| A screenshot is a privacy surface; brief before the shot | **Promoted** — `authoring-readme` Step 2, with the four-item brief |
+| The agent writing a README cannot write its code example | **Promoted** — Step 2, copy-don't-compose |
+| A tagline was invented because no canonical claim was sought | **Promoted** — Step 0, and the site-owns-framing rule |
+| Known limitations are not status narrative | **Promoted** — Step 3 strip list |
+| Contributor material is a third category of leakage | **Promoted** — Step 3 strip list |
+| The screenshot was stale, taken against an older install | **Promoted** — Step 2, capture against the version being documented |
+| This repository's README violated the skill it ships | **Left** — the fix shipped; the general form is already the strip list's last bullet. Considered as a guard and rejected: detecting "a layout table" mechanically would fire on a monorepo root's legitimate packages table |
+| Three different structural choices across the maintainer's own repos | **Left** — evidence for the rules above, not a separate fact |
+| Framing an interface for an audience is a review pass on the product | **Left** — true and worth remembering, but not actionable as an instruction; the concrete defect it found is filed as `entelekheia-ai/murici` issue 7 |
+| `murici/README.md` documents the `.flow` extension, renamed to `.behavior` | **Blocked** — a fact about a repository this plan does not touch. Unblocked by the pending review pass over the workspace's other repositories; carry it there rather than dropping it |
+
+**Demotion check: nothing to demote.** This plan added no test, lint rule, hook or CI job — its output is
+prose in two skills — so no existing `AGENTS.md` line or always-on rule was made redundant by it. The
+`AGENTS.md` bullet on `disable-model-invocation` was rewritten rather than deleted, because the field
+still exists and the constraint it carries (confirm before an irreversible step) now applies more broadly,
+not less. Recording the negative result so a future reader can tell the check ran from it having found
+nothing.
+
+**Success criterion 5 was half-unmet, and the criterion was right.** It asked that `authoring-readme`'s
+checklist contain an item that would have caught this README's missing problem/boundary section. The
+rewritten shape dissolved that section into *claim* plus *why*, and the checklist covered only the claim —
+so the gap the criterion was written to catch had been reintroduced in a new shape. A checklist item for
+the `why` was added during closure. This is the second criterion in this plan to behave as a real test
+rather than a restatement of the work, which is the argument for writing them before the work rather than
+after.
 
 **What the plan got right, and what it owes to method rather than judgement.** Every rule that shipped in
 the two skills came from drafting three READMEs and keeping only what survived all three — not from the

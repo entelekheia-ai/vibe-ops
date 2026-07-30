@@ -142,6 +142,8 @@ you have been told. What matters is the first screenful. Do not cut substance to
 - [ ] Step 0 run — the site was checked (or its absence confirmed), the proof artefact obtained, badges
       verified true. No tagline was composed without checking for an existing canonical one
 - [ ] The opening has the claim; the mark is present or deliberately absent
+- [ ] Someone who has never heard of the project can tell **what problem it solves** — the `why` is
+      present, in the author's voice, and the file does not go from its opening straight to Install
 - [ ] The proof matches the project's medium, and was copied or captured — not composed from memory
 - [ ] Any screenshot was briefed, and carries no personal or customer data
 - [ ] Navigation is one row, not a nested table of contents
