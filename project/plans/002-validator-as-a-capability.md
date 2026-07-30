@@ -153,6 +153,13 @@ its `Surprises & Discoveries` entries get routed.
   see the retrospective.)*
 - Shipping a plan without a task dossier has a documented routing point (T7).
 
+**All six run on 2026-07-30, not assumed:** the run against a scratch repository reported 8 checks / 0
+failed and left `git status --porcelain` byte-identical; `--self-test` passes and the workflow runs it as
+the step before the real check; no temporary directory survives, which the self-test asserts for both a
+normal and an interrupted run; the `authoring-agents-md` checklist went from 11 items to 10 with none
+restating a scripted check; the README describes the validator under **What it does**; and `close-plan`
+is the routing point.
+
 ---
 
 ## Progress
