@@ -3,7 +3,7 @@ name: license-setup
 description: Set up or refresh a repo's license — LICENSE file, NOTICE/AUTHORS for a fork with dual attribution, the license-rules section of AGENTS.md, and optional pre-commit + CI header enforcement. Use when scaffolding a new repo, when a repo is missing a LICENSE, or when license-header conventions need centralizing/fixing.
 disable-model-invocation: true
 argument-hint: "[--fork] [--enforce=none|script|ci]"
-effort: inherit
+effort: low
 ---
 
 # /license-setup — one shared license convention, not one per repo
@@ -37,8 +37,15 @@ particular, a repo whose headers follow a coherent existing convention is an `ad
 
 ## Step 2 — Write LICENSE
 
-Copy `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/templates/LICENSE-apache-2.0` → `LICENSE` verbatim (full
-Apache-2.0 text, not the plugin's own `LICENSE` — this repo's copy is independent).
+Copy `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/templates/LICENSE-apache-2.0` → `LICENSE` (the full
+Apache-2.0 text, not the plugin's own `LICENSE` — this repo's copy is independent), then substitute
+`{{YEAR}}` and `{{PROJECT_NAME}}` in the appendix at the end.
+
+The appendix attributes to *"The `<project>` Authors"*, collectively, and never to a person — matching the
+model in Step 4: copyright lives in `NOTICE`/`AUTHORS` where each contributor keeps their own, and a name
+baked into a file goes stale the moment somebody else touches it. **A shipped template must never carry a
+real person's name**; it would be writing the plugin author's attribution into a repository that is not
+theirs. `grep -n '{{' LICENSE` must come back empty before you move on.
 
 ## Step 3 — NOTICE + AUTHORS (fork case only)
 

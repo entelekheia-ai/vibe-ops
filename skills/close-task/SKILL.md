@@ -1,9 +1,8 @@
 ---
 name: close-task
 description: Close a finished task dossier — write back to the source doc with what actually happened, propagate the change to living docs, spawn an ADR if a decision emerged, route what the work taught to where the next agent will read it, then distill and delete the dossier. Use when a task/issue is done, when the user says "wrap this up" or "close the task", or before deleting a project/tasks/ dossier.
-disable-model-invocation: true
 argument-hint: "<task slug or issue number>"
-effort: inherit
+effort: high
 ---
 
 # /close-task — Close the loop, don't just delete the dossier
@@ -52,6 +51,16 @@ exists.
 - Root `AGENTS.md` — did the layout, a package's status, or a "not obvious from the code" fact change?
 
 Skip anything that didn't change. This is not a full documentation audit — only what this task touched.
+
+Then check that the edits did not break anything mechanically:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" .
+```
+
+Links are the reason: propagating a change is where a doc gets moved or a section renamed, and a link that
+stopped resolving is invisible in a diff. It reads the repository and writes nothing into it. Skip it only
+if this task touched no markdown at all.
 
 ## Step 4 — ADR, if a decision emerged
 
@@ -105,10 +114,16 @@ Report what was promoted, where, and what was demoted, before continuing.
 3. **Delete the dossier** — `git rm project/tasks/<NNN>-<slug>.md` and commit
    (`chore(tasks): close <slug>, archived in history`).
 
+**Confirm before this last step.** It is the only irreversible action in the skill, and this skill can be
+invoked by the model rather than typed by the user — so the person whose dossier it is may not have asked
+for it. Everything above is additive and safe to have run; the deletion is not. State what will be deleted
+and what the breadcrumb is, and wait.
+
 ## Checklist
 
 - [ ] Source doc updated with what actually happened (Step 2) — not skipped because "the issue has it"
-- [ ] Docs that the work made stale are updated (README / `docs/` / `AGENTS.md`), or confirmed none did
+- [ ] Docs that the work made stale are updated (README / `docs/` / `AGENTS.md`), or confirmed none did,
+      and `check-agents-md.sh` is green afterwards
 - [ ] ADR written if a hard-to-reverse decision emerged; paired `project/log/` entry if there's context an
       ADR can't carry
 - [ ] Every `Surprises & Discoveries` entry routed through the promotion test — promoted, guarded, left in

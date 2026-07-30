@@ -40,6 +40,12 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 - **Closes the loop.** A task doesn't just get deleted when it's done — closing it writes back to the doc
   that started the work, so plans stay honest about what actually shipped, and routes what the work *taught*
   to wherever the next agent will actually read it instead of deleting it with the dossier.
+- **Checks its own work.** Every skill that changes a file an agent reads at session start runs a validator
+  against your repository afterwards — the `AGENTS.md` line budget, every relative link still resolving,
+  the `.agents`/`.claude` symlinks intact (including the case where git checked one out as text), every
+  rule carrying a `description:`. It runs from the plugin, reads your repository and **writes nothing into
+  it**, so there is no per-repo copy to keep up to date. If you want the same check on every push, one step
+  in `repo-setup` offers to copy it in as a CI job, and tells you the copy is a snapshot.
 
 ## Skills
 
@@ -53,6 +59,7 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 | `/vibe-ops:new-plan` | Scaffold an implementation plan (tracks/tasks breakdown) from the repo's own template, including migrating an existing briefing/RFC into plan form. |
 | `/vibe-ops:new-task` | Open a task dossier linked one-to-one with a GitHub issue, following a hybrid Markdown-plus-issue workflow. |
 | `/vibe-ops:close-task` | Close a finished task: write back to the doc that started it, propagate to living docs, spawn an ADR if a decision emerged, route each learning to a durable surface, then distill and delete the dossier. |
+| `/vibe-ops:close-plan` | Close a finished plan: retrospective against the original goals, route every learning, run the demotion check, close the tracking issue — and keep the plan file, which is the permanent record. |
 | `/vibe-ops:license-setup` | Set up `LICENSE` (+ `NOTICE`/`AUTHORS` for a fork with dual attribution), the license-rules section of `AGENTS.md`, and optional pre-commit + CI header enforcement. |
 
 Skills are namespaced `/vibe-ops:<name>`, invocable by you or automatically by Claude when the task fits.
@@ -74,7 +81,7 @@ The plugin is kept in the shape it scaffolds — the skills are applied to it, n
 | [`references/`](references/README.md) | The policy the skills point at instead of restating — convergence, knowledge lifecycle, instruction surfaces, authoring style. |
 | [`CHANGELOG.md`](CHANGELOG.md) | [Keep a Changelog](https://keepachangelog.com/en/1.0.0/); `[Unreleased]` holds what has landed but not shipped. |
 | [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) | The external work these practices build on. |
-| `scripts/check-agents-md.sh` | Mechanical checks on the instruction files — line budget, link resolution, the `.agents`/`.claude` symlink bridge, rule frontmatter. Runs in CI; `--self-test` proves it still fails on a repository that is broken. |
+| [`scripts/`](scripts/) | The validator described above, applied to this repo too. One fragment per check under [`scripts/checks/`](scripts/checks/); `--list` shows what a run composed, `--self-test` proves it still fails on a repository that is broken. CI runs the self-test first, so a check that has quietly stopped detecting anything fails loudly instead of reporting a clean tree. |
 
 ## Requirements
 

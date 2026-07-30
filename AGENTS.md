@@ -13,7 +13,7 @@ repo *is* the distributable, loaded by Claude Code straight from this tree.
 | [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) | Manifest — name, version, `"skills": "./skills/"`. |
 | [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) | Marketplace entry for installing this plugin. |
 | [`project/`](project/) | This repo's own governance records (ADR / RFC / tasks / plans / research / log). |
-| [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below — budget, link resolution, the symlink bridge, rule frontmatter. Run it before committing a change to any instruction file; `--self-test` asserts it still fails on a broken repo. |
+| [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below. Checks **the repo you point it at**, composing one fragment per check from [`scripts/checks/`](scripts/checks/); `--list` shows what it assembled, `--self-test` asserts it still fails on a broken repo. |
 | [`.github/workflows/`](.github/workflows/) | CI: the validator and its self-test, on every push and PR. |
 | [`.agents/`](.agents/) | This repo's own agent config (rules), mirrored into `.claude/` by relative symlink. |
 | [`GOVERNANCE.md`](GOVERNANCE.md) | Which artifact answers which question. |
@@ -33,13 +33,34 @@ which loads on its own. Not repeated here.
   (append-only, no update mode). See [`references/convergence-policy.md`](references/convergence-policy.md).
 - **Everything this plugin writes into a target repo is in English**, regardless of the conversation's
   language. That is a product guarantee, stated in the README.
-- **A guard, not a line.** Anything mechanically checkable goes into `scripts/check-agents-md.sh` instead
-  of being written here — and a line here that a new guard makes redundant gets deleted
+- **`${CLAUDE_PLUGIN_ROOT}` resolves to the *released* clone, not this working tree.** The plugin is
+  installed as a git clone pinned to the version in `plugin.json`
+  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so a path that has landed but not shipped
+  reaches nobody. Adding one is fine; expecting today's install to find it is not — which is why a feature
+  whose invocation path is a new file only counts as delivered once a release is cut. That the path exists
+  *here* is checked by `plugin-root-paths`; that it existed at the last release is the part you must think
+  about.
+- **A guard, not a line.** Anything mechanically checkable becomes a fragment under `scripts/checks/`
+  instead of being written here — and a line here that a new guard makes redundant gets deleted
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)). This file is budgeted at 150 lines; over
   budget, relocate content and leave a pointer rather than compressing prose.
-- **Frontmatter fields Claude Code honors** in a `SKILL.md`: `name`, `description`,
-  `disable-model-invocation`, `argument-hint`, `effort`. `description` is what triggers the skill — it
-  must name the situations the skill applies to, not just what it does.
+- **Frontmatter fields Claude Code honors** in a `SKILL.md`: `name`, `description`, `model`, `effort`,
+  `allowed-tools`, `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`,
+  `shell`, `when_to_use`. `model` and `effort` are **per skill** — scaffolding a template and routing a
+  learning do not deserve the same budget.
+- **`disable-model-invocation: true` removes a skill from the model's listing entirely** — zero context
+  cost, and in exchange the model can never trigger it. A user-invoked skill is therefore free: adding one
+  is not a context decision. Which side a skill belongs on is decided by its **failure mode**: omit the
+  flag where the failure is *forgetting* (`repo-setup`, `close-task`, `close-plan` — nobody forgets to
+  want an ADR, everybody forgets to close the loop), keep it where the failure would be *acting
+  uninvited* (the `new-*` records, and anything that rewrites a file a human owns). A model-invocable
+  skill must confirm before any irreversible step, since the user may not have asked for the run.
+- **Never set `model:` in a shipped skill.** It silently overrides the user's own session choice. `effort`
+  is a per-task budget hint and is fine; the model is the user's call. A small model in particular
+  fabricates sections to fill a template even with no source material — exactly what `new-plan`'s
+  migration mode warns against — so pinning one there would install the failure it documents.
+- **Don't use `when_to_use`.** The listing renders it as `description - when_to_use`, so it becomes a
+  second home for trigger text. Keep the triggers in `description`; one copy.
 
 ## Skills
 
@@ -50,7 +71,8 @@ which loads on its own. Not repeated here.
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (pre-commit + CI). |
 | [`new-adr`](skills/new-adr/SKILL.md) · [`new-rfc`](skills/new-rfc/SKILL.md) · [`new-plan`](skills/new-plan/SKILL.md) · [`new-task`](skills/new-task/SKILL.md) | Create one governance record, using the *target repo's* own template and numbering. |
-| [`close-task`](skills/close-task/SKILL.md) | Closes the loop: write back to the source doc, propagate to living docs, spawn an ADR, then distill and delete the dossier. |
+| [`close-task`](skills/close-task/SKILL.md) | Closes the loop: write back to the source doc, propagate to living docs, spawn an ADR, route the learnings, then distill and delete the dossier. |
+| [`close-plan`](skills/close-plan/SKILL.md) | The same routing for a plan, which **is not deleted** — retrospective against the goals, the demotion check, issue closed, file kept. |
 
 ## Source of truth
 

@@ -5,12 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **No version has been tagged or released yet.** The entries below `[Unreleased]` record the versions the
-> manifest has carried, dated by the commit that set them. They exist in history, not on a release page —
-> so the version in `.claude-plugin/plugin.json` moves only when a release is actually cut, not when work
-> lands.
+> **0.4.0 is the first cut release.** The entries below it record versions the manifest carried before
+> that: they exist in history, not on a release page, because each was bumped by the commit that added
+> the feature. From 0.4.0 on, the version in `.claude-plugin/plugin.json` moves only when a release is
+> actually cut. That distinction is not bookkeeping — the plugin is installed as a git clone **pinned to
+> a released version**, so anything that has landed but not shipped is unreachable from
+> `${CLAUDE_PLUGIN_ROOT}` in every install.
 
 ## [Unreleased]
+
+## [0.4.0] — 2026-07-30
 
 ### Changed
 
@@ -44,15 +48,51 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The plan artifact** — a `plan.md` template, a `project/plans/` directory in the scaffold, and four
   living sections (`Progress`, `Surprises & Discoveries`, `Decision Log`, `Outcomes & Retrospective`)
   maintained while the work happens rather than written at the end.
+- **Frontmatter pass over every skill.** `effort` is now set per skill by what the work actually is —
+  `high` for the two closures and for `authoring-agents-md`, whose whole job is deciding what earns a line;
+  `low` for template scaffolding; `inherit` where a skill spans both, notably `new-plan` and `new-rfc`,
+  which were `low` and should not have been because migrating a document is content restructuring. **The
+  closures are now model-invocable**: their failure mode is being forgotten, which is what auto-invocation
+  fixes, and `close-task` gained an explicit confirmation before its one irreversible step. `model:` is set
+  nowhere, deliberately — it would override the user's own session choice.
+- **`/vibe-ops:close-plan`** — a plan had no closure of its own, so one that never spawned a task dossier
+  could ship, close its issue, and route nothing it learned. It writes the retrospective against the plan's
+  original goals, routes every `Surprises & Discoveries` entry, runs the demotion check, closes the
+  tracking issue, and **keeps the file** — the opposite of `close-task`, where the dossier is deleted.
+  Every artifact now has a closure that performs the routing.
 - **Closing a task routes what the work taught.** `close-task` gained a step that takes every
   `Surprises & Discoveries` entry through the promotion test — recurrence, discoverability, whether a guard
   already covers it, and where it lands — plus the demotion check that deletes an instruction line a new
   guard has made redundant. A learning is no longer deleted along with the dossier.
-- **`scripts/check-agents-md.sh`** — the maintenance loop stops depending on someone remembering. Checks
-  the line budget, that every relative link resolves and none escapes the repository, that `.claude/`
-  holds resolving symlinks (including the case where git checked one out as text), and that every rule
-  declares a `description`. Runs in CI, and `--self-test` builds a deliberately broken repository to prove
-  the checks still fire.
+- **The validator is a capability, not a file this repository owns.** `scripts/check-agents-md.sh` checks
+  the repository you point it at — the line budget, every relative link resolving inside the repo, `.claude/`
+  holding real symlinks (including the case where git checked one out as text), every rule declaring a
+  `description`, and no personal-memory link. It runs **from the plugin** and writes nothing into the
+  target, so there is no per-repo copy to keep current: a copy would freeze at the version of the day it
+  was taken, and the one real bug found so far would still be live in every repository holding one.
+  - **Every skill that changes an instruction surface now runs it** — `authoring-agents-md` (in the survey,
+    so findings reach the `audit` report, and again after writing), `repo-setup` (survey, and after
+    staging), `close-task` (after propagating, where a moved doc breaks a link invisibly in a diff). The
+    four event skills do not: they write into `project/` and touch no instruction surface.
+  - **The `authoring-agents-md` checklist gave up the four items the script now enforces.** Two deleted
+    outright, two narrowed to the half no script can see. A checklist item that restates a guard is the
+    thing [ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md) exists to delete.
+  - **One versioned fragment per check** under `scripts/checks/`. Composition selects and orders them and
+    never authors one; `--list` prints what a run assembled and from where, which is the audit trail
+    instead of a manifest that would drift from the directory it describes.
+  - **The private-name deny-list is composed at runtime** into a temporary directory and deleted when the
+    run ends, from `PRIVATE_NAME_LIST` or `PRIVATE_NAMES` — never from a file inside any repository.
+    Composition expands *spellings*, not membership: a name supplied hyphenated is also searched for
+    spaced, underscored and squashed. A hit reports where the entry came from and never what it said.
+  - **`--self-test`** builds a deliberately broken repository and asserts every check fires on it, that
+    nothing was written into it, and that no temporary directory survives — after a normal run **and**
+    after an interrupted one. CI runs it before the real check, so a check that has quietly stopped
+    detecting anything fails loudly instead of reporting a clean tree.
+  - **`repo-setup` offers a CI copy**, once, saying in the question that the copy is a snapshot which will
+    not receive later fixes. Declining writes nothing.
+  - **Every `${CLAUDE_PLUGIN_ROOT}` path a skill names is checked to exist.** Those paths live inside
+    fenced commands, where the link check cannot see them — so the files a skill tells an agent to copy or
+    execute were the ones nothing verified.
 - **Three more decision records** — a size budget on generated artifacts with guards replacing prose
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)); derived knowledge consumed through a
   detected capability rather than a named product
@@ -66,6 +106,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Every template this plugin ships carried the plugin author's copyright into your repository.** ⚠️ The
+  four `project/templates/*.md` had it in a header block, and `license-setup` copied an `LICENSE`
+  appendix naming him as the copyright owner — in the one file where attribution is the point. The header
+  blocks are gone; the `LICENSE` appendix now attributes collectively to *"The `<project>` Authors"*, the
+  same model `NOTICE`/`AUTHORS` already used, with `{{YEAR}}` and `{{PROJECT_NAME}}` substituted at write
+  time. A `template-attribution` check fails on any literal copyright year under `skills/*/templates/`,
+  so it cannot return. **If you scaffolded a repository with an earlier version, check its `LICENSE`.**
 - **The governance model described four artifact types while five creation skills existed.** The plan is
   now in `GOVERNANCE.md` and in the `project/**` rule, with its own lifecycle — permanent, never deleted,
   four living sections.

@@ -236,6 +236,11 @@ Run from the repository root:
       alternatives and the risks accepted.
 - [x] (2026-07-30) README pass — `GOVERNANCE.md`, `references/`, `CHANGELOG.md`, `ACKNOWLEDGEMENTS.md` and
       the validator were all invisible from the README; added as a "This repository" table.
+- [x] (2026-07-30) Merged as [PR #2](https://github.com/entelekheia-ai/vibe-ops/pull/2); issue #1 closed,
+      this file stays — the split T7 wrote down, exercised for the first time.
+- [x] (2026-07-30) **Knowledge routing run on this plan's own entries** — the step T5 built, applied to the
+      plan that built it. One promotion, four demotions identified and blocked, the rest correctly left in
+      place. Two gaps found, both handed to Plan-002. Detail under `Outcomes & Retrospective`.
 - [x] (2026-07-30) T1, T4, T2 and T6 committed as `20947ae` on branch
       `feat/knowledge-lifecycle-retrofit`, off `main` at `2ebf680`. Not pushed.
 
@@ -486,6 +491,30 @@ predicted zero changes and produced three. T3 forbade the old name anywhere outs
 have meant shipping a rename nobody was told about. T8 asked the validator to carry exactly the pattern the
 plugin's own style reference forbids writing down. A criterion is a prediction, and a plan that tracks its
 surprises catches its own bad predictions — which is the thing being installed here, working on itself.
+
+**The routing step was built and then not run — on this plan.** All four living sections were kept current
+throughout, so the *capture* half worked. The *routing* half was skipped entirely until it was asked for
+after the merge, and the structural reason matters more than the oversight: the step lives in `close-task`,
+and this plan never spawned a task dossier, so nothing in the governance ever reached it. **A plan that
+ships without a task closes its issue and routes nothing.** That is a hole in T7's own output.
+
+Running it produced four results worth recording:
+
+1. **One promotion.** "Prove the guard fails" — a check that has stopped detecting anything is
+   indistinguishable from a clean repository. It qualifies question 3 of the promotion test itself, so it
+   landed in [`references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md), not in
+   `AGENTS.md`: it is true of any repository, and a fact true anywhere is not repository knowledge.
+2. **Four demotions identified and blocked.** The `authoring-agents-md` checklist hand-checks four things
+   the validator now enforces — every path resolves, no memory slug, the 150-line count, the symlink and
+   `description:` checks. Question 3 applied backwards says delete them. They cannot be deleted yet,
+   because that skill runs against repositories that do not have the validator. **The demotion is blocked
+   on making the guard reachable from where the prose lives**, which is exactly Plan-002. Recording it
+   rather than half-applying it.
+3. **Most entries correctly went nowhere.** The lifecycle drifting between two files, the private-name
+   criterion contradicting the style reference, the backtick false positive — each is either already
+   written down as a rule, or was fixed in code. Promoting them would have been restating.
+4. **The test survived being applied to its author.** It eliminated more than it promoted, which is the
+   behaviour it was designed for and the opposite of what an unbounded "capture your learnings" habit does.
 
 **The remaining gap is other repositories.** What ships here is tooling and the decision records behind it.
 The migrations were explicitly out of scope, and every repository that adopts this baseline will produce its

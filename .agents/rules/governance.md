@@ -55,6 +55,11 @@ If a plan carries a GitHub issue, the **issue owns status and the executive summ
 design and the working record**. The issue closes when the last track lands; the plan file does not close,
 because it is what someone reads a year later to find out why the thing is shaped this way.
 
+At closure, use `/vibe-ops:close-plan` — retrospective written against the plan's own goals, every
+`Surprises & Discoveries` entry routed, the demotion check run, living docs propagated, the issue closed
+and **the file kept**. A plan that never spawned a task dossier has no other exit: skip this and it ships
+having taught nobody anything.
+
 ### Task (`project/tasks/`)
 
 Lives in **two artifacts that own different content**: the GitHub issue owns status, assignment, and the

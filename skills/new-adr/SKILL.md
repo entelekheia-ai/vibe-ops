@@ -3,7 +3,7 @@ name: new-adr
 description: Scaffold a new Architecture Decision Record from the target repo's own ADR template and numbering convention. Use when the user asks to create/record an ADR, write a decision record, or "/new-adr <topic>". Convention-agnostic — reads this repo's project/adr lifecycle, so it fits both a DA-style scheme and a plain NNNN scheme.
 disable-model-invocation: true
 argument-hint: "<decision topic>"
-effort: inherit
+effort: low
 ---
 
 # /new-adr — Create an Architecture Decision Record

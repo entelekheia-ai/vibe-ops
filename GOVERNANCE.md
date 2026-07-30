@@ -32,6 +32,10 @@ recurrence, discoverability, and whether a guard already covers it, then routed 
 what the fact *is* — a line in `AGENTS.md`, a scoped rule, a skill, a mechanical guard, an ADR, or nowhere
 at all. The reverse applies too: an instruction line that a new guard has made redundant gets deleted.
 
+**Every artifact has a closure that performs this routing**, so no unit of work can reach its end without
+passing through one: `/vibe-ops:close-task` for a task, `/vibe-ops:close-plan` for a plan. They differ in
+what survives — a task dossier is deleted and a plan file is kept — and not in whether the routing happens.
+
 `project/log/` therefore has **two** reasons to exist, not one: the narrative an ADR is too terse to carry,
 *and* the rich context of a single unit of work — dead ends, surprises with their evidence, lessons —
 whether or not any decision came out of it. A learning that is real but too local to promote still needs a

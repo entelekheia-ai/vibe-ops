@@ -3,7 +3,7 @@ name: new-plan
 description: Create an implementation plan — a permanent, living design record with Progress, Surprises & Discoveries, Decision Log and Outcomes sections that are maintained while the work happens. Use when the user asks to create/draft a plan, break implementation work into tracks, or "/new-plan <topic>". Also migrates an existing briefing/RFC/old-format doc into this format without inventing content. Convention-agnostic — reads this repo's own plans lifecycle and template.
 disable-model-invocation: true
 argument-hint: "<topic>"
-effort: low
+effort: inherit
 ---
 
 # /new-plan — Create an Implementation Plan

@@ -36,6 +36,9 @@ can eliminate it; the fourth routes what survives.
    a gate.)*
 3. **Not already enforced** — does a test, type, lint rule or hook already make the mistake impossible?
    Then **write the guard, not the prose.** A guard executes regardless of whether the agent read anything.
+   With one obligation attached: **prove the guard fails.** A check that has stopped detecting anything
+   produces output identical to a clean repository, so a guard nobody has ever watched fail is not yet
+   evidence of anything. Run it against something broken on purpose, and keep that fixture.
 4. **Blast radius** — where it lands, routed by what the fact *is*. That routing table is
    [`instruction-surfaces.md`](instruction-surfaces.md#where-each-fact-goes); do not restate it here.
 

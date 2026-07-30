@@ -1,0 +1,25 @@
+# A snapshot of the vibe-ops instruction-file validator, copied into this repository because CI cannot
+# reach an installed Claude Code plugin. It does not update itself — scripts/check-agents-md.sh says
+# where it came from and how to refresh it.
+
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  agents-md:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The validator's own acceptance criterion: it must fail on a repository that is broken.
+      # Running this first means a check that has silently stopped detecting anything fails loudly
+      # instead of reporting a clean tree.
+      - name: Validator self-test
+        run: ./scripts/check-agents-md.sh --self-test
+
+      - name: Instruction files
+        run: ./scripts/check-agents-md.sh
