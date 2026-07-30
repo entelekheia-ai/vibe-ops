@@ -53,6 +53,7 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 | `/vibe-ops:new-plan` | Scaffold an implementation plan (tracks/tasks breakdown) from the repo's own template, including migrating an existing briefing/RFC into plan form. |
 | `/vibe-ops:new-task` | Open a task dossier linked one-to-one with a GitHub issue, following a hybrid Markdown-plus-issue workflow. |
 | `/vibe-ops:close-task` | Close a finished task: write back to the doc that started it, propagate to living docs, spawn an ADR if a decision emerged, route each learning to a durable surface, then distill and delete the dossier. |
+| `/vibe-ops:close-plan` | Close a finished plan: retrospective against the original goals, route every learning, run the demotion check, close the tracking issue — and keep the plan file, which is the permanent record. |
 | `/vibe-ops:license-setup` | Set up `LICENSE` (+ `NOTICE`/`AUTHORS` for a fork with dual attribution), the license-rules section of `AGENTS.md`, and optional pre-commit + CI header enforcement. |
 
 Skills are namespaced `/vibe-ops:<name>`, invocable by you or automatically by Claude when the task fits.

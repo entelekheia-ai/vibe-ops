@@ -160,12 +160,46 @@ its `Surprises & Discoveries` entries get routed.
 - [ ] T4 — apply the four demotions blocked in Plan-001.
 - [ ] T5 — the CI copy as an explicit offer.
 - [ ] T6 — README, after T3.
-- [ ] T7 — where routing happens for a plan with no task dossier.
+- [x] (2026-07-30) T7 — resolved as a **`close-plan` skill** (`effort: high`,
+      `disable-model-invocation: true`), not a checklist item and not a step folded into `new-plan`. It
+      carries the retrospective-against-goals, the routing pass, the demotion check, and the rule that a
+      *blocked* promotion is recorded with what unblocks it rather than half-applied. `GOVERNANCE.md` and
+      the `project/**` rule now state that every artifact has a closure performing the routing — the two
+      differ in what survives, not in whether it happens. Chosen over the alternatives once measurement
+      showed a user-invoked skill costs no context: the objection to adding one had been budget, and the
+      budget was not real.
 
 ## Surprises & Discoveries
 
-*Nothing yet — the plan has not started. Entries go here **while** the work happens; one written from
-memory at the end is worth nothing.*
+- Observation: a skill marked `disable-model-invocation: true` costs **zero** context. It is filtered out
+  of the listing sent to the model entirely, not merely deprioritized.
+  Evidence: the installed CLI (2.1.220) builds the listing as
+  `Qpr().filter(d => !d.disableModelInvocation && !MTe(d))`. Eight of this plugin's nine skills carry the
+  flag, so the model-facing cost is one entry — `repo-setup`, at 596 characters. The intuition that "more
+  skills means more context" is true only for skills the model is allowed to trigger, which here is one.
+  Consequence: adding a user-invoked skill is not a context decision, and an umbrella skill collapsing
+  several would have saved nothing while costing trigger precision and per-skill `effort`.
+
+- Observation: the skill listing has a hard budget with a documented degradation, and neither was known
+  here.
+  Evidence: same binary — `budget = context × 4 bytes/token × 0.01`, i.e. **8,000 characters** by default,
+  shared across every installed plugin; each description capped at **1,536 characters** and truncated with
+  an ellipsis; `when_to_use` counted as part of the description. Over budget, entries are ranked by
+  `usageCount × max(0.5^(days/7), 0.1)` — recency-weighted usage — and the losers degrade to **name-only**.
+  This plugin currently occupies 596 of 8,000, so there is no pressure; the number matters for anyone
+  running many plugins at once.
+
+- Observation: converting skills into subagents to save context moves the cost in the wrong direction.
+  Evidence: agent descriptions on this machine average **1,223 characters** against a skill's 424, roughly
+  three times as much, because the convention is to carry `<example>` blocks. Agent listings load the same
+  way skill listings do.
+
+- Observation: this repository's `AGENTS.md` listed the `SKILL.md` frontmatter fields and was wrong by
+  omission — including on the field that answers the question that prompted the measurement.
+  Evidence: the schema accepts `name`, `description`, `model`, `effort`, `allowed-tools`,
+  `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`, `shell` and
+  `when_to_use`. The file named five. **`model` is settable per skill**, so a scaffolding skill and a
+  routing skill need not share a model or an effort — which was the thing being asked. Corrected in place.
 
 ## Decision Log
 
@@ -197,6 +231,22 @@ memory at the end is worth nothing.*
   which is the entire mechanism by which one skill serves every repository without becoming a copy. A
   template materialized in a temporary directory and deleted is not there for the next session. Temporary
   space is a staging area for placeholder expansion; the end state is still a committed file.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: keep one skill per operation. **No `manage-*` umbrella**, and no conversion of skills into
+  subagents.
+  Rationale: both were proposed to reduce always-on context, and measurement removed the premise — eight
+  of nine skills are `disable-model-invocation: true` and therefore absent from the model's listing, so
+  the plugin's real footprint is 596 of an 8,000-character budget. An umbrella would have saved nothing
+  and cost two things that are per-skill and genuinely wanted: trigger precision, and independent `model`
+  and `effort`. Subagents cost about three times a skill in the same listing.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: `close-plan` is a skill of its own rather than a step inside `new-plan` or a line in the
+  governance rule. Resolves T7.
+  Rationale: a checklist item relies on being read at exactly the moment someone is trying to finish, and
+  the failure it guards against already happened once here — Plan-001 shipped and routed nothing. Making
+  it invocable also makes it observable: there is a thing you ran, or did not.
   Date / Author: 2026-07-30 / Danilo Borges
 
 - Decision: the CI copy is offered, not installed by default.

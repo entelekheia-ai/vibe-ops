@@ -37,9 +37,15 @@ which loads on its own. Not repeated here.
   of being written here — and a line here that a new guard makes redundant gets deleted
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)). This file is budgeted at 150 lines; over
   budget, relocate content and leave a pointer rather than compressing prose.
-- **Frontmatter fields Claude Code honors** in a `SKILL.md`: `name`, `description`,
-  `disable-model-invocation`, `argument-hint`, `effort`. `description` is what triggers the skill — it
-  must name the situations the skill applies to, not just what it does.
+- **Frontmatter fields Claude Code honors** in a `SKILL.md`: `name`, `description`, `model`, `effort`,
+  `allowed-tools`, `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`,
+  `shell`, `when_to_use`. `model` and `effort` are **per skill** — scaffolding a template and routing a
+  learning do not deserve the same budget.
+- **`disable-model-invocation: true` removes a skill from the model's listing entirely** — it costs zero
+  context, and in exchange the model can never trigger it. Only `repo-setup` omits it, because it is the
+  entry point. So a new user-invoked skill is free: adding one is not a context decision.
+  `description` still matters — it is what the *user* reads, and what triggers the one skill that can be
+  triggered.
 
 ## Skills
 
@@ -50,7 +56,8 @@ which loads on its own. Not repeated here.
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (pre-commit + CI). |
 | [`new-adr`](skills/new-adr/SKILL.md) · [`new-rfc`](skills/new-rfc/SKILL.md) · [`new-plan`](skills/new-plan/SKILL.md) · [`new-task`](skills/new-task/SKILL.md) | Create one governance record, using the *target repo's* own template and numbering. |
-| [`close-task`](skills/close-task/SKILL.md) | Closes the loop: write back to the source doc, propagate to living docs, spawn an ADR, then distill and delete the dossier. |
+| [`close-task`](skills/close-task/SKILL.md) | Closes the loop: write back to the source doc, propagate to living docs, spawn an ADR, route the learnings, then distill and delete the dossier. |
+| [`close-plan`](skills/close-plan/SKILL.md) | The same routing for a plan, which **is not deleted** — retrospective against the goals, the demotion check, issue closed, file kept. |
 
 ## Source of truth
 

@@ -44,6 +44,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The plan artifact** — a `plan.md` template, a `project/plans/` directory in the scaffold, and four
   living sections (`Progress`, `Surprises & Discoveries`, `Decision Log`, `Outcomes & Retrospective`)
   maintained while the work happens rather than written at the end.
+- **`/vibe-ops:close-plan`** — a plan had no closure of its own, so one that never spawned a task dossier
+  could ship, close its issue, and route nothing it learned. It writes the retrospective against the plan's
+  original goals, routes every `Surprises & Discoveries` entry, runs the demotion check, closes the
+  tracking issue, and **keeps the file** — the opposite of `close-task`, where the dossier is deleted.
+  Every artifact now has a closure that performs the routing.
 - **Closing a task routes what the work taught.** `close-task` gained a step that takes every
   `Surprises & Discoveries` entry through the promotion test — recurrence, discoverability, whether a guard
   already covers it, and where it lands — plus the demotion check that deletes an instruction line a new
