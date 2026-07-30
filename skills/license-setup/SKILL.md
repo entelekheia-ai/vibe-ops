@@ -3,7 +3,7 @@ name: license-setup
 description: Set up or refresh a repo's license — LICENSE file, NOTICE/AUTHORS for a fork with dual attribution, the license-rules section of AGENTS.md, and optional pre-commit + CI header enforcement. Use when scaffolding a new repo, when a repo is missing a LICENSE, or when license-header conventions need centralizing/fixing.
 disable-model-invocation: true
 argument-hint: "[--fork] [--enforce=none|script|ci]"
-effort: inherit
+effort: low
 ---
 
 # /license-setup — one shared license convention, not one per repo

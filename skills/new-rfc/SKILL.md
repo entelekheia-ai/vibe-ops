@@ -3,7 +3,7 @@ name: new-rfc
 description: Scaffold a new RFC (design proposal) from the target repo's own RFC template and numbering convention. Use when the user asks to create/draft an RFC, propose a design change, or "/new-rfc <topic>". Convention-agnostic — reads this repo's project/rfc lifecycle and template, so any repo-specific sections (impact tables, an INDEX) come from the repo, not this skill.
 disable-model-invocation: true
 argument-hint: "<what the RFC proposes>"
-effort: low
+effort: inherit
 ---
 
 # /new-rfc — Create an RFC

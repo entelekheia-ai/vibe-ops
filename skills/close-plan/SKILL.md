@@ -1,7 +1,6 @@
 ---
 name: close-plan
 description: Close a finished plan — write the retrospective against the original goals, route every Surprises & Discoveries entry to a durable surface, run the demotion check, then close the tracking issue while keeping the plan file. Use when the last track of a plan lands, when the user says a plan is done or shipped, or before marking a plan Complete.
-disable-model-invocation: true
 argument-hint: "<plan number or slug>"
 effort: high
 ---

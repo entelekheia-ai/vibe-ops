@@ -41,11 +41,19 @@ which loads on its own. Not repeated here.
   `allowed-tools`, `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`,
   `shell`, `when_to_use`. `model` and `effort` are **per skill** — scaffolding a template and routing a
   learning do not deserve the same budget.
-- **`disable-model-invocation: true` removes a skill from the model's listing entirely** — it costs zero
-  context, and in exchange the model can never trigger it. Only `repo-setup` omits it, because it is the
-  entry point. So a new user-invoked skill is free: adding one is not a context decision.
-  `description` still matters — it is what the *user* reads, and what triggers the one skill that can be
-  triggered.
+- **`disable-model-invocation: true` removes a skill from the model's listing entirely** — zero context
+  cost, and in exchange the model can never trigger it. A user-invoked skill is therefore free: adding one
+  is not a context decision. Which side a skill belongs on is decided by its **failure mode**: omit the
+  flag where the failure is *forgetting* (`repo-setup`, `close-task`, `close-plan` — nobody forgets to
+  want an ADR, everybody forgets to close the loop), keep it where the failure would be *acting
+  uninvited* (the `new-*` records, and anything that rewrites a file a human owns). A model-invocable
+  skill must confirm before any irreversible step, since the user may not have asked for the run.
+- **Never set `model:` in a shipped skill.** It silently overrides the user's own session choice. `effort`
+  is a per-task budget hint and is fine; the model is the user's call. A small model in particular
+  fabricates sections to fill a template even with no source material — exactly what `new-plan`'s
+  migration mode warns against — so pinning one there would install the failure it documents.
+- **Don't use `when_to_use`.** The listing renders it as `description - when_to_use`, so it becomes a
+  second home for trigger text. Keep the triggers in `description`; one copy.
 
 ## Skills
 

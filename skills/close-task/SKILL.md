@@ -1,9 +1,8 @@
 ---
 name: close-task
 description: Close a finished task dossier — write back to the source doc with what actually happened, propagate the change to living docs, spawn an ADR if a decision emerged, route what the work taught to where the next agent will read it, then distill and delete the dossier. Use when a task/issue is done, when the user says "wrap this up" or "close the task", or before deleting a project/tasks/ dossier.
-disable-model-invocation: true
 argument-hint: "<task slug or issue number>"
-effort: inherit
+effort: high
 ---
 
 # /close-task — Close the loop, don't just delete the dossier
@@ -104,6 +103,11 @@ Report what was promoted, where, and what was demoted, before continuing.
    ```
 3. **Delete the dossier** — `git rm project/tasks/<NNN>-<slug>.md` and commit
    (`chore(tasks): close <slug>, archived in history`).
+
+**Confirm before this last step.** It is the only irreversible action in the skill, and this skill can be
+invoked by the model rather than typed by the user — so the person whose dossier it is may not have asked
+for it. Everything above is additive and safe to have run; the deletion is not. State what will be deleted
+and what the breadcrumb is, and wait.
 
 ## Checklist
 

@@ -3,7 +3,7 @@ name: authoring-agents-md
 description: Create or refresh an AGENTS.md — the agent-facing entry map for a repo or workspace — and the CLAUDE.md that imports it. Applies a content filter (only what an agent cannot discover on its own), a size budget, the .agents/ ↔ .claude/ config bridge, and a self-maintenance loop. Use when adding an AGENTS.md to a repo or folder, standardizing its agent config (rules/skills), reconciling one that has drifted from what is on disk, or cutting one that has grown past its budget.
 disable-model-invocation: true
 argument-hint: "[path, default repo root] [audit]"
-effort: inherit
+effort: high
 ---
 
 # Authoring an AGENTS.md

@@ -44,6 +44,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The plan artifact** — a `plan.md` template, a `project/plans/` directory in the scaffold, and four
   living sections (`Progress`, `Surprises & Discoveries`, `Decision Log`, `Outcomes & Retrospective`)
   maintained while the work happens rather than written at the end.
+- **Frontmatter pass over every skill.** `effort` is now set per skill by what the work actually is —
+  `high` for the two closures and for `authoring-agents-md`, whose whole job is deciding what earns a line;
+  `low` for template scaffolding; `inherit` where a skill spans both, notably `new-plan` and `new-rfc`,
+  which were `low` and should not have been because migrating a document is content restructuring. **The
+  closures are now model-invocable**: their failure mode is being forgotten, which is what auto-invocation
+  fixes, and `close-task` gained an explicit confirmation before its one irreversible step. `model:` is set
+  nowhere, deliberately — it would override the user's own session choice.
 - **`/vibe-ops:close-plan`** — a plan had no closure of its own, so one that never spawned a task dossier
   could ship, close its issue, and route nothing it learned. It writes the retrospective against the plan's
   original goals, routes every `Surprises & Discoveries` entry, runs the demotion check, closes the
