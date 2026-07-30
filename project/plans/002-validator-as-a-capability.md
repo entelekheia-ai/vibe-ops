@@ -16,6 +16,7 @@
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
 | Depends on | [Plan-001](001-knowledge-lifecycle-retrofit.md) |
+| Tracking issue | [#3](https://github.com/entelekheia-ai/vibe-ops/issues/3) — owns status and the executive summary; this file owns the design and the working record |
 | Related | [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) |
 
 ---
