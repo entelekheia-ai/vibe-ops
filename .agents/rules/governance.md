@@ -9,6 +9,12 @@ The **what and why** of each artifact type lives in [`../../GOVERNANCE.md`](../.
 human-facing doc). This rule is the **operational detail** for working inside `project/` — load it only
 when a file under here is in context.
 
+**Numbering is per repository.** Monotonic and never renumbered *within this repo* — not across a
+workspace, an organization, or a family of related repos. Two repositories both holding an `ADR-0001` is
+normal and costs nothing, because a cross-repo reference is a full URL and a local one names a file. A
+number freed by moving a document to another repository is free again here. **Never skip a number to
+avoid the appearance of a collision**: it leaves a permanent gap explained by nothing.
+
 ### ADR (`project/adr/`)
 
 ```
