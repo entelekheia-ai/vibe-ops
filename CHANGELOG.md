@@ -106,6 +106,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Every template this plugin ships carried the plugin author's copyright into your repository.** ⚠️ The
+  four `project/templates/*.md` had it in a header block, and `license-setup` copied an `LICENSE`
+  appendix naming him as the copyright owner — in the one file where attribution is the point. The header
+  blocks are gone; the `LICENSE` appendix now attributes collectively to *"The `<project>` Authors"*, the
+  same model `NOTICE`/`AUTHORS` already used, with `{{YEAR}}` and `{{PROJECT_NAME}}` substituted at write
+  time. A `template-attribution` check fails on any literal copyright year under `skills/*/templates/`,
+  so it cannot return. **If you scaffolded a repository with an earlier version, check its `LICENSE`.**
 - **The governance model described four artifact types while five creation skills existed.** The plan is
   now in `GOVERNANCE.md` and in the `project/**` rule, with its own lifecycle — permanent, never deleted,
   four living sections.

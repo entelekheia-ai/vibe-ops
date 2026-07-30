@@ -37,8 +37,15 @@ particular, a repo whose headers follow a coherent existing convention is an `ad
 
 ## Step 2 — Write LICENSE
 
-Copy `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/templates/LICENSE-apache-2.0` → `LICENSE` verbatim (full
-Apache-2.0 text, not the plugin's own `LICENSE` — this repo's copy is independent).
+Copy `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/templates/LICENSE-apache-2.0` → `LICENSE` (the full
+Apache-2.0 text, not the plugin's own `LICENSE` — this repo's copy is independent), then substitute
+`{{YEAR}}` and `{{PROJECT_NAME}}` in the appendix at the end.
+
+The appendix attributes to *"The `<project>` Authors"*, collectively, and never to a person — matching the
+model in Step 4: copyright lives in `NOTICE`/`AUTHORS` where each contributor keeps their own, and a name
+baked into a file goes stale the moment somebody else touches it. **A shipped template must never carry a
+real person's name**; it would be writing the plugin author's attribution into a repository that is not
+theirs. `grep -n '{{' LICENSE` must come back empty before you move on.
 
 ## Step 3 — NOTICE + AUTHORS (fork case only)
 

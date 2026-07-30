@@ -255,6 +255,10 @@ self_test() {
   } >> "$tmp/AGENTS.md"
   printf -- '---\npaths: ["x/**"]\n---\n\nno description above.\n' > "$tmp/.agents/rules/nodesc.md"
   printf 'not a symlink\n' > "$tmp/.claude/rules/nodesc.md"
+  # a shipped template attributing a real person, in a repository that is not theirs
+  mkdir -p "$tmp/skills/demo/templates"
+  printf '<!--\n Copyright (c) 2026 Some Person (https://example.invalid)\n-->\n\n# demo\n' \
+    > "$tmp/skills/demo/templates/demo.md"
   git -C "$tmp" add -A >/dev/null 2>&1
   # a deny-list living outside the fixture. "padding line" is in the fixture spelled with a space; the
   # entry here is hyphenated, so a hit proves the composed spelling variants are what got searched for.
@@ -278,7 +282,8 @@ self_test() {
     echo "SELF-TEST FAILED: the script passed a repository that is broken in five ways"
     return 1
   fi
-  for expected in budget links bridge frontmatter private-names memory-slugs plugin-root-paths; do
+  for expected in budget links bridge frontmatter private-names memory-slugs plugin-root-paths \
+    template-attribution; do
     if ! printf '%s\n' "$got" | grep -q "FAIL  \[$expected\]"; then
       echo "SELF-TEST FAILED: check '$expected' did not fire on the fixture"
       return 1

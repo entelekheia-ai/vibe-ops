@@ -245,14 +245,19 @@ its `Surprises & Discoveries` entries get routed.
   release a **precondition for T6**: announcing the validator as a capability while the invocation path
   does not exist in any install is exactly the promise-not-a-feature failure T6 was written to avoid.
 
-- Observation: the shipped `project/templates/*.md` stamp **this plugin author's** copyright into every
-  repository scaffolded from them.
-  Evidence: all four carry `Copyright (c) 2026 Danilo Borges` as a literal in the template's HTML comment,
-  and `new-adr`/`new-rfc`/`new-plan`/`new-task` are each instructed to keep the license block unchanged.
-  For the maintainer's own repositories that is correct; for anyone else installing the plugin it is not.
-  Consequence: noticed while writing the CI workflow template, and deliberately left alone — the fix is a
-  placeholder plus a substitution rule, which belongs with `license-setup` rather than inside a plan about
-  the validator. The new template carries no copyright line at all, so this plan adds nothing to the pile.
+- Observation: the shipped templates stamp **this plugin author's** copyright into every repository
+  scaffolded from them — including, worst of all, the `LICENSE` file itself.
+  Evidence: the four `project/templates/*.md` carry `Copyright (c) 2026 Danilo Borges` as a literal in
+  their HTML comment, and the `new-*` skills are each instructed to keep the license block unchanged.
+  `license-setup` then copies `LICENSE-apache-2.0` **verbatim**, and its appendix carried the same line —
+  so every repository this plugin has ever licensed claims a copyright owner who is not its author.
+  Consequence: first deferred as belonging to `license-setup` rather than to a plan about the validator,
+  then fixed on the maintainer's instruction before merge, once the point was made that generating
+  someone else's name into a public repository is not a tidy-up item. The estimate was wrong twice over:
+  the `LICENSE` case was not in the original observation at all, and it is the one that matters.
+  Fixed by removing the block from the four templates outright, replacing the `LICENSE` appendix with
+  collective attribution (`The {{PROJECT_NAME}} Authors`, matching the `NOTICE`/`AUTHORS` model the skill
+  already argues for), and adding a `template-attribution` check so it cannot come back.
 
 - Observation: this repository's `AGENTS.md` listed the `SKILL.md` frontmatter fields and was wrong by
   omission — including on the field that answers the question that prompted the measurement.
@@ -381,9 +386,11 @@ copyright into every repository scaffolded from them.
 
 **Carried forward, not dropped:**
 
-- **The templates' hardcoded copyright.** Correct for the maintainer's own repositories, wrong for any
-  third party, and the fix — a placeholder plus a substitution rule — belongs with `license-setup`, not
-  with a plan about the validator. Unblocked by opening it as its own task.
+- ~~**The templates' hardcoded copyright.**~~ **Resolved before merge**, not carried forward. It was
+  triaged as belonging to `license-setup` and deferred; the maintainer's call reversed that, correctly —
+  the templates generate a name into repositories that are not his, and the `LICENSE` appendix, which the
+  original observation had missed, generates it into the one file where attribution is the whole point.
+  A judgement call about scope should not have outranked that.
 - **A release-aware half of `plugin-root-paths`.** The check verifies a `${CLAUDE_PLUGIN_ROOT}` path
   exists *here*; the failure that actually happened is a path that exists here and not in the last
   release. That check needs a release tag to compare against, and until this plan there were none.
