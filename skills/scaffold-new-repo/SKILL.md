@@ -1,7 +1,7 @@
 ---
 name: scaffold-new-repo
-description: Scaffold a new repository — single-package or npm-workspaces monorepo — born organized, with English docs. Creates the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. Use when the user asks to create/start/bootstrap/scaffold a new repo, monorepo, or package.
-argument-hint: "<repo-name>"
+description: Bring a repository to the standard born-organized baseline — single-package or npm-workspaces monorepo, English docs. Sets up or reconciles the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/plans/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. Use when the user asks to create/start/bootstrap a new repo, monorepo or package, AND when an existing repo has drifted from the baseline or is missing part of it — pass "audit" to report the gaps without writing.
+argument-hint: "<repo-name> [audit]"
 effort: inherit
 ---
 
@@ -15,7 +15,32 @@ governance, docs, and config so nothing has to be retrofitted later.
 there; never invent structure from memory. Files named `gitignore`/`editorconfig`/`gitkeep` are copied to
 `.gitignore`/`.editorconfig`/`.gitkeep`; `{{PLACEHOLDERS}}` are substituted (Step 3).
 
+**This is a target-state skill.** The templates below *are* the target state, and it is applied to
+repositories that already exist as often as to new ones — an empty directory is simply the maximum-gap
+case. Read
+[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) before
+touching anything that is already there; the `adopt` verb is what stops this skill from flattening a
+convention the repo settled on deliberately.
+
 ---
+
+## Step 0 — Survey what already exists
+
+Skip only if the target directory does not exist. Otherwise, before writing anything, produce a **gap
+list** against the target state described in Steps 2–5 — each entry marked *missing*, *divergent*, *extra*
+or *conflicting*, with the verb to apply:
+
+```bash
+ls -a "$TARGET"; ls "$TARGET/project" "$TARGET/.agents/rules" "$TARGET/.claude/rules" 2>/dev/null
+```
+
+Two divergences are `adopt` by default, not `migrate` — a governance folder that uses a different but
+consistent name (`rfcs/` for `rfc/`, a top-level `plans/`), and a `project/` subfolder holding something
+other than what the governance rule expects but referenced as authoritative by the repo's own docs. Rename
+neither. Report the gap list and the verbs, and **confirm before writing** — this is the point where the
+run is destructive if the judgement is wrong.
+
+If the user asked for an `audit`, stop here: report the gap list and write nothing.
 
 ## Step 1 — Gather inputs
 
@@ -47,12 +72,14 @@ Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skill
   `tsconfig.json`; `TPL/pkg/tsconfig.build.json` → `tsconfig.build.json`; `src/index.ts`; `test/`.
 
 **`project/` governance skeleton:**
-- `TPL/project/templates/{adr,rfc,task}.md` → `project/templates/`
-- `TPL/project/{adr,rfc,tasks,research,log}/.gitkeep` → same paths — empty folders that need a placeholder
+- `TPL/project/templates/{adr,rfc,task,plan}.md` → `project/templates/`
+- `TPL/project/{adr,rfc,tasks,plans,research,log}/.gitkeep` → same paths — empty folders that need a placeholder
   to survive git; there is **no per-folder `AGENTS.md`** (see the rules bridge below, which replaces them)
 - Create `project/rfc/implemented/.gitkeep` and `project/rfc/rejected/.gitkeep`
 
-**Rules bridge** (replaces per-folder `AGENTS.md`s with one path-scoped rule):
+**Rules bridge** (replaces per-folder `AGENTS.md`s with one path-scoped rule; mechanics, the `test -L`
+verification and the Windows fallback are in
+[`${CLAUDE_PLUGIN_ROOT}/references/instruction-surfaces.md`](../../references/instruction-surfaces.md#the-agents--claude-bridge)):
 - `TPL/agents/rules/governance.md` → `.agents/rules/governance.md`; symlink
   `ln -s ../../.agents/rules/governance.md .claude/rules/governance.md`
 - `TPL/agents/rules/repo-guardrails.md` → `.agents/rules/repo-guardrails.md` (seed file — leave its `TODO`
@@ -102,8 +129,9 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 
 - [ ] Target has `README.md`, `GOVERNANCE.md`, `AGENTS.md`, `CLAUDE.md`(@AGENTS.md), `LICENSE`, `.gitignore`, `.editorconfig`
 - [ ] Build baseline present; monorepo root `package.json` has `workspaces`, each package has its own `package.json` + tsconfig(.build)
-- [ ] `project/` skeleton present (`adr rfc tasks research log templates`, each non-empty via `.gitkeep` if no
-      content yet); `project/templates/{adr,rfc,task}.md` present; **no** per-folder `AGENTS.md` (that's the rule's job)
+- [ ] `project/` skeleton present (`adr rfc tasks plans research log templates`, each non-empty via `.gitkeep`
+      if no content yet); `project/templates/{adr,rfc,task,plan}.md` present; **no** per-folder `AGENTS.md`
+      (that's the rule's job)
 - [ ] `.agents/rules/{governance,repo-guardrails}.md` exist, each symlinked from `.claude/rules/`; `.agents/skills/` present (empty)
 - [ ] `docs/` Diátaxis skeleton present
 - [ ] No `{{PLACEHOLDER}}` remains (`grep -rn '{{'`)

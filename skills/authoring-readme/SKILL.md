@@ -16,6 +16,12 @@ becomes an artifact of how the work happened instead of what it produced. That b
 
 **Usage:** `/authoring-readme` (repo root) or `/authoring-readme packages/<name>` (one package).
 
+**This is a target-state skill** — the six sections below are the target, and an absent README is just the
+maximum-gap case of the same job. Read
+[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) for the
+four verbs before changing an existing README, and
+[`authoring-style.md`](../../references/authoring-style.md) for phrasing and language.
+
 ---
 
 ## Step 1 — Canonical section order

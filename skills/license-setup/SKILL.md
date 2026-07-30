@@ -8,12 +8,17 @@ effort: inherit
 
 # /license-setup — one shared license convention, not one per repo
 
-Two repos in this workspace hand-rolled two different license schemes independently (a simple "root
-LICENSE covers everything, code gets an Apache header" rule, and a much more elaborate SPDX + dual-
-attribution + pre-commit + CI scheme for a fork). This skill is the shared source for both, selected by
-answers instead of reinvented per repo.
+Licensing tends to get hand-rolled per repository, producing two incompatible schemes side by side: a
+simple "root `LICENSE` covers everything, code gets a header" rule in one, and an elaborate SPDX +
+dual-attribution + pre-commit + CI scheme for a fork in another. This skill is the shared source for both,
+selected by answers instead of reinvented each time.
 
 **Usage:** `/license-setup` — ask everything; or pass flags to skip prompts.
+
+**This is a target-state skill.** Whether the repo has a `LICENSE` already is a detail of the same job; a
+refresh reconciles what is there against the answers from Step 1. Apply the four verbs from
+[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) — in
+particular, a repo whose headers follow a coherent existing convention is an `adopt`, not a `migrate`.
 
 ---
 

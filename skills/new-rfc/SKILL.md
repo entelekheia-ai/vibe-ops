@@ -13,6 +13,11 @@ steps from the repo — nothing about a particular project is baked in here.
 
 **Usage:** `/new-rfc <topic>` — e.g. `/new-rfc streaming output format`. If no topic is given, ask.
 
+**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records one
+proposal, at a point in time. It has **no update mode**: an RFC moves through the stage gates defined in the
+target repo's own governance rule (`Draft → Review → Accepted → Implemented`, or `Rejected`), and advancing
+it is editing the file directly — not re-running this skill.
+
 ---
 
 ## Step 0 — Locate the repo's RFC setup

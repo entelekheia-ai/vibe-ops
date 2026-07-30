@@ -15,6 +15,11 @@ distilling and deleting, go back and update the doc that started the work.**
 
 **Usage:** `/close-task <slug or issue number>` — e.g. `/close-task 042` or `/close-task migrate-storage`.
 
+**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one unit
+of work, once. Routing what the work *taught* is governed by
+[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
+promotion test lives there, not in this file.
+
 ---
 
 ## Step 1 — Find the dossier and its source doc

@@ -13,6 +13,11 @@ it discovers them from the repo, so the same skill works across every repo you o
 
 **Usage:** `/new-adr <decision topic>` — e.g. `/new-adr REST-first API surface`. If no topic is given, ask.
 
+**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records one
+decision, taken at a point in time. It has **no update mode**: an accepted ADR is immutable, and changing a
+decision means writing a *new* ADR that supersedes it — never editing the old one. Running this skill twice
+correctly produces two records.
+
 ---
 
 ## Step 0 — Locate the repo's ADR setup
@@ -44,8 +49,8 @@ Do not proceed until both are known.
 
 ## Step 2 — Determine the next id
 
-Follow `<ADR_DIR>/AGENTS.md` if it defines a scheme (e.g. dot-agent's `DA<minor>-<seq>`). Otherwise use the
-**default `NNNN` scheme**:
+Follow `<ADR_DIR>/AGENTS.md` if it defines a scheme — some repos tie ADR ids to a release train rather than
+a flat counter (`<prefix><minor>-<seq>`). Otherwise use the **default `NNNN` scheme**:
 
 ```bash
 ls "$ADR_DIR" | grep -oE '^[0-9]{4}' | sort -n | tail -1
