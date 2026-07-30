@@ -28,10 +28,10 @@ for t in project/templates/rfc.md templates/rfc.md .agents/templates/rfc.md; do 
 ```
 
 - No RFC directory → ask whether to create one (default `project/rfc/`).
-- No template → ask before proceeding; do not invent structure. (A `/vibe-ops:scaffold-new-repo` repo has both.)
+- No template → ask before proceeding; do not invent structure. (A `/vibe-ops:repo-setup` repo has both.)
 - **Numbering/lifecycle authority, in order:** `<RFC_DIR>/AGENTS.md` if present (older repos; may define a
   custom scheme or repo-specific extras like a package-impact table or `INDEX.md` to update) → else
-  `.agents/rules/governance.md` if present (repos scaffolded by `/vibe-ops:scaffold-new-repo`) → else this
+  `.agents/rules/governance.md` if present (repos scaffolded by `/vibe-ops:repo-setup`) → else this
   skill's repo-agnostic default. Follow whichever is found.
 
 ## Step 1 — Collect inputs

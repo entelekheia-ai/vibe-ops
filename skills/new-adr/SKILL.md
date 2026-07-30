@@ -33,10 +33,10 @@ for t in project/templates/adr.md templates/adr.md .agents/templates/adr.md; do 
 
 - If no ADR directory exists, ask the user whether to create one (default `project/adr/`).
 - If no template exists, ask before proceeding — do not invent a structure. (A repo scaffolded by
-  `/vibe-ops:scaffold-new-repo` always has both.)
+  `/vibe-ops:repo-setup` always has both.)
 - **Numbering/lifecycle authority, in order:** `<ADR_DIR>/AGENTS.md` if it exists (older repos, may define a
   custom scheme like `DA<minor>-<seq>`) → else `.agents/rules/governance.md` if present (repos scaffolded by
-  `/vibe-ops:scaffold-new-repo`) → else the default `NNNN` scheme in Step 2. Follow whichever is found over
+  `/vibe-ops:repo-setup`) → else the default `NNNN` scheme in Step 2. Follow whichever is found over
   anything in this skill.
 
 ## Step 1 — Collect inputs

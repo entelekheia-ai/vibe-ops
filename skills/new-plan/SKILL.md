@@ -62,7 +62,7 @@ for t in project/templates/plan.md templates/plan.md .agents/templates/plan.md; 
   plugin's ADR/RFC/task convention). Some repos predate this convention and keep a root-level `plans/`
   instead; if one already exists, use it as found rather than moving it.
 - If no template exists, ask before proceeding — do not invent a structure. Offer to copy it from
-  `${CLAUDE_PLUGIN_ROOT}/skills/scaffold-new-repo/templates/project/templates/plan.md`.
+  `${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates/project/templates/plan.md`.
 - **Numbering/lifecycle authority, in order:** `<PLAN_DIR>/AGENTS.md` if it exists (older repos may define
   a custom scheme or extra steps) → else `.agents/rules/governance.md` if present → else the default `NNN`
   (3-digit) scheme used below. Follow whichever is found over anything in this skill.

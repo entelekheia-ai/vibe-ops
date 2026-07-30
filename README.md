@@ -22,7 +22,7 @@ claude plugin install vibe-ops@entelekheia
 Open any repo (new or existing) and run:
 
 ```
-/vibe-ops:scaffold-new-repo
+/vibe-ops:repo-setup
 ```
 
 That's the entry point — it lays down the package/build baseline, the `project/` governance skeleton, a
@@ -31,10 +31,10 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 
 ## What it does
 
-- **Scaffolds** a born-organized repo or npm-workspaces monorepo: a TypeScript (ESM) package/build baseline,
-  a `project/` governance skeleton driven by a single path-scoped rule (not a file per folder), a license, a
-  `docs/` skeleton following the [Diátaxis](https://diataxis.fr/) framework, and an `AGENTS.md` map for AI
-  collaborators.
+- **Sets up — or reconciles —** a born-organized repo or npm-workspaces monorepo: a TypeScript (ESM)
+  package/build baseline, a `project/` governance skeleton driven by a single path-scoped rule (not a file
+  per folder), a license, a `docs/` skeleton following the [Diátaxis](https://diataxis.fr/) framework, and
+  an `AGENTS.md` map for AI collaborators. An empty directory and a repo that has drifted are the same job.
 - **Authors governance artifacts** through focused skills. Each skill reads the *target repo's own* templates
   and conventions, so one skill adapts to every repo instead of being copied and drifting.
 - **Closes the loop.** A task doesn't just get deleted when it's done — closing it writes back to the doc
@@ -44,7 +44,7 @@ license, and the `docs/`/`AGENTS.md` map in one pass. From there, use the indivi
 
 | Skill | What it does |
 |---|---|
-| `/vibe-ops:scaffold-new-repo` | Scaffold a new single-package repo or npm-workspaces monorepo — build baseline, a `project/` skeleton (ADR / RFC / tasks / research / log) governed by a path-scoped rule, the `.agents`/`.claude` rules bridge, a license, a Diátaxis `docs/` skeleton, and the `AGENTS.md` / `CLAUDE.md` entry map. |
+| `/vibe-ops:repo-setup` | Set up **or reconcile** a single-package repo or npm-workspaces monorepo — build baseline, a `project/` skeleton (ADR / RFC / tasks / plans / research / log) governed by a path-scoped rule, the `.agents`/`.claude` rules bridge, a license, a Diátaxis `docs/` skeleton, and the `AGENTS.md` / `CLAUDE.md` entry map. Pass `audit` to report the gaps without writing. |
 | `/vibe-ops:authoring-agents-md` | Create or refresh an `AGENTS.md` — the agent-facing entry map for a repo or workspace: self-contained scope, the `.agents/` ↔ `.claude/` config bridge, and a keep-it-current loop. |
 | `/vibe-ops:authoring-readme` | Write or clean up a README as pure presentation and usage — strips decision history, process leakage, and status narrative into the right place instead. |
 | `/vibe-ops:new-adr` | Scaffold an Architecture Decision Record from the repo's own template and numbering scheme. |

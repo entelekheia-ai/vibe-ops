@@ -15,6 +15,7 @@
 | Status | In Progress |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
+| Tracking issue | [#1](https://github.com/entelekheia-ai/vibe-ops/issues/1) — owns status and the executive summary; this file owns the design and the working record |
 | Related | [ADR-0001](../adr/0001-skill-taxonomy-target-state-vs-event.md), [ADR-0002](../adr/0002-knowledge-lifecycle.md), [ADR-0003](../adr/0003-instruction-file-architecture.md) |
 
 ---
@@ -120,7 +121,7 @@ reference instead of restating it, and no rule appears in two files.
 deprecated alias. It touches the skill directory, the `name:` frontmatter and four self-references, four
 cross-references from `new-adr`, `new-rfc` and `new-plan`, two lines in `README.md`, and two in `AGENTS.md`.
 At the end `/vibe-ops:repo-setup` works, the old invocation does not, and the break is called out in the
-release notes with a version bump. Acceptance: a grep for `scaffold-new-repo` outside `project/` returns
+release notes. Acceptance: a grep for `scaffold-new-repo` outside `project/` returns
 only historical mentions inside decision records.
 
 **T4 — Reshape the plan artifact.** The plan template and `new-plan` carry the four living sections, declare
@@ -145,9 +146,13 @@ the file was already written to the tightened contract.
 
 **T7 — Governance catches up.** `GOVERNANCE.md` and the `project/**` rule describe four artifact types while
 the plugin ships five creation skills; the plan is absent from both. The rule also defines `project/log/` as
-existing only alongside an ADR, which leaves a learning unattached to a decision with nowhere to live. At
-the end both documents describe the plan artifact and the log's second reason to exist. Acceptance: every
-artifact a skill can create is described in the governance documents.
+existing only alongside an ADR, which leaves a learning unattached to a decision with nowhere to live. A
+third gap surfaced when this plan got a tracking issue: the issue↔markdown split is defined for **tasks
+only**, so a plan that wants an issue has no stated rule for what each side owns — the principle applied
+here was *issue owns status and the executive summary, the file owns the design and the working record*,
+and it needs writing down, including that a plan's issue closes while the plan file never does. At the end
+all three are described. Acceptance: every artifact a skill can create is described in the governance
+documents, and each one that can pair with an issue says what the issue owns.
 
 **T8 — A validator.** The maintenance loop in `AGENTS.md` currently relies on an agent choosing to compare
 the file against the disk. Every failure the audit found is mechanically detectable: paths that do not
@@ -167,7 +172,9 @@ issue owning status and summary. Acceptance: three ADRs, each with its rejected 
 Run from the repository root:
 
 - `bash scripts/check-agents-md.sh` (T8) exits zero.
-- `grep -rn 'scaffold-new-repo' --exclude-dir=.git --exclude-dir=project .` returns nothing (T3).
+- `grep -rn 'scaffold-new-repo' --exclude-dir=.git --exclude-dir=project . ` returns only `CHANGELOG.md`
+  (T3). The old name must survive in exactly two places — the decision records under `project/`, and the
+  release note that tells a user their invocation broke. Anywhere else is a missed reference.
 - No private repository name appears anywhere in the published tree. The T8 validator carries the pattern
   so this file does not have to: a plan that spells out the names in order to check for them has already
   leaked them.
@@ -202,8 +209,12 @@ Run from the repository root:
       table, the 150-line budget pointing at the relocation table, Step 6 on derived indexes, and a
       checklist covering the nested-file and one-surface-per-fact rules. Phrasing, budget mechanics,
       placement and the bridge are pointed at, not restated.
-- [ ] T3 — rename to `repo-setup`. Not started. Scope measured: 26 files in the skill directory, 4
-      self-references, 4 cross-references, 2 lines in `README.md`, 2 in `AGENTS.md`.
+- [x] (2026-07-30) T3 — renamed to `repo-setup`. 28 files moved with `git mv` (rename detection intact),
+      14 references rewritten across 7 files, plus prose that needed more than a name swap: the README
+      entry and the skill's own opening both promised creation and now state the reconcile case. A
+      `CHANGELOG.md` was created — the repo had none — in Keep a Changelog format, with the break at the
+      top of `[Unreleased]`. **No version bump**: see the Decision Log. Verified: `scaffold-new-repo` now
+      appears only inside `project/` and in that release note.
 - [ ] T5 — knowledge routing in `close-task`. Not started. Unblocked: the promotion test now lives in
       `references/knowledge-lifecycle.md` and `close-task` already points at it; what remains is the step
       itself and the demotion check.
@@ -211,8 +222,7 @@ Run from the repository root:
 - [ ] T8 — validator. Not started.
 - [ ] T9 — three remaining ADRs. Not started.
 - [x] (2026-07-30) T1, T4, T2 and T6 committed as `20947ae` on branch
-      `feat/knowledge-lifecycle-retrofit`, off `main` at `2ebf680` (v0.3.0). Not pushed. No version bump —
-      the bump goes with T3, which carries the breaking change.
+      `feat/knowledge-lifecycle-retrofit`, off `main` at `2ebf680`. Not pushed.
 
 ## Surprises & Discoveries
 
@@ -270,6 +280,20 @@ Run from the repository root:
   did not mention `references/`, which had just become a thing that can drift. The criterion was written
   assuming the file was already compliant; the useful result is that the checklist is mechanical enough to
   find its own author's misses.
+
+- Observation: three versions of this plugin exist as numbers with nothing behind them.
+  Evidence: `git tag -l` is empty and `gh release list` returns nothing, yet `plugin.json` has been through
+  0.1.0, 0.2.0 and 0.3.0 — each bumped by the commit that added the features. The version was tracking
+  commits, not releases. Caught while writing T3's release note, and it changed the track's output: no
+  bump, an `[Unreleased]` section instead.
+
+- Observation: this plan's own success criterion for T3 contradicted T3's definition. The criterion said a
+  grep for the old name outside `project/` must return nothing; the track requires the break to be called
+  out in release notes, which can only be done by naming it.
+  Evidence: the grep came back clean except for `CHANGELOG.md`, written minutes earlier by the same track.
+  The criterion was written assuming the only mentions worth keeping were historical. Corrected to allow
+  exactly the release note. Worth generalizing: a rename criterion phrased as "the old name appears
+  nowhere" is almost always wrong, because a rename that nobody is told about is not finished.
 
 - Observation: a public skill described the private context that produced it. `license-setup` opened with
   "Two repos in this workspace hand-rolled two different license schemes."
@@ -331,6 +355,14 @@ Run from the repository root:
   needed to change. Putting the policy inside one skill would have made that skill the owner of rules
   governing the other eight, and any skill pointing at it would be reaching into a sibling's private
   directory.
+  Date / Author: 2026-07-30 / Danilo Borges
+
+- Decision: adopt [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) with an `[Unreleased]` section,
+  and **do not bump the manifest version when work lands** — the bump happens when a release is cut.
+  Rationale: the manifest had been bumped per feature commit, so 0.1.0, 0.2.0 and 0.3.0 all exist as
+  version numbers with **no git tag and no GitHub release behind any of them**. Bumping to 0.4.0 for the
+  rename would have added a fourth phantom and skipped a version nobody could install. `[Unreleased]`
+  decouples "this landed" from "this shipped", which is the distinction that was missing.
   Date / Author: 2026-07-30 / Danilo Borges
 
 - Decision: `audit` is an argument on a target-state skill (`argument-hint: "<repo-name> [audit]"`), not a

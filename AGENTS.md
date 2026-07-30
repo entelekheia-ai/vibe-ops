@@ -24,7 +24,7 @@ which loads on its own. Not repeated here.
 
 - **Adding a skill = adding a folder.** `plugin.json` points at the directory; there is no per-skill
   manifest entry. The only other place to update is this file's skill table.
-- **Skills delegate instead of duplicating** — `scaffold-new-repo` orchestrates `license-setup` →
+- **Skills delegate instead of duplicating** — `repo-setup` orchestrates `license-setup` →
   `authoring-agents-md` → `authoring-readme` by name. A rule that governs more than one skill lives in
   [`references/`](references/README.md) and is *pointed at*, never copied into a `SKILL.md`.
 - **Every skill declares its kind** — target-state (convergent, idempotent, has an `audit` mode) or event
@@ -39,7 +39,7 @@ which loads on its own. Not repeated here.
 
 | Skill | Does |
 |---|---|
-| [`scaffold-new-repo`](skills/scaffold-new-repo/SKILL.md) | Brings a repo to the standard baseline — package/build, `project/`, docs, the rules bridge, `AGENTS.md`. Orchestrates the skills below. |
+| [`repo-setup`](skills/repo-setup/SKILL.md) | Brings a repo to the standard baseline — package/build, `project/`, docs, the rules bridge, `AGENTS.md`. Orchestrates the skills below. |
 | [`authoring-agents-md`](skills/authoring-agents-md/SKILL.md) | Writes or refreshes an `AGENTS.md` (+ its `CLAUDE.md`). |
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (pre-commit + CI). |

@@ -12,7 +12,7 @@ own steps say to.
 |---|---|---|
 | [`convergence-policy.md`](convergence-policy.md) | Is this skill target-state or event, and how does it reconcile a repo that already exists? | every target-state skill; the `new-*` skills declare themselves events |
 | [`knowledge-lifecycle.md`](knowledge-lifecycle.md) | Where does a learning go once the work is done? | `close-task`, `new-plan`, `authoring-agents-md` |
-| [`instruction-surfaces.md`](instruction-surfaces.md) | Which file gets a given fact, and how does it reach the agent? | `authoring-agents-md`, `scaffold-new-repo`, and question 4 of the promotion test |
+| [`instruction-surfaces.md`](instruction-surfaces.md) | Which file gets a given fact, and how does it reach the agent? | `authoring-agents-md`, `repo-setup`, and question 4 of the promotion test |
 | [`authoring-style.md`](authoring-style.md) | How is a generated document written — phrasing, budget, tables, diagrams? | every skill that writes prose into a target repo |
 
 The decisions behind them are recorded in [`../project/adr/`](../project/adr/): ADR-0001 for the taxonomy

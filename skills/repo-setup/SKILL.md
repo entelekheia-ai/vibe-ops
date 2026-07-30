@@ -1,17 +1,18 @@
 ---
-name: scaffold-new-repo
+name: repo-setup
 description: Bring a repository to the standard born-organized baseline — single-package or npm-workspaces monorepo, English docs. Sets up or reconciles the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/plans/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. Use when the user asks to create/start/bootstrap a new repo, monorepo or package, AND when an existing repo has drifted from the baseline or is missing part of it — pass "audit" to report the gaps without writing.
 argument-hint: "<repo-name> [audit]"
 effort: inherit
 ---
 
-# /scaffold-new-repo — a repo born organized
+# /repo-setup — a repo born organized
 
 A light **orchestrator**: it lays down a consistent, English-documented skeleton from templates and delegates
-the detailed authoring to sibling skills. The goal is that every new repo/package starts with the same
-governance, docs, and config so nothing has to be retrofitted later.
+the detailed authoring to sibling skills, so that every repo carries the same governance, docs and config.
+It is run just as often on a repo that already exists and has drifted as on an empty directory — the
+baseline is the target either way.
 
-**Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/scaffold-new-repo/templates/`. Copy from
+**Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates/`. Copy from
 there; never invent structure from memory. Files named `gitignore`/`editorconfig`/`gitkeep` are copied to
 `.gitignore`/`.editorconfig`/`.gitkeep`; `{{PLACEHOLDERS}}` are substituted (Step 3).
 
@@ -44,7 +45,7 @@ If the user asked for an `audit`, stop here: report the gap list and write nothi
 
 ## Step 1 — Gather inputs
 
-Ask (accept the `/scaffold-new-repo` argument as the repo name):
+Ask (accept the `/repo-setup` argument as the repo name):
 
 1. **Repo name** (kebab-case) and **target path** (default: a sibling dir `../<repo-name>`, or the user's choice).
 2. **Shape** — single-package **or** monorepo (npm workspaces). Default to what the user describes; if they
@@ -57,7 +58,7 @@ Confirm the plan (shape + names + path) before writing.
 
 ## Step 2 — Lay down the tree
 
-Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/scaffold-new-repo/templates`.
+Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates`.
 
 **Root (always):**
 - `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`, `TPL/root/CLAUDE.md` → `CLAUDE.md`
