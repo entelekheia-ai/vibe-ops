@@ -27,3 +27,8 @@ jobs:
 
       - name: Instruction files
         run: ./scripts/check-agents-md.sh
+
+      # skills/license-setup ships templates/ensure-license-headers.sh into every repo the skill
+      # touches; this is the first thing that ever actually executes it (issue #12).
+      - name: License-header template
+        run: ./scripts/test-license-headers.sh

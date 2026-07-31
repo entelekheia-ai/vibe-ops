@@ -24,6 +24,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   comment in the template is, and those are deleted before a real dossier is committed, so the instruction
   never survived to reach one. It's now a real checklist line that survives that cleanup.
   ([#13](https://github.com/entelekheia-ai/vibe-ops/issues/13))
+- **`license-setup` no longer writes repo-scoped git config on the user's behalf.** Step 5 used to run
+  `git config core.hooksPath .githooks` and add an npm `prepare` script; in an npm-workspaces monorepo this
+  silently repointed hooks for the entire repository from whichever package happened to run `npm install`,
+  at a path that resolves from the worktree root regardless of which package wrote it — in `dot-agent-spec`
+  the tracked `apps/dot-agent-cli/.githooks/pre-commit` was never invoked once because of it. `script` now
+  writes the hook at the repo root and prints the one-line opt-in instead of running it; `ci` no longer
+  wires a hook at all and is the new default whenever `.github/workflows/` exists. See
+  [ADR-0007](project/adr/0007-license-enforcement-writes-no-git-config.md).
+  ([#12](https://github.com/entelekheia-ai/vibe-ops/issues/12))
+- **`templates/ensure-license-headers.sh` can now exclude paths.** It had no exclusion concept at all, so
+  running it stamped the repo owner's SPDX header onto vendored third-party code and generator output
+  (`pkg/` from wasm-bindgen, `bindings/` from ts-rs) — a licensing error, and in the generator case an
+  infinite ping-pong between the next generate and the next commit. Step 1 now surveys for these paths and
+  Step 5 renders them into a `is_excluded()` gate shared by both `--check` mode and the injection path, so
+  the checker and the fixer can no longer disagree. Exercised by the new `scripts/test-license-headers.sh`,
+  the first time this shipped script has ever actually been run in CI.
+  ([#12](https://github.com/entelekheia-ai/vibe-ops/issues/12))
 
 ## [0.5.1] — 2026-07-30
 

@@ -24,8 +24,11 @@ Migration is **opportunistic, on touch** — staging a file that still carries a
 replaces it with the SPDX form in that same commit. Files nobody touches keep their old (still valid) header;
 there is no repo-wide retrofit.
 
-Two layers enforce this: the git-native pre-commit hook (`scripts/ensure-license-headers.sh`, wired via
-`core.hooksPath=.githooks`, set by the `prepare` npm script — no husky) injects/migrates and re-stages
-headers locally, and the `License headers` CI workflow runs the same script in `--check` mode so
-`--no-verify` or a missing hook cannot merge unlicensed code. If you add a file programmatically and bypass
-the hook, inject the header manually before staging. Never remove or alter existing license headers.
+The `License headers` CI workflow runs `scripts/ensure-license-headers.sh --check` on every push/PR, so
+`--no-verify` or a missing local hook cannot merge unlicensed code — that check is independent of whatever
+you do locally. If this repo also enables the local pre-commit hook, it is an **explicit opt-in**, not
+something `npm install` wires for you: run `git config core.hooksPath .githooks` once yourself. Without the
+hook, or before it is wired, fix headers manually with `git add -A && bash scripts/ensure-license-headers.sh`
+before committing. Paths listed in that script's `is_excluded` function (vendored code, generator output)
+are deliberately left unheadered — don't add a header to one by hand. Never remove or alter existing
+license headers.

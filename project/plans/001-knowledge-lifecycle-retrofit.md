@@ -449,6 +449,9 @@ Run from the repository root:
   latency. `license-setup`'s pre-commit option remains a per-repository choice, not a precedent for this.
   Date / Author: 2026-07-30 / Danilo Borges
 
+  → Revisited by [ADR-0007](../adr/0007-license-enforcement-writes-no-git-config.md): the pre-commit option
+  itself turned out to carry the same class of failure (issue #12) — it now writes no git config either.
+
 - Decision: CI runs `--self-test` *before* the real check, and a failing self-test fails the job.
   Rationale: the link check shipped with a bug that made it examine only the last link on each line, and
   it reported a clean tree either way. A guard that has stopped detecting anything is indistinguishable

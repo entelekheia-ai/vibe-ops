@@ -16,6 +16,16 @@ SOURCE_GLOBS=({{SOURCE_GLOB_ARRAY}})
 LICENSE_HEADER='// SPDX-License-Identifier: {{LICENSE_ID}}'
 HEADER_MARKER='SPDX-License-Identifier|Copyright'
 
+# Paths that are never stamped. Every entry MUST carry the reason it is here:
+# an exclusion with no reason reads as dead config and gets deleted by a later
+# reader, silently re-enabling the stamping it was added to prevent.
+is_excluded() {
+  case "$1" in
+{{EXCLUDE_PATHS_CASES}}
+    *) return 1 ;;
+  esac
+}
+
 <!-- FORK_ONLY:start -->
 MIXED_HEADER='// SPDX-License-Identifier: {{LICENSE_ID}} AND {{ORIGIN_LICENSE_SHORT}}
 // Portions from {{ORIGIN_PROJECT}} ({{ORIGIN_AUTHOR}}) — see NOTICE'
@@ -29,6 +39,7 @@ if [[ "${1:-}" == "--check" ]]; then
   missing=0
   while IFS= read -r f; do
     [[ -z "$f" || ! -f "$f" ]] && continue
+    is_excluded "$f" && continue
     if ! head -10 "$f" | grep -qE "$HEADER_MARKER"; then
       echo "  [license:MISSING] $f"
       missing=$((missing + 1))
@@ -53,6 +64,7 @@ injected=0
 
 while IFS= read -r f; do
   [[ -z "$f" || ! -f "$f" ]] && continue
+  is_excluded "$f" && continue
 
   # Already headered → nothing to do
   if head -5 "$f" | grep -q "SPDX-License-Identifier"; then
