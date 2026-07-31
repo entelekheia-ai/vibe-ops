@@ -14,6 +14,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`templates/plan.md` and `templates/task.md` now end with an explicit, unchecked closing item**,
+  instead of ending on a content section — so the last thing an author or agent does is no longer marking
+  the final item done, which read as finished even though `/close-plan`/`/close-task` had not run.
+  `plan.md`'s `Progress` checklist gains a final `Run /vibe-ops:close-plan` item. `task.md`'s `Closure`
+  section already named `/close-task`, but only inside a guidance comment — the same kind every other
+  comment in the template is, and those are deleted before a real dossier is committed, so the instruction
+  never survived to reach one. It's now a real checklist line that survives that cleanup.
+  ([#13](https://github.com/entelekheia-ai/vibe-ops/issues/13))
+
 ## [0.5.1] — 2026-07-30
 
 ### Fixed
