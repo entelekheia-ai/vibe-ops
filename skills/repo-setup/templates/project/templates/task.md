@@ -55,8 +55,10 @@ P1:  …
 
 ## Closure
 
-<!-- At Done, run /vibe-ops:close-task — do not just delete this file. It writes back to the doc that
-     started this work, propagates to living docs, spawns an ADR if a decision emerged, routes each
-     Surprises & Discoveries entry through the promotion test (and checks whether a new guard makes an
-     existing instruction line redundant), then distills the summary + breadcrumb
-     (git show <sha>:project/tasks/NNN-slug.md) into the issue before removing this dossier. -->
+- [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually
+      runs; a dossier that looks otherwise finished but has this box open is not done.
+
+<!-- close-task writes back to the doc that started this work, propagates to living docs, spawns an ADR
+     if a decision emerged, routes each Surprises & Discoveries entry through the promotion test (and
+     checks whether a new guard makes an existing instruction line redundant), then distills the summary
+     + breadcrumb (git show <sha>:project/tasks/NNN-slug.md) into the issue before removing this dossier. -->

@@ -74,6 +74,9 @@
 
 - [ ] Example step.
 - [ ] Example partially completed step (done: X; remaining: Y).
+- [ ] Run `/vibe-ops:close-plan` — retrospective, route every Surprises & Discoveries entry, demotion
+      check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
+      actually closed; a Progress list that is otherwise complete but has this box open is not finished.
 
 ## Surprises & Discoveries
 
