@@ -14,6 +14,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-07-31
+
 ### Fixed
 
 - **`templates/plan.md` and `templates/task.md` now end with an explicit, unchecked closing item**,
