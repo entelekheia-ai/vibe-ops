@@ -14,6 +14,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **The README now names what this plugin does: context engineering.** The artifacts it authors —
+  `AGENTS.md`, the rules, the skills — are not documentation *about* a project; they are the context an
+  agent is handed before it acts, and *when* each one loads is as much of the design as what it says. The
+  previous claim ("repositories that start organized") described the scaffolding half only, which is the
+  half every other tool also does. Documentation only; no behaviour changed.
+
 ## [0.6.0] — 2026-08-01
 
 ### Fixed

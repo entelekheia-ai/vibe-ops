@@ -1,7 +1,7 @@
 <h1 align="center">vibe-ops</h1>
 
 <p align="center">
-  <b>Repositories that start organized — and stay honest as they grow.</b><br>
+  <b>Context engineering for repositories.</b><br>
   A Claude Code plugin. One command lays down the governance, docs, licensing and agent config a project
   needs; the rest of the skills keep them true as the work moves.
 </p>
@@ -28,14 +28,20 @@
 
 ## Why
 
-Scaffolding a repository is the easy half, and most tools stop there. The cost arrives three months later:
-the conventions live in one person's head, `AGENTS.md` describes a folder that was renamed, and whatever
-the last piece of work *taught* was deleted along with its notes.
+A repository's `AGENTS.md`, its rules and its skills are not documentation *about* the project — they are
+the context an agent is handed before it does anything. So the question is not only what they say, but
+when each one loads: the map at session start, a rule scoped to the folder it governs, a skill only when
+it is asked for. That much is scaffolding, and most tools stop there.
+
+The cost arrives three months later. The conventions live in one person's head, `AGENTS.md` describes a
+folder that was renamed, and whatever the last piece of work *taught* was deleted along with its notes.
+An agent working through a task learns a great deal inside a single run and forgets it at the end.
 
 This plugin is aimed at that second half. Closing a task writes back to the document that started it, so a
 plan cannot quietly claim work that never shipped. Each learning is routed to a surface where the next
 agent will actually read it — or, when it is mechanically checkable, turned into a guard instead of a
-sentence, because a sentence is only followed by whoever read it.
+sentence, because a sentence is only followed by whoever read it. The repository becomes the thing that
+remembers.
 
 ## Install
 
