@@ -14,6 +14,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-08-01
+
 ### Fixed
 
 - **`license-setup` shipped a LICENSE that was not the Apache License.** `templates/LICENSE-apache-2.0`
