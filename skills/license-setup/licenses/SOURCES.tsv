@@ -1,0 +1,30 @@
+# Pinned license sources — the trust anchor for everything license-setup writes.
+#
+# Columns: <spdx-id> <TAB> <canonical-url> <TAB> <sha256-of-file> <TAB> <sha256-of-canonical-text>
+#
+#   sha256-of-file  exact bytes of the upstream file, as published. Verifies licenses/<id>.txt and any
+#                   copy fetched over the network. If upstream ever changes, this MUST fail — re-pinning
+#                   is a deliberate act (`get-license.sh pin`), never an automatic one.
+#   sha256-of-canonical-text
+#                   digest of the text after dropping the Apache appendix, dropping standalone
+#                   `Copyright ...` lines, and collapsing whitespace. This is what a *repository's*
+#                   LICENSE is verified against: the copyright holder legitimately varies and the text
+#                   may be rewrapped, but not one operative word may differ.
+#
+# Rows are added by `get-license.sh pin <ID> [url]`, never typed by hand: a digest typed from memory is
+# the same failure mode as license text written from memory.
+Apache-2.0	https://www.apache.org/licenses/LICENSE-2.0.txt	cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30	59d8f0ba87ad9a2f1a431123c8d16646e5b89ba53653e818f16d136d77263c99
+MIT	https://raw.githubusercontent.com/spdx/license-list-data/main/text/MIT.txt	b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5	7c9b48b52decb9837c70f608678129e1ac79e056829c8d1e82e8cdd8aed562f8
+BSD-3-Clause	https://raw.githubusercontent.com/spdx/license-list-data/main/text/BSD-3-Clause.txt	5a93d5831e1297ab10fe643e1a631e83be392896da14ee2951285a79012df69d	70435d703f5e4bdca9a1fa6b9291501b0dd850d2ad5457b491ce936217b1e063
+BSD-2-Clause	https://raw.githubusercontent.com/spdx/license-list-data/main/text/BSD-2-Clause.txt	f32fb3b417a194167cfad068223fc975ba96c5960513a10f66a3c28720aec1df	971850f7f84e5dc88bd6b52e0d0c1fbffdaec4eae2fd311b1511d42bf7855c51
+ISC	https://raw.githubusercontent.com/spdx/license-list-data/main/text/ISC.txt	f2ec607f67bb0dd3053b49835b02110d5cd0f8eb6da3aac4dc0b142a6b299be9	6be198129e93c5876148c3ee8bcc8a146fea1d51f8963e3a0cd611d8bbb5f5e8
+0BSD	https://raw.githubusercontent.com/spdx/license-list-data/main/text/0BSD.txt	e3f18c71e10d673590eb9856c1d79dd3b4b0d65404efb5e8584dbede7edd608b	1fc595850815e2afbaf6b3aa49edaa2fb51a99028bc3a78d0ebe834ead586914
+Unlicense	https://raw.githubusercontent.com/spdx/license-list-data/main/text/Unlicense.txt	0bdebfeda07d45dada625ae1317c6f833186e798b171d0db640bcf32e92a8240	2069c208cba553e43cd0b730df8a0c10bf1b1101b96f661e2f1307c73b9722e3
+MPL-2.0	https://raw.githubusercontent.com/spdx/license-list-data/main/text/MPL-2.0.txt	66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172	e8ba82e63ba908724aaee6043943c5a2629b9ebf1af581ea0eea19a713123685
+GPL-3.0-only	https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt	fb981668c18a279e285fc4d83fba1e836cc84dd4daa73c9697d3cfd2d8aca6e0	3c470e7e7b2bae3bb961ef85ab1bf8a546615d7e6f7421d65f86012b141351a1
+GPL-2.0-only	https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-2.0-only.txt	aaf135472f81c5b4a0dca9367e5bb5e9750032b5bebe5442b36e4c0a47430df3	d118aa9e9c85b1160c9e606f9e337d08500ae227242b2b9ca2894d68f893e3d9
+LGPL-3.0-only	https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt	996af0513df21f7496288951c41428a03c174e9e4a9d63665c57d670f845ccb1	b9d3685c513802a52645f72f4711e9cffa17bf8ae4fc25097dcc43906e84f03d
+AGPL-3.0-only	https://raw.githubusercontent.com/spdx/license-list-data/main/text/AGPL-3.0-only.txt	d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee	ddf126497e51fb3ae4cbdb232891957226b03add0f162618d73b72311029aa65
+CC-BY-4.0	https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC-BY-4.0.txt	d557539df68e771cc1eedcc91d13f70fca930e508d11eedcafa4b15db49e3744	50a0385d4606ed02586ea82f3307d8835cf2e76f7c2b70f5e2f340bd4a1e9fb3
+CC-BY-SA-4.0	https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC-BY-SA-4.0.txt	cde7883b9050a1104f4ac19a1572aafd6e5d7323b68351aaf51fbf4beba54966	d47d691d4e51b9697eb164fee2647024369cbdb1b8acd02175b94edeb87d5978
+CC0-1.0	https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC0-1.0.txt	a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499	05d9f1a0af61535887a399e161c9d14d1f898043b61d05fe4854ed8c6460179c

@@ -12,7 +12,7 @@ instead of twice.
 
 | Path | What is not obvious about it |
 |---|---|
-| [`skills/<name>/SKILL.md`](skills/) | **The product** — what the plugin ships and what Claude Code loads. A `templates/` folder beside a SKILL.md holds files that skill copies at runtime; it is never inlined into the SKILL.md. |
+| [`skills/<name>/SKILL.md`](skills/) | **The product** — what the plugin ships and what Claude Code loads. A `templates/` folder beside a SKILL.md holds files that skill copies at runtime; it is never inlined into the SKILL.md. A skill may also ship tooling it *runs* rather than copies — `license-setup/get-license.sh` + its pinned `licenses/`, the only sanctioned way a LICENSE is produced ([ADR-0008](project/adr/0008-license-text-is-fetched-and-verified.md)). |
 | [`references/`](references/) | Shared policy the skills point at instead of restating — the single copy of any rule governing more than one skill. |
 | [`project/`](project/) | This repo's own governance records, and the one folder with a **path-scoped rule** ([`.agents/rules/governance.md`](.agents/rules/governance.md)) that auto-loads only while you are working inside it. |
 | [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below. Checks **the repo you point it at**, composing one fragment per check from [`scripts/checks/`](scripts/checks/); `--list` shows what it assembled, `--self-test` asserts it still fails on a broken repo. |

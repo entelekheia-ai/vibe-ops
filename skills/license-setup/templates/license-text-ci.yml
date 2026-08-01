@@ -1,0 +1,14 @@
+name: License text
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify LICENSE is the real {{LICENSE_ID}} text
+        run: bash scripts/verify-license-text.sh

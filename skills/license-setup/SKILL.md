@@ -23,8 +23,15 @@ particular, a repo whose headers follow a coherent existing convention is an `ad
 
 ## Step 1 — Ask
 
-1. **License** — default **Apache-2.0**. (Other SPDX ids are possible but the shipped templates are
-   Apache-2.0; a different choice means supplying your own `LICENSE` text.)
+1. **License** — default **Apache-2.0**. Pinned and ready (`get-license.sh list`): Apache-2.0, MIT,
+   BSD-3-Clause, BSD-2-Clause, ISC, 0BSD, Unlicense, MPL-2.0, GPL-3.0-only, GPL-2.0-only, LGPL-3.0-only,
+   AGPL-3.0-only, CC-BY-4.0, CC-BY-SA-4.0, CC0-1.0. Anything else has to be pinned first (Step 2).
+   Two things follow from the choice and are easy to miss:
+   - **Steps 4 and 5 assume a permissive license for *code*.** The license-rules templates and the SPDX
+     header stamping are written for that; under a copyleft or a CC license, take Step 4's variant as a
+     starting point and say so, and default header enforcement to `none` unless the maintainer asks.
+   - **A CC license on source code is a category error** — Creative Commons says so itself. CC is for docs
+     and content; if the repo is a mix, that is two licenses and the split belongs in the AGENTS.md section.
 2. **Is this repo a fork requiring dual attribution?** Default **no**. If yes, collect: origin project name,
    origin author, origin URL, origin license (full name + short SPDX id, e.g. "MIT"), origin copyright year.
 3. **Header enforcement level** — the three levels are mutually exclusive, not additive. Default depends on
@@ -51,15 +58,62 @@ particular, a repo whose headers follow a coherent existing convention is an `ad
 
 ## Step 2 — Write LICENSE
 
-Copy `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/templates/LICENSE-apache-2.0` → `LICENSE` (the full
-Apache-2.0 text, not the plugin's own `LICENSE` — this repo's copy is independent), then substitute
-`{{YEAR}}` and `{{PROJECT_NAME}}` in the appendix at the end.
+> **Never write, edit, reflow, trim or reproduce license text yourself — not one clause, not one line.**
+> This is not a style rule. The text this skill used to ship was a paraphrase of Apache-2.0: definitions
+> reworded, the patent-termination clause rewritten, the close of §4 replaced by MIT's *"sell copies …
+> subject to the following conditions:"* left dangling with no conditions after it. It read fluently and
+> it was not the license, and every repository scaffolded from it was misdeclared. There is exactly one
+> way a LICENSE gets written here, and it goes through a checksum.
 
-The appendix attributes to *"The `<project>` Authors"*, collectively, and never to a person — matching the
-model in Step 4: copyright lives in `NOTICE`/`AUTHORS` where each contributor keeps their own, and a name
-baked into a file goes stale the moment somebody else touches it. **A shipped template must never carry a
-real person's name**; it would be writing the plugin author's attribution into a repository that is not
-theirs. `grep -n '{{' LICENSE` must come back empty before you move on.
+Fetch it — cache-first, network fallback, verified against a pinned sha256 either way:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/skills/license-setup/get-license.sh" fetch <SPDX-ID> --out LICENSE
+```
+
+`get-license.sh list` shows the pinned ids (the fifteen in Step 1). For anything else, pin it first —
+`get-license.sh pin <SPDX-ID>` fetches from the SPDX license list and records both digests — and have the
+maintainer look at the text before it is committed. Note that a pin made from an *installed* plugin lands
+in the version-pinned clone and disappears on the next update: a pin that has to last belongs in the
+vibe-ops working tree, committed and released. If the fetch fails verification the command writes nothing;
+do not work around it by pasting text.
+
+Then the *only* edit that is ever made to that file — and **only where the license provides the blanks**:
+
+- **Apache-2.0**: in the appendix, `[yyyy]` → the year, `[name of copyright owner]` → *"The `<project>`
+  Authors"*. Keep the appendix instructions above the boilerplate; they are part of the file.
+- **MIT · BSD-* · ISC · 0BSD**: the `<year>` / `<owner>` blanks in the copyright line at the top.
+- **GPL/LGPL/AGPL**: only inside the closing "How to Apply These Terms" boilerplate.
+- **MPL-2.0 · Unlicense · CC-\***: nothing to substitute. Write the file exactly as fetched; attribution for
+  a CC-licensed work goes in a separate notice (README/`NOTICE`), never inside the license text.
+
+Attribution is collective — *"The `<project>` Authors"*, never a person — matching the model in Step 4:
+copyright lives in `NOTICE`/`AUTHORS` where each contributor keeps their own, and a name baked into a file
+goes stale the moment somebody else touches it. Every other line stays byte-identical.
+
+Confirm before moving on — this is the check that would have caught the original bug:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/skills/license-setup/get-license.sh" verify LICENSE --id <SPDX-ID>
+```
+
+It ignores the copyright holder and any rewrapping and forgives nothing else. A `FAIL` here means the file
+is not the license the repo claims — fix it by re-fetching, never by editing.
+
+## Step 2b — Keep it verified (skip only if the repo has no CI)
+
+A LICENSE is written once and never read again, which is why a corrupted one survived for months. If the
+repo has `.github/workflows/` (or you are creating one), make the check permanent:
+
+- Copy `templates/verify-license-text.sh` → `scripts/verify-license-text.sh`, `chmod +x`, substituting
+  `{{LICENSE_ID}}`, `{{LICENSE_URL}}` and `{{YEAR}}` `{{PROJECT_NAME}}`, plus `{{LICENSE_TEXT_SHA256}}` —
+  the **fourth** column of that id's row in `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/licenses/SOURCES.tsv`
+  (`awk -F'\t' '$1=="<SPDX-ID>"{print $4}'`). Never type a digest from memory; read it from the registry.
+- Copy `templates/license-text-ci.yml` → `.github/workflows/license-text.yml`, substituting `{{LICENSE_ID}}`.
+- `bash scripts/verify-license-text.sh` must pass locally before you commit, and
+  `grep -n '{{' scripts/verify-license-text.sh .github/workflows/license-text.yml` must come back empty.
+
+This is independent of the header-enforcement level in Step 5 — a repo with `none` still gets this check.
 
 ## Step 3 — NOTICE + AUTHORS (fork case only)
 
@@ -121,7 +175,10 @@ Then, by level:
 
 ## Checklist
 
-- [ ] `LICENSE` present and is the real license text (not a copy of some other repo's/the plugin's own)
+- [ ] `LICENSE` present and **`get-license.sh verify LICENSE --id <SPDX-ID>` passes** — the file was
+      fetched, never authored, and the only edit is the year/holder in the appendix
+- [ ] If the repo has CI: `scripts/verify-license-text.sh` executable and passing,
+      `.github/workflows/license-text.yml` present, no leftover `{{...}}` in either
 - [ ] `NOTICE` + `AUTHORS` present **only** if fork/dual-attribution; absent otherwise
 - [ ] `AGENTS.md` has one `## License rules` section, the variant matching fork status, no leftover `{{...}}`
 - [ ] If enforcement ≥ script: `scripts/ensure-license-headers.sh` executable, no leftover `{{...}}`

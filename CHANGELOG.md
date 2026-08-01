@@ -14,6 +14,41 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`license-setup` shipped a LICENSE that was not the Apache License.** `templates/LICENSE-apache-2.0`
+  was a paraphrase: §1's definitions of *Work*/*Contribution*/*Contributor* reworded, §3's patent
+  termination and §4(d)'s `NOTICE` treatment rewritten, §7's disclaimer rewritten, and the close of §4
+  replaced by MIT's *"sell copies … subject to the following conditions:"* with no conditions following it.
+  Against apache.org's text it was missing 61 lines and carried 56 that do not appear in the license. Every
+  repository scaffolded by the skill got that file, and so did this one. **A repo whose LICENSE is not
+  Apache-2.0 is not licensed as it declares** — replacing an existing corrupted `LICENSE` is a maintainer
+  decision this change does not make for you; `get-license.sh verify LICENSE --id Apache-2.0` finds them.
+
+### Changed
+
+- **License text is now fetched and checksum-verified, never authored.** The bundled template is gone.
+  `skills/license-setup/get-license.sh` serves a pristine copy when it matches its pinned sha256 and falls
+  back to `curl` from the canonical URL when it does not — verified either way, writing nothing on
+  mismatch. The only edit ever made to the fetched file is the year and holder, and only where the license
+  leaves blanks for them. See [ADR-0008](project/adr/0008-license-text-is-fetched-and-verified.md).
+- **`license-setup` is no longer Apache-only.** Fifteen licenses ship pinned in
+  `skills/license-setup/licenses/SOURCES.tsv` — Apache-2.0, MIT, BSD-3-Clause, BSD-2-Clause, ISC, 0BSD,
+  Unlicense, MPL-2.0, GPL-3.0-only, GPL-2.0-only, LGPL-3.0-only, AGPL-3.0-only, CC-BY-4.0, CC-BY-SA-4.0,
+  CC0-1.0 — each verified against upstream, and `get-license.sh pin <SPDX-ID>` adds any other. Step 1 now
+  says what the choice implies: the license-rules templates and header stamping are written for a
+  permissive *code* license, and a CC license does not belong on source.
+
+### Added
+
+- **A check at both ends, because nobody re-reads a LICENSE.** `get-license.sh verify <file>` compares a
+  repo's `LICENSE` against the pinned digest of the license's canonical text — copyright holder and
+  rewrapping ignored, every operative word required — and with no `--id` it identifies which pinned
+  license a file actually is. Step 2b of the skill installs the same assertion permanently in the target
+  repo (`templates/verify-license-text.sh` + `templates/license-text-ci.yml`, offline, no dependencies),
+  and `scripts/checks/90-license-texts.sh` enforces it here: every shipped text against its pin, plus this
+  plugin's own `LICENSE`.
+
 ## [0.5.2] — 2026-07-31
 
 ### Fixed
