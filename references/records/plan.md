@@ -6,6 +6,12 @@ are maintained during the work rather than written at the end. This file covers 
 
 Status starts at `Backlog`.
 
+A `| Repository | <absolute path> |` row is optional and situational: only when the plan is being written
+from a workspace root that is not the repository it belongs to (an umbrella over several independent
+repos). `plan-mode-context.sh` requests it in exactly that case. It exists so an approved plan-mode plan
+can be filed into its real repository's `project/plans/` automatically, rather than by a workspace's own
+git toplevel — which, from an umbrella root, names the umbrella instead.
+
 ## Migrating an existing document
 
 A plan is often not written from nothing — a briefing, an RFC, or an older plan format is being converted.

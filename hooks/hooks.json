@@ -1,5 +1,5 @@
 {
-  "description": "Five guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. new-command-context resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is In Progress without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
+  "description": "Six guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-command-context resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -24,6 +24,21 @@
             "command": "sh",
             "args": [
               "${CLAUDE_PLUGIN_ROOT}/hooks/task-dossier-guard.sh"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/plan-approved-copy.sh"
             ],
             "timeout": 10
           }

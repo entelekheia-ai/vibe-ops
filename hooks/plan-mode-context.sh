@@ -39,6 +39,7 @@ RESOLVER="$ROOT/scripts/resolve-governance.sh"
 [ -f "$RESOLVER" ] || exit 0
 
 RESOLVED=$(sh "$RESOLVER" plan 2>/dev/null) || exit 0
+RESOLVED_ROOT=$(printf '%s\n' "$RESOLVED" | sed -n 's/^# resolve-governance:.*root=//p')
 PLAN_DIR=$(printf '%s\n' "$RESOLVED" | sed -n 's/^DIR=//p')
 PLAN_TPL=$(printf '%s\n' "$RESOLVED" | sed -n 's/^TPL=//p')
 NEXT=$(printf '%s\n' "$RESOLVED" | sed -n 's/^NEXT=//p')
@@ -57,5 +58,15 @@ esac
 mkdir -p "$STATE" 2>/dev/null
 : >"$MARK" 2>/dev/null
 
+# Ask for the plan's own | Repository | row only when there is real ambiguity to
+# resolve — the resolver's own git toplevel differs from the session's nominal
+# project dir, which is exactly the umbrella-workspace case
+# (project/learnings/plans-directory-is-one-static-path-inside-the-project-root.md).
+# A single-repo session never sees this sentence, so its plans stay uncluttered.
+REPO_ROW=""
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ "$CLAUDE_PROJECT_DIR" != "$RESOLVED_ROOT" ]; then
+  REPO_ROW=" This session's project root is not the repository this plan belongs to — add a \`| Repository | $RESOLVED_ROOT |\` row to the metadata table (the resolved repository's absolute path, nothing else in the cell) so a later automated step files the plan correctly without re-guessing."
+fi
+
 printf '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"%s"}}\n' \
-  "This repository keeps implementation plans as permanent design records in \`$PLAN_DIR\`, written from the template at \`$PLAN_TPL\`. If this planning turn is going to produce a durable design record rather than a one-off change, read that template first and give the plan-mode plan its structure: the H1 title, the metadata table, Summary, Goals, Scope (In and Out), Design, Tracks, Success criteria, and the four living sections (Progress, Surprises & Discoveries, Decision Log, Outcomes & Retrospective). Write it in English regardless of the language of the conversation. Where there is no material for a section, leave an honest stub rather than inventing content. The next plan number in this repository is $NEXT — do not guess one. None of this asks you to create or move any file: it shapes the plan you were already going to write, and saving it into \`$PLAN_DIR\` happens only if the user asks, through /vibe-ops:new plan."
+  "This repository keeps implementation plans as permanent design records in \`$PLAN_DIR\`, written from the template at \`$PLAN_TPL\`. If this planning turn is going to produce a durable design record rather than a one-off change, read that template first and give the plan-mode plan its structure: the H1 title, the metadata table, Summary, Goals, Scope (In and Out), Design, Tracks, Success criteria, and the four living sections (Progress, Surprises & Discoveries, Decision Log, Outcomes & Retrospective). Write it in English regardless of the language of the conversation. Where there is no material for a section, leave an honest stub rather than inventing content. The next plan number in this repository is $NEXT — do not guess one.$REPO_ROW An approved plan matching this shape is copied into \`$PLAN_DIR\` automatically; /vibe-ops:new plan is only for a plan written outside plan mode, or an older plan-mode file never picked up."
