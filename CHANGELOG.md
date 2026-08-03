@@ -53,6 +53,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **[ADR-0009](project/adr/0009-hooks-as-a-delivery-surface.md)** — hooks admitted as a third delivery
   surface, bounded to what a line and a CI guard cannot do: state read from disk at that instant, or
   context placed at a moment an instruction file cannot reach.
+- **A `Stop` hook that notices an `In Progress` plan's living sections were not part of a turn that wrote
+  to that plan's own repository**, and hands the observation back to the agent — the four sections are
+  meant to be maintained while the work happens, not reconstructed afterward. `scripts/session-touched-repos.sh`
+  attributes the turn from the session transcript rather than `git status` in `cwd`, which is wrong in this
+  kind of workspace twice over: `cwd` may be an umbrella repository over independent repos, and a dirty
+  tree elsewhere may be a sibling agent's in-flight edit, not this session's. Returns
+  `additionalContext`, not `decision:block` — the latter arrives at the model framed as a denial, which is
+  wrong for an observation the model must be free to correctly decline. See
+  [Plan-006](project/plans/006-plan-progress-nudge-and-state-cleanup.md).
+- **`hooks/session-state-cleanup.sh`**, on `SessionEnd`, plus an opportunistic sweep in the hook above —
+  nothing previously deleted the per-session marker `plan-mode-context.sh` writes; 13 stray files had
+  already accumulated on the maintainer's machine before this was noticed.
 
 ### Fixed
 
