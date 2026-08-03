@@ -57,11 +57,14 @@ which loads on its own. Not repeated here.
   when the user asks for exactly that job in plain language. That failure is silent and looks like the
   skill not working. Every skill here is model-invocable. **A model-invocable skill must confirm before any
   irreversible step**, since the user may not have asked for the run.
-- **The ~8,000-character skill listing is shared with every other installed plugin, not this plugin's to
-  spend.** That is why the four record-creating skills became one `/new <type>`: they cost 1,436 characters
-  between them and now cost ~380, and the space goes back to whatever else the user has installed. Measure
-  before adding a skill — sum the `description` fields across `skills/*/SKILL.md`; this repo sits near
-  2,800 today.
+- **The skill listing is a fraction of the context window, shared with every other installed plugin — not
+  a fixed budget and not this plugin's to spend.** `skillListingBudgetFraction` defaults to 1% of the
+  context window in characters, with a 1,536-character cap per skill, so quoting a fixed number here would
+  be wrong on a different model. That sharing is why the four record-creating skills became one
+  `/new <type>`: they cost 1,436 characters between them and now cost ~380, and the space goes back to
+  whatever else the user has installed. Measure before adding a skill with
+  `claude plugin details vibe-ops@<marketplace>`, which reports the projected always-on cost per
+  component; hooks are harness-only and cost nothing here.
 - **Never set `model:` in a shipped skill.** It silently overrides the user's own session choice. `effort`
   is a per-task budget hint and is fine; the model is the user's call. A small model in particular
   fabricates sections to fill a template even with no source material — exactly what `/new`'s plan
