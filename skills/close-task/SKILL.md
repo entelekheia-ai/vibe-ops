@@ -65,7 +65,7 @@ if this task touched no markdown at all.
 ## Step 4 — ADR, if a decision emerged
 
 If the work settled something hard to reverse that wasn't already an ADR (a library choice, an API shape,
-a rejected alternative worth recording), run `/vibe-ops:new-adr` now, before closing the task. If there's
+a rejected alternative worth recording), run `/vibe-ops:new adr` now, before closing the task. If there's
 rich context an ADR is too terse to carry (dead ends, why an alternative was rejected in detail), write a
 paired `project/log/<slug>.md` linked to the ADR.
 
@@ -103,21 +103,40 @@ Report what was promoted, where, and what was demoted, before continuing.
 
 ## Step 6 — Distill and delete
 
-1. **Distill upward** — write the executive summary into the **issue** (comment or body): what shipped, in a
-   few lines, for someone who never reads the dossier.
-2. **Drop the breadcrumb** — `<sha>` = `git rev-parse HEAD` (the commit that still contains the dossier).
-   Record in the issue, verbatim:
+1. **Write the executive summary to a file** — what shipped, for someone who will never read the dossier.
+   The shape that works, from the comments this repo family has already posted: what shipped per track
+   with PR links; **outcome against the prediction**, saying where reality diverged from what the plan
+   expected; and **what was routed before the dossier was deleted**, naming each promoted learning and its
+   destination. Do not write the breadcrumb or the "removed by the lifecycle" note — those are appended
+   mechanically below, which is why they stop being the two things that get forgotten.
 
-   ```
-   git show <sha>:project/tasks/NNN-slug.md
-   ```
-3. **Delete the dossier** — `git rm project/tasks/<NNN>-<slug>.md` and commit
-   (`chore(tasks): close <slug>, archived in history`).
+2. **Preview, and confirm.** This is the only irreversible action in the skill, and the skill can be
+   invoked by the model rather than typed — so the person whose dossier it is may not have asked for it.
 
-**Confirm before this last step.** It is the only irreversible action in the skill, and this skill can be
-invoked by the model rather than typed by the user — so the person whose dossier it is may not have asked
-for it. Everything above is additive and safe to have run; the deletion is not. State what will be deleted
-and what the breadcrumb is, and wait.
+   ```bash
+   sh "${CLAUDE_PLUGIN_ROOT}/skills/close-task/finalize.sh" --dry-run \
+      --plan <source plan, if any> <dossier>...
+   ```
+
+   It prints every file that links to the dossiers, what it would rewrite, and both commits it would make.
+   **Show that output and wait.** Pass every dossier being closed in one invocation — closures come in
+   batches, and referrers have to be collected across the whole set before anything is removed.
+
+3. **Run it for real**, dropping `--dry-run` and adding `--summary-file`:
+
+   ```bash
+   sh "${CLAUDE_PLUGIN_ROOT}/skills/close-task/finalize.sh" \
+      --plan <source plan> --summary-file <summary> <dossier>...
+   ```
+
+   It ticks the `## Closure` box, commits (that commit is the breadcrumb, because it is the last one that
+   still contains the dossier), deletes, rewrites every link to the dossier into plain text plus a runnable
+   `git show`, appends the breadcrumbs to the plan, commits again, re-runs the link check **after** the
+   deletion, and posts the summary with the breadcrumb appended.
+
+   The ordering is the whole point: derive the sha yourself and you will name a commit that no longer
+   contains the file. Skip the link rewriting and the repository looks broken to the next reader — that has
+   already happened, at a cost of thirteen dangling links across two documents.
 
 ## Checklist
 
@@ -131,4 +150,6 @@ and what the breadcrumb is, and wait.
 - [ ] Demotion check done: any `AGENTS.md` line or rule this work made redundant is deleted
 - [ ] Executive summary distilled into the issue
 - [ ] Breadcrumb `git show <sha>:project/tasks/NNN-slug.md` recorded in the issue
-- [ ] Dossier `git rm`'d and committed
+- [ ] `finalize.sh` was previewed with `--dry-run`, the output shown, and confirmed before the real run
+- [ ] Every dossier being closed was passed to a single invocation, not one call each
+- [ ] The link check reported by `finalize.sh` **after** the deletion is green

@@ -1,5 +1,5 @@
 {
-  "description": "Places this repository's plan format, and the next plan number, at the moment a plan is written in plan mode. Silent in every turn that is not plan mode, and in every repository that keeps no plans.",
+  "description": "Two guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -8,6 +8,19 @@
             "type": "command",
             "command": "sh",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/plan-mode-context.sh"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/task-dossier-guard.sh"],
             "timeout": 10
           }
         ]

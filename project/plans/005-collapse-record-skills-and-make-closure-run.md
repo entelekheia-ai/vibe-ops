@@ -325,7 +325,12 @@ breadcrumb in both the issue and the plan resolves with `git show`.
 - [ ] Track 3 — `UserPromptExpansion` hook
 - [~] Track 4 — breaking change: `AGENTS.md`, `README.md`, ADR-0006's pointer and the hook's own text are
       updated; **`CHANGELOG.md` and the slash-commands screenshot still pending**.
-- [ ] Track 5 — closure guard, tick, `finalize.sh`
+- [x] **Track 5 — closure half** (2026-08-03). `hooks/task-dossier-guard.sh` verified across six cases
+      (open dossier denied, closed allowed, mixed batch denied, non-deletion ignored, non-task path
+      ignored, missing file ignored) and on the no-`jq` fallback path. `finalize.sh` verified end to end
+      against a reproduction of the real failure: two dossiers, a plan linking to both, two commits in the
+      right order, links rewritten to runnable `git show` commands, link check green *after* the deletion,
+      and the breadcrumb resolving to the actual content. `close-task` Step 6 rewritten to drive it.
 - [~] Track 6 — the `CLAUDE_PROJECT_DIR` fix landed early, because the resolver made it a deletion rather
       than a patch: the hook now calls `resolve-governance.sh` instead of carrying its own copy of the
       discovery loops, and reports `006` in this repo where it used to report the workspace's `012`. ADR
@@ -363,6 +368,15 @@ plan, a *"What was routed before the dossiers were deleted"* section naming each
 destination, the lifecycle spelled out inline (`Planned → In Progress → Done → file removed, git history is
 the archive`) so the missing file does not read as a mistake, and the breadcrumb as a fenced block carrying
 the **full 40-character sha**. None of this is in `close-task`; all of it is in the artifacts it produced.
+
+**Observation:** `git add` naming a path that `git rm` already staged aborts the whole invocation, and
+the commit then silently never happens.
+**Evidence:** the first real run of `finalize.sh` printed `fatal: pathspec 'project/tasks/007-alpha.md' did
+not match any files` and stopped — the deletion commit was never created, though every earlier step had
+succeeded and reported success. `git rm` already stages the removal; re-adding the same path by name is
+both unnecessary and destructive to the rest of the `git add`. This is a known trap that was reintroduced
+anyway, which is the argument for the script existing at all: it is now encoded once instead of being
+re-derived by whoever closes the next task.
 
 **Observation:** closures happen in batches, not one dossier at a time.
 **Evidence:** `chore(tasks): close the four Track E dossiers` and `close the three finished Plan-003
