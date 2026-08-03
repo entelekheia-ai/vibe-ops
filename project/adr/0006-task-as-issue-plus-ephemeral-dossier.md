@@ -79,6 +79,8 @@ skills say so rather than pretending otherwise.
 
 - [`GOVERNANCE.md`](../../GOVERNANCE.md) — the issue-pairing table, including how a plan differs.
 - [`.agents/rules/governance.md`](../../.agents/rules/governance.md) — the lifecycle mechanics.
-- [`skills/new-task/SKILL.md`](../../skills/new-task/SKILL.md) ·
-  [`skills/close-task/SKILL.md`](../../skills/close-task/SKILL.md) — the two ends of it.
+- [`skills/new/SKILL.md`](../../skills/new/SKILL.md) with
+  [`references/records/task.md`](../../references/records/task.md) ·
+  [`skills/close-task/SKILL.md`](../../skills/close-task/SKILL.md) — the two ends of it. (Pointer
+  repaired when `new-task` was folded into `/new`; the decision above is unchanged.)
 - [ADR-0002](0002-knowledge-lifecycle.md) — what closure does with what the work taught.

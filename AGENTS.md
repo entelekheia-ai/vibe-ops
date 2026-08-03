@@ -16,7 +16,7 @@ instead of twice.
 | [`hooks/`](hooks/) | The plugin's only always-on surface — auto-discovered from `hooks/hooks.json`, no manifest entry. Everything else here is opt-in and costs nothing until invoked; a hook fires in **every** repository where the plugin is installed, so each one carries its own cheap exit as its first act. Why this surface exists at all: [`project/research/positioned-context-and-hooks.md`](project/research/positioned-context-and-hooks.md). |
 | [`references/`](references/) | Shared policy the skills point at instead of restating — the single copy of any rule governing more than one skill. |
 | [`project/`](project/) | This repo's own governance records, and the one folder with a **path-scoped rule** ([`.agents/rules/governance.md`](.agents/rules/governance.md)) that auto-loads only while you are working inside it. |
-| [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below. Checks **the repo you point it at**, composing one fragment per check from [`scripts/checks/`](scripts/checks/); `--list` shows what it assembled, `--self-test` asserts it still fails on a broken repo. |
+| [`scripts/`](scripts/) | Two kinds of tooling that must not be confused. `resolve-governance.sh` is **runtime** — the plugin runs it inside a target repo, and `/new` calls it once instead of rediscovering the repo. `check-agents-md.sh` is **development** — the guard for everything below. Checks **the repo you point it at**, composing one fragment per check from [`scripts/checks/`](scripts/checks/); `--list` shows what it assembled, `--self-test` asserts it still fails on a broken repo. |
 
 ## How this repo works — not obvious from the code
 
@@ -55,12 +55,16 @@ which loads on its own. Not repeated here.
 - **No skill sets `disable-model-invocation`.** The flag removes a skill from the model's listing
   entirely — zero context cost, and in exchange it can only ever fire from a typed `/command`, including
   when the user asks for exactly that job in plain language. That failure is silent and looks like the
-  skill not working. All ten are model-invocable; the listing costs ~3,850 of the 8,000-character budget,
-  so the trade was not close. **A model-invocable skill must confirm before any irreversible step**, since
-  the user may not have asked for the run — that obligation is now on every skill here, not a subset.
+  skill not working. Every skill here is model-invocable. **A model-invocable skill must confirm before any
+  irreversible step**, since the user may not have asked for the run.
+- **The ~8,000-character skill listing is shared with every other installed plugin, not this plugin's to
+  spend.** That is why the four record-creating skills became one `/new <type>`: they cost 1,436 characters
+  between them and now cost ~380, and the space goes back to whatever else the user has installed. Measure
+  before adding a skill — sum the `description` fields across `skills/*/SKILL.md`; this repo sits near
+  2,800 today.
 - **Never set `model:` in a shipped skill.** It silently overrides the user's own session choice. `effort`
   is a per-task budget hint and is fine; the model is the user's call. A small model in particular
-  fabricates sections to fill a template even with no source material — exactly what `new-plan`'s
+  fabricates sections to fill a template even with no source material — exactly what `/new`'s plan
   migration mode warns against — so pinning one there would install the failure it documents.
 - **Don't use `when_to_use`.** The listing renders it as `description - when_to_use`, so it becomes a
   second home for trigger text. Keep the triggers in `description`; one copy.
@@ -73,7 +77,7 @@ which loads on its own. Not repeated here.
 | [`authoring-agents-md`](skills/authoring-agents-md/SKILL.md) | Writes or refreshes an `AGENTS.md` (+ its `CLAUDE.md`). |
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (CI, or an opt-in local hook). |
-| [`new-adr`](skills/new-adr/SKILL.md) · [`new-rfc`](skills/new-rfc/SKILL.md) · [`new-plan`](skills/new-plan/SKILL.md) · [`new-task`](skills/new-task/SKILL.md) | Create one governance record, using the *target repo's* own template and numbering. |
+| [`new`](skills/new/SKILL.md) | Creates one governance record of any of the four kinds, using the *target repo's* own template and numbering. The body holds only what all four share; what diverges lives in [`references/records/<type>.md`](references/records/) and is delivered by the resolver, so only the one matching the argument is ever read. |
 | [`close-task`](skills/close-task/SKILL.md) | Closes the loop: write back to the source doc, propagate to living docs, spawn an ADR, route the learnings, then distill and delete the dossier. |
 | [`close-plan`](skills/close-plan/SKILL.md) | The same routing for a plan, which **is not deleted** — retrospective against the goals, the demotion check, issue closed, file kept. |
 

@@ -20,39 +20,37 @@ case "$IN" in
   *) exit 0 ;;
 esac
 
-ROOT="${CLAUDE_PROJECT_DIR:-.}"
-
-# 2. A repository that keeps plans, with a template to keep them in. Discovery
-#    order matches skills/new-plan/SKILL.md Step 0 — keep the two in sync.
-PLAN_DIR=""
-for d in project/plans plans docs/plans; do
-  if [ -d "$ROOT/$d" ]; then PLAN_DIR="$d"; break; fi
-done
-[ -n "$PLAN_DIR" ] || exit 0
-
-PLAN_TPL=""
-for t in project/templates/plan.md templates/plan.md .agents/templates/plan.md; do
-  if [ -f "$ROOT/$t" ]; then PLAN_TPL="$t"; break; fi
-done
-[ -n "$PLAN_TPL" ] || exit 0
-
-# 3. Once per session. Plan mode spans several turns while the user iterates;
+# 2. Once per session. Plan mode spans several turns while the user iterates;
 #    the injected text stays in the transcript, so repeating it only costs.
 SID=$(printf '%s' "$IN" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 STATE="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}"
 MARK="$STATE/vibe-ops-plan-mode-${SID:-nosession}"
 [ -e "$MARK" ] && exit 0
 
-# 4. The next number, read from disk. An injected format without it manufactures
-#    a collision: the model will otherwise write Plan-001 into a full directory.
-LAST=$(ls "$ROOT/$PLAN_DIR" 2>/dev/null | sed -n 's/^\([0-9][0-9][0-9]\)-.*\.md$/\1/p' | sort -n | tail -1)
-LAST=$(printf '%s' "${LAST:-0}" | sed 's/^0*//')
-[ -n "$LAST" ] || LAST=0
-NEXT=$(printf '%03d' $((LAST + 1)))
+# 3. Everything about the repository comes from the resolver — the same one
+#    /new calls. Do not re-derive it here: an earlier version of this hook
+#    carried its own copy of the discovery loops and anchored on
+#    CLAUDE_PROJECT_DIR, which in a workspace whose project root is an umbrella
+#    repository names the umbrella. It reported the wrong repo's next number.
+SELF=$0
+case "$SELF" in /*) ;; *) SELF="$(pwd)/$SELF" ;; esac
+ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$SELF")")}"
+RESOLVER="$ROOT/scripts/resolve-governance.sh"
+[ -f "$RESOLVER" ] || exit 0
 
-# 5. Hand-built JSON, so a path carrying a quote or a backslash must not reach
+RESOLVED=$(sh "$RESOLVER" plan 2>/dev/null) || exit 0
+PLAN_DIR=$(printf '%s\n' "$RESOLVED" | sed -n 's/^DIR=//p')
+PLAN_TPL=$(printf '%s\n' "$RESOLVED" | sed -n 's/^TPL=//p')
+NEXT=$(printf '%s\n' "$RESOLVED" | sed -n 's/^NEXT=//p')
+
+# A repository that keeps no plans, or keeps them without a template, is not one
+# this hook has anything to say to.
+[ "$PLAN_DIR" = "(none)" ] && exit 0
+[ "$PLAN_TPL" = "(none)" ] && exit 0
+
+# 4. Hand-built JSON, so nothing carrying a quote or a backslash may reach
 #    stdout — a malformed hook payload is reported to the user as an error.
-case "$PLAN_DIR$PLAN_TPL" in
+case "$PLAN_DIR$PLAN_TPL$NEXT" in
   *'"'* | *'\'*) exit 0 ;;
 esac
 
@@ -60,4 +58,4 @@ mkdir -p "$STATE" 2>/dev/null
 : >"$MARK" 2>/dev/null
 
 printf '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"%s"}}\n' \
-  "This repository keeps implementation plans as permanent design records in \`$PLAN_DIR\`, written from the template at \`$PLAN_TPL\`. If this planning turn is going to produce a durable design record rather than a one-off change, read that template first and give the plan-mode plan its structure: the H1 title, the metadata table, Summary, Goals, Scope (In and Out), Design, Tracks, Success criteria, and the four living sections (Progress, Surprises & Discoveries, Decision Log, Outcomes & Retrospective). Write it in English regardless of the language of the conversation. Where there is no material for a section, leave an honest stub rather than inventing content. The next plan number in this repository is $NEXT — do not guess one. None of this asks you to create or move any file: it shapes the plan you were already going to write, and saving it into \`$PLAN_DIR\` happens only if the user asks, through /vibe-ops:new-plan."
+  "This repository keeps implementation plans as permanent design records in \`$PLAN_DIR\`, written from the template at \`$PLAN_TPL\`. If this planning turn is going to produce a durable design record rather than a one-off change, read that template first and give the plan-mode plan its structure: the H1 title, the metadata table, Summary, Goals, Scope (In and Out), Design, Tracks, Success criteria, and the four living sections (Progress, Surprises & Discoveries, Decision Log, Outcomes & Retrospective). Write it in English regardless of the language of the conversation. Where there is no material for a section, leave an honest stub rather than inventing content. The next plan number in this repository is $NEXT — do not guess one. None of this asks you to create or move any file: it shapes the plan you were already going to write, and saving it into \`$PLAN_DIR\` happens only if the user asks, through /vibe-ops:new plan."
