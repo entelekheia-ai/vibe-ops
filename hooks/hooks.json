@@ -1,0 +1,17 @@
+{
+  "description": "Places this repository's plan format, and the next plan number, at the moment a plan is written in plan mode. Silent in every turn that is not plan mode, and in every repository that keeps no plans.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/plan-mode-context.sh"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

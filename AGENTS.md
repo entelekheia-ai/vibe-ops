@@ -13,6 +13,7 @@ instead of twice.
 | Path | What is not obvious about it |
 |---|---|
 | [`skills/<name>/SKILL.md`](skills/) | **The product** — what the plugin ships and what Claude Code loads. A `templates/` folder beside a SKILL.md holds files that skill copies at runtime; it is never inlined into the SKILL.md. A skill may also ship tooling it *runs* rather than copies — `license-setup/get-license.sh` + its pinned `licenses/`, the only sanctioned way a LICENSE is produced ([ADR-0008](project/adr/0008-license-text-is-fetched-and-verified.md)). |
+| [`hooks/`](hooks/) | The plugin's only always-on surface — auto-discovered from `hooks/hooks.json`, no manifest entry. Everything else here is opt-in and costs nothing until invoked; a hook fires in **every** repository where the plugin is installed, so each one carries its own cheap exit as its first act. Why this surface exists at all: [`project/research/positioned-context-and-hooks.md`](project/research/positioned-context-and-hooks.md). |
 | [`references/`](references/) | Shared policy the skills point at instead of restating — the single copy of any rule governing more than one skill. |
 | [`project/`](project/) | This repo's own governance records, and the one folder with a **path-scoped rule** ([`.agents/rules/governance.md`](.agents/rules/governance.md)) that auto-loads only while you are working inside it. |
 | [`scripts/check-agents-md.sh`](scripts/check-agents-md.sh) | The guard for everything below. Checks **the repo you point it at**, composing one fragment per check from [`scripts/checks/`](scripts/checks/); `--list` shows what it assembled, `--self-test` asserts it still fails on a broken repo. |
@@ -25,6 +26,10 @@ which loads on its own. Not repeated here.
 
 - **Adding a skill = adding a folder.** `plugin.json` points at the directory; there is no per-skill
   manifest entry. The only other place to update is this file's skill table.
+- **A hook is not a cheaper way to write a line.** It earns its place only by delivering something a line
+  cannot: state read from disk at that instant, or context placed at a moment an instruction file cannot
+  reach. It must also be testable without a release — `claude --plugin-dir <this tree>` loads the working
+  tree and its hooks directly, which is the only way to exercise one before the version that ships it.
 - **Skills delegate instead of duplicating** — `repo-setup` orchestrates `license-setup` →
   `authoring-agents-md` → `authoring-readme` by name. A rule that governs more than one skill lives in
   [`references/`](references/README.md) and is *pointed at*, never copied into a `SKILL.md`.
