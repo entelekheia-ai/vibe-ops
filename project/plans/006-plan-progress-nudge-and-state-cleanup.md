@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-03 |
 | Author | Danilo Borges |
 | Related | [Plan-005](005-collapse-record-skills-and-make-closure-run.md) (deferred this) · [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) · [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) · [research: positioned context and hooks](../research/positioned-context-and-hooks.md) |
@@ -276,15 +276,15 @@ claude --plugin-dir . -p "…"    # in a scratch repo holding an In Progress pla
       release carrying this ships — see Open questions)
 - [x] Track 3 — 10/10 gate cases pass, plus an exit-code sweep on garbage/empty/missing-file input and a
       git-spawn count proving a no-write turn spawns zero `git` processes
-- [ ] Track 3b — commit the gate cases as a runnable suite. They were run ad hoc and never committed, so
+- [~] Track 3b — **CUT from this plan, carried as debt.** Commit the gate cases as a runnable suite. They were run ad hoc and never committed, so
       nothing can re-run them; two defects found afterwards (sweep `-type f`, offset seeding) are exactly
       what an extendable suite would have caught. See Surprises.
 - [x] Observed live after install: hook fires, and its first firing was a false positive (offset seeding),
       now fixed and re-verified. Failure modes re-checked — empty payload, garbage payload and an empty
       transcript all exit 0 silently; `check-agents-md.sh` 9/9.
-- [ ] Track 4 — `AGENTS.md`, `CHANGELOG.md`, version bump, release (maintainer's call, may ship with
+- [x] Track 4 — `AGENTS.md`, `CHANGELOG.md`, version bump to 0.7.0, tag `vibe-ops--v0.7.0` (unpushed; may ship with
       Plan-005)
-- [ ] Run `/vibe-ops:close-plan` — retrospective, route every Surprises & Discoveries entry, demotion
+- [x] Run `/vibe-ops:close-plan` — retrospective, route every Surprises & Discoveries entry, demotion
       check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
       actually closed; a Progress list that is otherwise complete but has this box open is not finished.
 
@@ -458,7 +458,43 @@ ADR-0009 tension explicitly: a cleanup hook is housekeeping, not delivery, and i
 
 ## Outcomes & Retrospective
 
-*Not yet started — Track 4 and the release are still open.*
+**Against the four goals.**
+
+1. *A turn that wrote into a repo with an In Progress plan ends with the sections updated, or an explicit
+   statement there was nothing to record.* **Met, and demonstrated on this plan.** Two of the entries in
+   Surprises & Discoveries above exist only because the hook asked for them on turns that would otherwise
+   have ended silently — including the one describing the hook's own over-triggering.
+2. *Never attributes another agent's or another repository's changes to this session.* **Met by
+   construction.** `git status` is never consulted; the repo comes from the files this session's transcript
+   records. The one false positive observed was the opposite failure — attributing *this* session's own
+   older writes to the current turn — and it was the offset, not the attribution.
+3. *A turn that wrote nothing costs one string test and one incremental read.* **Met**, measured at zero
+   `git` spawns for a read-only turn against two for a real write.
+4. *Never the only implementation.* **Met** — the instruction stays in the template and the governance rule,
+   and `close-plan` still checks the sections at closure, which is what this ceremony just did.
+
+**What the criteria got wrong.** One acceptance criterion was a bad prediction and is recorded rather than
+edited: *"the state directory does not grow across a working day."* The per-session mechanism is confirmed,
+but the thirteen pre-existing markers need a turn that both writes files and crosses the seven-day
+threshold, so the sweep has still never been observed clearing real accumulated state. The criterion
+described an outcome the test could not reach in a day.
+
+**Cut, not silently dropped.** *Track 3b — commit the gate cases as a runnable suite* is **cut from this
+plan and carried as debt.** The cases were run ad hoc and never committed, so today they cannot be re-run;
+from this repository's point of view they did not happen. This is the plan's most expensive open item,
+because both post-install defects are exactly what an extendable suite would have covered. It is not closed
+by this ceremony and it is not resolved.
+
+**What actually caught the defects.** Nothing in this plan's own verification did. The sweep selecting its
+own state directory, the offset reset on a resumed session, and the broken frontmatter on `skills/new` were
+found by, respectively: a maintainer's question, the hook firing for real, and `claude plugin tag` at the
+moment of release. The pattern is that each was invisible to a check written by the same person who wrote
+the thing being checked — the tests exercised the paths I already had in mind. Two were converted into
+guards (`-type f`, `45-skill-frontmatter.sh`); the third became the offset-seeding branch.
+
+**Delivered in 0.7.0**, tagged `vibe-ops--v0.7.0`. Until that tag, every hook in this plan was unreachable
+from `${CLAUDE_PLUGIN_ROOT}` in every install — which this plan proved twice over, having twice needed
+uninstall + cache removal + reinstall to test its own code.
 
 ## Open questions
 
