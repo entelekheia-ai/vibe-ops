@@ -12,7 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 > a released version**, so anything that has landed but not shipped is unreachable from
 > `${CLAUDE_PLUGIN_ROOT}` in every install.
 
-## [Unreleased]
+## [0.7.0] — 2026-08-03
 
 ### Removed — BREAKING
 
@@ -70,6 +70,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The plan-mode hook reported the umbrella repository's next plan number when the work was in a nested
   repository. It now calls the resolver instead of carrying its own copy of the discovery loops.
+- **The state sweep selected its own state directory.** `CLAUDE_PLUGIN_DATA` is itself named
+  `vibe-ops-<marketplace>`, so it matched the sweep's `vibe-ops-*` pattern at depth 0 — `find` includes its
+  own starting point. Nothing was lost, because `rm -f` refuses a directory; the guard was "the command we
+  happen to use cannot" rather than "we never select it", which would have become data loss the moment
+  anyone reached for `-delete`. Now scoped with `-type f`.
+- **A resumed session re-attributed its entire history to one turn.** `SessionEnd` deletes the state file
+  and a resume keeps the same `session_id`, so the next `Stop` found none and started from offset 0 —
+  observed on a 5.5 MB transcript, nudging about a repository last written to hours earlier. The first
+  `Stop` of a session now seeds the offset to the transcript's current size and stays silent, which is the
+  under-triggering this design already prefers over a false nudge.
+
+  Both were found after installing, by questions rather than by tests: the gate's cheap-exit chain was
+  exercised, the *seeding* of that chain never was, because every case started from a state file that
+  already existed.
 
 ### Changed
 
