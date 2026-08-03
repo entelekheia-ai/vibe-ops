@@ -336,8 +336,10 @@ breadcrumb in both the issue and the plan resolves with `git show`.
       against a reproduction of the real failure: two dossiers, a plan linking to both, two commits in the
       right order, links rewritten to runnable `git show` commands, link check green *after* the deletion,
       and the breadcrumb resolving to the actual content. `close-task` Step 6 rewritten to drive it.
-- [~] Track 6 — [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) written and accepted. **The
-      version bump and publish are not done**, and until a release is cut none of this reaches any
+- [~] Track 6 — [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) written and accepted. Installed
+      locally from a directory marketplace and verified from the cache path: 7 skills, 3 hooks, the
+      plan-mode hook resolving this repo's `006`, the closure guard denying. **The version bump and
+      publish are not done**, and until a release is cut none of this reaches any
       install. The `CLAUDE_PROJECT_DIR` fix landed early, because the resolver made it a deletion rather
       than a patch: the hook now calls `resolve-governance.sh` instead of carrying its own copy of the
       discovery loops, and reports `006` in this repo where it used to report the workspace's `012`. ADR
@@ -375,6 +377,16 @@ plan, a *"What was routed before the dossiers were deleted"* section naming each
 destination, the lifecycle spelled out inline (`Planned → In Progress → Done → file removed, git history is
 the archive`) so the missing file does not read as a mistake, and the breadcrumb as a fenced block carrying
 the **full 40-character sha**. None of this is in `close-task`; all of it is in the artifacts it produced.
+
+**Observation:** a directory-source marketplace still installs a snapshot, and the version pin refuses to
+refresh it.
+**Evidence:** after repointing the marketplace at the working tree, `plugin update` answered *"already at
+the latest version (0.6.0)"* and left the cache holding the old GitHub clone — the four removed skills were
+still installed. Picking up the working tree required uninstalling, deleting the stale `0.6.0` cache
+directory, and installing again. The installed copy is an independent copy, not a symlink and not a git
+clone: `skills/new/SKILL.md` has a different inode from the working tree's, so **an edit is not live** and
+each iteration needs that same three-step dance — or a version bump, which by this repo's own rule means
+cutting a release.
 
 **Observation:** BSD `sed` does not support `\|` alternation in a BRE, and fails by matching nothing
 rather than by erroring.
