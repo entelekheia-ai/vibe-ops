@@ -20,7 +20,7 @@ How decisions and work are recorded in this repository. Five artifact types, fiv
    `Outcomes & Retrospective`. A plan is permanent and is never deleted; that is what separates it from a
    task dossier.
 4. Decided work → a **task**: a GitHub issue plus an ephemeral `project/tasks/NNN-slug.md` dossier. Closure
-   goes through `/vibe-ops:close-task` — write back to the source doc, propagate to living docs, spawn an ADR
+   goes through `/vibe-ops:close task` — write back to the source doc, propagate to living docs, spawn an ADR
    if a decision emerged, route what the work taught, then distill + delete the dossier.
 5. Supporting material along the way: `project/research/` for investigation that fed a decision, and
    `project/log/` for context no other artifact holds — see below.
@@ -33,7 +33,7 @@ what the fact *is* — a line in `AGENTS.md`, a scoped rule, a skill, a mechanic
 at all. The reverse applies too: an instruction line that a new guard has made redundant gets deleted.
 
 **Every artifact has a closure that performs this routing**, so no unit of work can reach its end without
-passing through one: `/vibe-ops:close-task` for a task, `/vibe-ops:close-plan` for a plan. They differ in
+passing through one: `/vibe-ops:close task` for a task, `/vibe-ops:close plan` for a plan. They differ in
 what survives — a task dossier is deleted and a plan file is kept — and not in whether the routing happens.
 
 `project/log/` therefore has **two** reasons to exist, not one: the narrative an ADR is too terse to carry,

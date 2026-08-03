@@ -39,7 +39,7 @@ becomes a document rather than an instrument:
   evidence is still at hand.
 - A decision goes into `Decision Log` when made; if it is hard to reverse, also write an ADR and link it.
 - `Status` moves `Backlog → In Progress → Shipped`. The file is never deleted — it is the record.
-- At closure, `/vibe-ops:close-plan` writes the retrospective against these goals and routes every
+- At closure, `/vibe-ops:close plan` writes the retrospective against these goals and routes every
   `Surprises & Discoveries` entry into the repo's durable knowledge. **Never re-run `/new` on an existing
   plan** — edit it in place.
 

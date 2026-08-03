@@ -1,5 +1,6 @@
 #!/bin/sh
-# vibe-ops — the mechanical tail of /vibe-ops:close-task.
+# vibe-ops — the mechanical tail of /vibe-ops:close's task branch. Task-only:
+# a plan is never deleted, so plan closure has no equivalent script.
 #
 # usage: finalize.sh [--dry-run] [--plan <path>] [--summary-file <path>] <dossier>...
 #
@@ -72,12 +73,12 @@ done
 # happen here and not be left to the model.
 say "== tick the Closure box"
 for d in $DOSSIERS; do
-  if grep -qE '^[[:space:]]*-[[:space:]]*\[[[:space:]]*\].*close-task' "$d"; then
+  if grep -qE '^[[:space:]]*-[[:space:]]*\[[[:space:]]*\].*close task' "$d"; then
     if [ "$DRY" = yes ]; then
       say "  would tick: $d"
     else
       TMP="$d.finalize.tmp"
-      sed 's/^\([[:space:]]*-[[:space:]]*\)\[[[:space:]]*\]\(.*close-task\)/\1[x]\2/' "$d" > "$TMP" && mv "$TMP" "$d"
+      sed 's/^\([[:space:]]*-[[:space:]]*\)\[[[:space:]]*\]\(.*close task\)/\1[x]\2/' "$d" > "$TMP" && mv "$TMP" "$d"
       say "  ticked: $d"
     fi
   else

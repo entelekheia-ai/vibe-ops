@@ -81,8 +81,7 @@ which loads on its own. Not repeated here.
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (CI, or an opt-in local hook). |
 | [`new`](skills/new/SKILL.md) | Creates one governance record of any of the four kinds, using the *target repo's* own template and numbering. The body holds only what all four share; what diverges lives in [`references/records/<type>.md`](references/records/) and is delivered by the resolver, so only the one matching the argument is ever read. |
-| [`close-task`](skills/close-task/SKILL.md) | Closes the loop: write back to the source doc, propagate to living docs, spawn an ADR, route the learnings, then distill and delete the dossier. |
-| [`close-plan`](skills/close-plan/SKILL.md) | The same routing for a plan, which **is not deleted** — retrospective against the goals, the demotion check, issue closed, file kept. |
+| [`close`](skills/close/SKILL.md) | Closes the loop for a task or a plan: write back, propagate to living docs, route the learnings. A task dossier is distilled and deleted; a plan's file **is not deleted** — retrospective against the goals, the demotion check, issue closed, file kept. |
 
 ## Source of truth
 

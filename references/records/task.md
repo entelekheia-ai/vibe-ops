@@ -36,7 +36,7 @@ Commit the dossier as you go and update it freely — it is the living log, not 
 
 ## Closure is a ceremony, not a delete
 
-When the work is done, run **`/vibe-ops:close-task`**. It writes back to the doc that started the work,
+When the work is done, run **`/vibe-ops:close task`**. It writes back to the doc that started the work,
 propagates to living docs, spawns an ADR if a decision emerged, routes each `Surprises & Discoveries`
 entry through the promotion test, and only then distills the summary into the issue and removes the
 dossier. Deleting the file directly loses everything the ceremony would have promoted — which is why a
@@ -48,7 +48,8 @@ Observed in practice, and worth matching rather than reinventing. The comment po
 in this order: **what shipped** per track with PR links; **outcome against the prediction**, stating where
 reality diverged from what the plan expected; and **what was routed before the dossier was deleted**,
 naming each promoted learning and its destination. The breadcrumb and the note that the file was removed
-by the lifecycle rather than lost are appended mechanically by `close-task` — do not write them by hand.
+by the lifecycle rather than lost are appended mechanically by `close`'s task branch — do not write them
+by hand.
 
 ## Checklist additions
 
