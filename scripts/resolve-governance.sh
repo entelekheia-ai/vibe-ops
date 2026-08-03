@@ -96,6 +96,61 @@ else
   NEXT=$(printf "%0${PAD}d" $((N + 1)))
 fi
 
+# Plan-only: this repo's own status vocabulary and living-section names, derived
+# rather than assumed — a consumer (the Stop-hook nudge) must never hardcode
+# vibe-ops's own taxonomy, because an installed repo is free to use a different
+# one. (unknown) is a legitimate answer; a consumer that gets it must degrade,
+# never guess a section name that does not exist in the target repo.
+PLAN_ACTIVE="(unknown)"
+LIVING="(unknown)"
+if [ "$TYPE" = plan ]; then
+  SRC=""
+  [ "$TPL" != "(none)" ] && [ -f "$TPL" ] && SRC="$TPL"
+
+  # The active status: middle term of "Status lifecycle: A → B → C." in the
+  # template. Middle-of-N, not literally index 2, so a repo with a longer or
+  # shorter chain than three states still gets a plausible answer instead of
+  # a hardcoded assumption of three.
+  extract_mid_arrow() { # $1 = a line containing N terms joined by "→"
+    printf '%s\n' "$1" | awk -F'→' '{
+      n = NF; mid = int((n + 1) / 2); if (mid < 1) mid = 1
+      s = $mid; gsub(/^[ \t]+|[ \t]+$/, "", s); print s
+    }'
+  }
+
+  if [ -n "$SRC" ]; then
+    CHAIN=$(grep -m1 'Status lifecycle:' "$SRC" 2>/dev/null \
+      | sed -e 's/.*Status lifecycle:[[:space:]]*//' -e 's/\..*$//')
+    [ -n "$CHAIN" ] && PLAN_ACTIVE=$(extract_mid_arrow "$CHAIN")
+    [ -n "$PLAN_ACTIVE" ] || PLAN_ACTIVE="(unknown)"
+  fi
+  if [ "$PLAN_ACTIVE" = "(unknown)" ] && [ "$AUTHORITY" != "(default)" ] && [ -f "$AUTHORITY" ]; then
+    # Fallback for a repo with no template but a governance rule: the first
+    # bare arrow-chain line within a few lines of a heading naming "Plan". A
+    # rule that does not look like this is exactly what (unknown) is for.
+    CHAIN=$(awk '
+      /^#+.*[Pp]lan/ { near = 8; next }
+      near > 0 { near--; if ($0 ~ /→/) { print; exit } }
+    ' "$AUTHORITY")
+    [ -n "$CHAIN" ] && PLAN_ACTIVE=$(extract_mid_arrow "$CHAIN")
+    [ -n "$PLAN_ACTIVE" ] || PLAN_ACTIVE="(unknown)"
+  fi
+
+  # The living section names: only from between the two markers in the
+  # template, and only when BOTH are present. One marker without the other is
+  # treated the same as neither — a consumer must not guess where the list
+  # stops.
+  if [ -n "$SRC" ] && grep -q '===== LIVING SECTIONS' "$SRC" 2>/dev/null \
+     && grep -q '===== END LIVING SECTIONS' "$SRC" 2>/dev/null; then
+    LIVING=$(awk '
+      /===== LIVING SECTIONS/ { on = 1; next }
+      /===== END LIVING SECTIONS/ { on = 0 }
+      on && /^## / { sub(/^## /, ""); printf "%s%s", (n++ ? "|" : ""), $0 }
+    ' "$SRC")
+    [ -n "$LIVING" ] || LIVING="(unknown)"
+  fi
+fi
+
 printf '# resolve-governance: type=%s root=%s\n' "$TYPE" "$ROOT"
 printf 'DIR=%s\n' "$DIR"
 printf 'TPL=%s\n' "$TPL"
@@ -103,6 +158,10 @@ printf 'AUTHORITY=%s\n' "$AUTHORITY"
 printf 'PAD=%s\n' "$PAD"
 printf 'EXISTING=%s\n' "$EXISTING"
 printf 'NEXT=%s\n' "$NEXT"
+if [ "$TYPE" = plan ]; then
+  printf 'PLAN_ACTIVE=%s\n' "$PLAN_ACTIVE"
+  printf 'LIVING=%s\n' "$LIVING"
+fi
 
 # GitHub facts, for the one record type whose identity depends on an issue.
 if [ "$TYPE" = task ]; then

@@ -1,7 +1,7 @@
 #!/bin/sh
-# vibe-ops — notice a turn wrote to a repository whose plan is In Progress
-# while that plan's living sections stayed untouched, and hand the
-# observation back to the agent that still has tools.
+# vibe-ops — notice a turn wrote to a repository whose plan is active while
+# that plan's living sections stayed untouched, and hand the observation back
+# to the agent that still has tools.
 #
 # Why a Stop hook and not a line in an instruction file: the governance rule
 # already says Progress / Surprises & Discoveries / Decision Log / Outcomes
@@ -13,6 +13,15 @@
 # cwd: this session's cwd may be an umbrella repository over independent
 # repos, and a dirty tree elsewhere may be a sibling agent's in-flight edits,
 # not this session's. See project/plans/006-*.md Decision Log.
+#
+# The active-status word and the living section names are NEVER hardcoded
+# here — they are read per repository from resolve-governance.sh's
+# PLAN_ACTIVE / LIVING outputs (project/tasks/001-*.md). 0.7.0 shipped this
+# hook assuming every installed repo uses vibe-ops's own vocabulary
+# ("In Progress", the same four section names); a repo whose plan template
+# differs would have been told to write sections that do not exist there. A
+# repo whose taxonomy the resolver cannot derive is skipped in full silence —
+# never guessed.
 #
 # Returns additionalContext, not decision:block — Track 0 measured that block
 # arrives at the model framed as a denial ("Stop hook feedback: …"), which is
@@ -58,7 +67,11 @@ STATE="$STATE_DIR/vibe-ops-progress-$SID"
 # the trade this plan already declares it prefers over a false nudge.
 if [ ! -f "$STATE" ]; then
   mkdir -p "$STATE_DIR" 2>/dev/null
-  SIZE=$(wc -c <"$TRANSCRIPT" 2>/dev/null | tr -d ' ')
+  # wc takes the path as an argument, not via `<` redirection: a missing file
+  # makes `<"$TRANSCRIPT"` fail at the shell itself, which prints straight to
+  # this process's own stderr — the command's own `2>/dev/null` cannot catch a
+  # failure that happens before the command runs.
+  SIZE=$(wc -c "$TRANSCRIPT" 2>/dev/null | awk '{print $1}')
   case "$SIZE" in ''|*[!0-9]*) SIZE=0 ;; esac
   printf 'OFFSET=%s\nNUDGED=\n' "$SIZE" >"$STATE" 2>/dev/null
   exit 0
@@ -100,38 +113,69 @@ if [ -z "$REPOS" ]; then
   exit 0
 fi
 
-# For each repository this turn wrote to, find its one In Progress plan (if
-# any) and check whether the turn also wrote to that plan file itself.
-NUDGE_LINES=""
+# For each repository this turn wrote to, resolve ITS OWN taxonomy and find
+# every plan whose status matches (there may be more than one — no head -1),
+# skipping any plan this turn already wrote to itself. NUDGED is a set of
+# plan paths, not a scalar: dropping head -1 means more than one plan can be
+# outstanding across repos in the same turn, and a scalar would forget all
+# but the last one on the very next Stop.
+MSG_BLOCKS=""
 STILL_NUDGED=""
 for REPO in $REPOS; do
-  DIR=$(cd "$REPO" 2>/dev/null && sh "$RESOLVER" plan 2>/dev/null | sed -n 's/^DIR=//p')
+  RESOLVED=$(cd "$REPO" 2>/dev/null && sh "$RESOLVER" plan 2>/dev/null) || continue
+  DIR=$(printf '%s\n' "$RESOLVED" | sed -n 's/^DIR=//p')
+  TPL=$(printf '%s\n' "$RESOLVED" | sed -n 's/^TPL=//p')
+  AUTHORITY=$(printf '%s\n' "$RESOLVED" | sed -n 's/^AUTHORITY=//p')
+  ACTIVE=$(printf '%s\n' "$RESOLVED" | sed -n 's/^PLAN_ACTIVE=//p')
+  LIVING=$(printf '%s\n' "$RESOLVED" | sed -n 's/^LIVING=//p')
+
   [ -n "$DIR" ] && [ "$DIR" != "(none)" ] || continue
   [ -d "$REPO/$DIR" ] || continue
+  # Unknown taxonomy: silence, never a guessed status word or section name.
+  [ -n "$ACTIVE" ] && [ "$ACTIVE" != "(unknown)" ] || continue
 
-  PLAN=$(grep -l '^| Status | In Progress |' "$REPO/$DIR"/*.md 2>/dev/null | head -1)
-  [ -n "$PLAN" ] || continue
+  # Tolerant of cell spacing — not the exact byte sequence "| Status | X |".
+  # ACTIVE itself is repo-supplied text, escaped before it enters a regex.
+  ACTIVE_RE=$(printf '%s' "$ACTIVE" | sed -e 's/[.[\*^$()+?{|]/\\&/g')
+  ROW_RE='^\|[[:space:]]*Status[[:space:]]*\|[[:space:]]*'"$ACTIVE_RE"'[[:space:]]*\|'
 
-  # 4. Already nudged about this exact plan, and it still hasn't been
-  # touched — stay silent rather than insist twice about the same state.
-  case "$WRITTEN" in
-    *"$PLAN"*) continue ;;  # this turn wrote the plan itself: fully silent
-  esac
-  if [ "$NUDGED" = "$PLAN" ]; then
-    STILL_NUDGED="$PLAN"
-    continue
-  fi
+  for PLAN in $(grep -lE "$ROW_RE" "$REPO/$DIR"/*.md 2>/dev/null); do
+    case "$WRITTEN" in
+      *"$PLAN"*) continue ;;  # this turn wrote the plan itself: fully silent
+    esac
+    case " $NUDGED " in
+      *" $PLAN "*)
+        # Already nudged and still untouched — stay silent rather than
+        # insist twice, but keep it in the outstanding set.
+        STILL_NUDGED="$STILL_NUDGED $PLAN"
+        continue ;;
+    esac
 
-  NUDGE_LINES="$NUDGE_LINES $PLAN"
-  STILL_NUDGED="$PLAN"
+    if [ -n "$LIVING" ] && [ "$LIVING" != "(unknown)" ]; then
+      SECTIONS=$(printf '%s' "$LIVING" | tr '|' ',' | sed 's/,/, /g')
+      BODY="Those sections ($SECTIONS) are maintained while the work happens, not reconstructed afterwards — that reconstruction is worthless per this repository's own governance rule."
+    else
+      # Tier 2: the repo's template has no end marker (or none at all), so
+      # the exact section list cannot be read — point at the source instead
+      # of naming sections that might not exist there.
+      TARGET="$TPL"
+      [ "$TARGET" != "(none)" ] || TARGET="$AUTHORITY"
+      BODY="This repository's living sections are the ones below the LIVING SECTIONS divider in \`$TARGET\` — check there rather than assuming a specific list."
+    fi
+
+    MSG_BLOCKS="$MSG_BLOCKS
+- $PLAN — status \"$ACTIVE\". $BODY"
+    STILL_NUDGED="$STILL_NUDGED $PLAN"
+  done
 done
 
 printf 'OFFSET=%s\nNUDGED=%s\n' "$NEW_OFFSET" "$STILL_NUDGED" >"$STATE" 2>/dev/null
 
-[ -n "$NUDGE_LINES" ] || exit 0
+[ -n "$MSG_BLOCKS" ] || exit 0
 
-TEXT="This turn wrote to a repository whose plan is In Progress, and the plan's living sections were not part of that write:$NUDGE_LINES
-Those sections (Progress, Surprises & Discoveries, Decision Log, Outcomes & Retrospective) are maintained while the work happens, not reconstructed afterwards — that reconstruction is worthless per this repository's own governance rule. If this turn taught or decided something worth the record, add an entry now (Observation:/Evidence: or Decision:/Rationale:/Date/Author:) before finishing. If it genuinely did not, that is a fine outcome too — no entry is needed, and this will not ask again about this plan until it changes."
+TEXT="This turn wrote to a repository with an active plan whose living sections were not part of that write:$MSG_BLOCKS
+
+If this turn taught or decided something worth the record, add an entry now (Observation:/Evidence: or Decision:/Rationale:/Date/Author:) before finishing. If it genuinely did not, that is a fine outcome too — no entry is needed, and this will not ask again about these plans until they change."
 
 # Hand-built JSON: a raw newline inside a JSON string is invalid, and a plan
 # path is untrusted input, so both backslash/quote and the real newlines in
