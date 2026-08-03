@@ -1,5 +1,5 @@
 {
-  "description": "Three guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. new-command-context resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run.",
+  "description": "Five guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. new-command-context resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is In Progress without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -39,6 +39,34 @@
             "command": "sh",
             "args": [
               "${CLAUDE_PLUGIN_ROOT}/hooks/new-command-context.sh"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/plan-progress-nudge.sh"
+            ],
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/session-state-cleanup.sh"
             ],
             "timeout": 10
           }
