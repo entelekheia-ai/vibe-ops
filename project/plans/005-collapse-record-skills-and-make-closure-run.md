@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-03 |
 | Author | Danilo Borges |
 | Related | [research: positioned context and hooks](../research/positioned-context-and-hooks.md) · [ADR-0001](../adr/0001-skill-taxonomy-target-state-vs-event.md) · [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) |
@@ -482,9 +482,22 @@ exists to stop making.
 
 ## Outcomes & Retrospective
 
-Written 2026-08-03, against this plan's own five goals, while the work is fresh. The plan stays
-`In Progress`: everything is built and verified, and nothing reaches an installed user until a release is
-cut.
+Written 2026-08-03, against this plan's own five goals, while the work is fresh.
+
+**Closed 2026-08-03 as `Shipped`**, released in **0.7.0** (tag `vibe-ops--v0.7.0`) together with
+Plan-006 — one release for one breaking surface, as Track 4 intended. The release is what turned this from
+built-and-verified into delivered: until the tag, every path added here was unreachable from
+`${CLAUDE_PLUGIN_ROOT}` in every install.
+
+**The release found the bug this plan's own verification could not.** `skills/new/SKILL.md` — the skill
+that replaced four — carried an unquoted `description` containing `": "`, which YAML rejects, so Claude
+Code loaded the skill with **empty metadata**: name, description and argument-hint silently dropped. The
+flagship deliverable would have shipped invisible to the listing the model matches against, failing in the
+one shape that cannot be seen from inside the repository. `check-agents-md.sh` reported 9/9 throughout;
+only `claude plugin tag` caught it. Fixed, and converted into a guard
+(`scripts/checks/45-skill-frontmatter.sh`, proven to fail on the exact fault), which is the demotion-check
+outcome ADR-0004 asks for. The lesson is narrower than "test more": **the description was measured for
+length and never for parseability**, because the whole plan framed it as a budget problem.
 
 **Goal 1 — one command, ~1,000 characters returned to the shared listing.** Met and exceeded: 3,839 → 2,779
 characters (−1,060). `claude plugin details vibe-ops@entelekheia` independently reports the plugin at
@@ -530,9 +543,14 @@ reason that will be reused on a different decision.
   three files carry the claim: the entry, `.agents/rules`-adjacent `route-learnings` SKILL.md line 34, and
   the Surprises entry above. If the *reference* is wrong, that is a larger finding and worth reporting
   upstream.
-- **Does the `Stop` hook for living sections become buildable?** It was deferred on the belief that a
-  reasoning hook cannot act. An `agent` hook on `Stop` would inspect the plan file and judge whether
-  `Progress` matches the turn. Reopen only after the question above is settled.
+- **Does the `Stop` hook for living sections become buildable?** — **RESOLVED. Yes, and it shipped**, as
+  [Plan-006](006-plan-progress-nudge-and-state-cleanup.md), in 0.7.0. The premise of the deferral was
+  wrong, and in a way worth recording: the learning cited above does **not** say a reasoning hook cannot
+  act. Its *How to apply* prescribes precisely what Plan-006 built — the observation returns to the main
+  agent, "the only thing in the loop holding tools". The blocker was a misreading of a correct entry, so
+  the question above never gated this one. A `command` hook was used rather than the `agent` type
+  speculated here, because a hook on `Stop` fires every turn in every repository and a prompt hook's first
+  act is a model call.
 - **Merging `close-task` and `close-plan` the same way** — 739 characters between them, and the same
   argument applies. Held out of this plan only to keep one release to one breaking surface. Decide after
   Track 4 shows what absorbing the first break actually cost.
