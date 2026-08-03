@@ -119,7 +119,6 @@ for r in $REFERRERS; do
     else
       # [`text`](any/path/<base>) -> `text` (closed; git show <sha>:<path>)
       perl -0pi -e "s{\\[([^\\]]*)\\]\\([^)]*\\Q$BASE\\E\\)}{\$1 (closed dossier - \`git show $SHA:$d\`)}g" "$r"
-      say "  repointed: $r"
     fi
   done
   [ "$DRY" = yes ] || say "  repointed: $r"
