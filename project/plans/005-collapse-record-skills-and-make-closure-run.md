@@ -336,6 +336,13 @@ breadcrumb in both the issue and the plan resolves with `git show`.
       against a reproduction of the real failure: two dossiers, a plan linking to both, two commits in the
       right order, links rewritten to runnable `git show` commands, link check green *after* the deletion,
       and the breadcrumb resolving to the actual content. `close-task` Step 6 rewritten to drive it.
+- [x] **Post-work routing** (2026-08-03). `/route-learnings` run over 12 candidates: 2 promoted
+      (`a-plugin-skills-command-name-arrives-fully-qualified`,
+      `the-skill-listing-budget-is-a-fraction-not-a-number`), 2 refined rather than duplicated
+      (`plugin-update-needs-the-marketplace-refreshed-first` absorbed the snapshot/version-pin half;
+      `plugin-root-resolves-to-the-released-clone` gained `--plugin-dir`), 8 rejected. Base at 31/40,
+      index regenerated, `--check` green. Verification falsified the fixed 8,000-character listing budget
+      and this repo's `AGENTS.md`, which carried it, was corrected in the same pass.
 - [~] Track 6 — [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) written and accepted. Installed
       locally from a directory marketplace and verified from the cache path: 7 skills, 3 hooks, the
       plan-mode hook resolving this repo's `006`, the closure guard denying. **The version bump and
@@ -415,12 +422,30 @@ re-derived by whoever closes the next task.
 dossiers` in the same repository. A finalize script that takes a single path would be used wrongly on its
 first real invocation.
 
-**Observation:** the split this plan uses — a command hook that captures, a ceremony that judges — is
-already a filed toolchain fact, not a preference.
-**Evidence:** `project/learnings/prompt-hooks-cannot-run-where-work-ends.md`: prompt hooks exist on only
-four events, and a prompt hook's output is `{decision, reason, systemMessage}` with no tool call, so no
-hook can both notice something and record it. Any "a hook notices X and writes it down" design is
-unbuildable as stated.
+**Observation:** the split this plan uses — a command hook that captures, a ceremony that judges — was
+justified by a filed learning whose central claim does not hold. **Recorded as unresolved, not as
+corrected.**
+**Evidence:** the learning (`prompt-hooks-cannot-run-where-work-ends`, `type: tool`,
+`claude-code@2.1.220`) states that prompt hooks exist on *four* events and that no hook can both reason
+and act, so "a hook notices X and records it" is unbuildable. Against the published hooks reference for
+the same version, both halves fail: thirteen events accept `prompt` and `agent` hooks, and the `agent`
+type exists precisely to inspect files and run commands — its documented example runs a test suite. The
+string `Agentic verifier hook type` appears in the 2.1.220 executable, so the type is implemented and not
+merely announced.
+
+**What is not settled.** The entry's own `source:` names a secondary document, but the maintainer recalls
+its author inspecting the executable, which would outrank the reference. Locating the gating table inside
+the 245 MB binary was attempted and abandoned: the only event array recovered was the full 31-event enum,
+not the per-type capability map. So the count is corroborated by the reference and by the presence of the
+`agent` type, and **not** by the implementation itself.
+
+Two consequences, neither acted on here. The `Stop` hook for living sections was deferred partly on the
+belief that a reasoning hook cannot act — if `agent` hooks work as documented, that option is open on
+better terms than it was rejected on. And the `/route-learnings` skill states the same claim in its own
+"capture stays opportunistic" rationale; its *conclusion* survives on the other two arguments it gives
+(re-analysis cost, and capture-at-the-moment being better), but the mechanism sentence is wrong.
+
+Nothing built here depends on the false half: the closure guard needs a string match, not judgement.
 
 **Observation:** the skill listing is a budget shared across all installed plugins, not a per-plugin
 allowance, and this plugin takes nearly half of it.
@@ -457,10 +482,57 @@ exists to stop making.
 
 ## Outcomes & Retrospective
 
-*Not yet started.*
+Written 2026-08-03, against this plan's own five goals, while the work is fresh. The plan stays
+`In Progress`: everything is built and verified, and nothing reaches an installed user until a release is
+cut.
+
+**Goal 1 — one command, ~1,000 characters returned to the shared listing.** Met and exceeded: 3,839 → 2,779
+characters (−1,060). `claude plugin details vibe-ops@entelekheia` independently reports the plugin at
+~1,030 always-on tokens across 7 skills, and confirms hooks are *harness-only, no model context cost* —
+which the plan had assumed but never checked.
+
+**Goal 2 — one resolver, called once.** Met. `scripts/resolve-governance.sh` answers correctly in five
+repository shapes, including a real custom `DA01-*` scheme where it names the authority file and refuses
+to invent a number.
+
+**Goal 3 — nothing restates its template.** Met by doing the deduplication *during* the move rather than
+after: 485 lines across four skills became 314 across one skill and four references.
+
+**Goal 4 — the dossier cannot be deleted before closure.** Met. Six cases verified, plus both the `jq` and
+no-`jq` paths.
+
+**Goal 5 — the mechanical tail as one script, in the one valid order.** Met, verified end to end against a
+reproduction of the failure that motivated it.
+
+### What the work cost that the plan did not predict
+
+Three of the day's defects were **false passes** — tests that reported success while proving nothing. The
+`finalize.sh` run reported every step green and never created the deletion commit; the "runs without `jq`"
+test resolved `jq` from `/usr/bin` and exercised the primary path twice; a `sed` pattern using `\|` matched
+nothing on BSD and made a guard fail open while looking identical to a guard that correctly declined.
+None of these were caught by reading the code. All three were caught by running the thing and checking the
+*effect* rather than the exit status. The plan's verification section asked for outcomes rather than exit
+codes, and that is the only reason they surfaced.
+
+### What we would do differently
+
+Verify a claim's provenance before building on it. The design was justified in part by a filed learning
+whose central claim did not survive contact with the reference — see the last Surprises entry. It did not
+change what was built, because the closure guard needs a string match rather than judgement, but the
+*reason* recorded in the Decision Log was wrong, and a reason that is wrong for a right decision is a
+reason that will be reused on a different decision.
 
 ## Open questions
 
+- **Is `prompt-hooks-cannot-run-where-work-ends` wrong, or is the reference?** The decisive check —
+  finding the per-type capability map in the 2.1.220 executable — was attempted and not completed. Until
+  it is, treat the entry as suspect rather than corrected, and do not delete it. If the entry is wrong,
+  three files carry the claim: the entry, `.agents/rules`-adjacent `route-learnings` SKILL.md line 34, and
+  the Surprises entry above. If the *reference* is wrong, that is a larger finding and worth reporting
+  upstream.
+- **Does the `Stop` hook for living sections become buildable?** It was deferred on the belief that a
+  reasoning hook cannot act. An `agent` hook on `Stop` would inspect the plan file and judge whether
+  `Progress` matches the turn. Reopen only after the question above is settled.
 - **Merging `close-task` and `close-plan` the same way** — 739 characters between them, and the same
   argument applies. Held out of this plan only to keep one release to one breaking surface. Decide after
   Track 4 shows what absorbing the first break actually cost.
