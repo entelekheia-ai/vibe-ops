@@ -327,15 +327,18 @@ breadcrumb in both the issue and the plan resolves with `git show`.
 - [x] **Track 3 — `UserPromptExpansion` hook** (2026-08-03). `hooks/new-command-context.sh`, matcher
       `^vibe-ops:new$`, reads the type from `command_args` and calls the same resolver. Silent without a
       valid type. Both jq and no-jq paths verified.
-- [~] Track 4 — breaking change: `AGENTS.md`, `README.md`, ADR-0006's pointer and the hook's own text are
-      updated; **`CHANGELOG.md` and the slash-commands screenshot still pending**.
+- [~] Track 4 — breaking change: `AGENTS.md`, `README.md`, ADR-0006's pointer, the hook's own text and
+      `CHANGELOG.md` are done. **The slash-commands screenshot in `docs/images/` is still wrong** and
+      cannot be regenerated from here — it is a picture of a running UI. It needs the maintainer.
 - [x] **Track 5 — closure half** (2026-08-03). `hooks/task-dossier-guard.sh` verified across six cases
       (open dossier denied, closed allowed, mixed batch denied, non-deletion ignored, non-task path
       ignored, missing file ignored) and on the no-`jq` fallback path. `finalize.sh` verified end to end
       against a reproduction of the real failure: two dossiers, a plan linking to both, two commits in the
       right order, links rewritten to runnable `git show` commands, link check green *after* the deletion,
       and the breadcrumb resolving to the actual content. `close-task` Step 6 rewritten to drive it.
-- [~] Track 6 — the `CLAUDE_PROJECT_DIR` fix landed early, because the resolver made it a deletion rather
+- [~] Track 6 — [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) written and accepted. **The
+      version bump and publish are not done**, and until a release is cut none of this reaches any
+      install. The `CLAUDE_PROJECT_DIR` fix landed early, because the resolver made it a deletion rather
       than a patch: the hook now calls `resolve-governance.sh` instead of carrying its own copy of the
       discovery loops, and reports `006` in this repo where it used to report the workspace's `012`. ADR
       and release still pending.

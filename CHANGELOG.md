@@ -14,6 +14,51 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed — BREAKING
+
+- **`/vibe-ops:new-adr`, `new-rfc`, `new-plan` and `new-task` no longer exist.** Use
+  **`/vibe-ops:new <adr|rfc|plan|task> <topic>`**. There are no alias skills, because an alias costs
+  exactly the listing characters the change exists to reclaim.
+
+  The four opened with an identical Step 0 in four copies — two discovery loops, a numbering-authority
+  cascade, and for `new-task` two more calls about GitHub — costing four to five shell round trips per
+  invocation. They also restated their own templates, which are 78–80% guidance comments already.
+
+  The reason for merging rather than deduplicating in place: **the ~8,000-character skill listing is
+  shared with every other plugin the user has installed, not this plugin's to spend.** The four cost 1,436
+  characters between them; the one that replaced them costs ~380, and this plugin's total dropped from
+  3,839 to 2,779.
+
+  What each record type needs beyond the shared scaffold now lives in `references/records/<type>.md`, and
+  is delivered inline by the resolver, so only the file matching the argument is ever read.
+
+### Added
+
+- **`scripts/resolve-governance.sh`** — one call returns the artifact directory, the template, the
+  numbering authority, how many records exist, the next number, the GitHub facts a task needs, and the
+  rules for the type asked for. It anchors on the git toplevel rather than `CLAUDE_PROJECT_DIR`, which in
+  a workspace whose project root is an umbrella repository names the wrong repository. Where a repo
+  numbers its records some other way, it reports the authority file and declines to invent a number
+  rather than confidently answering `001`.
+- **A closure guard.** Deleting a task dossier is refused while its `## Closure` box is unchecked, and the
+  refusal names `/vibe-ops:close-task`. This reads the marker the task template already shipped; ticking
+  it is part of the ceremony, so a closure passes through and only a hand deletion is stopped.
+- **`skills/close-task/finalize.sh`** — the ordering-sensitive tail of closure, as one script: collect
+  every file referring to the dossiers *before* deleting any of them, tick, commit (that commit is the
+  breadcrumb, being the last that still contains the dossier), delete, rewrite each link into plain text
+  plus a runnable `git show`, append the breadcrumbs to the source plan, commit, re-run the link check
+  **after** the deletion, and post the summary. `--dry-run` prints all of it and touches nothing.
+- **A hook on the typed `/vibe-ops:new`**, resolving the repository before the skill starts. It calls the
+  same script the skill calls — a second delivery path, never a second implementation.
+- **[ADR-0009](project/adr/0009-hooks-as-a-delivery-surface.md)** — hooks admitted as a third delivery
+  surface, bounded to what a line and a CI guard cannot do: state read from disk at that instant, or
+  context placed at a moment an instruction file cannot reach.
+
+### Fixed
+
+- The plan-mode hook reported the umbrella repository's next plan number when the work was in a nested
+  repository. It now calls the resolver instead of carrying its own copy of the discovery loops.
+
 ### Changed
 
 - **The README now names what this plugin does: context engineering.** The artifacts it authors —
