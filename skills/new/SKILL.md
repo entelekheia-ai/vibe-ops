@@ -1,6 +1,6 @@
 ---
 name: new
-description: Create one governance record from the repo's own template and numbering: an ADR (decision record), RFC (design proposal), plan (implementation design with tracks), or task (issue-linked dossier). Use when asked to record a decision, propose a design, plan implementation work, break work into tracks, open a work item, or "/new <type> <topic>". Reads the repo's own lifecycle.
+description: 'Create one governance record from the repo''s own template and numbering: an ADR (decision record), RFC (design proposal), plan (implementation design with tracks), or task (issue-linked dossier). Use when asked to record a decision, propose a design, plan implementation work, break work into tracks, open a work item, or "/new <type> <topic>". Reads the repo''s own lifecycle.'
 argument-hint: "<adr|rfc|plan|task> <topic>"
 effort: inherit
 ---
