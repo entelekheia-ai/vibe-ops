@@ -315,14 +315,18 @@ breadcrumb in both the issue and the plan resolves with `git show`.
 
 ## Progress
 
-- [ ] Track 0 — `command_name` probe
+- [x] **Track 0 — `command_name` probe** (2026-08-03). A plugin skill arrives as the fully-qualified
+      `vibe-ops:new`, not the bare `new`; `command_source=plugin`, `expansion_type=slash_command`,
+      `command_args` carries everything after the command.
 - [x] **Track 1 — resolver** (2026-08-03). `scripts/resolve-governance.sh`, verified against five repo
       shapes: this repo, root-level `tasks/` with 2-digit numbering, an empty repo, a custom `DA01-*`
       scheme with its own `AGENTS.md` authority, and `dot-agent-spec` for real.
 - [x] **Track 2 — one `new` skill + four references** (2026-08-03). Listing dropped 3,839 → 2,779
       characters (−1,060, target was ≥900); 485 lines across four skills became 314 across one skill and
       four references.
-- [ ] Track 3 — `UserPromptExpansion` hook
+- [x] **Track 3 — `UserPromptExpansion` hook** (2026-08-03). `hooks/new-command-context.sh`, matcher
+      `^vibe-ops:new$`, reads the type from `command_args` and calls the same resolver. Silent without a
+      valid type. Both jq and no-jq paths verified.
 - [~] Track 4 — breaking change: `AGENTS.md`, `README.md`, ADR-0006's pointer and the hook's own text are
       updated; **`CHANGELOG.md` and the slash-commands screenshot still pending**.
 - [x] **Track 5 — closure half** (2026-08-03). `hooks/task-dossier-guard.sh` verified across six cases
@@ -368,6 +372,19 @@ plan, a *"What was routed before the dossiers were deleted"* section naming each
 destination, the lifecycle spelled out inline (`Planned → In Progress → Done → file removed, git history is
 the archive`) so the missing file does not read as a mistake, and the breadcrumb as a fenced block carrying
 the **full 40-character sha**. None of this is in `close-task`; all of it is in the artifacts it produced.
+
+**Observation:** BSD `sed` does not support `\|` alternation in a BRE, and fails by matching nothing
+rather than by erroring.
+**Evidence:** the JSON-extraction pattern used in two hooks returned an empty string on macOS, so the hook
+exited silently as though the payload had no command. A guard that fails open is worse than no guard; the
+portable form stops at the first quote and is enough for extracting a path.
+
+**Observation:** macOS ships `jq` at `/usr/bin/jq`, which turned a "runs without jq" test into a false
+pass.
+**Evidence:** the first fallback test ran with `PATH=/usr/bin:/bin`, which still resolves `jq` — so the
+jq branch was exercised twice and the fallback never was. Proving a tool is absent requires building a
+`PATH` that contains everything else and demonstrably not it, then asserting on that; the second attempt
+removed `sed` along with `jq` and produced a different false result.
 
 **Observation:** `git add` naming a path that `git rm` already staged aborts the whole invocation, and
 the commit then silently never happens.

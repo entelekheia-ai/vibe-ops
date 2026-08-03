@@ -1,5 +1,5 @@
 {
-  "description": "Two guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run.",
+  "description": "Three guards, each silent unless its exact condition holds. plan-mode-context places this repository's plan format and next plan number at the moment a plan is written in plan mode. new-command-context resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -7,7 +7,9 @@
           {
             "type": "command",
             "command": "sh",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/plan-mode-context.sh"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/plan-mode-context.sh"
+            ],
             "timeout": 10
           }
         ]
@@ -20,7 +22,24 @@
           {
             "type": "command",
             "command": "sh",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/task-dossier-guard.sh"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/task-dossier-guard.sh"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptExpansion": [
+      {
+        "matcher": "^vibe-ops:new$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/new-command-context.sh"
+            ],
             "timeout": 10
           }
         ]

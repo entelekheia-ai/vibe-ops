@@ -23,14 +23,14 @@ case "$IN" in
 esac
 
 # The command, as the model wrote it. jq when present because it unescapes
-# correctly; the sed path handles the escaped-string form well enough to find a
-# path, and both are only ever used to *locate* files that are then read.
+# correctly; the sed path stops at the first embedded quote, which is enough to
+# find a path and is all this is used for. It deliberately avoids \| alternation:
+# BSD sed does not support it in a BRE and fails silently, returning nothing.
 if command -v jq >/dev/null 2>&1; then
   CMD=$(printf '%s' "$IN" | jq -r '.tool_input.command // empty' 2>/dev/null)
 else
   CMD=$(printf '%s' "$IN" \
-    | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\(\([^"\\]\|\\.\)*\)".*/\1/p' \
-    | sed -e 's/\\"/"/g' -e 's/\\\\/\\/g')
+    | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 fi
 [ -n "$CMD" ] || exit 0
 
