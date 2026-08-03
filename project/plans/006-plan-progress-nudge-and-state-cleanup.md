@@ -470,6 +470,19 @@ ADR-0009 tension explicitly: a cleanup hook is housekeeping, not delivery, and i
   ever costs one failed `git rev-parse`.
 - **A turn that writes through a shell command** rather than `Edit`/`Write` is invisible to the gate. Silent
   under-triggering, deliberately preferred to a false nudge.
+- **A write that is undone in the same turn still arms the gate** — the mirror of the line above, and the
+  over-triggering half nobody had written down. Observed: an `Edit` landed on
+  `scripts/graphify/health-check`, was reverted with `git checkout --` in the same turn, and the gate still
+  nudged, because the transcript records the `Edit` while the shell revert is exactly the kind of write the
+  gate cannot see. The asymmetry is structural: reading `Edit`/`Write` records measures *intent to write*,
+  not *net effect on the repository*. Cheap partial remedy: consult `git status` for the attributed repo
+  **only after** the transcript has already selected it — as a subtractive filter, never as the selector,
+  which is the mistake the whole design exists to avoid.
+- **The nudge names the written repo's plan, but the lesson may belong to another repo's.** Same
+  observation: the gate correctly attributed the turn to the umbrella repo and named its `Plan-001`, while
+  what the turn actually taught belonged here, in `vibe-ops`'s `Plan-006`. The hook can identify *that*
+  something is worth recording; it cannot know *where*. Left as is — routing is judgement, and handing it
+  to the model is the design.
 - **How old is stale.** The sweep uses a seven-day threshold with no measurement behind the number. Too
   short deletes a live long-running session's state and makes the hook nudge twice; too long is
   indistinguishable from not sweeping.
