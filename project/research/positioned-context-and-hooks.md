@@ -110,15 +110,26 @@ relative to project root; if not set, defaults to `~/.claude/plans/`"*. A reposi
 own `.claude/settings.json` would have plan mode write its plan **into the repository** rather than into a
 global scratch directory keyed by a generated slug.
 
-If that behaves as documented, it removes the last step this investigation had left open — the plan would
-be born in the right format *and* in the right place, and the `ExitPlanMode` hook that was going to move it
-has nothing left to do. It also belongs to a category none of the reasoning above considered: not a line,
-not a guard, not placed context, but **a setting that changes where the artifact lands**, which is
-cheaper than all three.
+It was then measured, and it does more than relocate a file. In a run with the setting present, **no
+always-on line and no injection at all**, the plan landed inside the repository *and* came out in the full
+template format. `InstructionsLoaded` shows why: the scoped governance rule loaded, triggered by a read of
+the plan template. Nothing had pointed the model at that template — telling it that plans belong under
+`project/plans` was apparently enough for it to look around `project/`, find the template, and pull the
+governance rule in behind it.
 
-This was read from the schema, not measured. It is recorded here as the next thing to test, not as a
-finding — the file name is still likely to be a generated slug rather than the repository's numbering, and
-what happens on a second plan in the same repository is unknown.
+So the setting belongs to a category none of the reasoning above considered: not a line, not a guard, not
+placed context, but **a setting that changes where the artifact lands** — and, as a side effect, what the
+model goes looking for before writing it. It is cheaper than all three, being two lines of configuration
+and no plugin at all.
+
+Two things it does *not* do. The file is named by a generated slug, not by the repository's numbering, so
+a rename still stands between the artifact and the convention. And the H1 still carries a guessed number —
+correct in the measured run only because the directory was empty. Whatever else changes, the number has to
+come from disk.
+
+The prompt in that run described work with two distinct pieces. The run that produced an ordinary
+plan-mode plan described a five-line change. Prompt weight is a confound across every session here and was
+never controlled for; no claim in this section separates it from the mechanism.
 
 Two claims we had reasoned our way to from the documentation were wrong, and the measurement is what
 caught them. Both are recorded here because the reasoning that produced them was plausible and will be
