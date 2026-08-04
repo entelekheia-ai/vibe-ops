@@ -11,6 +11,15 @@ The dossier is **ephemeral**: committed live while the work happens, then delete
 lessons are distilled upward. Git history is the archive; the working tree only ever shows in-flight work.
 Status starts at `Planned`.
 
+**If several dossiers share one design, that design needs a plan of its own — write it before the
+dossiers.** The dossiers answer *what is being worked on*; nothing in them answers *why the work is shaped
+this way*, and closure deletes them. A design that lives only across a set of dossiers is therefore
+destroyed by the ceremony that closes them successfully, leaving deleted-file history as the sole record.
+Splitting work into tasks is not the same decision as deciding where its reasoning lives, and answering
+only the first is the failure — see
+[`project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md`](../../project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
+migrated back into the repository a day after its four dossiers were closed and deleted.
+
 ## Before writing — the issue
 
 Ask whether an issue already exists. If yes, record its number.
