@@ -90,8 +90,8 @@ changes at all. An empty directory is just the maximum-gap case.
 | | |
 |---|---|
 | `/vibe-ops:repo-setup` | Set up **or reconcile** a repo or npm-workspaces monorepo. `audit` reports without writing. |
-| `/vibe-ops:new-adr` · `new-rfc` · `new-plan` · `new-task` | Open one governance record, using the *target repo's* own template and numbering. |
-| `/vibe-ops:close-task` · `close-plan` | Close the loop — write back, propagate, route what the work taught. A task dossier is distilled and deleted; a plan is kept, because it is the permanent record. |
+| `/vibe-ops:new <adr\|rfc\|plan\|task>` | Open one governance record, using the *target repo's* own template and numbering. |
+| `/vibe-ops:close <task\|plan>` | Close the loop — write back, propagate, route what the work taught. A task dossier is distilled and deleted; a plan is kept, because it is the permanent record. |
 | `/vibe-ops:authoring-agents-md` · `authoring-readme` | Write or repair the two files a newcomer — human or agent — reads first. |
 | `/vibe-ops:license-setup` | `LICENSE`, fork attribution, and optional header enforcement. |
 

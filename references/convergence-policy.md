@@ -16,10 +16,10 @@ artifact already exists is an implementation detail of the same job — an absen
 degenerate case of maximum gap. **They are never split into a `create` and an `update` skill.**
 
 **Event skills are append-only and non-idempotent.** They record that something happened at a point in
-time: `new-adr`, `new-rfc`, `new-plan`, `new-task`, `close-task`. Running one twice correctly produces two
-records. **They have no update mode** — an event is not updated, it is superseded (ADR), advanced through
-its lifecycle (RFC), or closed (task). Those transitions live in the target repo's own governance rule, and
-an event skill points at them rather than offering to edit the past.
+time: `new`, `close`. Running one twice correctly produces two records. **They have no update mode** — an
+event is not updated, it is superseded (ADR), advanced through its lifecycle (RFC), or closed (task). Those
+transitions live in the target repo's own governance rule, and an event skill points at them rather than
+offering to edit the past.
 
 ## How a target-state skill is structured
 

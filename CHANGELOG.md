@@ -12,7 +12,162 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 > a released version**, so anything that has landed but not shipped is unreachable from
 > `${CLAUDE_PLUGIN_ROOT}` in every install.
 
-## [Unreleased]
+## [0.8.0] — 2026-08-04
+
+Designed as one unit in [Plan-007](project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
+whose four tracks are the four groups below.
+
+### Removed — BREAKING
+
+- **`/vibe-ops:close-task` and `/vibe-ops:close-plan` no longer exist.** Use
+  **`/vibe-ops:close <task|plan> <id>`**. A clean break with no forwarding stubs, the same precedent 0.7.0
+  set when four `new-*` commands became one — an alias costs exactly the listing characters the merge
+  exists to reclaim.
+
+  The two shared almost their whole spine already: find the record, route what the work taught through the
+  promotion test, propagate to living docs, run the demotion check, close the issue. What genuinely
+  differs is now branched inline — a task writes back to its source doc and is distilled and deleted via
+  `finalize.sh`; a plan writes its retrospective against its own goals and **keeps its file**.
+  `finalize.sh` moved to `skills/close/` unchanged and is still task-only, because nothing is deleted when
+  a plan closes.
+
+  Two of the swept references were functionally critical rather than cosmetic, and had to move with the
+  rename or a guard would have silently stopped firing: `hooks/task-dossier-guard.sh`'s closure-box
+  detector, and `finalize.sh`'s own box-ticking `sed`.
+
+  **If you have already scaffolded a repo with an older version**, its `GOVERNANCE.md`, governance rule and
+  `plan.md` / `task.md` templates still name the old commands; this release cannot reach those copies.
+
+### Added
+
+- **`hooks/plan-approved-copy.sh`** — a `PostToolUse` hook on `ExitPlanMode` that copies an approved
+  plan-mode plan into the right repository's `project/plans/` and tells the model where it landed, instead
+  of leaving it under `~/.claude/plans/` until someone remembers to file it. It **copies, never moves and
+  never overwrites**: the source is Claude Code's and stays put, and an existing target is left alone.
+
+  It only fires for a plan that looks like a durable design record — an H1 **and** a metadata table with a
+  `Status` row — so a throwaway planning turn never lands in `project/plans/`. Which repository is
+  resolved from an optional `| Repository | <path> |` row when one is present, and otherwise from the
+  tool's own cwd resolved to its git toplevel; from an umbrella workspace root the two differ, which is
+  why the row exists. `jq` is required rather than optional here: the plan text is untrusted multi-line
+  markdown, and extracting prose of that shape with `sed` is a risk this plugin's other hooks avoid for
+  good reason.
+- **Five new guards**, taking `check-agents-md.sh` from 10 composed checks to 15 — each closing a gap that
+  existed while the validator was green: `15-manifest-sync` (`plugin.json` ↔ `marketplace.json` ↔ the
+  `CHANGELOG` heading, on version, description and keywords), `25-hooks-registration` (`hooks.json` ↔
+  `hooks/`, both directions, including the literal hook count in its own description),
+  `35-dogfooding-drift` (every file this plugin dogfoods still matches its shipped copy, compared
+  header-aware because a shipped template must omit the license header a naive byte comparison would trip
+  on), `55-references-completeness` (a `references/records/` file exists for each record type the resolver
+  knows), and `95-command-references` (every `/vibe-ops:<name>` in the README and `skills/` resolves to a
+  real skill, scoped away from `project/**` and the changelog, which are historical by design).
+- **`scripts/test-plan-progress-nudge.sh`** (18 assertions) — the gate suite 0.7.0 ran ad hoc and cut as
+  debt, now committed, plus the two defects that escaped that ad hoc run: the offset-reset false positive
+  on a session's first `Stop`, and the state sweep selecting its own directory.
+- **`scripts/test-plan-approved-copy.sh`** (12 assertions) — against the documented `ExitPlanMode` payload
+  shape. One residual is stated rather than implied: no CLI automation can deliver a real approval, so
+  this ships verified at the script level against the documented contract, not against a live approval.
+- **An optional `| Repository | <absolute path> |` row** in both plan templates and in
+  `references/records/plan.md`. `plan-mode-context.sh` requests it only when its own resolved git toplevel
+  differs from `CLAUDE_PROJECT_DIR` — genuine ambiguity, not every planning turn.
+- **`PLAN_ACTIVE` and `LIVING` outputs** from `scripts/resolve-governance.sh`, derived from the target
+  repo's own plan template, with an `AUTHORITY` fallback for the status word.
+
+### Changed
+
+- **`hooks/plan-progress-nudge.sh` now reads each repository's own plan vocabulary instead of imposing
+  this one's.** It shipped in 0.7.0 hardcoding vibe-ops's status word and living-section names, then
+  telling every repo it was installed in to maintain sections that may not exist there — a hook meant to
+  prevent drift, creating it. It now degrades in three tiers: enumerate the repo's real section names when
+  the template carries both markers; name the template without enumerating when only the start marker is
+  there; and **stay completely silent** when the taxonomy cannot be derived. It never invents a section
+  name. Detection also tolerates cell spacing and no longer stops at the first matching plan.
+- **`hooks/plan-mode-context.sh` no longer claims a plan is saved only if you ask for it.** That sentence
+  became false the moment `plan-approved-copy.sh` shipped, and two hooks contradicting each other inside
+  one session is worse than either being silent. `/vibe-ops:new plan` keeps its narrower purpose: a plan
+  written outside plan mode, or an older file the hook never saw.
+
+### Fixed
+
+- **`plugin.json` and `marketplace.json` had drifted apart** on version, description and keywords, each
+  independently. Found by the `manifest-sync` guard written in this release, which is now what keeps them
+  together.
+- **`check-agents-md.sh --self-test` now exercises every check.** Its broken fixture was extended so all
+  five new guards — plus the pre-existing `skill-frontmatter`, which had never been exercised — actually
+  fire on it, rather than being composed and silently passing.
+
+## [0.7.0] — 2026-08-03
+
+### Removed — BREAKING
+
+- **`/vibe-ops:new-adr`, `new-rfc`, `new-plan` and `new-task` no longer exist.** Use
+  **`/vibe-ops:new <adr|rfc|plan|task> <topic>`**. There are no alias skills, because an alias costs
+  exactly the listing characters the change exists to reclaim.
+
+  The four opened with an identical Step 0 in four copies — two discovery loops, a numbering-authority
+  cascade, and for `new-task` two more calls about GitHub — costing four to five shell round trips per
+  invocation. They also restated their own templates, which are 78–80% guidance comments already.
+
+  The reason for merging rather than deduplicating in place: **the ~8,000-character skill listing is
+  shared with every other plugin the user has installed, not this plugin's to spend.** The four cost 1,436
+  characters between them; the one that replaced them costs ~380, and this plugin's total dropped from
+  3,839 to 2,779.
+
+  What each record type needs beyond the shared scaffold now lives in `references/records/<type>.md`, and
+  is delivered inline by the resolver, so only the file matching the argument is ever read.
+
+### Added
+
+- **`scripts/resolve-governance.sh`** — one call returns the artifact directory, the template, the
+  numbering authority, how many records exist, the next number, the GitHub facts a task needs, and the
+  rules for the type asked for. It anchors on the git toplevel rather than `CLAUDE_PROJECT_DIR`, which in
+  a workspace whose project root is an umbrella repository names the wrong repository. Where a repo
+  numbers its records some other way, it reports the authority file and declines to invent a number
+  rather than confidently answering `001`.
+- **A closure guard.** Deleting a task dossier is refused while its `## Closure` box is unchecked, and the
+  refusal names `/vibe-ops:close-task`. This reads the marker the task template already shipped; ticking
+  it is part of the ceremony, so a closure passes through and only a hand deletion is stopped.
+- **`skills/close-task/finalize.sh`** — the ordering-sensitive tail of closure, as one script: collect
+  every file referring to the dossiers *before* deleting any of them, tick, commit (that commit is the
+  breadcrumb, being the last that still contains the dossier), delete, rewrite each link into plain text
+  plus a runnable `git show`, append the breadcrumbs to the source plan, commit, re-run the link check
+  **after** the deletion, and post the summary. `--dry-run` prints all of it and touches nothing.
+- **A hook on the typed `/vibe-ops:new`**, resolving the repository before the skill starts. It calls the
+  same script the skill calls — a second delivery path, never a second implementation.
+- **[ADR-0009](project/adr/0009-hooks-as-a-delivery-surface.md)** — hooks admitted as a third delivery
+  surface, bounded to what a line and a CI guard cannot do: state read from disk at that instant, or
+  context placed at a moment an instruction file cannot reach.
+- **A `Stop` hook that notices an `In Progress` plan's living sections were not part of a turn that wrote
+  to that plan's own repository**, and hands the observation back to the agent — the four sections are
+  meant to be maintained while the work happens, not reconstructed afterward. `scripts/session-touched-repos.sh`
+  attributes the turn from the session transcript rather than `git status` in `cwd`, which is wrong in this
+  kind of workspace twice over: `cwd` may be an umbrella repository over independent repos, and a dirty
+  tree elsewhere may be a sibling agent's in-flight edit, not this session's. Returns
+  `additionalContext`, not `decision:block` — the latter arrives at the model framed as a denial, which is
+  wrong for an observation the model must be free to correctly decline. See
+  [Plan-006](project/plans/006-plan-progress-nudge-and-state-cleanup.md).
+- **`hooks/session-state-cleanup.sh`**, on `SessionEnd`, plus an opportunistic sweep in the hook above —
+  nothing previously deleted the per-session marker `plan-mode-context.sh` writes; 13 stray files had
+  already accumulated on the maintainer's machine before this was noticed.
+
+### Fixed
+
+- The plan-mode hook reported the umbrella repository's next plan number when the work was in a nested
+  repository. It now calls the resolver instead of carrying its own copy of the discovery loops.
+- **The state sweep selected its own state directory.** `CLAUDE_PLUGIN_DATA` is itself named
+  `vibe-ops-<marketplace>`, so it matched the sweep's `vibe-ops-*` pattern at depth 0 — `find` includes its
+  own starting point. Nothing was lost, because `rm -f` refuses a directory; the guard was "the command we
+  happen to use cannot" rather than "we never select it", which would have become data loss the moment
+  anyone reached for `-delete`. Now scoped with `-type f`.
+- **A resumed session re-attributed its entire history to one turn.** `SessionEnd` deletes the state file
+  and a resume keeps the same `session_id`, so the next `Stop` found none and started from offset 0 —
+  observed on a 5.5 MB transcript, nudging about a repository last written to hours earlier. The first
+  `Stop` of a session now seeds the offset to the transcript's current size and stays silent, which is the
+  under-triggering this design already prefers over a false nudge.
+
+  Both were found after installing, by questions rather than by tests: the gate's cheap-exit chain was
+  exercised, the *seeding* of that chain never was, because every case started from a state file that
+  already existed.
 
 ### Changed
 

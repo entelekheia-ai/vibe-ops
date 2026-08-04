@@ -280,6 +280,29 @@ self_test() {
   mkdir -p "$tmp/skills/demo/templates"
   printf '<!--\n Copyright (c) 2026 Some Person (https://example.invalid)\n-->\n\n# demo\n' \
     > "$tmp/skills/demo/templates/demo.md"
+  # a broken /vibe-ops:<name> reference, on the one live surface that check exists to cover
+  printf '# demo\n\nUse `/vibe-ops:ghost` for this.\n' > "$tmp/skills/demo/SKILL.md"
+  printf 'See /vibe-ops:ghost in the README.\n' > "$tmp/README.md"
+  # two manifests that disagree with each other on version, description and keywords
+  mkdir -p "$tmp/.claude-plugin"
+  printf '{"name":"fixture","version":"1.0.0","description":"A","keywords":["a","b"]}\n' \
+    > "$tmp/.claude-plugin/plugin.json"
+  printf '{"plugins":[{"name":"fixture","version":"1.0.1","description":"B","keywords":["a"]}]}\n' \
+    > "$tmp/.claude-plugin/marketplace.json"
+  # a hook that is registered but does not exist, and one that exists but is not registered, plus a
+  # description whose literal count is wrong either way
+  mkdir -p "$tmp/hooks"
+  printf '{"description":"Five guards.","hooks":{"Stop":[{"hooks":[{"type":"command","command":"sh","args":["${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh"]}]}]}}\n' \
+    > "$tmp/hooks/hooks.json"
+  : > "$tmp/hooks/orphan.sh"
+  # a dogfooded pair that has diverged: this repo's own GOVERNANCE.md against its shipped counterpart
+  mkdir -p "$tmp/skills/repo-setup/templates/root"
+  printf '# Governance\n\nThe real one.\n' > "$tmp/GOVERNANCE.md"
+  printf '# Governance\n\nA stale copy.\n' > "$tmp/skills/repo-setup/templates/root/GOVERNANCE.md"
+  # a references/records/ that is missing two of the four types resolve-governance.sh reads
+  mkdir -p "$tmp/references/records"
+  printf 'adr rules\n' > "$tmp/references/records/adr.md"
+  printf 'plan rules\n' > "$tmp/references/records/plan.md"
   git -C "$tmp" add -A >/dev/null 2>&1
   # a deny-list living outside the fixture. "padding line" is in the fixture spelled with a space; the
   # entry here is hyphenated, so a hit proves the composed spelling variants are what got searched for.
@@ -302,7 +325,8 @@ self_test() {
     return 1
   fi
   for expected in budget links bridge frontmatter private-names memory-slugs plugin-root-paths \
-    template-attribution; do
+    template-attribution manifest-sync hooks-registration dogfooding-drift references-completeness \
+    command-references; do
     if ! printf '%s\n' "$got" | grep -q "FAIL  \[$expected\]"; then
       echo "SELF-TEST FAILED: check '$expected' did not fire on the fixture"
       return 1

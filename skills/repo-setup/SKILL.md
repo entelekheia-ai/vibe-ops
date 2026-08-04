@@ -160,7 +160,7 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   instruction surfaces run the check from the plugin.
 - Print next steps: review `AGENTS.md`, `npm install && npm run typecheck`, `gh repo create` when ready, and
   "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
-  `/vibe-ops:close-task`, not a plain delete."
+  `/vibe-ops:close task`, not a plain delete."
 
 ## Checklist
 

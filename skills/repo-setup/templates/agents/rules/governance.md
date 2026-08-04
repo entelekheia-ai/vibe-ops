@@ -61,7 +61,7 @@ If a plan carries a GitHub issue, the **issue owns status and the executive summ
 design and the working record**. The issue closes when the last track lands; the plan file does not close,
 because it is what someone reads a year later to find out why the thing is shaped this way.
 
-At closure, use `/vibe-ops:close-plan` — retrospective written against the plan's own goals, every
+At closure, use `/vibe-ops:close plan` — retrospective written against the plan's own goals, every
 `Surprises & Discoveries` entry routed, the demotion check run, living docs propagated, the issue closed
 and **the file kept**. A plan that never spawned a task dossier has no other exit: skip this and it ships
 having taught nobody anything.
@@ -75,7 +75,7 @@ executive summary; the dossier (`project/tasks/NNN-slug.md`) owns the detailed w
 Planned → In Progress → Done → (dossier deleted; git history is the archive)
 ```
 
-At closure, use `/vibe-ops:close-task` — it writes back to the source doc, propagates docs, spawns an ADR if
+At closure, use `/vibe-ops:close task` — it writes back to the source doc, propagates docs, spawns an ADR if
 a hard-to-reverse decision emerged, **routes each `Surprises & Discoveries` entry** to a durable surface
 (and deletes any instruction line a new guard has made redundant), then distills the summary into the issue
 with the breadcrumb `git show <sha>:project/tasks/NNN-slug.md` before deleting the dossier. Never skip the

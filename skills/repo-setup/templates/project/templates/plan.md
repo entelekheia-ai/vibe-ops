@@ -26,6 +26,7 @@
 | Depends on | <!-- Plan-MMM / RFC-MMMM, or remove this row --> |
 | Tracking issue | <!-- #NNN — owns status and the executive summary; this file owns the design and the working record. Remove this row if the plan has no issue. --> |
 | Related | <!-- ADRs, RFCs, issues, or remove this row --> |
+| Repository | <!-- absolute path, nothing else in the cell — only when planning from a workspace root that is not this repository; remove this row otherwise --> |
 
 <!-- Status lifecycle: Backlog → In Progress → Shipped. The file is never deleted; it is the record. -->
 
@@ -74,7 +75,7 @@
 
 - [ ] Example step.
 - [ ] Example partially completed step (done: X; remaining: Y).
-- [ ] Run `/vibe-ops:close-plan` — retrospective, route every Surprises & Discoveries entry, demotion
+- [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
       check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
       actually closed; a Progress list that is otherwise complete but has this box open is not finished.
 
@@ -100,6 +101,8 @@
 
 <!-- Filled at each major track completion and at the end: what shipped, what was cut, what is still
      open, and how the result compares to the original purpose above. -->
+
+<!-- ===== END LIVING SECTIONS ===== -->
 
 ---
 
