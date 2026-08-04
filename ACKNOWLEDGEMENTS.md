@@ -25,6 +25,15 @@ explicitly which conclusions are ours, and the decisions themselves are recorded
   (OpenAI Cookbook). The ExecPlan contract: a self-contained plan, and the four living sections that
   must stay current — `Progress`, `Surprises & Discoveries`, `Decision Log`,
   `Outcomes & Retrospective`.
+- **ODNI — [Intelligence Community Directive 203, *Analytic Standards*](https://www.intelligence.gov/assets/documents/intelligence-community-directives/ICD_203.pdf)**.
+  The three moves the research template takes: separating fact from assumption from judgment (with the
+  load-bearing assumption stated alongside what changes if it fails), keeping confidence in a judgment
+  distinct from the likelihood of an outcome and never fusing them in one sentence, and requiring
+  alternatives to be analysed with the indicator that would shift the choice. Read for this plugin through
+  a [secondary explainer](https://legalclarity.org/icd-203-analytic-standards-for-all-source-intelligence/),
+  because the primary PDF did not yield extractable text.
+- **PRISMA-S, via [Imperial College's systematic-review guide](https://library-guides.imperial.ac.uk/systematic-review/documenting_search)**.
+  A search is reported **as run** — literal query, tool, date executed, result count — never paraphrased.
 
 ## Community analysis
 
@@ -39,6 +48,20 @@ explicitly which conclusions are ours, and the decisions themselves are recorded
   no structure.
 - **Gábor Mészáros — [Mermaid for Workflows](https://dev.to/cleverhoods/claudemd-best-practices-mermaid-for-workflows-khb)**.
   Diagram for topology, prose for rationale.
+- **Microsoft — [Technical Spike template](https://microsoft.github.io/code-with-engineering-playbook/design/design-reviews/recipes/templates/template-technical-spike/)**
+  (Engineering Fundamentals Playbook). `Conclusions` as a mandatory section that answers the question the
+  spike opened with.
+- **Maggie Appleton — [Epistemic Disclosure](https://maggieappleton.com/epistemic-disclosure)**, tracing
+  the convention from muflax through gwern to Slate Star Codex. The lightweight form of stating how much
+  effort went into a piece and how sure the author is.
+- **Nielsen Norman Group — [Research Repositories](https://www.nngroup.com/articles/research-repositories/)**
+  and Dovetail — [Atomic Research](https://dovetail.com/blog/atomic-research/). Both argue the same point
+  about the index rather than the document: a repository of findings is useless if the finding is not
+  legible without opening the file. Their tagging-taxonomy advice was considered and not adopted.
+- **[`academic-research-skills`](https://github.com/imbad0202/academic-research-skills)** — the largest
+  research-skill suite for coding agents, surveyed as prior art. Its pipeline decomposition informed the
+  question; its paper-production machinery (rubrics, citation-format conversion, simulated peer review) was
+  examined and deliberately not adopted.
 
 ## Research
 
@@ -57,3 +80,8 @@ explicitly which conclusions are ours, and the decisions themselves are recorded
   the best trade-off, and combining formats beat any single format.
 - **[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119.html)** — the MUST / MUST NOT / SHOULD / NEVER
   keywords.
+- **[The Turing Way — Research Compendia](https://book.the-turing-way.org/reproducible-research/compendia/)**
+  — data, methods and output separated in a conventional layout with the computational environment
+  declared. Surveyed and rejected for this artifact type at its current scale; the trigger that would
+  reopen it is recorded in
+  [`project/research/research-document-format.md`](project/research/research-document-format.md).
