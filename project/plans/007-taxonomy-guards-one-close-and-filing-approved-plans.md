@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-03 |
 | Author | Danilo Borges |
 | Depends on | [Plan-005](005-collapse-record-skills-and-make-closure-run.md), [Plan-006](006-plan-progress-nudge-and-state-cleanup.md) |
@@ -348,13 +348,14 @@ the demotion check, distil into the issue, delete the dossier.
       `0.8.0` and agreeing per the `manifest-sync` guard; tagged `vibe-ops--v0.8.0`. Verified before
       cutting: `check-agents-md.sh` 15/15, `--self-test` passing, the nudge suite 18/18, the
       approved-copy suite 12/12, license headers green.
-- [ ] Merge the work to `main`. As of 2026-08-04 every commit in this plan — all four tracks and both
-      closures — sits on the branch `docs/context-engineering-framing`; none is an ancestor of
-      `origin/main`. **0.7.0 was never published either**: the remote carried tags only up to `v0.6.0`,
-      so this release is the first to reach it.
-- [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
-      check. The plan file itself is kept. Stays unchecked until the plan is actually closed; a Progress
-      list that is otherwise complete but has this box open is not finished.
+- [x] 2026-08-04 Merged to `main` via [#15](https://github.com/entelekheia-ai/vibe-ops/pull/15) — 30
+      commits, 53 files, carrying **two** releases, because **0.7.0 had never been published either**: the
+      remote held tags only up to `v0.6.0`. Merged as a merge commit (`4c52274`), not a squash, so both
+      release tags remain reachable from `main`.
+- [x] 2026-08-04 Ran `/vibe-ops:close plan` — retrospective written against the plan's own goals and
+      criteria (including the two criteria that were wrong), all four Surprises entries routed, demotion
+      check run and empty, living docs propagated, `check-agents-md.sh` green afterwards. The plan file is
+      kept. No tracking issue existed, so there is none to close.
 
 ## Surprises & Discoveries
 
@@ -439,17 +440,67 @@ the demotion check, distil into the issue, delete the dossier.
 
 ## Outcomes & Retrospective
 
-<!-- Partial: the tracks are done, the release is not. Completed at closure, per /vibe-ops:close plan. -->
+**Closed 2026-08-04 as `Shipped`**, released in **0.8.0** (tag `vibe-ops--v0.8.0`) and merged to `main`
+via [#15](https://github.com/entelekheia-ai/vibe-ops/pull/15).
 
-Against this plan's four goals, all four are met and **released as 0.8.0 on 2026-08-04**: the taxonomy is
-derived rather than hardcoded and its gate suite is committed, the audit produced five guards instead of
-a report, closure is one skill dispatching on `task|plan`, and an approved plan-mode plan is filed
-automatically. The changelog those tracks needed was written at the same time — not bookkeeping here,
-because an unreleased path in this plugin reaches nobody, and a breaking rename nobody wrote down reaches
-them as a mystery.
+### Against the four goals
 
-What remains is the merge to `main`, which is larger than this plan: **0.7.0 was never published either**,
-so the branch carries two releases the remote has never seen.
+All four are met and released. The taxonomy is derived from each repository's own template rather than
+hardcoded, and the gate suite Plan-006 cut as debt is committed. The audit produced five guards instead of
+a findings document, per ADR-0004. Closure is one skill dispatching on `task|plan`. An approved plan-mode
+plan is filed into its repository automatically.
+
+### Against the success criteria — including the two that were wrong
+
+- `check-agents-md.sh .` — the criterion predicted "10/10 today, must stay green and grow with 002's
+  fragments". It grew by exactly five, to **15/15**. Prediction correct.
+- `--self-test` — passes, and now exercises every check rather than composing some that never fire.
+- `sh scripts/test-plan-progress-nudge.sh` — **the criterion named the wrong interpreter.** All three
+  suites are `bash`; the nudge suite survives `sh` by accident and `test-plan-approved-copy.sh` does not.
+  Both pass under `bash` (18/18, 12/12). Wrong in the direction that produces output resembling a run,
+  which is the worse direction.
+- `claude plugin validate .` — passes. Worth its place: it is the only thing in the chain that reads skill
+  frontmatter as YAML, and 0.8.0 ships a brand-new skill, which is exactly the shape of the bug it caught
+  at 0.7.0.
+- `claude --plugin-dir .` in a scratch repo — **not run at closure, and not runnable here.** It needs an
+  interactive session, and this environment cannot launch one. The hooks were exercised through their
+  committed suites instead. Recording this as a gap rather than implying coverage: the criterion is
+  sound, and it went unmet.
+
+### What the plan did not predict
+
+It was written as four task dossiers and never asked where its own design would live. That question is the
+one this record exists to answer, a day late — and it is the retrospective's main finding, not a footnote.
+The plan's verification chain was deliberately designed against Plan-006's lesson that tests only exercise
+the paths their author already imagined, and still had nothing to say about whether the design record
+itself survived the work.
+
+Two facts the closure surfaced that the plan had not: **0.7.0 had never been published either**, so the
+merge carried two releases rather than one; and the release tag scheme drifted at 0.7.0 from `vX.Y.Z` to
+`vibe-ops--vX.Y.Z` **with no recorded rationale anywhere in the repository**. The second is left open
+deliberately — see Open questions.
+
+### What was routed at closure
+
+- Promoted to [`references/records/task.md`](../../references/records/task.md): a design shared by several
+  dossiers needs a plan of its own, because closure deletes dossiers and takes the reasoning with them.
+  This plan is the evidence.
+- **Blocked, with what unblocks it:** the missing-changelog entry is mechanically checkable and by ADR-0004
+  should be a guard, not prose — a fragment asserting that commits after the last release tag which touch
+  `skills/` or `hooks/` are accompanied by an `Unreleased` section. Not written here because it is new
+  work and this closure was scoped to finishing what was open. Unblocked by one fragment under
+  `scripts/checks/` plus its `--self-test` fixture.
+- Left in place: the hook's gate blind spot is a design question, not a learning, and lives in Open
+  questions where it can be answered.
+- Sent onward to the workspace: that measuring an exit code through a pipe reports the *pipe's* exit is
+  true in any repository, so by the routing table it is not this repo's knowledge.
+
+### Demotion check
+
+Run, and empty. None of the five new guards makes an existing `AGENTS.md` line or rule redundant — the
+closest candidate, "the only other place to update is this file's skill table", is **not** covered by
+`command-references`, which verifies that `/vibe-ops:<name>` mentions resolve, not that the table is
+complete. The line stays.
 
 The retrospective proper is owed at closure. One thing is already clear enough to record: the plan's own
 verification chain (`check-agents-md.sh`, `--self-test`, the new suite, `claude --plugin-dir`,
@@ -472,6 +523,16 @@ survived the work. That gap is what this migration closed, a day late.
 - **Does `hooks/plan-approved-copy.sh`'s H1-plus-metadata-table gate need a second signal for long design
   documents?** Raised by this plan being invisible to it. Not obviously worth fixing — a looser gate fills
   `project/plans/` with one-off plans, which is the failure the gate was written to prevent.
+- **Which release tag scheme does this repository use?** Found at closure: five tags are `vX.Y.Z`
+  (`v0.4.0`–`v0.6.0`) and two are `vibe-ops--vX.Y.Z` (`0.7.0`, `0.8.0`). The prefix appeared at 0.7.0 with
+  **no rationale recorded anywhere** — Plan-005 and Plan-006 both state the new tag name as a fact and
+  never say why — and 0.8.0 followed the most recent example without questioning it. Nothing in
+  `README.md`, `AGENTS.md`, `GOVERNANCE.md` or any rule documents a tag convention at all. Both directions
+  are defensible: `vX.Y.Z` is the dominant scheme and the prefix carries no information in a repository
+  whose name is already the plugin's, while the prefix is forward-looking for a repo that also hosts the
+  `entelekheia` marketplace. Whichever is chosen, the fix includes **writing it down**, since the absence
+  of a record is what let it drift. Deliberately not resolved inside this closure: retagging published
+  refs is new work, and closure is for finishing what was open.
 
 ## Related
 
