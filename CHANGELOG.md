@@ -12,6 +12,90 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 > a released version**, so anything that has landed but not shipped is unreachable from
 > `${CLAUDE_PLUGIN_ROOT}` in every install.
 
+## [0.8.0] — 2026-08-04
+
+Designed as one unit in [Plan-007](project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
+whose four tracks are the four groups below.
+
+### Removed — BREAKING
+
+- **`/vibe-ops:close-task` and `/vibe-ops:close-plan` no longer exist.** Use
+  **`/vibe-ops:close <task|plan> <id>`**. A clean break with no forwarding stubs, the same precedent 0.7.0
+  set when four `new-*` commands became one — an alias costs exactly the listing characters the merge
+  exists to reclaim.
+
+  The two shared almost their whole spine already: find the record, route what the work taught through the
+  promotion test, propagate to living docs, run the demotion check, close the issue. What genuinely
+  differs is now branched inline — a task writes back to its source doc and is distilled and deleted via
+  `finalize.sh`; a plan writes its retrospective against its own goals and **keeps its file**.
+  `finalize.sh` moved to `skills/close/` unchanged and is still task-only, because nothing is deleted when
+  a plan closes.
+
+  Two of the swept references were functionally critical rather than cosmetic, and had to move with the
+  rename or a guard would have silently stopped firing: `hooks/task-dossier-guard.sh`'s closure-box
+  detector, and `finalize.sh`'s own box-ticking `sed`.
+
+  **If you have already scaffolded a repo with an older version**, its `GOVERNANCE.md`, governance rule and
+  `plan.md` / `task.md` templates still name the old commands; this release cannot reach those copies.
+
+### Added
+
+- **`hooks/plan-approved-copy.sh`** — a `PostToolUse` hook on `ExitPlanMode` that copies an approved
+  plan-mode plan into the right repository's `project/plans/` and tells the model where it landed, instead
+  of leaving it under `~/.claude/plans/` until someone remembers to file it. It **copies, never moves and
+  never overwrites**: the source is Claude Code's and stays put, and an existing target is left alone.
+
+  It only fires for a plan that looks like a durable design record — an H1 **and** a metadata table with a
+  `Status` row — so a throwaway planning turn never lands in `project/plans/`. Which repository is
+  resolved from an optional `| Repository | <path> |` row when one is present, and otherwise from the
+  tool's own cwd resolved to its git toplevel; from an umbrella workspace root the two differ, which is
+  why the row exists. `jq` is required rather than optional here: the plan text is untrusted multi-line
+  markdown, and extracting prose of that shape with `sed` is a risk this plugin's other hooks avoid for
+  good reason.
+- **Five new guards**, taking `check-agents-md.sh` from 10 composed checks to 15 — each closing a gap that
+  existed while the validator was green: `15-manifest-sync` (`plugin.json` ↔ `marketplace.json` ↔ the
+  `CHANGELOG` heading, on version, description and keywords), `25-hooks-registration` (`hooks.json` ↔
+  `hooks/`, both directions, including the literal hook count in its own description),
+  `35-dogfooding-drift` (every file this plugin dogfoods still matches its shipped copy, compared
+  header-aware because a shipped template must omit the license header a naive byte comparison would trip
+  on), `55-references-completeness` (a `references/records/` file exists for each record type the resolver
+  knows), and `95-command-references` (every `/vibe-ops:<name>` in the README and `skills/` resolves to a
+  real skill, scoped away from `project/**` and the changelog, which are historical by design).
+- **`scripts/test-plan-progress-nudge.sh`** (18 assertions) — the gate suite 0.7.0 ran ad hoc and cut as
+  debt, now committed, plus the two defects that escaped that ad hoc run: the offset-reset false positive
+  on a session's first `Stop`, and the state sweep selecting its own directory.
+- **`scripts/test-plan-approved-copy.sh`** (12 assertions) — against the documented `ExitPlanMode` payload
+  shape. One residual is stated rather than implied: no CLI automation can deliver a real approval, so
+  this ships verified at the script level against the documented contract, not against a live approval.
+- **An optional `| Repository | <absolute path> |` row** in both plan templates and in
+  `references/records/plan.md`. `plan-mode-context.sh` requests it only when its own resolved git toplevel
+  differs from `CLAUDE_PROJECT_DIR` — genuine ambiguity, not every planning turn.
+- **`PLAN_ACTIVE` and `LIVING` outputs** from `scripts/resolve-governance.sh`, derived from the target
+  repo's own plan template, with an `AUTHORITY` fallback for the status word.
+
+### Changed
+
+- **`hooks/plan-progress-nudge.sh` now reads each repository's own plan vocabulary instead of imposing
+  this one's.** It shipped in 0.7.0 hardcoding vibe-ops's status word and living-section names, then
+  telling every repo it was installed in to maintain sections that may not exist there — a hook meant to
+  prevent drift, creating it. It now degrades in three tiers: enumerate the repo's real section names when
+  the template carries both markers; name the template without enumerating when only the start marker is
+  there; and **stay completely silent** when the taxonomy cannot be derived. It never invents a section
+  name. Detection also tolerates cell spacing and no longer stops at the first matching plan.
+- **`hooks/plan-mode-context.sh` no longer claims a plan is saved only if you ask for it.** That sentence
+  became false the moment `plan-approved-copy.sh` shipped, and two hooks contradicting each other inside
+  one session is worse than either being silent. `/vibe-ops:new plan` keeps its narrower purpose: a plan
+  written outside plan mode, or an older file the hook never saw.
+
+### Fixed
+
+- **`plugin.json` and `marketplace.json` had drifted apart** on version, description and keywords, each
+  independently. Found by the `manifest-sync` guard written in this release, which is now what keeps them
+  together.
+- **`check-agents-md.sh --self-test` now exercises every check.** Its broken fixture was extended so all
+  five new guards — plus the pre-existing `skill-frontmatter`, which had never been exercised — actually
+  fire on it, rather than being composed and silently passing.
+
 ## [0.7.0] — 2026-08-03
 
 ### Removed — BREAKING
