@@ -37,10 +37,12 @@ which loads on its own. Not repeated here.
   (append-only, no update mode). See [`references/convergence-policy.md`](references/convergence-policy.md).
 - **Everything this plugin writes into a target repo is in English**, regardless of the conversation's
   language. That is a product guarantee, stated in the README.
-- **`${CLAUDE_PLUGIN_ROOT}` resolves to the *released* clone, not this working tree.** The plugin is
-  installed as a git clone pinned to the version in `plugin.json`
-  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), so a path that has landed but not shipped
-  reaches nobody. Adding one is fine; expecting today's install to find it is not — which is why a feature
+- **A path that has landed but not shipped reaches nobody who installed a release.** From a git-source
+  marketplace the plugin is a clone pinned to the version in `plugin.json`
+  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), and `${CLAUDE_PLUGIN_ROOT}` resolves
+  there — not into this tree. (Installed from a *directory* source instead, `installLocation` is the
+  source path and skills load from the tree, so local edits are live; that is a development setup, never
+  how anyone receives this plugin.) Adding one is fine; expecting today's install to find it is not — which is why a feature
   whose invocation path is a new file only counts as delivered once a release is cut. That the path exists
   *here* is checked by `plugin-root-paths`; that it existed at the last release is the part you must think
   about.
