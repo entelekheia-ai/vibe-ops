@@ -340,14 +340,18 @@ the demotion check, distil into the issue, delete the dossier.
       and is reachable only through that dossier's breadcrumb.
 - [x] 2026-08-03 All four dossiers closed and removed (`c7ad6fe` for 001–003, `7215244` for 004).
 - [x] 2026-08-04 This plan migrated into the repository, retroactively.
-- [ ] **Write the CHANGELOG entries for all four tracks.** There is no `Unreleased` section and the top
-      heading is still `## [0.7.0] — 2026-08-03`, so none of this work is described anywhere in the
-      changelog — including Track 3, which is a **breaking** rename of two user-facing commands.
+- [x] 2026-08-04 CHANGELOG entries written for all four tracks (`49469b3`). Track 3's breaking rename
+      carries the consequence the design named and nobody had recorded: repos scaffolded by an older
+      version still name `/vibe-ops:close-task` in their `GOVERNANCE.md`, governance rule and templates,
+      and this release cannot reach those copies.
+- [x] 2026-08-04 0.8.0 cut — `plugin.json`, the `marketplace.json` entry and the CHANGELOG heading all at
+      `0.8.0` and agreeing per the `manifest-sync` guard; tagged `vibe-ops--v0.8.0`. Verified before
+      cutting: `check-agents-md.sh` 15/15, `--self-test` passing, the nudge suite 18/18, the
+      approved-copy suite 12/12, license headers green.
 - [ ] Merge the work to `main`. As of 2026-08-04 every commit in this plan — all four tracks and both
-      closures — sits on the branch `docs/context-engineering-framing`, 27 commits ahead of `origin/main`
-      and unpushed; none of the six is an ancestor of `origin/main`.
-- [ ] Cut the 0.8.0 release. Until the tag exists, every path these four tracks added is unreachable from
-      `${CLAUDE_PLUGIN_ROOT}` in every install, which by this repo's own rule means undelivered.
+      closures — sits on the branch `docs/context-engineering-framing`; none is an ancestor of
+      `origin/main`. **0.7.0 was never published either**: the remote carried tags only up to `v0.6.0`,
+      so this release is the first to reach it.
 - [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
       check. The plan file itself is kept. Stays unchecked until the plan is actually closed; a Progress
       list that is otherwise complete but has this box open is not finished.
@@ -388,6 +392,19 @@ the demotion check, distil into the issue, delete the dossier.
   currently undocumented, and the decision about how to handle the six shipped files that still name the
   old commands (see Open questions) has no recorded answer.
 
+- **Observation:** this plan's own `Success criteria` names the wrong interpreter for one of the two test
+  suites, and following it produces a syntax error that is easy to misread as a pass.
+  **Evidence:** the criteria say `sh scripts/test-plan-progress-nudge.sh`. All three test scripts declare
+  `#!/usr/bin/env bash`. The nudge suite happens to survive `sh` because it uses nothing bash-only, but
+  `scripts/test-plan-approved-copy.sh` dies at line 72 on `[[ ... ]]` with process substitution — `sh
+  scripts/test-plan-approved-copy.sh` exits **2** having asserted nothing, while `bash` and the shebang
+  both give exit 0 and 12/12. Run under either of those, it passes.
+  **Why it matters:** it is the failure mode Plan-006's retrospective is about, one layer up. Measuring
+  the exit code through a pipe (`sh … | tail`) reports the exit of `tail`, so a first pass at this
+  genuinely showed `exit=0` next to a syntax error. A verification list that names the wrong interpreter
+  is worse than one that names no command at all, because it produces output that looks like a run.
+  The criteria above are the original document's and were left as written; this is the correction.
+
 ## Decision Log
 
 - **Decision:** file this work as four task dossiers rather than as a plan. **Reversed on 2026-08-04.**
@@ -424,11 +441,15 @@ the demotion check, distil into the issue, delete the dossier.
 
 <!-- Partial: the tracks are done, the release is not. Completed at closure, per /vibe-ops:close plan. -->
 
-Against this plan's four goals, all four are met **in the tree** and none is **delivered**: the taxonomy
-is derived rather than hardcoded and its gate suite is committed, the audit produced five guards instead
-of a report, closure is one skill dispatching on `task|plan`, and an approved plan-mode plan is filed
-automatically. What remains is the release, and the changelog that release needs — which is not
-bookkeeping here, because an unreleased path in this plugin reaches nobody.
+Against this plan's four goals, all four are met and **released as 0.8.0 on 2026-08-04**: the taxonomy is
+derived rather than hardcoded and its gate suite is committed, the audit produced five guards instead of
+a report, closure is one skill dispatching on `task|plan`, and an approved plan-mode plan is filed
+automatically. The changelog those tracks needed was written at the same time — not bookkeeping here,
+because an unreleased path in this plugin reaches nobody, and a breaking rename nobody wrote down reaches
+them as a mystery.
+
+What remains is the merge to `main`, which is larger than this plan: **0.7.0 was never published either**,
+so the branch carries two releases the remote has never seen.
 
 The retrospective proper is owed at closure. One thing is already clear enough to record: the plan's own
 verification chain (`check-agents-md.sh`, `--self-test`, the new suite, `claude --plugin-dir`,
