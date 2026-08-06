@@ -28,8 +28,13 @@ which loads on its own. Not repeated here.
   manifest entry. The only other place to update is this file's skill table.
 - **A hook is not a cheaper way to write a line.** It earns its place only by delivering something a line
   cannot: state read from disk at that instant, or context placed at a moment an instruction file cannot
-  reach. It must also be testable without a release — `claude --plugin-dir <this tree>` loads the working
-  tree and its hooks directly, which is the only way to exercise one before the version that ships it.
+  reach. It must also be testable without a release. `claude --plugin-dir <this tree>` is the intended
+  way; **it did not deliver a `Stop` hook in a headless `-p` run** (measured 2026-08-06 on
+  claude-code@2.1.221 — no such attachment reached the transcript at all), and a session-scoped hook has
+  a second problem on top of that: each `-p` invocation ends its session, so `SessionEnd` clears the
+  per-session state and every resumed turn arrives as a *first* event. Exercise anything session-scoped
+  in a real session, or against fixtures through `scripts/checks/` — `27-nudge-behaviour.sh` runs a hook
+  end to end with a synthetic payload and is the pattern to copy.
 - **Skills delegate instead of duplicating** — `repo-setup` orchestrates `license-setup` →
   `authoring-agents-md` → `authoring-readme` by name. A rule that governs more than one skill lives in
   [`references/`](references/README.md) and is *pointed at*, never copied into a `SKILL.md`.
