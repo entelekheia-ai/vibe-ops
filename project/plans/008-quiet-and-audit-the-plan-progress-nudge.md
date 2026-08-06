@@ -289,6 +289,31 @@ installed copy once a version is cut.
   genuine output gets blamed on the hook, and real hook output would be dismissed as more of the same.
   Tokens are measurable; a voice that has stopped being trusted is not, and it is the larger loss.
 
+- Observation: both memo defects reproduced live during the session that documented them, and the delta
+  between two firings is the whole proof — no code reading required.
+  Evidence: 2026-08-06, one session, two firings against the same repository. The first named five active
+  plans. The second named four of those same five *again*, dropped the one the intervening turn had
+  written into, and added one more. Reading the session's own state file straight afterwards shows it
+  holding exactly the five just named and omitting the written one — which is defect (a) caught in the
+  act, and guarantees that plan is named again on the next firing. The four that came back had been named
+  earlier in the same session; every turn between the two firings wrote only into sibling repositories, so
+  the loop that rebuilds the set never visited this one and its entries were simply dropped — defect (b).
+  The fifth plan is not a defect: another agent had moved it from the backlog status to the active one in
+  the interval, so it became genuinely eligible. That distinction is worth keeping, because a status
+  change is the *only* legitimate way the set should ever grow, and after Track 1 it should be the only
+  way it does.
+
+- Observation: the evidence for this plan arrived attached to plans that have nothing to do with it, which
+  is the second sighting of a limit already recorded against the hook's original design.
+  Evidence: every plan the two firings named belongs to one repository; this plan lives in another. The
+  hook correctly attributed the turn and correctly listed that repository's active plans, and the thing
+  worth recording belonged to none of them. Plan-006's Open questions already state this — *"the nudge
+  names the written repo's plan, but the lesson may belong to another repo's"* — and left it as accepted,
+  on the grounds that routing is judgement and handing it to the model is the design. Nothing here
+  contradicts that; it is a second observation of the same limit, which is what turns an anticipated
+  trade-off into a measured one. Track 3's log will record where the hook *asked*, never where the entry
+  ended up, so the gap stays invisible to the sensor as well.
+
 ## Decision Log
 
 - Decision: reverse [Plan-006](006-plan-progress-nudge-and-state-cleanup.md)'s Goal 1 — a declined firing
