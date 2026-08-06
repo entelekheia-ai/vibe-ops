@@ -1,0 +1,367 @@
+<!--
+ Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ https://www.apache.org/licenses/LICENSE-2.0
+-->
+
+# Plan-008: Quiet the Plan-Progress Nudge, and Make Its Firings Auditable
+
+| Field | Value |
+|---|---|
+| Status | Backlog |
+| Created | 2026-08-06 |
+| Author | Danilo Borges |
+| Related | [Plan-006](006-plan-progress-nudge-and-state-cleanup.md) (this corrects it and reverses its Goal 1) · [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) |
+
+---
+
+## Summary
+
+`hooks/plan-progress-nudge.sh` fires at the end of every turn that wrote files into a repository holding
+an active plan, and asks the model whether the turn taught something that belongs in that plan's living
+sections. Measured over one workspace's full session history, it fired 42 times, caused 263 model turns
+and 256,625 output tokens, and **40% of those firings ended in a visible paragraph explaining to the user
+why nothing was owed** — a paragraph the user never asked for. It also asked about the same plan up to
+fourteen times, because the memory that was supposed to prevent a second ask drops exactly the plans the
+model complied on. This plan fixes the memory, narrows each firing to one plan, replaces the spoken
+refusal with silence plus a durable on-disk record, and leaves behind two sensors so that neither the
+noise nor its absence has to be taken on faith again.
+
+## Goals
+
+1. A firing that the model correctly declines produces **no output to the user at all**, and the decline
+   is still recoverable afterwards from a file on disk.
+2. Complying with the nudge never re-arms it: a plan written after being named is never named again in
+   the same session.
+3. A firing names **at most one plan**, so the model answers a yes/no question rather than triaging a
+   list.
+4. The rate this plan is trying to improve can be re-measured by running a command, not by writing a new
+   analysis program each time.
+5. The hook's behaviour is asserted by a check that runs without a release, so a later edit cannot
+   quietly restore the old behaviour.
+
+## Scope
+
+### In scope
+
+The file `hooks/plan-progress-nudge.sh`; a new firing log written under the directory named by the
+`CLAUDE_PLUGIN_DATA` environment variable; a new check fragment under `scripts/checks/`; a preserved
+measurement script for the one quantity the log cannot observe; and the record of the Goal-1 reversal.
+
+### Out of scope
+
+**The other five hooks this plugin ships** (`plan-mode-context.sh`, `plan-approved-copy.sh`,
+`new-command-context.sh`, `task-dossier-guard.sh`, `session-state-cleanup.sh`). Only the plan-progress
+nudge was measured. The general question — what a firing costs, for every hook on every delivery surface
+this plugin uses — belongs to a harness audit of the whole plugin, not to this plan.
+
+**Reopening [Plan-006](006-plan-progress-nudge-and-state-cleanup.md).** That plan is `Shipped` and the
+lifecycle in [`.agents/rules/governance.md`](../../.agents/rules/governance.md) makes a plan permanent
+rather than editable. Its Goal 1 stays on the page as written; the reversal is recorded here and in the
+ADR this plan spawns at closure.
+
+**Changing the delivery surface.** The hook keeps returning `hookSpecificOutput.additionalContext` on
+`Stop`. Plan-006 already measured the alternative and rejected it; nothing found here reopens that.
+
+## Design
+
+### What the hook does today, and where each defect lives
+
+The hook reads the session transcript to find which repositories this turn wrote to, resolves each one's
+own plan taxonomy through `scripts/resolve-governance.sh`, finds every plan file whose status row matches
+that repository's active-status word, and asks the model about the ones the turn did not itself write. It
+keeps per-session state in a file named `vibe-ops-progress-<session_id>`, holding a byte offset into the
+transcript and a space-separated set of plan paths it has already asked about, under the key `NUDGED=`.
+
+Three defects sit in the loop that builds that set.
+
+**The memo is emptied by compliance.** A plan the turn wrote is skipped with a bare `continue`, which
+happens *before* the plan is recorded into the set being written back to disk. The plan therefore leaves
+the memo, and the next turn treats it as never asked about. The effect is a loop in which obeying the hook
+is precisely what makes it ask again: the two plans the model actually wrote entries into are the two it
+was asked about most, fourteen and nine times. The proof does not require re-running anything — a
+`vibe-ops-progress-*` state file left behind by a session that had written one of its repository's plans
+lists every other active plan and omits exactly that one.
+
+**The memo is emptied by working elsewhere.** The set is rebuilt from empty on every firing, and only
+repositories this turn wrote to are visited. A turn that writes in one repository therefore erases the
+memo for every other, and everything already asked about there becomes askable again.
+
+**Every active plan is named at once.** The loop appends a block per matching plan with no limit. In a
+repository with five plans at `In Progress` the model receives five candidates and triages them. Firings
+that named two or more plans declined loudly 47% of the time; firings that named one declined loudly 29%
+of the time. Narrowing helps and does not cure.
+
+### Why the refusal is the expensive part, and why forbidding investigation is not the fix
+
+The obvious reading of "40% of firings produced nothing" is that the model wastes effort investigating
+before declining. The measurement says the opposite. Firings that ended in a refusal averaged **0.6 tool
+calls**; firings that ended in a written entry averaged **4.5**. The investigation is concentrated in the
+firings that succeed, and it is what makes those entries correct. An instruction telling the model not to
+read the plan before deciding would save six-tenths of a tool call on the refusals and damage the
+twenty-two firings that work.
+
+What the refusals cost is not tools but **output**: 3,138 tokens each, delivered to the user as prose
+about a check the user did not request. The fix is therefore in the output contract alone.
+
+### The new output contract, and the record that replaces the spoken refusal
+
+Plan-006's Goal 1 asked that a turn end "with that plan's living sections reflecting the turn — or with an
+explicit statement that there was nothing worth recording". The explicit statement is what produces the
+noise, and it buys less than it appears to. It is prose addressed to no one, verifiable by nobody, and
+indistinguishable from a model that would have declined anyway.
+
+The new contract: the declining branch produces nothing at all, and the hook itself appends one line to a
+log under the directory named by `CLAUDE_PLUGIN_DATA`, so what was asked stays recoverable. The log is
+partitioned by date — `vibe-ops-nudge-log-YYYY-MM-DD.tsv` — and that is load-bearing rather than
+cosmetic. The hook already sweeps its own state directory with `find … -name 'vibe-ops-*' -mtime +7`, so
+date-partitioned files age out through machinery that already exists, whereas a single file rewritten on
+every firing would carry a fresh modification time forever and never be swept. Each line records the
+timestamp, the session id, the plan path, and the plan file's modification time at the instant of the
+firing. Whether the plan was subsequently written is then derivable by comparing that recorded time
+against the file's current one.
+
+The log write must fail silently and must never abort the hook, per obligation 3 of
+[ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md): a hook fails closed or fails silent, never open
+while appearing to work.
+
+### The limit of the log, and why a second instrument is still needed
+
+The log records what the *hook* did. It cannot record what the *model* did, because the hook has no access
+to the model's output. From the log it is possible to derive how many times the hook fired, how many plans
+each firing named, whether any plan was named twice in a session, and whether a named plan was written
+afterwards. It is **not** possible to distinguish a refusal delivered in silence from a refusal delivered
+as a paragraph — which is the single quantity this plan most wants to drive to zero.
+
+That quantity is only visible in the session transcripts. The measurement that produced this plan's
+baseline read them, and it must be preserved as a script rather than rewritten from scratch next time, so
+that the before and after are produced by the same command. It is a development instrument, not shipped
+behaviour, so it may depend on `jq` unconditionally — unlike the hooks, which must degrade when `jq` is
+absent.
+
+### What the baseline was, and how it was nearly wrong
+
+Every number in this plan comes from reading every session transcript in the directory Claude Code
+keeps per project, deduplicating firings by the timestamp of the injected `hook_additional_context`
+record, and attributing to each firing every assistant turn that followed it up to the next real user
+prompt.
+
+| Quantity | Value |
+|---|---|
+| Firings | 42 |
+| Plans named per firing | mean 1.9, maximum 5 |
+| Assistant turns caused | 263 |
+| Tool calls caused | 108 |
+| Output tokens caused | 256,625 |
+| Firings with visible text and no entry written | 17 (40%) |
+| Output tokens spent on those | 53,340 |
+| Firings that were fully silent | 3 (7%) |
+| Firings that wrote an entry | 22 (52%) |
+
+The first version of this measurement reported 22 firings rather than 42, because it scanned only the ten
+most recently modified transcripts and those files were being written while it ran. The undercount was the
+less alarming of the two numbers, which is the direction this class of error usually takes.
+
+## Tracks
+
+**Track 1 — Make the memo survive both compliance and working elsewhere.** Two changes in the plan loop of
+`hooks/plan-progress-nudge.sh`: the set being written back starts from the previous `NUDGED=` value rather
+than from empty, and a plan the turn wrote is recorded into it rather than skipped past it. What exists at
+the end that did not before: a session in which a plan named once is never named again, whether the model
+wrote to it, ignored it, or moved to another repository in between. Acceptance is observable on fixtures —
+name a plan, write to it, fire again, and see a different plan named or nothing at all.
+
+**Track 2 — Name one plan per firing.** The matching plans are ordered by modification time, newest first,
+and the loop stops after the first one it names. Because Track 1 makes the memo stable, the plans not
+named are not lost; the next firing surfaces the next one. There is a trap to avoid in the implementation:
+`ls -t` invoked with an empty argument list lists the current working directory, so the result of the
+`grep` that finds matching plans must be tested for emptiness before it is sorted, or the loop will be
+handed arbitrary filenames and treat them as plans. What exists at the end: a firing that asks a yes/no
+question.
+
+**Track 3 — Replace the spoken refusal with silence and a log line.** The message the hook emits states
+that the declining branch must produce no output whatsoever, and says so as an instruction rather than as
+permission. It deliberately does **not** tell the model to avoid investigating, for the reason recorded in
+the Design section. Alongside it, the hook appends one tab-separated line per firing to
+`vibe-ops-nudge-log-<date>.tsv` in its state directory, failing silently if it cannot. What exists at the
+end: a firing that costs the user nothing when declined, and a file that says it happened.
+
+**Track 4 — Two sensors, answering different questions.** The first is a fragment under `scripts/checks/`,
+in the style of the fifteen already there, which runs the hook against fixture repositories and asserts
+that a firing names at most one plan and that a plan written after being named is not named again. Plan-006
+verified this hook with ten payload cases run by hand and never automated them, which is why a regression
+here would currently be invisible. The second is the preserved measurement script for the noise rate,
+which the log cannot observe. What exists at the end: `bash scripts/check-agents-md.sh .` fails if the
+hook's behaviour regresses, and one command reproduces the noise measurement.
+
+## Success criteria
+
+The three quantities the firing log can answer, read from
+`$CLAUDE_PLUGIN_DATA/vibe-ops-nudge-log-*.tsv` after the change has been in use for a working day:
+
+| Quantity | Baseline | Target |
+|---|---|---|
+| Plans named in a single firing | maximum 5 | maximum 1 |
+| Same plan named twice in one session | 14, for the worst-affected plan | 0 |
+| A plan named after it was already written in that session | observed | 0 |
+
+The two quantities only the transcript measurement can answer, from the script preserved in Track 4, over
+sessions recorded after the release that ships this:
+
+| Quantity | Baseline | Target |
+|---|---|---|
+| Firings producing visible text and no written entry | 17 of 42 (40%) | 0 |
+| Output tokens spent on those firings | 53,340 | 0 |
+
+And mechanically, in this repository: `bash scripts/check-agents-md.sh .` passes, including the new
+fragment from Track 4. Note that this command currently reports one failure — `manifest-sync`, because
+`CHANGELOG.md`'s top heading is `Unreleased` while `.claude-plugin/plugin.json` carries `0.8.0`. That
+failure predates this work and is not caused by it.
+
+Finally, per obligation 4 of [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md), the changed hook must
+be exercised with `claude --plugin-dir .` before the release that ships it, because a hook only reaches an
+installed copy once a version is cut.
+
+---
+
+<!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
+
+## Progress
+
+- [x] 2026-08-06 — Baseline taken before any edit: 42 firings, 263 model turns, 256,625 output tokens,
+      17 firings (40%) noise, across the full transcript history.
+- [x] 2026-08-06 — Design settled through `/scope-the-work`; a throwaway implementation was written to
+      test feasibility, refuted in part by measurement, and reverted so this plan starts from a clean
+      tree.
+- [ ] Track 1 — memo survives compliance and cross-repo work.
+- [ ] Track 2 — one plan per firing, newest first, with the empty-`ls -t` guard.
+- [ ] Track 3 — silent decline plus the date-partitioned firing log.
+- [ ] Track 4 — check fragment, and the preserved noise measurement script.
+- [ ] Exercise the changed hook with `claude --plugin-dir .` in a scratch repository holding an active
+      plan (ADR-0009 obligation 4).
+- [ ] Cut the release that carries it — until then no installed copy has any of this.
+- [ ] Re-measure against the Success criteria table and record the result in Outcomes.
+- [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
+      check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
+      actually closed; a Progress list that is otherwise complete but has this box open is not finished.
+
+## Surprises & Discoveries
+
+- Observation: obeying the hook is what makes it ask again.
+  Evidence: a plan the turn wrote is skipped with `continue` before it is recorded into the set written
+  back to disk, so compliance removes it from the memo. The two plans the model wrote entries into were
+  asked about fourteen and nine times; a `vibe-ops-progress-*` state file left behind by a session that had
+  written one of its repository's plans holds every other active plan path and is missing precisely that
+  one.
+
+- Observation: the intuitive fix — telling the model not to investigate before deciding — is backwards,
+  and was written before it was measured.
+  Evidence: refusals averaged 0.6 tool calls, written entries averaged 4.5. The investigation lives in the
+  firings that succeed. The instruction would have saved almost nothing and degraded the 22 firings that
+  produce real entries. It was drafted, measured, and deleted.
+
+- Observation: the first measurement was wrong in the reassuring direction.
+  Evidence: scanning the ten most recently modified transcripts reported 22 firings; scanning every transcript in the directory
+  reported 42. The transcripts were being written while the scan ran, so the ten-file window moved between
+  runs and the same command returned different answers minutes apart. Pinning the file set fixed it.
+
+- Observation: [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) admits hooks under four obligations,
+  none of which prices a firing.
+  Evidence: the obligations govern when a hook may exist, what it may duplicate, how it must fail, and how
+  it must be tested — but a hook returning `additionalContext` re-enters the model, and 42 firings bought
+  263 model turns. That cost is invisible in the hook's design and in the ADR that admitted the surface.
+
+- Observation: a hook that speaks when it has nothing to say makes everything the agent says unprompted
+  look like the hook — and that cost appears in none of the numbers above.
+  Evidence: the first message put forward as an example of this hook misbehaving turned out, on checking
+  the transcript, to be an ordinary correct answer to a direct question, which the hook had never touched.
+  Once a surface is known to interject unasked, attribution stops being reliable in either direction:
+  genuine output gets blamed on the hook, and real hook output would be dismissed as more of the same.
+  Tokens are measurable; a voice that has stopped being trusted is not, and it is the larger loss.
+
+## Decision Log
+
+- Decision: reverse [Plan-006](006-plan-progress-nudge-and-state-cleanup.md)'s Goal 1 — a declined firing
+  produces no output to the user.
+  Rationale: Goal 1 required "an explicit statement that there was nothing worth recording". That
+  statement is what produced 17 noisy firings and 53,340 output tokens, and it is unverifiable prose
+  addressed to nobody: a model that declines correctly and a model that would have ignored the note both
+  satisfy it. The observable cost exceeds an unobservable benefit. Plan-006 is `Shipped` and permanent, so
+  it is not edited; this entry and the ADR below are where the reversal lives.
+  Date / Author: 2026-08-06 / Danilo Borges
+
+- Decision: the silence is paired with an on-disk firing log rather than standing alone.
+  Rationale: silence alone loses the same auditability Goal 1 was protecting and returns nothing for it.
+  A log returns something: it makes the firing recoverable, and it turns the re-measurement of this plan's
+  own success criteria from a bespoke transcript analysis into reading a file. The distinction between a
+  considered refusal and an ignored note is lost either way — that loss is accepted here, not avoided.
+  Date / Author: 2026-08-06 / Danilo Borges
+
+- Decision: do not instruct the model to skip investigation before deciding.
+  Rationale: refuted by measurement — 0.6 tool calls on refusals against 4.5 on written entries. The
+  instruction was written into a draft implementation and removed after the numbers came in.
+  Date / Author: 2026-08-06 / Danilo Borges
+
+- Decision: this plan spawns an ADR at closure, not now.
+  Rationale: the rule — a hook's nudge is silent to the user and auditable on disk — generalises past this
+  hook to every hook returning `additionalContext`, and it contradicts a goal printed in a permanent plan,
+  so a reader of Plan-006 needs somewhere to find out it was reversed. `/vibe-ops:close plan` is where an
+  ADR is spawned from a Decision Log entry, and writing it before the design has survived contact with an
+  implementation would make an immutable record of an untested claim.
+  Date / Author: 2026-08-06 / Danilo Borges
+
+- Decision: options rejected, each with the observation that would reopen it.
+  Rationale: deleting the hook and relying on `/vibe-ops:close` — reopen if the useful-firing rate falls
+  below 25% (it is 52% today), which would mean the hook is not catching real material. Returning
+  `decision: block` instead of `additionalContext` — reopen if silence proves unachievable, which the
+  firing log will show. Filtering by plan freshness — reopen if a plan idle more than roughly thirty days
+  is nudged, though every active plan in the repository measured had been touched within two days, so
+  the filter would have removed no firing. A time-decaying memo instead of a session-sticky one — reopen
+  if the log shows a session longer than four hours in which a plan gained new material after its single
+  firing and nothing was recorded; rejected for now because it introduces a threshold with no measurement
+  behind it, which is the criticism Plan-006 already records against its own seven-day sweep.
+  Date / Author: 2026-08-06 / Danilo Borges
+
+## Outcomes & Retrospective
+
+*Not yet written — no track has landed.*
+
+<!-- ===== END LIVING SECTIONS ===== -->
+
+---
+
+## Open questions
+
+- **Whether the model actually obeys "produce no output".** It is not testable without running, and it is
+  the first thing the firing log plus the preserved transcript measurement will answer. If it does not,
+  the rejected `decision: block` option reopens. Note that this is not really a question about this hook:
+  compliance with an explicit output-suppression instruction is a property of the model behind the
+  session, and it will differ between model tiers. Characterising it properly belongs in whatever
+  instrument this project uses to observe model behaviour, phrased so that it can be required — *how often
+  a model complied when told to stay silent*, never *how often it narrated anyway*, since a measurement
+  whose higher values are worse cannot be turned into a threshold. This plan only needs the local answer:
+  did it stay silent here, in this repository, at the model the user happened to be running.
+- **Whether this problem exists at all in a repository with one active plan.** Every number here comes
+  from one workspace holding five, and the noise rate is markedly worse when more than one plan is named.
+  A repository with a single active plan may be at the 29% figure or below it from the start.
+- **How the two instruments will disagree.** The firing log counts what the hook did; the transcript
+  measurement counts what the model did. They measure overlapping but different populations, and the first
+  time they disagree the reason will be more interesting than either number.
+- **Whether the seven-day sweep is the right home for the log.** The threshold is inherited from Plan-006,
+  which records that it has no measurement behind it. A log is a different kind of artifact from a state
+  file, and a week may be the wrong retention for something whose whole purpose is comparison over time.
+
+## Related
+
+- [Plan-006](006-plan-progress-nudge-and-state-cleanup.md) — designed and shipped this hook. Its Goal 1 is
+  reversed here; its Open questions already name the over-triggering half of this problem from a different
+  angle.
+- [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) — admits hooks as a delivery surface under four
+  obligations. Obligations 3 and 4 constrain Track 3 and the release step; the firing cost this plan
+  measures is not among them.
+- [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) — the guard-versus-line rule that makes Track 4's
+  check fragment the right home for an assertion rather than a sentence in a document.
