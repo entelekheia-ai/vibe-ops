@@ -237,6 +237,12 @@ installed copy once a version is cut.
 - [x] 2026-08-06 — Design settled through `/scope-the-work`; a throwaway implementation was written to
       test feasibility, refuted in part by measurement, and reverted so this plan starts from a clean
       tree.
+- [x] 2026-08-06 — Combed for exposure before committing, on the same contract this project applies to
+      research: five items removed, including a session identifier, another repository's plan number, and
+      a quotation of the person who asked for the work. Every one had already passed the annotation
+      rubric, which asks whether an entry earns its space and never who may read it.
+- [x] 2026-08-06 — Committed to the branch `docs/plan-008-quiet-the-nudge`, cut from `origin/main`.
+      **Not pushed and no pull request is open**, so nothing here has been reviewed.
 - [ ] Track 1 — memo survives compliance and cross-repo work.
 - [ ] Track 2 — one plan per firing, newest first, with the empty-`ls -t` guard.
 - [ ] Track 3 — silent decline plus the date-partitioned firing log.
