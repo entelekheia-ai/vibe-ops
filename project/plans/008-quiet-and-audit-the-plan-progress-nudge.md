@@ -166,6 +166,13 @@ The first version of this measurement reported 22 firings rather than 42, becaus
 most recently modified transcripts and those files were being written while it ran. The undercount was the
 less alarming of the two numbers, which is the direction this class of error usually takes.
 
+**Two rows above are known wrong and are kept as written.** The preserved instrument built in Track 4
+reproduces this table except for the plans-per-firing mean (2.1, not 1.9) and the assistant-turn count
+(262, not 263) — and separately corrects a figure in Success criteria from 14 to 24. The table records
+what was measured on the day the design was settled; the corrections are in Surprises, where the reason
+they were wrong is also recorded. Editing the numbers here would erase the evidence that a pinned input
+set was not, by itself, enough.
+
 ## Tracks
 
 **Track 1 — Make the memo survive both compliance and working elsewhere.** Two changes in the plan loop of
@@ -264,9 +271,9 @@ installed copy once a version is cut.
 - [x] 2026-08-06 — Track 4a: `scripts/checks/27-nudge-behaviour.sh`, five assertions over fixture
       repositories. Run against the 0.8.0 hook first: all five fail there, each on a different defect.
       `bash scripts/check-agents-md.sh .` is 16 checks, 0 failed.
-- [x] 2026-08-06 — Track 4b: `scripts/measure-nudge-noise.sh`, which reproduces eleven of the thirteen
+- [x] 2026-08-06 — Track 4b: `scripts/measure-nudge-noise.sh`, which reproduces ten of the thirteen
       baseline figures exactly, including the 53,340 noise tokens and the 0.6-against-4.5 tool-call
-      split. The two it does not reproduce are recorded below.
+      split. The three it does not reproduce are recorded below.
 - [x] 2026-08-06 — Exercised in a live session rather than a probe (ADR-0009 obligation 4), because a
       headless one cannot reach this hook at all. See Surprises.
 - [ ] Cut the release that carries it. Until then no copy installed *from git* has any of this — a copy
@@ -339,12 +346,21 @@ installed copy once a version is cut.
 
 - Observation: the instrument written to preserve the baseline disagreed with the baseline, and the
   disagreement was worth more than the agreement.
-  Evidence: over the same window it reproduced eleven of thirteen figures to the digit — 42 firings, 108
-  tool calls, 256,625 output tokens, 17 noisy firings, 53,340 tokens spent on them, 0.6 tool calls
-  against 4.5. It disagreed on two. One was an artefact of the throwaway program: the figure for how
-  often the worst-affected plan was named is 24, not 14, because that single number was never
-  recomputed after the input set was pinned — it is the last surviving output of the moving-window run
-  this plan already records as wrong. The other was real. Reaching the original noise count required
+  Evidence: over the same window it reproduced ten of thirteen figures to the digit — 42 firings, 108
+  tool calls, 256,625 output tokens, 22 firings that wrote an entry, 3 silent, 17 noisy, 53,340 tokens
+  spent on those, 0.6 tool calls against 4.5, and a maximum of 5 plans in one firing. It disagreed on
+  three, and the first count written here said "eleven of thirteen" — an over-claim caught only by
+  recounting the two outputs side by side, which is worth recording because the direction of the slip
+  was flattering to the instrument being defended.
+
+  Two of the three disagreements are the same fault seen twice: **the throwaway program counted fewer
+  plan mentions than exist.** The worst-affected plan was named 24 times, not 14, and the mean per
+  firing is 2.1, not 1.9. Both are counts of the same thing, both are low, and the plausible cause is
+  that neither was recomputed after the input set was pinned — they are the last surviving outputs of
+  the moving-window run this plan already records as wrong. The third is one assistant turn, 262
+  against 263, which is an attribution boundary and is not worth chasing.
+
+  The fourth apparent disagreement turned out to be real and was the useful one. Reaching the original noise count required
   counting an entry written into *any* plan as a success, not only into a plan the firing had named;
   scored strictly, two expensive firings move from useful to noisy. Both counts are now reported, because
   the gap between them is the routing limit recorded two entries above, and folding them together would
@@ -453,9 +469,10 @@ verification and survived months. The fixture harness is the difference between 
 and checking it every time.
 
 **Goal 4 (re-measurable by command) is done, and the command immediately corrected the record it was
-built to preserve** — one baseline figure was stale, and one was measuring something subtly different
+built to preserve** — two baseline figures were stale, and one was measuring something subtly different
 from what it claimed. An instrument that only ever confirms the number it was built to reproduce has
-not been tested.
+not been tested. Nor has the person reading it: the first summary of how well it agreed was itself one
+figure too generous, and nothing but recounting caught that.
 
 **Goal 1 (a declined firing is silent and still recoverable) is half-answered.** The mechanism is in
 place and the log works — the first live firing under the new code wrote its line, named exactly one
