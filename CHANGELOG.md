@@ -12,6 +12,33 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 > a released version**, so anything that has landed but not shipped is unreachable from
 > `${CLAUDE_PLUGIN_ROOT}` in every install.
 
+## [Unreleased]
+
+Nothing here changes what the plugin does yet — no skill, template or hook moved. What landed is the
+design the `new-research` skill will be built from, so that Track 1 of
+[Plan-004](project/plans/004-new-research-skill.md) starts from a settled shape instead of deriving one.
+
+### Added
+
+- **[`project/research/research-document-format.md`](project/research/research-document-format.md)** — what
+  a research document must carry that a later reader cannot reconstruct. Surveys ICD 203 (separating fact
+  from assumption from judgment, and confidence from likelihood), PRISMA-S (a search recorded as run), the
+  spike-template convention of answering the question at the top, and the research-repository literature on
+  index legibility; audits a corpus of untemplated research against them; and records what was rejected
+  with the trigger that would reopen each.
+- **Sources credited** in [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) for the above, including the note
+  that ICD 203 was read through a secondary explainer because the primary PDF yielded no extractable text.
+
+### Changed
+
+- **[Plan-004](project/plans/004-new-research-skill.md) — both Open questions closed.** Research is
+  **dated**, not numbered, where it is written and named by topic where it is published, so the skill's
+  discovery step looks for neither a prefix nor a next number. And research **has** a lifecycle: write-once
+  with the supersession banner as its single legal edit, plus an index status of
+  `valid → to-be-checked → expired | superseded by <link>`. The plan's `Design` section now points at the
+  research instead of carrying an undesigned note, and its `governance.md` still needs the lifecycle
+  written into it — that is Track 3.
+
 ## [0.8.0] — 2026-08-04
 
 Designed as one unit in [Plan-007](project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
