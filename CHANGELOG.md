@@ -14,12 +14,37 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing here changes what the plugin does yet — no skill, template or hook moved. What landed is the
-design the `new-research` skill will be built from, so that Track 1 of
-[Plan-004](project/plans/004-new-research-skill.md) starts from a settled shape instead of deriving one.
+Two unrelated pieces of work. One changes a hook's behaviour in every repository this plugin is installed
+in; the other is design groundwork that changes nothing yet.
+
+### Fixed
+
+- **[`hooks/plan-progress-nudge.sh`](hooks/plan-progress-nudge.sh) — the nudge now remembers what it
+  asked, names one plan at a time, and produces nothing when it declines.** Three defects shipped in
+  0.7.0/0.8.0, all in one loop. Its memory of what it had already asked about was rebuilt from empty on
+  every firing and repopulated only from the repositories that turn wrote to, so working in a sibling
+  repository erased it everywhere else. A plan the turn had itself written was skipped before the memory
+  was written back, so complying with the nudge is what re-armed it. And every active plan was named at
+  once, so the model triaged a list rather than answering a question.
+
+  The output contract is reversed with them.
+  [Plan-006](project/plans/006-plan-progress-nudge-and-state-cleanup.md)'s first goal asked a declining
+  turn for "an explicit statement that there was nothing worth recording"; measured across one
+  workspace's whole session history, that statement is what 40% of firings produced. It is replaced by
+  silence, plus one tab-separated line per firing in a date-partitioned log under the plugin's data
+  directory, so the decision stays recoverable without being spoken. The reversal, its measurements and
+  what it cost are in [Plan-008](project/plans/008-quiet-and-audit-the-plan-progress-nudge.md).
 
 ### Added
 
+- **[`scripts/checks/27-nudge-behaviour.sh`](scripts/checks/27-nudge-behaviour.sh)** — five assertions
+  that run the hook above against fixture repositories: one plan per firing, newest first, nothing
+  re-named after being written or after a detour through another repository, and a firing log that is
+  actually written. Every one of them fails against the version this release replaces.
+- **[`scripts/measure-nudge-noise.sh`](scripts/measure-nudge-noise.sh)** — the development instrument for
+  the one thing a hook cannot observe about itself: what the model did after it fired. Bounded at both
+  ends (`--since` / `--until`) so a before-and-after comparison is taken with the same command over the
+  same kind of window.
 - **[`project/research/research-document-format.md`](project/research/research-document-format.md)** — what
   a research document must carry that a later reader cannot reconstruct. Surveys ICD 203 (separating fact
   from assumption from judgment, and confidence from likelihood), PRISMA-S (a search recorded as run), the
