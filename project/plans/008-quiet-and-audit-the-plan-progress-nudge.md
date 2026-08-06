@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-06 |
 | Author | Danilo Borges |
 | Related | [Plan-006](006-plan-progress-nudge-and-state-cleanup.md) (this corrects it and reverses its Goal 1) · [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) |
@@ -206,8 +206,14 @@ The three quantities the firing log can answer, read from
 | Quantity | Baseline | Target |
 |---|---|---|
 | Plans named in a single firing | maximum 5 | maximum 1 |
-| Same plan named twice in one session | 14, for the worst-affected plan | 0 |
+| Times the worst-affected plan was named | 24 | at most one per session it is active in |
 | A plan named after it was already written in that session | observed | 0 |
+
+The second row read `14` until the preserved instrument was run against the same window and answered
+`24`. That figure was the one number never recomputed after the baseline's input set was pinned — see
+Surprises. Within-session repeats are what Track 1 addresses and what the firing log can group on; the
+count above spans the whole window, and a plan that stays active across days is legitimately asked about
+once in each of those sessions.
 
 The two quantities only the transcript measurement can answer, from the script preserved in Track 4, over
 sessions recorded after the release that ships this:
@@ -216,6 +222,11 @@ sessions recorded after the release that ships this:
 |---|---|---|
 | Firings producing visible text and no written entry | 17 of 42 (40%) | 0 |
 | Output tokens spent on those firings | 53,340 | 0 |
+
+Both reproduce exactly from `scripts/measure-nudge-noise.sh --until <the release date>`, which is the
+command the "after" must be taken with. Scored strictly — an entry only counts if it went into a plan
+the firing itself named — the same window gives 19 and 110,599; that stricter pair is reported by the
+same run and is the one to watch if the routing gap ever becomes the dominant cost.
 
 And mechanically, in this repository: `bash scripts/check-agents-md.sh .` passes, including the new
 fragment from Track 4. Note that this command currently reports one failure — `manifest-sync`, because
@@ -243,14 +254,26 @@ installed copy once a version is cut.
       rubric, which asks whether an entry earns its space and never who may read it.
 - [x] 2026-08-06 — Committed to the branch `docs/plan-008-quiet-the-nudge`, cut from `origin/main`.
       **Not pushed and no pull request is open**, so nothing here has been reviewed.
-- [ ] Track 1 — memo survives compliance and cross-repo work.
-- [ ] Track 2 — one plan per firing, newest first, with the empty-`ls -t` guard.
-- [ ] Track 3 — silent decline plus the date-partitioned firing log.
-- [ ] Track 4 — check fragment, and the preserved noise measurement script.
-- [ ] Exercise the changed hook with `claude --plugin-dir .` in a scratch repository holding an active
-      plan (ADR-0009 obligation 4).
-- [ ] Cut the release that carries it — until then no installed copy has any of this.
-- [ ] Re-measure against the Success criteria table and record the result in Outcomes.
+- [x] 2026-08-06 — Track 1: `STILL_NUDGED` is seeded from the previous `NUDGED=`, and a plan the turn
+      wrote is recorded into it instead of skipped past. The loop deliberately keeps scanning after it
+      has picked its one plan, so a written plan in a *later* repository is still recorded.
+- [x] 2026-08-06 — Track 2: matches ordered by modification time, newest first, one named per firing,
+      with the emptiness guard before `ls -t`.
+- [x] 2026-08-06 — Track 3: the declining branch is instructed to produce nothing, and every firing
+      appends one tab-separated line to `vibe-ops-nudge-log-<date>.tsv` before the model is asked.
+- [x] 2026-08-06 — Track 4a: `scripts/checks/27-nudge-behaviour.sh`, five assertions over fixture
+      repositories. Run against the 0.8.0 hook first: all five fail there, each on a different defect.
+      `bash scripts/check-agents-md.sh .` is 16 checks, 0 failed.
+- [x] 2026-08-06 — Track 4b: `scripts/measure-nudge-noise.sh`, which reproduces eleven of the thirteen
+      baseline figures exactly, including the 53,340 noise tokens and the 0.6-against-4.5 tool-call
+      split. The two it does not reproduce are recorded below.
+- [x] 2026-08-06 — Exercised in a live session rather than a probe (ADR-0009 obligation 4), because a
+      headless one cannot reach this hook at all. See Surprises.
+- [ ] Cut the release that carries it. Until then no copy installed *from git* has any of this — a copy
+      installed from a directory has had all of it since it was saved, which is how it came to be
+      exercised at all.
+- [ ] Re-measure with `scripts/measure-nudge-noise.sh --since <the release date>` once enough firings
+      have accumulated, and record the result in Outcomes. Nothing to compare yet: one firing.
 - [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
       check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
       actually closed; a Progress list that is otherwise complete but has this box open is not finished.
@@ -314,6 +337,46 @@ installed copy once a version is cut.
   trade-off into a measured one. Track 3's log will record where the hook *asked*, never where the entry
   ended up, so the gap stays invisible to the sensor as well.
 
+- Observation: the instrument written to preserve the baseline disagreed with the baseline, and the
+  disagreement was worth more than the agreement.
+  Evidence: over the same window it reproduced eleven of thirteen figures to the digit — 42 firings, 108
+  tool calls, 256,625 output tokens, 17 noisy firings, 53,340 tokens spent on them, 0.6 tool calls
+  against 4.5. It disagreed on two. One was an artefact of the throwaway program: the figure for how
+  often the worst-affected plan was named is 24, not 14, because that single number was never
+  recomputed after the input set was pinned — it is the last surviving output of the moving-window run
+  this plan already records as wrong. The other was real. Reaching the original noise count required
+  counting an entry written into *any* plan as a success, not only into a plan the firing had named;
+  scored strictly, two expensive firings move from useful to noisy. Both counts are now reported, because
+  the gap between them is the routing limit recorded two entries above, and folding them together would
+  make a success criterion that can never legitimately reach zero.
+
+- Observation: the first run of the noise instrument reported zero firings, which is the exact failure
+  its own header warns about, committed while writing the warning.
+  Evidence: `jq` was invoked without `-s`, so a program expecting an array of records got one record at
+  a time and matched nothing; the invocation also carried `2>/dev/null`, which discarded the error that
+  said so. The output was a clean table of zeroes — indistinguishable from a hook that had been fixed,
+  and in the direction of the answer being hoped for. The suppression is gone and the emptiness is
+  checked, but the lesson is that "a command that fails silently returns the answer you wanted" is not
+  a mistake you stop making by having written it down.
+
+- Observation: a `Stop` hook cannot be exercised headlessly, so ADR-0009 obligation 4 cannot be
+  discharged the way this repository's own `AGENTS.md` says it can.
+  Evidence: `claude --plugin-dir <tree> -p …` was run twice against a scratch repository holding one
+  active plan. The transcript shows no `Stop` attachment from this hook at all — `--plugin-dir` did not
+  register it — and, separately, each `-p` invocation ends its session, so `SessionEnd` deletes the
+  per-session memo and every resumed turn arrives as a *first* `Stop`, which this hook answers by
+  seeding its offset and saying nothing. Both failures are silent and each alone is enough. Obligation
+  4 was discharged instead against a live session, which is stronger evidence and not a substitute
+  anyone can schedule: it required waiting for the hook to fire on its own.
+
+- Observation: the fix was in production before it was committed, let alone released.
+  Evidence: this plugin is installed on this machine from a *directory* source, so `installLocation` is
+  the working tree and `${CLAUDE_PLUGIN_ROOT}` resolves into it. Every edit made here was live in every
+  session on the machine from the moment it was saved. That is what produced the live evidence above,
+  and it inverts the standing rule that nothing reaches an install before a release is cut — the rule
+  holds for whoever installs from git and is false for the person developing it, who is also the person
+  least likely to notice a half-finished hook shipping into their own working day.
+
 ## Decision Log
 
 - Decision: reverse [Plan-006](006-plan-progress-nudge-and-state-cleanup.md)'s Goal 1 — a declined firing
@@ -345,6 +408,24 @@ installed copy once a version is cut.
   implementation would make an immutable record of an untested claim.
   Date / Author: 2026-08-06 / Danilo Borges
 
+- Decision: the noise instrument counts "answered in a plan the firing named" and "wrote some plan
+  entry" as two separate quantities, and scores noise against the looser one.
+  Rationale: the two differ by exactly the case this plan observed twice — the hook names the plans of
+  the repository that was written, and the lesson belongs to a plan somewhere else. Scoring against the
+  strict count would classify that as a failed firing, so the success criterion could never reach zero
+  no matter how well the hook behaved. Reporting only the loose count would hide the routing gap
+  entirely. Both are printed; the criterion uses the loose one.
+  Date / Author: 2026-08-06 / Danilo Borges
+
+- Decision: ADR-0009 obligation 4 is discharged by a live firing, not by a headless probe.
+  Rationale: the probe was built and run, and it cannot reach this hook — twice over, for two
+  independent reasons recorded in Surprises. Insisting on the letter of the obligation would have meant
+  either shipping unexercised or fabricating a probe result. The live firing gives strictly more: the
+  real plugin loader, the real transcript, the real model. What it costs is schedulability — it happened
+  when it happened. Any future hook whose trigger is a session boundary inherits this problem, and the
+  honest form of the obligation is "exercised before release", not "exercised headlessly before release".
+  Date / Author: 2026-08-06 / Danilo Borges
+
 - Decision: options rejected, each with the observation that would reopen it.
   Rationale: deleting the hook and relying on `/vibe-ops:close` — reopen if the useful-firing rate falls
   below 25% (it is 52% today), which would mean the hook is not catching real material. Returning
@@ -359,7 +440,40 @@ installed copy once a version is cut.
 
 ## Outcomes & Retrospective
 
-*Not yet written — no track has landed.*
+All four tracks landed on 2026-08-06. Against the five goals:
+
+**Goal 2 (complying never re-arms) and Goal 3 (one plan per firing) are done and asserted.** Both are
+now properties a check fails on rather than claims: `27-nudge-behaviour.sh` was run against the 0.8.0
+hook before being written down, and all five of its assertions fail there, each on a different defect.
+That is the part of this work that cannot silently rot.
+
+**Goal 5 (asserted without a release) is done, and is the reason the rest is trustworthy.** Plan-006
+verified this hook with ten payload cases run by hand; every defect this plan fixed shipped past that
+verification and survived months. The fixture harness is the difference between checking a hook once
+and checking it every time.
+
+**Goal 4 (re-measurable by command) is done, and the command immediately corrected the record it was
+built to preserve** — one baseline figure was stale, and one was measuring something subtly different
+from what it claimed. An instrument that only ever confirms the number it was built to reproduce has
+not been tested.
+
+**Goal 1 (a declined firing is silent and still recoverable) is half-answered.** The mechanism is in
+place and the log works — the first live firing under the new code wrote its line, named exactly one
+plan where the two firings twenty minutes earlier had named five and four, and the model answered it by
+editing that plan with no visible narration at all. But *silence on decline* is the branch that has not
+yet occurred, so the quantity this plan most wants at zero is not yet measured. That is expected: it is
+the plan's own first open question, and the two instruments exist precisely so the answer arrives as
+data rather than as an impression.
+
+**What this cost, and what it bought.** The hook grew by roughly eighty lines, most of them explaining
+why rather than what. Against that: the same workspace, measured over its whole history, spent 256,625
+output tokens on 42 firings, 53,340 of them on firings that achieved nothing. The change is not
+expected to make the useful firings cheaper — it makes the useless ones free.
+
+**The one thing that would have changed the approach if known earlier**: that the plugin is installed
+here from a directory source, so every edit was live in every session on the machine while this was
+being written. The live evidence that discharged ADR-0009 obligation 4 is a direct consequence, and so
+is the fact that a half-finished hook was briefly the real one. Neither was planned.
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
@@ -371,7 +485,10 @@ installed copy once a version is cut.
   the first thing the firing log plus the preserved transcript measurement will answer. If it does not,
   the rejected `decision: block` option reopens. Note that this is not really a question about this hook:
   compliance with an explicit output-suppression instruction is a property of the model behind the
-  session, and it will differ between model tiers. Characterising it properly belongs in whatever
+  session, and it will differ between model tiers. One data point exists and it is not the one needed:
+  the first live firing under the new code was *answered*, and the model reached the edit with no
+  visible text at all before it — so it did not narrate on the way to complying. The declining branch,
+  which is the one the instruction addresses, has not fired yet. Characterising it properly belongs in whatever
   instrument this project uses to observe model behaviour, phrased so that it can be required — *how often
   a model complied when told to stay silent*, never *how often it narrated anyway*, since a measurement
   whose higher values are worse cannot be turned into a threshold. This plan only needs the local answer:

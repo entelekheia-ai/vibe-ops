@@ -29,6 +29,16 @@
 # additionalContext reaches the model with no such framing, the same way
 # plan-mode-context.sh already injects context, just on Stop instead of
 # UserPromptSubmit.
+#
+# A firing is not free, and 0.8.0 priced it at nothing. additionalContext
+# RE-ENTERS the model: every firing buys a full turn — reasoning, tools,
+# visible output. Measured over one workspace's whole session history, 42
+# firings bought 263 model turns, and two-fifths of them ended in a paragraph
+# explaining to the user why nothing was owed. So this hook now names at most
+# ONE plan per firing, remembers what it asked across the whole session, and
+# instructs the declining branch to say nothing whatsoever — with the firing
+# appended to a log on disk, because the branch that must stay silent is
+# exactly the one worth counting. See project/plans/008-*.md.
 set -u
 
 IN=$(cat)
@@ -114,13 +124,19 @@ if [ -z "$REPOS" ]; then
 fi
 
 # For each repository this turn wrote to, resolve ITS OWN taxonomy and find
-# every plan whose status matches (there may be more than one — no head -1),
-# skipping any plan this turn already wrote to itself. NUDGED is a set of
-# plan paths, not a scalar: dropping head -1 means more than one plan can be
-# outstanding across repos in the same turn, and a scalar would forget all
-# but the last one on the very next Stop.
+# every plan whose status matches. NUDGED is a set of plan paths, not a
+# scalar: more than one plan can be outstanding across repos in the same
+# turn, and a scalar would forget all but the last one on the very next Stop.
+#
+# The set carries forward (Plan-008 Track 1). 0.8.0 rebuilt it from empty on
+# every firing and only repopulated it from the repositories THAT turn wrote
+# to, so a turn spent in a sibling repository erased the memo for every other
+# one and re-armed everything already asked about there. Measured: two
+# firings in one session, the second re-naming four plans the first had
+# already named, because every turn in between wrote elsewhere.
 MSG_BLOCKS=""
-STILL_NUDGED=""
+NUDGED_PLAN=""
+STILL_NUDGED=$NUDGED
 for REPO in $REPOS; do
   RESOLVED=$(cd "$REPO" 2>/dev/null && sh "$RESOLVER" plan 2>/dev/null) || continue
   DIR=$(printf '%s\n' "$RESOLVED" | sed -n 's/^DIR=//p')
@@ -139,17 +155,34 @@ for REPO in $REPOS; do
   ACTIVE_RE=$(printf '%s' "$ACTIVE" | sed -e 's/[.[\*^$()+?{|]/\\&/g')
   ROW_RE='^\|[[:space:]]*Status[[:space:]]*\|[[:space:]]*'"$ACTIVE_RE"'[[:space:]]*\|'
 
-  for PLAN in $(grep -lE "$ROW_RE" "$REPO/$DIR"/*.md 2>/dev/null); do
+  # Newest first, so the one plan this firing may name (Track 2) is the one
+  # most likely to be what the turn was about. The emptiness test is
+  # load-bearing and not a style choice: `ls -t` with an EMPTY argument list
+  # lists the current working directory, so an unguarded pipe would hand this
+  # loop arbitrary filenames from wherever the hook happened to be invoked
+  # and treat each as a plan path.
+  MATCHES=$(grep -lE "$ROW_RE" "$REPO/$DIR"/*.md 2>/dev/null)
+  [ -n "$MATCHES" ] || continue
+
+  # shellcheck disable=SC2086
+  for PLAN in $(ls -t $MATCHES 2>/dev/null); do
+    case " $STILL_NUDGED " in
+      *" $PLAN "*) continue ;;  # already asked about this session: stay silent
+    esac
     case "$WRITTEN" in
-      *"$PLAN"*) continue ;;  # this turn wrote the plan itself: fully silent
+      # This turn wrote the plan itself: silent, AND recorded as settled.
+      # 0.8.0 skipped it with a bare `continue` placed before the set was
+      # repopulated, so complying with the nudge is what dropped the plan from
+      # the memo and re-armed it for the next turn — the two plans the model
+      # actually wrote entries into were the two it was asked about most.
+      *"$PLAN"*) STILL_NUDGED="$STILL_NUDGED $PLAN"; continue ;;
     esac
-    case " $NUDGED " in
-      *" $PLAN "*)
-        # Already nudged and still untouched — stay silent rather than
-        # insist twice, but keep it in the outstanding set.
-        STILL_NUDGED="$STILL_NUDGED $PLAN"
-        continue ;;
-    esac
+
+    # Track 2: at most one plan per firing. The scan does not stop here,
+    # because the two cases above still have to run against the remaining
+    # plans and the remaining repositories — that is what keeps a plan this
+    # turn wrote out of the next firing no matter which repository it is in.
+    [ -z "$MSG_BLOCKS" ] || continue
 
     if [ -n "$LIVING" ] && [ "$LIVING" != "(unknown)" ]; then
       SECTIONS=$(printf '%s' "$LIVING" | tr '|' ',' | sed 's/,/, /g')
@@ -163,8 +196,10 @@ for REPO in $REPOS; do
       BODY="This repository's living sections are the ones below the LIVING SECTIONS divider in \`$TARGET\` — check there rather than assuming a specific list."
     fi
 
-    MSG_BLOCKS="$MSG_BLOCKS
-- $PLAN — status \"$ACTIVE\". $BODY"
+    # Composed here rather than at the end: ACTIVE and BODY belong to the
+    # repository being visited, and the loop keeps running after the pick.
+    MSG_BLOCKS="$PLAN — status \"$ACTIVE\". $BODY"
+    NUDGED_PLAN=$PLAN
     STILL_NUDGED="$STILL_NUDGED $PLAN"
   done
 done
@@ -173,9 +208,34 @@ printf 'OFFSET=%s\nNUDGED=%s\n' "$NEW_OFFSET" "$STILL_NUDGED" >"$STATE" 2>/dev/n
 
 [ -n "$MSG_BLOCKS" ] || exit 0
 
-TEXT="This turn wrote to a repository with an active plan whose living sections were not part of that write:$MSG_BLOCKS
+# Track 3: the firing is recorded on disk before the model is asked anything,
+# because from here on the hook can no longer observe what happens — it has no
+# access to the model's output, and the branch it most wants to count is the
+# one that is now required to be silent. One tab-separated line: when, which
+# session, which plan, and that plan's modification time at this instant. Was
+# it written afterwards? Compare that recorded time against the file's now.
+#
+# Date-partitioned, and that is load-bearing rather than cosmetic: the sweep
+# above ages out `vibe-ops-*` files by modification time, so one file per day
+# falls out of the directory by machinery that already exists, while a single
+# log rewritten on every firing would carry a fresh mtime forever and never be
+# swept.
+#
+# Fails silent, never open, per ADR-0009 obligation 3 — a hook that cannot
+# write its log still delivers its observation. `stat` is asked the BSD way
+# and then the GNU way; neither is portable and the fallback costs one failed
+# process on Linux.
+LOG="$STATE_DIR/vibe-ops-nudge-log-$(date -u +%Y-%m-%d 2>/dev/null).tsv"
+PLAN_MTIME=$(stat -f %m "$NUDGED_PLAN" 2>/dev/null || stat -c %Y "$NUDGED_PLAN" 2>/dev/null || printf '')
+printf '%s\t%s\t%s\t%s\n' \
+  "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" "$SID" "$NUDGED_PLAN" "$PLAN_MTIME" \
+  >>"$LOG" 2>/dev/null || true
 
-If this turn taught or decided something worth the record, add an entry now (Observation:/Evidence: or Decision:/Rationale:/Date/Author:) before finishing. If it genuinely did not, that is a fine outcome too — no entry is needed, and this will not ask again about these plans until they change."
+TEXT="This turn wrote to a repository with an active plan whose living sections were not part of that write: $MSG_BLOCKS
+
+If this turn taught or decided something worth the record, add an entry now (Observation:/Evidence: or Decision:/Rationale:/Date/Author:) before finishing.
+
+If it did not, produce no output at all about this — no explanation, no mention of this note, no acknowledgement that it fired. End the turn as you otherwise would have. Declining is the expected outcome and is already recorded on disk; a paragraph explaining why nothing was owed is the cost this note exists to avoid, and the user did not ask for it. This will not ask again about this plan in this session."
 
 # Hand-built JSON: a raw newline inside a JSON string is invalid, and a plan
 # path is untrusted input, so both backslash/quote and the real newlines in
