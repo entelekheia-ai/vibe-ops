@@ -242,7 +242,7 @@ compose_denylist() {
 # The second half is running it; this is the first half, so the claim is not taken on trust.
 
 self_test() {
-  local expected got rc irc before after leftover
+  local expected got rc irc before after leftover zero_got
   # not local: the EXIT trap runs after this function has returned
   tmp=$(mktemp -d) || exit 2
   denylist=$(mktemp) || exit 2
@@ -251,7 +251,10 @@ self_test() {
   # that nothing else on the machine wrote a temporary file during those two seconds, which is not true
   # and made this check fail about one run in six.
   runtmp=$(mktemp -d) || exit 2
-  trap 'rm -rf "$tmp" "$denylist" "$fragdir" "$runtmp"' EXIT
+  # a second, separate fixture: a repository with zero ${CLAUDE_PLUGIN_ROOT}/ references anywhere, to
+  # prove plugin-root-paths reports itself skipped rather than vacuously passed when it examined nothing
+  zero=$(mktemp -d) || exit 2
+  trap 'rm -rf "$tmp" "$denylist" "$fragdir" "$runtmp" "$zero"' EXIT
 
   git -C "$tmp" init -q
   mkdir -p "$tmp/.agents/rules" "$tmp/.claude/rules"
@@ -373,6 +376,21 @@ self_test() {
   if [ -n "$leftover" ]; then
     echo "SELF-TEST FAILED: a run left something behind in its temporary directory"
     printf '%s\n' "$leftover"
+    return 1
+  fi
+
+  # a population of zero ${CLAUDE_PLUGIN_ROOT}/ paths is not the same as thirty verified ones — the
+  # check must say so rather than reporting the same "ok" it would print after actually verifying something
+  git -C "$zero" init -q
+  printf '# fixture\n\nnothing here names a ${CLAUDE_PLUGIN_ROOT} path.\n' > "$zero/AGENTS.md"
+  git -C "$zero" add -A >/dev/null 2>&1
+  zero_got=$(TMPDIR="$runtmp" "$0" "$zero" 2>&1)
+  if ! printf '%s\n' "$zero_got" | grep -q 'SKIP  \[plugin-root-paths\]'; then
+    echo "SELF-TEST FAILED: plugin-root-paths did not report itself skipped on a repository with zero paths to check"
+    return 1
+  fi
+  if printf '%s\n' "$zero_got" | grep -q 'ok    \[plugin-root-paths\]'; then
+    echo "SELF-TEST FAILED: plugin-root-paths passed vacuously on a repository with zero paths to check"
     return 1
   fi
 

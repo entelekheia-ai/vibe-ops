@@ -14,10 +14,11 @@
 
 check_plugin_root_paths() {
   head_
-  local id="plugin-root-paths" problems=0 file ref path seen=""
+  local id="plugin-root-paths" problems=0 checked=0 file ref path seen=""
   for file in $(tracked_md); do
     for ref in $(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9._/-]+' "$ROOT/$file" 2>/dev/null |
       sed 's|^\${CLAUDE_PLUGIN_ROOT}/||' | sed 's|[.,]$||' | sort -u); do
+      checked=$((checked + 1))
       path="$ref"
       # a trailing slash means a directory; both forms are checked the same way
       [ -e "$ROOT/${path%/}" ] && continue
@@ -27,5 +28,9 @@ check_plugin_root_paths() {
       problems=$((problems + 1))
     done
   done
+  if [ "$checked" -eq 0 ]; then
+    skip "$id" "no \${CLAUDE_PLUGIN_ROOT}/ paths found in any tracked markdown file"
+    return
+  fi
   [ "$problems" -eq 0 ] && pass "$id" "every \${CLAUDE_PLUGIN_ROOT} path a skill names exists"
 }
