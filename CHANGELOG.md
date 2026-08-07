@@ -86,6 +86,14 @@ changes nothing yet.
   what it found, because the username is already in the tree at that point and hiding it would leave nobody
   able to fix it — and it deliberately passes the elided forms (`/Users/…/`, `/Users/.../`) a document uses
   when it is describing the rule rather than breaking it.
+- **`VIBE_OPS_DISABLED_CHECKS`** on `scripts/check-agents-md.sh` — a newline-separated `id:reason` list
+  that reports a check as `SKIP [<id>] declared off: <reason>` instead of running it, so a repository with
+  real pre-existing debt can adopt the gate today without a red commit blocking every future one. A
+  disablement is a ledger entry, never a silent pass: `--self-test` proves it fires `SKIP` naming the
+  reason on a fixture that would otherwise fail, and still counts as a composed, run check in the summary
+  line. `skills/setup/templates/harness/checks/_run.sh` also gained a third `resolve_runner()` source — a
+  sibling `../vibe-ops` checkout, preferred over `${CLAUDE_PLUGIN_ROOT}` and after a repository's own
+  snapshot — so a repository living beside this one in the same workspace needs no copy to refresh.
 - **[`scripts/checks/27-nudge-behaviour.sh`](scripts/checks/27-nudge-behaviour.sh)** — five assertions
   that run the hook above against fixture repositories: one plan per firing, newest first, nothing
   re-named after being written or after a detour through another repository, and a firing log that is

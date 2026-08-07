@@ -35,6 +35,10 @@
 #                             paths belong. Makes machine-paths report SKIP rather than pass; every
 #                             other repository keeps it active, whether or not it has a remote yet
 #   VIBE_OPS_CHECK_DIRS       colon-separated extra fragment directories, composed after the built-ins
+#   VIBE_OPS_DISABLED_CHECKS  newline-separated "id:reason" pairs. A composed check whose id appears
+#                             here is never run; it reports SKIP naming the reason instead of running,
+#                             so the disablement is a ledger entry rather than a silent pass — set from
+#                             a repository's own scripts/checks/_run.sh, never a plugin default
 #
 # Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.
 
@@ -154,10 +158,40 @@ report_composition() {
   printf '\n'
 }
 
+# A declared disablement is a ledger entry, never a silent pass. VIBE_OPS_DISABLED_CHECKS is
+# newline-separated `id:reason` pairs — one check id per line, colon-separated from why it is off, set
+# from a repository's own scripts/checks/_run.sh the same way VIBE_OPS_PRIVATE_LAYER already is (never
+# from the plugin's own defaults). Newline rather than a comma list: a reason is prose and may contain
+# commas, and a repository declaring several checks off reads as a small table this way. `disabled_id`
+# is matched on the whole line up to the first colon, so a reason itself may still contain one.
+disabled_reason_for() { # $1 = check id; prints the reason, or nothing if not declared off
+  local id="$1" entry eid
+  [ -n "${VIBE_OPS_DISABLED_CHECKS:-}" ] || return 0
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    eid="${entry%%:*}"
+    if [ "$eid" = "$id" ]; then
+      printf '%s' "${entry#*:}"
+      return 0
+    fi
+  done <<EOF
+$VIBE_OPS_DISABLED_CHECKS
+EOF
+}
+
 run_checks() {
-  local id
+  local id reason
   for id in "${COMPOSED_IDS[@]}"; do
-    "check_${id//-/_}"
+    reason=$(disabled_reason_for "$id")
+    if [ -n "$reason" ]; then
+      # head_ + skip, not a bare `continue`: a declared-off check still counts as composed and run,
+      # the same way a check that skips from inside its own fragment (machine-paths in the private
+      # layer) does — the summary line's count must not quietly shrink because of a declaration.
+      head_
+      skip "$id" "declared off: $reason"
+    else
+      "check_${id//-/_}"
+    fi
   done
 }
 
@@ -245,7 +279,7 @@ compose_denylist() {
 # The second half is running it; this is the first half, so the claim is not taken on trust.
 
 self_test() {
-  local expected got rc irc before after leftover zero_got
+  local expected got rc irc before after leftover zero_got disabled_got
 
   # The fixture must be judged on its own merits, never on the operator's environment. An engineer
   # running this from inside the repository that declares itself the private layer would otherwise
@@ -253,6 +287,10 @@ self_test() {
   # below would fail for a reason that has nothing to do with the check. Unset once here rather than
   # per invocation, so an invocation added later inherits the isolation instead of the bug.
   unset VIBE_OPS_PRIVATE_LAYER
+  # Same hazard, same fix, second instance: an operator's shell that happens to carry a declared
+  # disablement would make the fixture below pass a check it should fail, for a reason that has
+  # nothing to do with the check. Cleared once, here, rather than per invocation.
+  unset VIBE_OPS_DISABLED_CHECKS
   # not local: the EXIT trap runs after this function has returned
   tmp=$(mktemp -d) || exit 2
   denylist=$(mktemp) || exit 2
@@ -414,6 +452,20 @@ self_test() {
   fi
   if printf '%s\n' "$zero_got" | grep -q 'ok    \[plugin-root-paths\]'; then
     echo "SELF-TEST FAILED: plugin-root-paths passed vacuously on a repository with zero paths to check"
+    return 1
+  fi
+
+  # A declared disablement, proven in both directions on the same fixture. The fixture already proved
+  # machine-paths RED above (line ~397: exactly one FAIL); this reruns it declared off and requires
+  # SKIP naming the reason instead — never a silent FAIL-to-nothing and never a bare "ok".
+  disabled_got=$(AGENTS_MD_MAX_LINES=150 PRIVATE_NAME_LIST="$denylist" TMPDIR="$runtmp" \
+    VIBE_OPS_DISABLED_CHECKS="machine-paths:self-test fixture" "$0" "$tmp" 2>&1)
+  if printf '%s\n' "$disabled_got" | grep -q 'FAIL  \[machine-paths\]'; then
+    echo "SELF-TEST FAILED: machine-paths still failed while declared off via VIBE_OPS_DISABLED_CHECKS"
+    return 1
+  fi
+  if ! printf '%s\n' "$disabled_got" | grep -q 'SKIP  \[machine-paths\] declared off: self-test fixture'; then
+    echo "SELF-TEST FAILED: a declared-off check did not report SKIP naming its reason"
     return 1
   fi
 

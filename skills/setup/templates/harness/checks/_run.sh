@@ -15,22 +15,37 @@
 # Sets RUN_OUTPUT (the runner's stdout+stderr, or an error message) and RUN_RC. Returns 0 only if the
 # runner ran AND this repository's fragment directory actually composed into it.
 
-# Where the runner is. Two sources, in this order:
+# Where the runner is. Three sources, in this order:
 #
 #   1. A snapshot copied into this repository at scripts/check-agents-md.sh. It is a SNAPSHOT: it does
-#      not update itself, and refreshing it is a deliberate re-copy.
-#   2. ${CLAUDE_PLUGIN_ROOT}, when something actually set it.
+#      not update itself, and refreshing it is a deliberate re-copy. First because it is the only source
+#      that survives this repository being cloned alone, outside whatever workspace authored it.
+#   2. A sibling `vibe-ops` checkout at ../vibe-ops/scripts/check-agents-md.sh, relative to this
+#      repository's own root. This is the one to prefer INSIDE a workspace that keeps several
+#      repositories beside a shared vibe-ops checkout (entelekheia's Plan-020): there is nothing to
+#      refresh, because it is always the live tree, and it costs nothing to add — but it does not exist
+#      at all once this repository is cloned on its own, which is exactly why it is not first.
+#   3. ${CLAUDE_PLUGIN_ROOT}, when something actually set it.
 #
-# THE SNAPSHOT IS FIRST BECAUSE THE SECOND SOURCE IS USUALLY ABSENT, and that is easy to get wrong in
+# THE SNAPSHOT IS FIRST BECAUSE THE THIRD SOURCE IS USUALLY ABSENT, and that is easy to get wrong in
 # the optimistic direction. Measured 2026-08-07: CLAUDE_PLUGIN_ROOT is unset in an agent's own shell,
 # not merely in a git hook — it is exported for processes the plugin runtime spawns, and a command run
 # through the agent's shell tool is not one of them. A hook launched from that shell inherits the same
-# nothing. So a repository that wants a gate needs the copy; the second branch covers a caller that
-# genuinely has the variable, and nothing here should assume one exists.
+# nothing. So a repository that wants a gate needs the copy, or the sibling, and the third branch
+# covers a caller that genuinely has the variable — nothing here should assume one exists.
+#
+# THE TRADE-OFF THE SIBLING BRANCH MAKES, SAID OUT LOUD: a repository wired to prefer it has no gate at
+# all when cloned alone — the sibling directory simply is not there. That is the right shape for a
+# workspace-internal standard, shared by several repositories that are never expected to travel apart,
+# and the wrong one for a repository that ships its gate to outside contributors. Moving such a
+# repository to the snapshot instead needs no change here — branch 1 already wins over branch 2 the
+# moment the copy exists.
 resolve_runner() { # $1 = repository root; prints the runner path, or nothing
   local root="$1"
   if [ -x "$root/scripts/check-agents-md.sh" ]; then
     printf '%s' "$root/scripts/check-agents-md.sh"
+  elif [ -x "$root/../vibe-ops/scripts/check-agents-md.sh" ]; then
+    printf '%s' "$root/../vibe-ops/scripts/check-agents-md.sh"
   elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" ]; then
     printf '%s' "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh"
   fi
@@ -43,8 +58,9 @@ run_composed_checks() { # $1 = repository root
 
   if [ -z "$runner" ]; then
     RUN_OUTPUT="no governance runner found.
-Expected a snapshot at $root/scripts/check-agents-md.sh, or CLAUDE_PLUGIN_ROOT pointing at the plugin.
-A hook cannot reach an installed plugin, so a repository with a gate needs the copy."
+Expected a snapshot at $root/scripts/check-agents-md.sh, a sibling checkout at
+$root/../vibe-ops/scripts/check-agents-md.sh, or CLAUDE_PLUGIN_ROOT pointing at the plugin.
+A hook cannot reach an installed plugin, so a repository with a gate needs the copy or the sibling."
     RUN_RC=2
     return 2
   fi
