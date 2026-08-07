@@ -291,6 +291,15 @@ self_test() {
   # disablement would make the fixture below pass a check it should fail, for a reason that has
   # nothing to do with the check. Cleared once, here, rather than per invocation.
   unset VIBE_OPS_DISABLED_CHECKS
+  # Third instance, and the one that actually escaped. Every fragment that emits writes into
+  # GATE_ARTIFACT_DIR, and this fixture is DESIGNED to be broken — so inheriting the variable means the
+  # fixture's own fabricated findings are spooled into whatever destination the operator set, and from
+  # there a drain ingests them as if a real repository had violated the rule. Measured 2026-08-07: a
+  # pre-commit in this repository staged a fragment, which ran this self-test with GATE_ARTIFACT_DIR
+  # exported by the hook, and the fixture's deliberate machine path reached the production registry as a
+  # reading over 9 files — indistinguishable, in the record, from a real violation. Nothing errored and
+  # both the self-test and the gate passed.
+  unset GATE_ARTIFACT_DIR
   # not local: the EXIT trap runs after this function has returned
   tmp=$(mktemp -d) || exit 2
   denylist=$(mktemp) || exit 2
