@@ -24,6 +24,15 @@ changes nothing yet.
 
 ### Fixed
 
+- **`skills/setup/templates/harness/checks/_run.sh`'s composition-integrity assertion no longer fails a
+  freshly installed, legitimately empty `scripts/checks/`.** Found rolling the harness out to real
+  repositories (Plan-020 Track 3): the assertion existed to catch a fragment directory silently going
+  missing from composition, but it read "nothing appeared in the output" the same way whether the
+  directory held fragments that stopped composing or simply held none yet — so every fresh install
+  failed before its first `/vibe-ops:new-signal`. Now split into two checks: the directory itself
+  missing (still a hard failure, proven by moving `scripts/checks/` aside) versus it holding a fragment
+  that did not compose (a hard failure only when there is something to lose).
+
 - **[`hooks/plan-progress-nudge.sh`](hooks/plan-progress-nudge.sh) — the nudge now remembers what it
   asked, names one plan at a time, and produces nothing when it declines.** Three defects shipped in
   0.7.0/0.8.0, all in one loop. Its memory of what it had already asked about was rebuilt from empty on

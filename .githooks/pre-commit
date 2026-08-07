@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# pre-commit — run this repository's own governance gate before a commit is allowed to land.
+#
+# Bespoke, not the harness template every *consumer* repository under this workspace root gets: this
+# repository IS the built-ins, so it calls scripts/check-agents-md.sh directly ("."), with no
+# VIBE_OPS_CHECK_DIRS to compose and no runner to resolve — it already has the one it ships. Plan-020
+# Track 3.
+#
+# `set -e` deliberately absent: the runner's exit code is captured, never propagated by accident.
+#
+# SILENT ON SUCCESS, same reasoning as every other repository's gate: the expensive reader is the
+# agent, not the terminal, and a clean run says nothing. GATE_VERBOSE=1 gets the full run back.
+#
+# To skip once: git commit --no-verify. Wired via `git config core.hooksPath .githooks` — local config,
+# does not travel with a clone.
+set -uo pipefail
+
+ROOT=$(git rev-parse --show-toplevel)
+
+GIT_DIR=$(git rev-parse --git-dir)
+export GATE_ARTIFACT_DIR="$GIT_DIR/gate-artifacts"
+mkdir -p "$GATE_ARTIFACT_DIR"
+
+# This repository's own fragments' self-test, when and only when a fragment changed — the same
+# discipline every consumer's gate applies to its own extra fragments.
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^scripts/checks/'; then
+  if ! "$ROOT/scripts/check-agents-md.sh" --self-test; then
+    echo "pre-commit: the built-in checks' self-test failed — commit refused." >&2
+    exit 1
+  fi
+fi
+
+OUT=$("$ROOT/scripts/check-agents-md.sh" "$ROOT" 2>&1)
+RC=$?
+
+if [ "${GATE_VERBOSE:-}" = "1" ]; then
+  printf '%s\n' "$OUT"
+  exit "$RC"
+fi
+
+if [ "$RC" -ne 0 ]; then
+  printf '%s\n' "$OUT" | grep -E '^(FAIL|WARN) ' || printf '%s\n' "$OUT"
+  exit "$RC"
+fi
+
+printf '%s\n' "$OUT" | grep -E '^WARN ' || true
+exit 0

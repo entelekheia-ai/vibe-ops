@@ -65,6 +65,18 @@ A hook cannot reach an installed plugin, so a repository with a gate needs the c
     return 2
   fi
 
+  # The directory itself missing entirely — moved, renamed, or never created — is checked before the
+  # runner is even invoked, and reported by name rather than folded into the fallback below. Discovered
+  # running this template for real (Plan-020 Track 3): the runner silently skips a fragment directory
+  # that is not there ([ -d "$dir" ] || continue), so this is a failure of the gate itself, not of the
+  # tree being checked.
+  if [ ! -d "$check_dir" ]; then
+    RUN_OUTPUT="$check_dir does not exist.
+The gate cannot check this repository's own fragments without it — scripts/checks/ is missing or moved."
+    RUN_RC=1
+    return 1
+  fi
+
   RUN_OUTPUT=$(VIBE_OPS_CHECK_DIRS="$check_dir" "$runner" "$root" 2>&1)
   RUN_RC=$?
 
@@ -72,14 +84,21 @@ A hook cannot reach an installed plugin, so a repository with a gate needs the c
     return "$RUN_RC"
   fi
 
-  # Gate integrity, checked before "0 failed" is believed. The runner skips a fragment directory that
-  # is not there, so a moved or renamed scripts/checks/ takes every one of this repository's fragments
-  # out of the run and still reports success. That is a failure of the gate itself rather than of the
-  # tree being checked, so it is a hard error regardless of which caller asked.
-  if ! printf '%s\n' "$RUN_OUTPUT" | grep -q "$check_dir"; then
+  # Gate integrity, checked before "0 failed" is believed — but only when this directory actually
+  # holds a fragment to lose. A freshly installed harness's scripts/checks/ is legitimately empty
+  # until its first /vibe-ops:new-signal, and asserting composition against nothing would fail every
+  # fresh install before it had written a single rule of its own — measured directly rolling this
+  # template out to five repositories that want the built-in checks and nothing repo-specific yet.
+  # Once a fragment exists, its absence from the output is exactly the silent failure this assertion
+  # exists to catch: a renamed fragment, or a glob pattern that stopped matching, still reporting
+  # "0 failed".
+  local own_fragments
+  own_fragments=$(find "$check_dir" -maxdepth 1 -name '[0-9][0-9]-*.sh' 2>/dev/null)
+  if [ -n "$own_fragments" ] && ! printf '%s\n' "$RUN_OUTPUT" | grep -q "$check_dir"; then
     RUN_OUTPUT="$RUN_OUTPUT
 
-no fragment from $check_dir was composed into the run.
+$check_dir holds a fragment, but none of them were composed into the run:
+$own_fragments
 The gate reported success without running this repository's own checks."
     RUN_RC=1
     return 1
