@@ -1,0 +1,82 @@
+# _run.sh — resolve the runner, compose it with this repository's own fragments, and prove they
+# actually composed.
+#
+# Shared by .githooks/pre-commit and scripts/check.sh so both give the identical guarantee, instead of
+# only the hook knowing how to invoke this correctly.
+#
+# THE REASON THIS EXISTS AS A SHARED FILE. A bare `check-agents-md.sh .`, run without
+# VIBE_OPS_CHECK_DIRS, composes only the built-in checks and silently omits every fragment this
+# repository owns — and still reports "N checks, 0 failed". Someone reaching for the runner directly
+# to "just check by hand" gets a clean-looking run that checked none of this repository's own rules.
+# scripts/check.sh exists so the correct invocation has a name shorter than the mistake.
+#
+# The leading underscore keeps this out of the runner's NN-*.sh fragment glob.
+#
+# Sets RUN_OUTPUT (the runner's stdout+stderr, or an error message) and RUN_RC. Returns 0 only if the
+# runner ran AND this repository's fragment directory actually composed into it.
+
+# Where the runner is. Two sources, in this order, because they cover two different callers:
+#
+#   1. A snapshot copied into this repository at scripts/check-agents-md.sh. A git hook has no
+#      CLAUDE_PLUGIN_ROOT — hooks are not run by the agent harness — so a repository that wants a
+#      pre-commit gate needs the copy. It is a SNAPSHOT: it does not update itself, and refreshing it
+#      is a deliberate re-copy.
+#   2. ${CLAUDE_PLUGIN_ROOT}, for a run started by the agent, which is always the live plugin.
+#
+# Preferring the copy means the hook and the agent run the same code in a repository that has one.
+resolve_runner() { # $1 = repository root; prints the runner path, or nothing
+  local root="$1"
+  if [ -x "$root/scripts/check-agents-md.sh" ]; then
+    printf '%s' "$root/scripts/check-agents-md.sh"
+  elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" ]; then
+    printf '%s' "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh"
+  fi
+}
+
+run_composed_checks() { # $1 = repository root
+  local root="$1"
+  local runner check_dir="$root/scripts/checks"
+  runner=$(resolve_runner "$root")
+
+  if [ -z "$runner" ]; then
+    RUN_OUTPUT="no governance runner found.
+Expected a snapshot at $root/scripts/check-agents-md.sh, or CLAUDE_PLUGIN_ROOT pointing at the plugin.
+A hook cannot reach an installed plugin, so a repository with a gate needs the copy."
+    RUN_RC=2
+    return 2
+  fi
+
+  RUN_OUTPUT=$(VIBE_OPS_CHECK_DIRS="$check_dir" "$runner" "$root" 2>&1)
+  RUN_RC=$?
+
+  if [ "$RUN_RC" -ne 0 ]; then
+    return "$RUN_RC"
+  fi
+
+  # Gate integrity, checked before "0 failed" is believed. The runner skips a fragment directory that
+  # is not there, so a moved or renamed scripts/checks/ takes every one of this repository's fragments
+  # out of the run and still reports success. That is a failure of the gate itself rather than of the
+  # tree being checked, so it is a hard error regardless of which caller asked.
+  if ! printf '%s\n' "$RUN_OUTPUT" | grep -q "$check_dir"; then
+    RUN_OUTPUT="$RUN_OUTPUT
+
+no fragment from $check_dir was composed into the run.
+The gate reported success without running this repository's own checks."
+    RUN_RC=1
+    return 1
+  fi
+
+  return 0
+}
+
+# The only lines that ask a reader to do something: what failed, and what was warned about. Everything
+# else the runner prints — its banner, its composition list, one `ok` or `SKIP` per check — is the gate
+# reporting that it worked, which is the expected case and needs no announcement.
+#
+# This holds INSIDE a failing run too, which is the part that is easy to get wrong. It is tempting to
+# print everything when a commit is blocked, on the theory that the surrounding lines are context; they
+# are not. The expensive reader is the agent, not the terminal, and a commit made through a tool call
+# puts every printed line into a conversation that has to carry it for the rest of the session.
+run_actionable_lines() {
+  printf '%s\n' "$RUN_OUTPUT" | grep -E '^(FAIL|WARN) ' || printf '%s\n' "$RUN_OUTPUT"
+}

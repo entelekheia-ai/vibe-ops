@@ -35,7 +35,7 @@ which loads on its own. Not repeated here.
   per-session state and every resumed turn arrives as a *first* event. Exercise anything session-scoped
   in a real session, or against fixtures through `scripts/checks/` — `27-nudge-behaviour.sh` runs a hook
   end to end with a synthetic payload and is the pattern to copy.
-- **Skills delegate instead of duplicating** — `repo-setup` orchestrates `license-setup` →
+- **Skills delegate instead of duplicating** — `setup` (mode `repo`) orchestrates `license-setup` →
   `authoring-agents-md` → `authoring-readme` by name. A rule that governs more than one skill lives in
   [`references/`](references/README.md) and is *pointed at*, never copied into a `SKILL.md`.
 - **Every skill declares its kind** — target-state (convergent, idempotent, has an `audit` mode) or event
@@ -90,7 +90,7 @@ which loads on its own. Not repeated here.
 
 | Skill | Does |
 |---|---|
-| [`repo-setup`](skills/repo-setup/SKILL.md) | Brings a repo to the standard baseline — package/build, `project/`, docs, the rules bridge, `AGENTS.md`. Orchestrates the skills below. |
+| [`setup`](skills/setup/SKILL.md) | Two modes. `repo` brings a repo to the standard baseline — package/build, `project/`, docs, the rules bridge, `AGENTS.md` — orchestrating the skills below. `harness` installs the guide/sensor apparatus: fragment directory, runner wiring, the commit gate, the artifact path. |
 | [`authoring-agents-md`](skills/authoring-agents-md/SKILL.md) | Writes or refreshes an `AGENTS.md` (+ its `CLAUDE.md`). |
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (CI, or an opt-in local hook). |

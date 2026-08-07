@@ -4,7 +4,7 @@
 #
 # vibe-ops uses its own governance conventions, so a handful of files exist in two places: this
 # repo's own copy, and the copy it SHIPS to every other repository under
-# skills/repo-setup/templates/. Nothing kept them in sync mechanically — an edit to one and not the
+# skills/setup/templates/. Nothing kept them in sync mechanically — an edit to one and not the
 # other is invisible from inside this repo, because both copies are individually well-formed.
 #
 # project/tasks/002-*.md found, while writing this check, that a naive byte comparison is the wrong
@@ -39,10 +39,10 @@ strip_leading_copyright_comment() {
 check_dogfooding_drift() {
   head_
   local id="dogfooding-drift" problems=0
-  local shipped="$ROOT/skills/repo-setup/templates" pair own ship a b
+  local shipped="$ROOT/skills/setup/templates" pair own ship a b
 
   if [ ! -d "$shipped" ]; then
-    skip "$id" "no skills/repo-setup/templates/ — this repo does not ship a scaffold"
+    skip "$id" "no skills/setup/templates/ — this repo does not ship a scaffold"
     return
   fi
 
@@ -55,12 +55,12 @@ check_dogfooding_drift() {
   # rather than assuming the pair belonged on this list). These are the governance core vibe-ops
   # dogfoods and is the only kind of pair this check asserts about.
   for pair in \
-    "project/templates/plan.md::skills/repo-setup/templates/project/templates/plan.md" \
-    "project/templates/task.md::skills/repo-setup/templates/project/templates/task.md" \
-    "project/templates/adr.md::skills/repo-setup/templates/project/templates/adr.md" \
-    "project/templates/rfc.md::skills/repo-setup/templates/project/templates/rfc.md" \
-    ".agents/rules/governance.md::skills/repo-setup/templates/agents/rules/governance.md" \
-    "GOVERNANCE.md::skills/repo-setup/templates/root/GOVERNANCE.md" \
+    "project/templates/plan.md::skills/setup/templates/project/templates/plan.md" \
+    "project/templates/task.md::skills/setup/templates/project/templates/task.md" \
+    "project/templates/adr.md::skills/setup/templates/project/templates/adr.md" \
+    "project/templates/rfc.md::skills/setup/templates/project/templates/rfc.md" \
+    ".agents/rules/governance.md::skills/setup/templates/agents/rules/governance.md" \
+    "GOVERNANCE.md::skills/setup/templates/root/GOVERNANCE.md" \
   ; do
     own="$ROOT/${pair%%::*}"
     ship="$ROOT/${pair##*::}"

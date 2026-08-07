@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="#install">Install</a> ·
-  <a href="#what-repo-setup-produces">What it produces</a> ·
+  <a href="#what-setup-repo-produces">What it produces</a> ·
   <a href="#skills">Skills</a> ·
   <a href="#it-checks-its-own-work">Self-checking</a> ·
   <a href="GOVERNANCE.md">Governance</a>
@@ -52,10 +52,10 @@ claude plugin install vibe-ops@entelekheia
 
 Or try it from a local checkout with `claude --plugin-dir ./vibe-ops`.
 
-## What `repo-setup` produces
+## What `setup repo` produces
 
 ```
-/vibe-ops:repo-setup
+/vibe-ops:setup repo
 ```
 
 An empty directory becomes:
@@ -85,11 +85,11 @@ changes at all. An empty directory is just the maximum-gap case.
 
 ## Skills
 
-`repo-setup` is the entry point. The rest are invoked directly, or picked up by Claude when the task fits.
+`setup` is the entry point. The rest are invoked directly, or picked up by Claude when the task fits.
 
 | | |
 |---|---|
-| `/vibe-ops:repo-setup` | Set up **or reconcile** a repo or npm-workspaces monorepo. `audit` reports without writing. |
+| `/vibe-ops:setup <repo\|harness>` | Set up **or reconcile** a repo or npm-workspaces monorepo (`repo`), or the guide-and-sensor apparatus that checks it (`harness`). `audit` reports without writing. |
 | `/vibe-ops:new <adr\|rfc\|plan\|task>` | Open one governance record, using the *target repo's* own template and numbering. |
 | `/vibe-ops:close <task\|plan>` | Close the loop — write back, propagate, route what the work taught. A task dossier is distilled and deleted; a plan is kept, because it is the permanent record. |
 | `/vibe-ops:authoring-agents-md` · `authoring-readme` | Write or repair the two files a newcomer — human or agent — reads first. |
@@ -107,7 +107,7 @@ symlinks intact — including the case where git checked one out as plain text, 
 rule file containing one line of nonsense — and every rule carrying a `description:`.
 
 It runs from the plugin, reads your repository and **writes nothing into it**, so there is no per-repo copy
-to keep up to date. If you want the same check on every push, `repo-setup` offers to copy it in as a CI
+to keep up to date. If you want the same check on every push, `setup` offers to copy it in as a CI
 job, and tells you that copy is a snapshot.
 
 ## Requirements

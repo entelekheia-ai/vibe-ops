@@ -1,29 +1,44 @@
 ---
-name: repo-setup
-description: Bring a repository to the standard born-organized baseline — single-package or npm-workspaces monorepo, English docs. Sets up or reconciles the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/plans/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. Use when the user asks to create/start/bootstrap a new repo, monorepo or package, AND when an existing repo has drifted from the baseline or is missing part of it — pass "audit" to report the gaps without writing.
-argument-hint: "<repo-name> [audit]"
+name: setup
+description: 'Bring a repository to a standard baseline, in one of two modes. "repo" is the born-organized baseline — single-package or npm-workspaces monorepo, English docs: the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/plans/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. "harness" is the guide-and-sensor apparatus — a fragment directory composed into the governance runner, the manual entrypoint, the optional commit gate, the fixture convention, and the artifact path a signal reports through. Sets up or reconciles either; use when creating/bootstrapping a repo or package, when adding mechanical checks to one that only has prose, or when an existing repo has drifted — pass "audit" to report the gaps without writing.'
+argument-hint: "<repo|harness> [<repo-name>] [audit]"
 effort: inherit
 ---
 
-# /repo-setup — a repo born organized
+# /setup — a repo born organized, and a harness that can tell whether it worked
 
-A light **orchestrator**: it lays down a consistent, English-documented skeleton from templates and delegates
-the detailed authoring to sibling skills, so that every repo carries the same governance, docs and config.
-It is run just as often on a repo that already exists and has drifted as on an empty directory — the
-baseline is the target either way.
+Two modes, because a repository baseline and a *harness* baseline are different jobs that shared a name
+for too long:
 
-**Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates/`. Copy from
+| Mode | Brings to baseline | Read first |
+|---|---|---|
+| `repo` | the repository — package/build, `project/`, docs, the rules bridge, `AGENTS.md`, a license | Steps 0–7 below |
+| `harness` | what steers the agent and what verifies it — fragments, runner wiring, fixtures, the artifact path | [`harness-pair.md`](../../references/harness-pair.md), then Step H |
+
+**If the user did not say which, ask.** Do not infer from the topic: "set up this repo" means `repo` about
+as often as it means "it has an `AGENTS.md` and nothing checks it", and the two write into different
+places. `/vibe-ops:setup repo <name>` and `/vibe-ops:setup harness` are the two invocations.
+
+A light **orchestrator** either way: it lays down a consistent, English-documented skeleton from templates
+and delegates detailed authoring to sibling skills, so that every repo carries the same governance, docs
+and config. It is run just as often on a repo that already exists and has drifted as on an empty
+directory — the baseline is the target either way.
+
+**Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/`. Copy from
 there; never invent structure from memory. Files named `gitignore`/`editorconfig`/`gitkeep` are copied to
-`.gitignore`/`.editorconfig`/`.gitkeep`; `{{PLACEHOLDERS}}` are substituted (Step 3).
+`.gitignore`/`.editorconfig`/`.gitkeep` — and `templates/harness/githooks/` lands as `.githooks/`;
+`{{PLACEHOLDERS}}` are substituted (Step 3).
 
-**This is a target-state skill.** The templates below *are* the target state, and it is applied to
-repositories that already exist as often as to new ones — an empty directory is simply the maximum-gap
+**This is a target-state skill, in both modes.** The templates *are* the target state, and it is applied
+to repositories that already exist as often as to new ones — an empty directory is simply the maximum-gap
 case. Read
 [`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) before
 touching anything that is already there; the `adopt` verb is what stops this skill from flattening a
 convention the repo settled on deliberately.
 
 ---
+
+## Mode `repo` — Steps 0 to 7
 
 ## Step 0 — Survey what already exists
 
@@ -51,7 +66,7 @@ If the user asked for an `audit`, stop here: report the gap list and write nothi
 
 ## Step 1 — Gather inputs
 
-Ask (accept the `/repo-setup` argument as the repo name):
+Ask (accept the `/setup repo` argument as the repo name):
 
 1. **Repo name** (kebab-case) and **target path** (default: a sibling dir `../<repo-name>`, or the user's choice).
 2. **Shape** — single-package **or** monorepo (npm workspaces). Default to what the user describes; if they
@@ -64,7 +79,7 @@ Confirm the plan (shape + names + path) before writing.
 
 ## Step 2 — Lay down the tree
 
-Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates`.
+Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates`.
 
 **Root (always):**
 - `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`, `TPL/root/CLAUDE.md` → `CLAUDE.md`
@@ -151,7 +166,7 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   cp "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" scripts/
   cp -R "${CLAUDE_PLUGIN_ROOT}/scripts/checks" scripts/
   chmod +x scripts/check-agents-md.sh
-  cp "${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates/github/workflows/check.yml" .github/workflows/
+  cp "${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/github/workflows/check.yml" .github/workflows/
   ./scripts/check-agents-md.sh --self-test && ./scripts/check-agents-md.sh
   ```
 
@@ -162,7 +177,101 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
   `/vibe-ops:close task`, not a plain delete."
 
-## Checklist
+## Mode `harness` — Step H
+
+Read [`${CLAUDE_PLUGIN_ROOT}/references/harness-pair.md`](../../references/harness-pair.md) first. It is
+the contract; this step is the installation.
+
+### H0 — Survey, and decide whether a gate is even available
+
+```bash
+git -C "$TARGET" remote -v                    # no remote → CI is not an option; say so, do not offer it
+git -C "$TARGET" config core.hooksPath        # where hooks would live, if any
+ls "$TARGET/scripts/checks/" 2>/dev/null      # fragments already here?
+ls "$TARGET/scripts/check-agents-md.sh" 2>/dev/null   # a runner snapshot already copied in?
+```
+
+Produce the gap list, verb per gap, exactly as Step 0 does. If the user asked for `audit`, stop here.
+
+**A repository with no remote cannot have CI**, and that is the single most common wrong recommendation
+in this area — it survives review because "add CI" sounds correct everywhere. For those repositories the
+commit gate is the *only* enforcement available, which raises its value rather than lowering it.
+
+### H1 — The apparatus
+
+`TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/harness`.
+
+- `TPL/checks/_run.sh` → `scripts/checks/_run.sh`. Composition plus the integrity assertion, shared by
+  every caller. **This is the load-bearing file**: without it, a bare run of the runner composes only the
+  built-ins, omits every fragment the repository owns, and still reports success.
+- `TPL/check.sh` → `scripts/check.sh`, `chmod +x`. The manual entrypoint, so the correct invocation has a
+  name shorter than the mistake.
+- `TPL/githooks/pre-commit` → `.githooks/pre-commit`, `chmod +x` — **offer, do not assume**. Then
+  `git config core.hooksPath .githooks`, which is local config that no clone inherits.
+- `scripts/checks/` — create it. It holds this repository's own fragments and starts empty.
+
+**The runner has to be reachable from a hook, and a hook has no `CLAUDE_PLUGIN_ROOT`.** So a repository
+that wants the gate also needs the runner copied in — the same snapshot Step 7 offers for CI, and with
+the same caveat stated out loud: it does not update itself, and refreshing it is a deliberate re-copy.
+`_run.sh` prefers that copy when it exists and falls back to the plugin otherwise, so an agent-run check
+and a hook-run check are the same code in a repository that has both.
+
+```bash
+mkdir -p "$TARGET/scripts"
+cp "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" "$TARGET/scripts/"
+cp -R "${CLAUDE_PLUGIN_ROOT}/scripts/checks" "$TARGET/scripts/"    # the built-in fragments
+chmod +x "$TARGET/scripts/check-agents-md.sh"
+```
+
+### H2 — Prove it before handing it over
+
+```bash
+"$TARGET/scripts/check-agents-md.sh" --self-test    # the runner still fails a broken repository
+"$TARGET/scripts/check.sh"                          # this repository is green through the real path
+```
+
+Both must pass. **A gate handed over red is worse than none, because it looks done** — and the first
+thing anyone does with a red gate they did not cause is `--no-verify`, which switches off every other
+check at the same time.
+
+Then prove the composition assertion is real, which no green run can show you:
+
+```bash
+mv "$TARGET/scripts/checks" "$TARGET/scripts/checks.off" && "$TARGET/scripts/check.sh"; \
+  mv "$TARGET/scripts/checks.off" "$TARGET/scripts/checks"
+```
+
+That must **fail**, naming the missing directory. If it passes, the gate would silently report success
+while running none of the repository's own rules, which is the exact failure `_run.sh` exists to prevent.
+
+### H3 — One worked example, or an honest empty
+
+A harness with no fragments is scaffolding. Offer `/vibe-ops:new-signal` for the first one, and take no
+for an answer — a repository whose rules are not yet written down has nothing to guard, and that is a
+real answer rather than a gap.
+
+Do **not** write a fragment from here. Naming a rule, writing the guard, and building the fixture it
+fails are one act with its own skill; reproducing it inline is how the fixture requirement gets dropped.
+
+### H4 — Report
+
+Say which of the four the repository now has — fragment directory, manual entrypoint, commit gate,
+runner snapshot — and which it declined. Name `core.hooksPath` explicitly if the gate was installed: it
+is local config, it does not travel with a clone, and a tracked hook nobody wired is silently absent.
+
+## Checklist — mode `harness`
+
+- [ ] The mode was chosen by the user, not inferred
+- [ ] `scripts/checks/_run.sh` present; `scripts/check.sh` present and executable
+- [ ] Runner snapshot copied in **if** a hook was installed, and its snapshot nature stated out loud
+- [ ] `--self-test` passes and `check.sh` is green **before** hand-off
+- [ ] The composition assertion was proven by moving `scripts/checks/` away and observing a failure —
+      not by reading `_run.sh`
+- [ ] If the gate was installed: `core.hooksPath` set, and named in the report as local-only config
+- [ ] No fragment was written from this skill; `new-signal` was offered and its refusal recorded
+- [ ] No CI was recommended for a repository with no remote
+
+## Checklist — mode `repo`
 
 - [ ] Target has `README.md`, `GOVERNANCE.md`, `AGENTS.md`, `CLAUDE.md`(@AGENTS.md), `LICENSE`, `.gitignore`, `.editorconfig`
 - [ ] Build baseline present; monorepo root `package.json` has `workspaces`, each package has its own `package.json` + tsconfig(.build)

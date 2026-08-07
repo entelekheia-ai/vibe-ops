@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0 — https://www.apache.org/licenses/LICENSE-2.0
 #
 # Every `/vibe-ops:<name>` mentioned in the LIVE surfaces — README and skills/ (which also holds the
-# templates this plugin SHIPS into other repositories, under skills/repo-setup/templates/) — must
+# templates this plugin SHIPS into other repositories, under skills/setup/templates/) — must
 # resolve to a real skills/<name>/ directory. 0.7.0 removed four `new-*` commands when they collapsed
 # into `/new`; nothing checked that every reference to the old names went with them. project/tasks/
 # 002-*.md found this by hand; this makes it mechanical.

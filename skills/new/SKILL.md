@@ -41,9 +41,9 @@ immediately.
 What the output means:
 
 - `DIR=(none)` — this repo keeps no records of that type. Ask whether to create the directory; do not
-  create it silently. The default is the `project/<kind>/` layout `/vibe-ops:repo-setup` scaffolds.
+  create it silently. The default is the `project/<kind>/` layout `/vibe-ops:setup repo` scaffolds.
 - `TPL=(none)` — **stop and ask.** Never invent a structure. Offer to copy the matching template from
-  `${CLAUDE_PLUGIN_ROOT}/skills/repo-setup/templates/project/templates/`.
+  `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/project/templates/`.
 - `AUTHORITY=` — the file that overrides this skill on numbering and lifecycle. When it is a path (rather
   than `(default)`), **read it and follow it** over anything here: older repos tie ids to a release train,
   or require follow-ups like an `INDEX.md` row.

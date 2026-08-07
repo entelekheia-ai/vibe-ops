@@ -12,7 +12,7 @@ own steps say to.
 |---|---|---|
 | [`convergence-policy.md`](convergence-policy.md) | Is this skill target-state or event, and how does it reconcile a repo that already exists? | every target-state skill; `new` and `close` declare themselves events |
 | [`knowledge-lifecycle.md`](knowledge-lifecycle.md) | Where does a learning go once the work is done? | `close`, `authoring-agents-md` |
-| [`instruction-surfaces.md`](instruction-surfaces.md) | Which file gets a given fact, and how does it reach the agent? | `authoring-agents-md`, `repo-setup`, and question 4 of the promotion test |
+| [`instruction-surfaces.md`](instruction-surfaces.md) | Which file gets a given fact, and how does it reach the agent? | `authoring-agents-md`, `setup`, and question 4 of the promotion test |
 | [`authoring-style.md`](authoring-style.md) | How is a generated document written — phrasing, budget, tables, diagrams? | every skill that writes prose into a target repo |
 | [`exposure-contract.md`](exposure-contract.md) | What may this record carry into a repository that will be cloned alone and may go public? | `new` and `close` directly; `authoring-style.md` for everything else that writes prose |
 | [`harness-pair.md`](harness-pair.md) | What binds a rule, the guard enforcing it and the reading that says whether it worked into one signal? | `setup` (harness mode) and `new-signal` |

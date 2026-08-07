@@ -54,6 +54,23 @@ changes nothing yet.
 
 ### Added
 
+- **`/vibe-ops:setup <repo | harness>`** — `repo-setup` renamed and given a second mode. `repo` is
+  today's behaviour, unchanged. `harness` installs the guide-and-sensor apparatus: the fragment
+  directory, the shared composition helper that makes a bare runner invocation stop being a silent trap,
+  the manual entrypoint, the optional commit gate, and the artifact path. Two skills whose names differ
+  by one word get chosen wrongly about half the time, which is the same argument that collapsed four
+  record skills into `/new <type>`. The rename carries its reference updates rather than leaving them as
+  follow-up; records under `project/` keep the old name on purpose, because a record should name what it
+  was written against.
+- **[`references/harness-pair.md`](references/harness-pair.md)** — the contract for building a guide and
+  its guard as one unit. Why the pair (each hides the other's failure written separately), what binds
+  three artifacts into one signal, the fixture-it-fails as a condition of installation, the vocabulary
+  boundary, the population rules, and where the emitter lives.
+- **[`scripts/gate-emit.sh`](scripts/gate-emit.sh)** — a POSIX-sh emitter that travels with the plugin, so
+  a fragment composed from here can report in any repository rather than only one that separately
+  installed something. Verified byte-identical to the reference implementation it mirrors.
+- **`/vibe-ops:new-signal`** — turns one rule into the matched pair, with the fixture proving the guard
+  fires. Event skill: one signal per run, no update mode.
 - **[`references/exposure-contract.md`](references/exposure-contract.md)** — what a record may carry into a
   repository that will be cloned on its own and may be made public later. A table of what crosses and what
   does not (another repository's name, a machine path, this repository's security posture, any pointer to a
