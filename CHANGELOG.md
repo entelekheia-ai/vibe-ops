@@ -24,6 +24,15 @@ changes nothing yet.
 
 ### Fixed
 
+- **`scripts/check-agents-md.sh --self-test` no longer emits its fixture's fabricated findings into a real
+  destination.** `GATE_ARTIFACT_DIR` is now cleared alongside the other two variables the fixture must not
+  inherit. The fixture is *designed* to violate every rule, and `.githooks/pre-commit` both exports that
+  variable and runs the self-test whenever a commit stages a fragment — so its deliberate machine path was
+  spooled as a genuine reading and ingested downstream as a repository violating the rule, over a
+  population of 9 files. Nothing errored; the self-test passed and so did the gate. Third instance of the
+  same hazard and the first to leave the machine, which is why the fix clears the variable **once, where
+  the fixture is built**, rather than at each invocation.
+
 - **`skills/setup/templates/harness/checks/_run.sh`'s composition-integrity assertion no longer fails a
   freshly installed, legitimately empty `scripts/checks/`.** Found rolling the harness out to real
   repositories (Plan-020 Track 3): the assertion existed to catch a fragment directory silently going
