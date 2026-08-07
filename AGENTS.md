@@ -43,17 +43,34 @@ which loads on its own. Not repeated here.
 - **Everything this plugin writes into a target repo is in English**, regardless of the conversation's
   language. That is a product guarantee, stated in the README.
 - **No release is being cut, and that is the current policy, not a backlog.** The version stays at the
-  `plugin.json` value; work accumulates under `[Unreleased]` and reaches no marketplace. The plugin is
-  installed from a **directory source** and exercised in place — `installLocation` is this tree, skills
-  load from it, every edit is live in the next session. So: **do not bump `plugin.json` or
-  `marketplace.json`**, and treat "delivered only once a release is cut" as suspended while the freeze
-  holds — here, the tree *is* the install. The freeze ends when the maintainer decides what shape this
-  plugin is derived into, not when enough features pile up.
-- **When releasing resumes, that rule comes straight back.** From a git-source marketplace the plugin is a
-  clone pinned to the version in `plugin.json` (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`)
-  and `${CLAUDE_PLUGIN_ROOT}` resolves *there*, not into this tree — so a feature whose invocation path is
-  a new file is unreachable in every install until the version moves. That the path exists here is checked
-  by `plugin-root-paths`; that it existed at the last release is the part you have to think about.
+  `plugin.json` value; work accumulates under `[Unreleased]` and reaches no marketplace. So: **do not bump
+  `plugin.json` or `marketplace.json`**, and treat "delivered only once a release is cut" as suspended
+  while the freeze holds. The freeze ends when the maintainer decides what shape this plugin is derived
+  into, not when enough features pile up.
+- **A directory-source marketplace does NOT mean the tree is the install.** This is the sentence that used
+  to be here and it was false; it cost ten commits of silent divergence before anyone noticed a renamed
+  skill still answering to its old name. Two fields have confusingly similar names and only the second
+  decides what loads:
+  | File | Field | Points at |
+  |---|---|---|
+  | `~/.claude/plugins/known_marketplaces.json` | `installLocation` | this tree — it is the **marketplace's** |
+  | `~/.claude/plugins/installed_plugins.json` | `installPath` | `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` — the **plugin's**, and where skills actually load from |
+  Even from a `source: directory` marketplace, installing **copies** the tree into that versioned cache
+  and records the `gitCommitSha` it copied. `${CLAUDE_PLUGIN_ROOT}` resolves there, never here.
+- **So under the freeze the install never refreshes itself, and that follows from the freeze.** The cache
+  path is keyed by version, the version is pinned by policy, so the copy made on the day of install is the
+  copy that runs forever. Measured 2026-08-07: the install sat at a 2026-08-06 commit, ten behind, still
+  offering `/vibe-ops:repo-setup` after the rename. **`claude plugin uninstall` + `install` re-copies at
+  the same version** and is the way to refresh without touching the freeze — verified to bring the cache
+  byte-identical to the tree. Do it after any change you intend to *use*, not merely to have written, or
+  check `installed_plugins.json`'s `gitCommitSha` against `git rev-parse HEAD` when a skill behaves like an
+  older version of itself. `claude --plugin-dir <this tree>` bypasses the cache entirely and is the better
+  loop while iterating.
+- **When releasing resumes, the version does this job by itself.** A moved version means a new cache path
+  and therefore a fresh copy — which is why the manual re-install above is a consequence of the freeze
+  rather than a permanent chore. The lasting half is unchanged: a feature whose invocation path is a new
+  file is unreachable in every install until the version moves. That the path exists here is checked by
+  `plugin-root-paths`; that it existed at the last release is the part you have to think about.
 - **`claude plugin validate . --strict` is the first-party check**, and it is the only one that reads the
   manifest and frontmatter schemas — `check-agents-md.sh` is this repo's own layer on top, never a
   replacement. Setting `version` in both manifests is what the docs warn against; `manifest-sync` keeping
