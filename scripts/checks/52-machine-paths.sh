@@ -19,7 +19,8 @@
 
 check_machine_paths() {
   head_
-  local id="machine-paths" hits=0 line
+  local id="machine-paths" hits=0 line examined
+
   local pattern='(/Users/|/home/|[Cc]:[\\/]+Users[\\/]+)[A-Za-z0-9]'
 
   # The one repository this must not fire in is the private layer itself — the place the exposure
@@ -35,7 +36,15 @@ check_machine_paths() {
     return
   fi
 
-  if [ -z "$(tracked_md)" ]; then
+  # examined = tracked_md()'s own count, the same enumeration this check already uses to decide
+  # whether to skip below, and it is safe to also treat as the search's own population here — unlike
+  # 40-markdown.sh's rumdl, which walks the filesystem itself and dedupes a symlink against its target
+  # (git ls-files counts both paths, rumdl counts one), the search two lines down is ALSO a git
+  # pathspec match ('*.md'), so it and tracked_md() enumerate the identical set of tracked paths. See
+  # harness-pair.md's population rules and the symlink-bridge learning this reasoning route around.
+  examined=$(printf '%s\n' "$(tracked_md)" | grep -c .)
+
+  if [ "$examined" -eq 0 ]; then
     skip "$id" "no tracked markdown outside templates/ to examine"
     return
   fi
@@ -49,4 +58,56 @@ $(git -C "$ROOT" grep -nE -- "$pattern" -- '*.md' 2>/dev/null | grep -v '/templa
 EOF
 
   [ "$hits" -eq 0 ] && pass "$id" "no committed markdown carries a home directory or checkout path"
+
+  emit_machine_paths_artifact "$hits" "$examined"
+}
+
+# Plan-020 Track 5. Same env-gated, best-effort shape as 40-markdown.sh's emitter call: absent
+# GATE_ARTIFACT_DIR, this does nothing beyond what check_machine_paths already did above — no jq
+# invocation, no new file. The rule id is fixed at one value ("home-path") because this fragment
+# checks exactly one shape; a second pattern here would need its own id, not a second call.
+#
+# The emitter is resolved via $HOME_ROOT, not the literal ${CLAUDE_PLUGIN_ROOT} harness-pair.md
+# describes — HOME_ROOT is wherever check-agents-md.sh itself was resolved from (a target repo's
+# snapshot, the sibling vibe-ops checkout Plan-020 Track 1 added, or a real plugin install), so it is
+# correct under all three resolution paths without special-casing any of them; the literal env var is
+# usually unset. Divergence written back to harness-pair.md — Plan-020 Track 6.
+emit_machine_paths_artifact() {
+  local hits="$1" examined="$2"
+  [ -n "${GATE_ARTIFACT_DIR:-}" ] || return 0
+
+  local emitter="$HOME_ROOT/scripts/gate-emit.sh"
+  [ -x "$emitter" ] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+
+  local diagnostics
+  diagnostics="[]"
+  if [ "$hits" -gt 0 ]; then
+    diagnostics=$(jq -nc --argjson n "$hits" '[range($n) | {rule:"home-path"}]')
+  fi
+
+  mkdir -p "$GATE_ARTIFACT_DIR" 2>/dev/null || return 0
+
+  local tmp
+  tmp="$GATE_ARTIFACT_DIR/.machine-paths.jsonl.tmp.$$"
+  if printf '%s' "$diagnostics" | sh "$emitter" \
+      --producer machine-paths --tool "vibe-ops-machine-paths@1" \
+      --unit file --examined "$examined" --moment attempt >"$tmp" 2>/dev/null; then
+    if [ -s "$tmp" ]; then
+      mv "$tmp" "$GATE_ARTIFACT_DIR/machine-paths-$(artifact_stamp_ "$tmp")-$$.jsonl"
+    else
+      rm -f "$tmp"
+    fi
+  else
+    rm -f "$tmp"
+  fi
+}
+
+# A local copy of 40-markdown.sh's artifact_stamp(), not a shared call: the two fragments are composed
+# independently and neither may depend on the other having run first or existing at all in a given
+# composition (VIBE_OPS_CHECK_DIRS may include one without the other).
+artifact_stamp_() {
+  local produced
+  produced=$(head -n1 "$1" | grep -oE '"producedAt":"[^"]*"' | head -n1 | cut -d'"' -f4)
+  printf '%s' "${produced//:/}"
 }
