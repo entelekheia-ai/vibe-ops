@@ -15,15 +15,18 @@
 # Sets RUN_OUTPUT (the runner's stdout+stderr, or an error message) and RUN_RC. Returns 0 only if the
 # runner ran AND this repository's fragment directory actually composed into it.
 
-# Where the runner is. Two sources, in this order, because they cover two different callers:
+# Where the runner is. Two sources, in this order:
 #
-#   1. A snapshot copied into this repository at scripts/check-agents-md.sh. A git hook has no
-#      CLAUDE_PLUGIN_ROOT — hooks are not run by the agent harness — so a repository that wants a
-#      pre-commit gate needs the copy. It is a SNAPSHOT: it does not update itself, and refreshing it
-#      is a deliberate re-copy.
-#   2. ${CLAUDE_PLUGIN_ROOT}, for a run started by the agent, which is always the live plugin.
+#   1. A snapshot copied into this repository at scripts/check-agents-md.sh. It is a SNAPSHOT: it does
+#      not update itself, and refreshing it is a deliberate re-copy.
+#   2. ${CLAUDE_PLUGIN_ROOT}, when something actually set it.
 #
-# Preferring the copy means the hook and the agent run the same code in a repository that has one.
+# THE SNAPSHOT IS FIRST BECAUSE THE SECOND SOURCE IS USUALLY ABSENT, and that is easy to get wrong in
+# the optimistic direction. Measured 2026-08-07: CLAUDE_PLUGIN_ROOT is unset in an agent's own shell,
+# not merely in a git hook — it is exported for processes the plugin runtime spawns, and a command run
+# through the agent's shell tool is not one of them. A hook launched from that shell inherits the same
+# nothing. So a repository that wants a gate needs the copy; the second branch covers a caller that
+# genuinely has the variable, and nothing here should assume one exists.
 resolve_runner() { # $1 = repository root; prints the runner path, or nothing
   local root="$1"
   if [ -x "$root/scripts/check-agents-md.sh" ]; then
