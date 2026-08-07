@@ -61,7 +61,14 @@
 ## Design
 
 <!-- How it works, in prose. Name the files and modules by full path. If a decision here is hard to
-     reverse, it belongs in an ADR — record it in the Decision Log below and link the ADR. -->
+     reverse, it belongs in an ADR — record it in the Decision Log below and link the ADR.
+
+     DIAGRAM THE FLOWS. A ```mermaid fence earns its place wherever the design is a flow with branches —
+     a pipeline, a decision procedure, a boundary something must not cross — which is most of what a plan
+     describes. Keep it BESIDE the prose, never instead of it: the reader takes the shape from the
+     diagram and the detail from the text. Do not draw a directory layout or a plain list, and never draw
+     a flow that also exists as a numbered list two lines below — one of the two will be wrong within a
+     month. Full rule, including why: references/authoring-style.md, "Diagrams". -->
 
 ## Tracks
 

@@ -31,6 +31,9 @@
 #   AGENTS_MD_MAX_LINES       line budget for AGENTS.md (default 150)
 #   PRIVATE_NAME_LIST         path to a file of names that must not appear in the tree, one per line
 #   PRIVATE_NAMES             the same, inline, newline- or colon-separated
+#   VIBE_OPS_PRIVATE_LAYER    set in the one repository that IS the private layer — the place named
+#                             paths belong. Makes machine-paths report SKIP rather than pass; every
+#                             other repository keeps it active, whether or not it has a remote yet
 #   VIBE_OPS_CHECK_DIRS       colon-separated extra fragment directories, composed after the built-ins
 #
 # Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.
@@ -243,6 +246,13 @@ compose_denylist() {
 
 self_test() {
   local expected got rc irc before after leftover zero_got
+
+  # The fixture must be judged on its own merits, never on the operator's environment. An engineer
+  # running this from inside the repository that declares itself the private layer would otherwise
+  # inherit VIBE_OPS_PRIVATE_LAYER, machine-paths would skip on the broken fixture, and the assertion
+  # below would fail for a reason that has nothing to do with the check. Unset once here rather than
+  # per invocation, so an invocation added later inherits the isolation instead of the bug.
+  unset VIBE_OPS_PRIVATE_LAYER
   # not local: the EXIT trap runs after this function has returned
   tmp=$(mktemp -d) || exit 2
   denylist=$(mktemp) || exit 2

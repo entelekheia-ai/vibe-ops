@@ -22,6 +22,19 @@ check_machine_paths() {
   local id="machine-paths" hits=0 line
   local pattern='(/Users/|/home/|[Cc]:[\\/]+Users[\\/]+)[A-Za-z0-9]'
 
+  # The one repository this must not fire in is the private layer itself — the place the exposure
+  # contract explicitly permits to name paths, because that is what it is for. A repository declares
+  # itself that layer; it is never inferred. "No remote" was tried as the discriminator and is wrong:
+  # several repositories here have no remote yet and fully intend to publish, and a check that goes
+  # quiet until the day someone runs `git remote add` hands them a backlog at exactly the wrong moment.
+  #
+  # SKIP, never a silent pass: "no machine path found" and "I was told not to look" are different
+  # answers, the same distinction 50-private-names.sh makes about its own supplied list.
+  if [ -n "${VIBE_OPS_PRIVATE_LAYER:-}" ]; then
+    skip "$id" "declared the private layer (VIBE_OPS_PRIVATE_LAYER) — named paths belong here by design"
+    return
+  fi
+
   if [ -z "$(tracked_md)" ]; then
     skip "$id" "no tracked markdown outside templates/ to examine"
     return

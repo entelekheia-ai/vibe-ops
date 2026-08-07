@@ -75,6 +75,13 @@ for filling it. This skill deliberately does not restate them.
 Starting from the exact template content, and **writing every section in English regardless of the
 conversation's language** — that is a product guarantee of this plugin, not a preference.
 
+- **Write it the way this plugin writes** —
+  [`${CLAUDE_PLUGIN_ROOT}/references/authoring-style.md`](../../references/authoring-style.md) governs
+  every document written into a repository, and a record is one. Two of its sections decide how a plan or
+  an RFC reads: **prescriptive over hedged**, and **Diagrams** — a ```mermaid fence earns its place
+  wherever the thing being described is a flow with branches, which most of a `Design` section is. Records
+  written without ever consulting it come out as prose-only walls; that is the observed failure, not a
+  hypothetical one.
 - Keep any license comment block at the top unchanged.
 - Delete the template's guidance HTML comments.
 - Delete optional metadata rows (`Depends on`, `Related`, `Tracking issue`) unless they are really

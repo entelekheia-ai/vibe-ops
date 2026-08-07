@@ -33,6 +33,13 @@ things make a plan the worst offender among the four types:
   naming it is the fastest way to finish the sentence. Write the constraint, drop the owner: "the consumer
   of this parser pins the current output shape" says everything the reader needs and refers to nobody.
 
+**A plan's `Design` is the section that most often needs a diagram and most often ships without one.** It
+describes a pipeline, a decision procedure, or a boundary something must not cross — all flows with
+branches, which is exactly the test in
+[`${CLAUDE_PLUGIN_ROOT}/references/authoring-style.md`](../authoring-style.md#diagrams). Draw it beside the
+prose, not instead of it. The template says so in its own `Design` comment; this is the reminder for the
+case where the comment was deleted before it was read.
+
 ## Migrating an existing document
 
 A plan is often not written from nothing — a briefing, an RFC, or an older plan format is being converted.
