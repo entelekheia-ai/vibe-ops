@@ -42,15 +42,22 @@ which loads on its own. Not repeated here.
   (append-only, no update mode). See [`references/convergence-policy.md`](references/convergence-policy.md).
 - **Everything this plugin writes into a target repo is in English**, regardless of the conversation's
   language. That is a product guarantee, stated in the README.
-- **A path that has landed but not shipped reaches nobody who installed a release.** From a git-source
-  marketplace the plugin is a clone pinned to the version in `plugin.json`
-  (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), and `${CLAUDE_PLUGIN_ROOT}` resolves
-  there — not into this tree. (Installed from a *directory* source instead, `installLocation` is the
-  source path and skills load from the tree, so local edits are live; that is a development setup, never
-  how anyone receives this plugin.) Adding one is fine; expecting today's install to find it is not — which is why a feature
-  whose invocation path is a new file only counts as delivered once a release is cut. That the path exists
-  *here* is checked by `plugin-root-paths`; that it existed at the last release is the part you must think
-  about.
+- **No release is being cut, and that is the current policy, not a backlog.** The version stays at the
+  `plugin.json` value; work accumulates under `[Unreleased]` and reaches no marketplace. The plugin is
+  installed from a **directory source** and exercised in place — `installLocation` is this tree, skills
+  load from it, every edit is live in the next session. So: **do not bump `plugin.json` or
+  `marketplace.json`**, and treat "delivered only once a release is cut" as suspended while the freeze
+  holds — here, the tree *is* the install. The freeze ends when the maintainer decides what shape this
+  plugin is derived into, not when enough features pile up.
+- **When releasing resumes, that rule comes straight back.** From a git-source marketplace the plugin is a
+  clone pinned to the version in `plugin.json` (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`)
+  and `${CLAUDE_PLUGIN_ROOT}` resolves *there*, not into this tree — so a feature whose invocation path is
+  a new file is unreachable in every install until the version moves. That the path exists here is checked
+  by `plugin-root-paths`; that it existed at the last release is the part you have to think about.
+- **`claude plugin validate . --strict` is the first-party check**, and it is the only one that reads the
+  manifest and frontmatter schemas — `check-agents-md.sh` is this repo's own layer on top, never a
+  replacement. Setting `version` in both manifests is what the docs warn against; `manifest-sync` keeping
+  them equal is what makes it safe here.
 - **A guard, not a line.** Anything mechanically checkable becomes a fragment under `scripts/checks/`
   instead of being written here — and a line here that a new guard makes redundant gets deleted
   ([ADR-0004](project/adr/0004-budgeted-artifacts-and-guards.md)). This file is budgeted at 150 lines; over

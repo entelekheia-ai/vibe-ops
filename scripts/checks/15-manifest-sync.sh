@@ -58,11 +58,19 @@ check_manifest_sync() {
     fi
   fi
 
+  # The CHANGELOG's top *released* heading is the third copy of the version. An `## [Unreleased]`
+  # section above it is not drift — it is the ordinary state of a repository accumulating changes
+  # between releases, and it is the permanent state of one that is deliberately not cutting versions
+  # while it is being installed and exercised locally. Comparing against it would make this check fail
+  # on every run for as long as that lasts, which is how a guard gets switched off.
   if [ -f "$changelog" ]; then
     local c_version
-    c_version=$(grep -m1 -E '^## \[' "$changelog" | sed -n 's/^## \[\([^]]*\)\].*/\1/p')
+    c_version=$(grep -E '^## \[' "$changelog" \
+      | grep -viE '^## \[unreleased\]' \
+      | head -1 \
+      | sed -n 's/^## \[\([^]]*\)\].*/\1/p')
     if [ -n "$c_version" ] && [ "$c_version" != "$p_version" ]; then
-      fail "$id" "CHANGELOG.md's top heading ($c_version) != plugin.json version ($p_version) — the last release was not documented, or the version was bumped without a changelog entry"
+      fail "$id" "CHANGELOG.md's newest released heading ($c_version) != plugin.json version ($p_version) — the last release was not documented, or the version was bumped without a changelog entry"
       problems=$((problems + 1))
     fi
   fi

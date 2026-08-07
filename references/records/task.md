@@ -31,6 +31,23 @@ re-derive them. If the repo is not on GitHub yet, proceed without an issue and a
 Keep the issue lean: a one-line intent plus a link to the dossier. The dossier points *up* to the issue;
 the issue points *down* to the dossier path. Neither carries the other's content.
 
+## The exposure contract, and why the issue is the exposed half
+
+[`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../exposure-contract.md) governs both artifacts,
+but they are not equally exposed and the intuition runs backwards:
+
+- **The dossier is the safer one.** It is committed, and it is deleted at closure — a mistake in it lives in
+  git history, which is bad, and not on a page anyone browses.
+- **The issue is permanent and, on a public repository, world-readable the instant it is posted.** It cannot
+  be un-posted; editing a comment leaves the edit history. Everything written to it — the one-line intent
+  here, and above all the executive summary `close` distills into it — carries the contract in full.
+
+The failure this prevents is specific: a dossier says "blocked on the auth service in the other repo",
+somebody moves that sentence up into the closing comment because it explains the delay, and a repository
+name that never had to leave a deleted file is now in a permanent public thread. Write the constraint
+instead — "blocked on an upstream dependency's release" — at the point the sentence is first written, not
+when it is being copied.
+
 ## Naming — the one type that is not numbered by the resolver
 
 - **With an issue:** name the dossier by the **issue number** — `<DIR>/<NNN>-<slug>.md`, zero-padded to the
@@ -65,5 +82,7 @@ by hand.
 - [ ] Dossier named by issue number when an issue exists; by slug alone when it does not
 - [ ] `Issue:` line links to the issue, or says `pending`
 - [ ] The issue holds a one-line intent and a link to the dossier — not a second copy of the plan
+- [ ] Exposure contract applied to **the issue text first**: nothing outside this repository named, no
+      machine path, nothing about this repository's security posture
 - [ ] `gh issue create` was offered only when a remote and authentication were both reported
 - [ ] The `## Closure` checkbox is present and unchecked

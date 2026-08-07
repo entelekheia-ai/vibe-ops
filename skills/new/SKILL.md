@@ -82,6 +82,13 @@ conversation's language** — that is a product guarantee of this plugin, not a 
 - **Where there is no material for a section, leave the template's stub or a short italic note.** A section
   that looks filled but was fabricated misrepresents how settled the record is, and it is the failure a
   small model reaches for first. This applies hardest to success criteria, tracks and options considered.
+- **Apply the exposure contract to the first sentence, not to the finished file.** A record is written
+  where the work happens and read wherever the repository ends up — cloned on its own, and public on a day
+  nobody re-reads forty governance records first. So no machine path, no repository named that is not this
+  one, no pointer to a private companion; anything outside this repository is stated as the *constraint it
+  imposes*, never as a name. What may cross, and which section of each of the four types actually leaks, is
+  in [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md).
+  This is the one thing in the skill that a later edit cannot repair.
 
 ## Step 5 — Write, then do the type's follow-ups
 
@@ -108,6 +115,8 @@ agreement before writing.**
 - [ ] Metadata complete: status, date from `date`, author; unpopulated rows deleted; no invented issue
 - [ ] Every section from the template present
 - [ ] Sections with no source material left as honest stubs, not invented
+- [ ] Exposure contract applied while writing: no machine path, no repository named but this one, no
+      pointer to a private companion, nothing about this repository's security posture
 - [ ] Content written in English
 - [ ] No index file created unless the repo asked for one
 - [ ] The type's own follow-ups from Step 5 done

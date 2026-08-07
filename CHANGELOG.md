@@ -14,8 +14,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Two unrelated pieces of work. One changes a hook's behaviour in every repository this plugin is installed
-in; the other is design groundwork that changes nothing yet.
+Three unrelated pieces of work. One changes a hook's behaviour in every repository this plugin is installed
+in; one closes a leak the record-writing skills had no rule against; the third is design groundwork that
+changes nothing yet.
+
+> **Nothing here is scheduled for a release.** The version is frozen deliberately while the plugin is
+> installed from a directory source and exercised in place, so this section keeps growing and no
+> `plugin.json` bump follows it. See the release policy in [`AGENTS.md`](AGENTS.md).
 
 ### Fixed
 
@@ -35,8 +40,35 @@ in; the other is design groundwork that changes nothing yet.
   directory, so the decision stays recoverable without being spoken. The reversal, its measurements and
   what it cost are in [Plan-008](project/plans/008-quiet-and-audit-the-plan-progress-nudge.md).
 
+- **[`hooks/plan-approved-copy.sh`](hooks/plan-approved-copy.sh) — the `| Repository |` row no longer
+  survives into the filed plan.** The row is routing metadata: it exists so an approved plan-mode plan
+  written from a workspace root can be filed into the repository it actually belongs to. The hook read it
+  and then wrote the plan verbatim, so an absolute path on the author's machine landed in a permanent —
+  and possibly public — governance record, in exactly the case the row exists for. It is now stripped as
+  the file is written, and the model is told it was, so it does not put it back. The placeholder form the
+  template ships is dropped too.
+- **[`scripts/checks/15-manifest-sync.sh`](scripts/checks/15-manifest-sync.sh)** compares `plugin.json`
+  against the newest **released** changelog heading, skipping `[Unreleased]`. Comparing against
+  `[Unreleased]` made the check fail on every run of a repository accumulating changes between releases —
+  permanently, for one that is deliberately not cutting versions.
+
 ### Added
 
+- **[`references/exposure-contract.md`](references/exposure-contract.md)** — what a record may carry into a
+  repository that will be cloned on its own and may be made public later. A table of what crosses and what
+  does not (another repository's name, a machine path, this repository's security posture, any pointer to a
+  private companion), the two rules that make it survivable — write the sentence fresh rather than redacting
+  one, and remember a count can identify as surely as a name — and, per artifact, the section that actually
+  leaks. `new`, `close` and the plan/task rules point at it; `authoring-style.md` keeps the one-paragraph
+  summary and defers. The single riskiest moments are named where they happen: migrating a document written
+  somewhere with more context than the destination has, and lifting a line out of a dossier into the issue
+  comment that outlives it.
+- **[`scripts/checks/52-machine-paths.sh`](scripts/checks/52-machine-paths.sh)** — fails when tracked
+  markdown carries a home directory or checkout path. The one leak in the contract above that needs no
+  supplied list to detect: the shape is identical on every machine. Unlike the deny-list check it names
+  what it found, because the username is already in the tree at that point and hiding it would leave nobody
+  able to fix it — and it deliberately passes the elided forms (`/Users/…/`, `/Users/.../`) a document uses
+  when it is describing the rule rather than breaking it.
 - **[`scripts/checks/27-nudge-behaviour.sh`](scripts/checks/27-nudge-behaviour.sh)** — five assertions
   that run the hook above against fixture repositories: one plan per firing, newest first, nothing
   re-named after being written or after a detour through another repository, and a firing log that is
@@ -56,6 +88,11 @@ in; the other is design groundwork that changes nothing yet.
 
 ### Changed
 
+- **The release policy in [`AGENTS.md`](AGENTS.md) now states the freeze.** No version is being cut; the
+  plugin is installed from a directory source and exercised in place, so the tree is the install and the
+  "only counts as delivered once a release is cut" rule is suspended rather than quietly ignored. The rule
+  itself is kept beside it, because it comes back the moment releasing does. `claude plugin validate
+  . --strict` is named as the first-party check `check-agents-md.sh` sits on top of rather than replaces.
 - **[Plan-004](project/plans/004-new-research-skill.md) — both Open questions closed.** Research is
   **dated**, not numbered, where it is written and named by topic where it is published, so the skill's
   discovery step looks for neither a prefix nor a next number. And research **has** a lifecycle: write-once

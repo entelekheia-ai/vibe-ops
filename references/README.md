@@ -14,6 +14,7 @@ own steps say to.
 | [`knowledge-lifecycle.md`](knowledge-lifecycle.md) | Where does a learning go once the work is done? | `close`, `authoring-agents-md` |
 | [`instruction-surfaces.md`](instruction-surfaces.md) | Which file gets a given fact, and how does it reach the agent? | `authoring-agents-md`, `repo-setup`, and question 4 of the promotion test |
 | [`authoring-style.md`](authoring-style.md) | How is a generated document written — phrasing, budget, tables, diagrams? | every skill that writes prose into a target repo |
+| [`exposure-contract.md`](exposure-contract.md) | What may this record carry into a repository that will be cloned alone and may go public? | `new` and `close` directly; `authoring-style.md` for everything else that writes prose |
 
 The decisions behind them are recorded in [`../project/adr/`](../project/adr/): ADR-0001 for the taxonomy
 and the verbs, ADR-0002 for the promotion test, ADR-0003 for placement and the enforcement ladder. A

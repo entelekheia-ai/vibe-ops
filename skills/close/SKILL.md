@@ -139,6 +139,15 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    what shipped per track with PR links; **outcome against the prediction**; **what was routed** before the
    dossier was deleted, naming each promoted learning and its destination. Do not write the breadcrumb or
    the "removed by the lifecycle" note — those are appended mechanically below.
+
+   **This summary is the most exposed text either skill produces**, and it is produced by copying upward
+   out of a document that was never as exposed. The dossier is about to be deleted; the comment is
+   permanent and, on a public repository, world-readable the instant it is posted — editing it later leaves
+   an edit history. Apply
+   [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md) to
+   every line as you lift it: a repository name that explained a delay inside the dossier becomes the
+   constraint it imposed; a path pasted from a terminal becomes a repository-relative one; a routed
+   learning is named by *what* it was and where it landed, never by the private note it came from.
 2. **Preview, and confirm.** This is the only irreversible action in the skill, and the skill can be
    invoked by the model rather than typed — so the person whose dossier it is may not have asked for it.
 
@@ -195,3 +204,5 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
       **after** deletion is green
 - [ ] `[plan]` `Status` set to the terminal state and **the plan file still exists**; tracking issue carries
       the summary and is closed
+- [ ] Every line written to an **issue** — the executive summary, the retrospective — passed the exposure
+      contract at the moment it was lifted out of the record, not afterwards

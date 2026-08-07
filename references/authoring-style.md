@@ -70,10 +70,13 @@ below, one of them will be wrong within a month. Draw it or write it — not bot
 
 ## Never leak private state
 
-Nothing written into a committed file may reference personal-memory slugs (`[[…]]`, `feedback_…`,
-`project_…`), a parent workspace, a sibling repository, machine paths, or anything private. Put the actual
-fact in the file. The link is one-directional: personal notes may point at a repository file; a repository
-file never points back.
+Nothing written into a committed file may carry a machine path, another repository's name, the folder this
+one sits inside, a personal-memory slug, or a pointer to a private companion document. Put the actual fact
+in the file instead. The link is one-directional: personal notes may point at a repository file; a
+repository file never points back.
 
-This includes **negative** checks — a validation command that spells out private names in order to grep for
-them has already leaked them. Keep the pattern in the validator script, not in the prose.
+That is the summary. The contract itself — what may cross, what the excluded half is written as instead,
+which section of each artifact actually leaks, and which three shapes a guard catches — is
+[`exposure-contract.md`](exposure-contract.md). It governs every record this plugin writes, not only the
+documents this file covers, and it is applied **while writing**: a published document describing its own
+private context cannot be fixed afterwards by editing the file.

@@ -105,7 +105,18 @@ TARGET="$REPO/$PLAN_DIR/$NEXT-$SLUG.md"
 [ -f "$TARGET" ] && exit 0
 
 mkdir -p "$REPO/$PLAN_DIR" 2>/dev/null || exit 0
-printf '%s\n' "$PLAN_TEXT" > "$TARGET" 2>/dev/null || exit 0
+
+# The Repository row is routing metadata for THIS step and nothing else, and it
+# is the one thing in a plan that is an absolute path on somebody's machine. Once
+# the plan is filed the row has done its whole job; leaving it in writes a home
+# directory into a permanent — possibly public — governance record, which is the
+# exact shape references/exposure-contract.md exists to keep out. So it is
+# removed here rather than being left for a human to notice: the model never sees
+# this file get written, and the row is invisible in the approved plan it
+# remembers. Deleted whatever it held, including the template's own placeholder
+# comment, because neither form is worth anything after this line.
+printf '%s\n' "$PLAN_TEXT" \
+  | sed '/^|[[:space:]]*Repository[[:space:]]*|/d' > "$TARGET" 2>/dev/null || exit 0
 
 # Flag a stale number rather than rewriting the H1 — text surgery on a heading a
 # human may have hand-edited is worse than asking the model to fix one line.
@@ -113,6 +124,10 @@ NUMBER_NOTE=""
 printf '%s\n' "$PLAN_TEXT" | grep -qE "Plan-$NEXT" || \
   NUMBER_NOTE=" The plan's own heading and metadata table may still show a guessed or stale number — correct them to $NEXT to match the filename."
 
-MSG="An approved plan-mode plan was copied to \`$TARGET\` in repository \`$REPO\`, resolved from $REPO_HOW. This copy is now the record — make further edits there, not at \`$FILE_PATH\`.$NUMBER_NOTE The filename's slug (\`$SLUG\`) is this hook's guess from the heading; rename the file if it reads badly."
+ROW_NOTE=""
+printf '%s\n' "$PLAN_TEXT" | grep -qE '^\|[[:space:]]*Repository[[:space:]]*\|' && \
+  ROW_NOTE=" The \`| Repository |\` row was routing metadata for this step only and has been dropped from the filed copy — it holds an absolute path on this machine, which does not belong in a committed record. Do not add it back."
+
+MSG="An approved plan-mode plan was copied to \`$TARGET\` in repository \`$REPO\`, resolved from $REPO_HOW. This copy is now the record — make further edits there, not at \`$FILE_PATH\`.$NUMBER_NOTE$ROW_NOTE The filename's slug (\`$SLUG\`) is this hook's guess from the heading; rename the file if it reads badly."
 
 jq -nc --arg msg "$MSG" '{hookSpecificOutput:{hookEventName:"PostToolUse",additionalContext:$msg}}'

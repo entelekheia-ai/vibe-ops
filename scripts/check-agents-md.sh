@@ -265,6 +265,7 @@ self_test() {
     echo '- [escape](../../etc/passwd)'
     echo '- [memory](x) see [[project_something]]'
     echo '- run `${CLAUDE_PLUGIN_ROOT}/scripts/does-not-ship.sh` — a path in a command, not a link'
+    echo '- built from `/Users/somebody/checkouts/thing` — a home directory in a committed document'
   } >> "$tmp/AGENTS.md"
   # `[[...]]` shapes that are NOT memory links, beside one that is. A fixture with only the real slug
   # would pass whether or not the check distinguishes them, so the two decoys are what give the assertion
@@ -276,6 +277,7 @@ self_test() {
     echo 'name = "description"'
     echo '```'
     echo 'inline `[[also_not_a_link]]` quoted as code'
+    echo 'the elided forms `/Users/…/thing` and `/Users/.../thing`, which describe the rule'
   } > "$tmp/decoys.md"
   printf -- '---\npaths: ["x/**"]\n---\n\nno description above.\n' > "$tmp/.agents/rules/nodesc.md"
   printf 'not a symlink\n' > "$tmp/.claude/rules/nodesc.md"
@@ -327,9 +329,9 @@ self_test() {
     echo "SELF-TEST FAILED: the script passed a repository that is broken in five ways"
     return 1
   fi
-  for expected in budget links bridge frontmatter private-names memory-slugs plugin-root-paths \
-    template-attribution manifest-sync hooks-registration dogfooding-drift references-completeness \
-    command-references; do
+  for expected in budget links bridge frontmatter private-names memory-slugs machine-paths \
+    plugin-root-paths template-attribution manifest-sync hooks-registration dogfooding-drift \
+    references-completeness command-references; do
     if ! printf '%s\n' "$got" | grep -q "FAIL  \[$expected\]"; then
       echo "SELF-TEST FAILED: check '$expected' did not fire on the fixture"
       return 1
@@ -343,6 +345,17 @@ self_test() {
   fi
   if printf '%s\n' "$got" | grep -q 'memory-slugs.*\(language\|also_not_a_link\)'; then
     echo "SELF-TEST FAILED: memory-slugs matched a [[...]] that was quoted as code"
+    return 1
+  fi
+  # machine-paths fires once, on the real home directory — and not on the two elided spellings a
+  # document uses when it is describing this very rule. A guard that flags its own documentation is one
+  # people learn to switch off.
+  if [ "$(printf '%s\n' "$got" | grep -c 'FAIL  \[machine-paths\]')" -ne 1 ]; then
+    echo "SELF-TEST FAILED: machine-paths should report exactly one hit; the elided decoys must not count"
+    return 1
+  fi
+  if printf '%s\n' "$got" | grep -q 'machine-paths.*decoys.md'; then
+    echo "SELF-TEST FAILED: machine-paths matched an elided path (/Users/…/ or /Users/.../)"
     return 1
   fi
   # a hit must be traceable without the string being repeated: the deny-list line is named, the name is not

@@ -112,6 +112,70 @@ test."
   else
     fail "Repository row: something was written into the umbrella repo"
   fi
+  # The row is routing metadata for this step and an absolute path on this machine. It must not survive
+  # into the filed record — references/exposure-contract.md. Asserted on the row and on the path
+  # separately: a strip that removed the label but left the value would satisfy only the first.
+  if [[ -f "$target" ]] && ! grep -qE '^\|[[:space:]]*Repository[[:space:]]*\|' "$target"; then
+    ok "Repository row: dropped from the filed copy"
+  else
+    fail "Repository row: survived into $target — a machine path is now in a committed record"
+  fi
+  if [[ -f "$target" ]] && ! grep -qF "$target_repo" "$target"; then
+    ok "Repository row: the machine path itself is nowhere in the filed copy"
+  else
+    fail "Repository row: the absolute path is still present in $target"
+  fi
+  # Everything else survives untouched: this strips one row, it does not reformat a document.
+  if [[ -f "$target" ]] && grep -q '^| Status | Backlog |$' "$target" && grep -q '^test\.$' "$target"; then
+    ok "Repository row: the rest of the plan is untouched"
+  else
+    fail "Repository row: the strip damaged content it had no business editing"
+  fi
+  if [[ "$out" == *"has been dropped from the filed copy"* ]]; then
+    ok "Repository row: the model is told the row was dropped, so it does not add it back"
+  else
+    fail "Repository row: additionalContext said nothing about the dropped row, got: $out"
+  fi
+}
+
+# --- Case 2b: the template's own placeholder comment, and a plan with no row at all -------------------
+# The placeholder form (`| Repository | <!-- ... --> |`) is already handled as "no explicit repo" for
+# routing. It is dead metadata all the same, and leaving it would ship a template comment into every
+# plan filed from a single-repo session — the common case, and the one no reviewer looks at twice.
+test_repository_placeholder_and_absent() {
+  local repo out target
+  repo=$(new_plan_repo repo2b)
+  local plan="# Plan-001: Placeholder row
+
+| Field | Value |
+|---|---|
+| Status | Backlog |
+| Repository | <!-- absolute path, remove this row otherwise --> |
+
+## Summary
+test."
+  out=$(run_hook "$(payload "$repo" "$plan" "/x.md")")
+  target="$repo/project/plans/001-placeholder-row.md"
+  if [[ -f "$target" ]] && ! grep -q 'Repository' "$target"; then
+    ok "placeholder row: filed via cwd fallback, and the dead row is gone"
+  else
+    fail "placeholder row: expected $target without a Repository row"
+  fi
+
+  # A plan that never had the row is unaffected, and says nothing about one.
+  repo=$(new_plan_repo repo2c)
+  out=$(run_hook "$(payload "$repo" "$DURABLE_PLAN" "/x.md")")
+  target="$repo/project/plans/001-a-durable-design-record.md"
+  if [[ -f "$target" ]] && diff -q <(printf '%s\n' "$DURABLE_PLAN") "$target" >/dev/null; then
+    ok "no Repository row: the plan is still copied byte for byte"
+  else
+    fail "no Repository row: the filed copy no longer matches the approved plan"
+  fi
+  if [[ "$out" != *"dropped from the filed copy"* ]]; then
+    ok "no Repository row: nothing is claimed about a row that never existed"
+  else
+    fail "no Repository row: additionalContext reported dropping a row, got: $out"
+  fi
 }
 
 # --- Case 3: no H1, or no Status row — stays silent ---------------------------------------------------
@@ -200,6 +264,7 @@ different content."
 
 test_cwd_fallback_copies
 test_repository_row_overrides_cwd
+test_repository_placeholder_and_absent
 test_throwaway_plan_silent
 test_no_plan_convention_silent
 test_missing_jq_silent

@@ -65,7 +65,7 @@ mkdir -p "$STATE" 2>/dev/null
 # A single-repo session never sees this sentence, so its plans stay uncluttered.
 REPO_ROW=""
 if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ "$CLAUDE_PROJECT_DIR" != "$RESOLVED_ROOT" ]; then
-  REPO_ROW=" This session's project root is not the repository this plan belongs to — add a \`| Repository | $RESOLVED_ROOT |\` row to the metadata table (the resolved repository's absolute path, nothing else in the cell) so a later automated step files the plan correctly without re-guessing."
+  REPO_ROW=" This session's project root is not the repository this plan belongs to — add a \`| Repository | $RESOLVED_ROOT |\` row to the metadata table (the resolved repository's absolute path, nothing else in the cell) so a later automated step files the plan correctly without re-guessing. That row is routing metadata, not part of the record: the filing step drops it, because an absolute path on this machine must not survive into a committed document."
 fi
 
 printf '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"%s"}}\n' \
