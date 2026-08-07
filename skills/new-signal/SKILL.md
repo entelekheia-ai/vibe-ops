@@ -158,8 +158,9 @@ authoring repository, where everything is green.
 ## Step 7 — Make it report, if there is anywhere to report to
 
 Only after Steps 5 and 6. Add the emit call — the shape, the population rules and the absent-destination
-guarantee are all in [`harness-pair.md`](../../references/harness-pair.md), and the emitter is
-`${CLAUDE_PLUGIN_ROOT}/scripts/gate-emit.sh`.
+guarantee are all in [`harness-pair.md`](../../references/harness-pair.md). Resolve the emitter as
+`$HOME_ROOT/scripts/gate-emit.sh`, not the literal `${CLAUDE_PLUGIN_ROOT}` path — see that file's "Where
+the emitter lives" section for why the literal path is usually silently absent.
 
 **Then prove the absent case by diff, not by argument**: with the destination variable unset, the check's
 output must be byte-identical to what it produced before the emit line existed.

@@ -116,9 +116,17 @@ A gate that reports only whether this run passed has already destroyed the answe
 
 ## Where the emitter lives, and why it cannot move
 
-The emitter — `${CLAUDE_PLUGIN_ROOT}/scripts/gate-emit.sh` — turns one tool's diagnostics into the neutral
-artifact. It ships with this plugin, so a fragment composed from here can emit in any repository the
-plugin reaches rather than only in one that separately installed something.
+The emitter — `gate-emit.sh` — turns one tool's diagnostics into the neutral artifact. It ships with this
+plugin, so a fragment composed from here can emit in any repository the plugin reaches rather than only in
+one that separately installed something.
+
+**Resolve it as `$HOME_ROOT/scripts/gate-emit.sh`, never the literal `${CLAUDE_PLUGIN_ROOT}` path.**
+`check-agents-md.sh` already sets `HOME_ROOT` to wherever it itself was resolved from — a target
+repository's own snapshot, a sibling checkout inside a workspace that keeps one, or a real plugin install —
+and every fragment sourced by it can already read that global. `${CLAUDE_PLUGIN_ROOT}` is usually unset
+(see `resolve_runner()`'s own header in `skills/setup/templates/harness/checks/_run.sh`), so a fragment
+resolving the emitter through it literally would silently do nothing everywhere the sibling or snapshot
+path is what actually found the runner. Found rolling this out for real (Plan-020 Track 5).
 
 It standardizes **shape**; the translator on the receiving side standardizes **meaning**. That split is
 not tidiness — the emitter has to run inside the gate because it captures what only the producing side can

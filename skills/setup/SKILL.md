@@ -211,10 +211,16 @@ commit gate is the *only* enforcement available, which raises its value rather t
 - `scripts/checks/` — create it. It holds this repository's own fragments and starts empty.
 
 **The runner has to be reachable from a hook, and a hook has no `CLAUDE_PLUGIN_ROOT`.** So a repository
-that wants the gate also needs the runner copied in — the same snapshot Step 7 offers for CI, and with
-the same caveat stated out loud: it does not update itself, and refreshing it is a deliberate re-copy.
-`_run.sh` prefers that copy when it exists and falls back to the plugin otherwise, so an agent-run check
-and a hook-run check are the same code in a repository that has both.
+that wants the gate needs another way to reach it. `_run.sh`'s `resolve_runner()` tries three sources in
+order — a snapshot copied into `$TARGET`, a sibling `vibe-ops` checkout, then `${CLAUDE_PLUGIN_ROOT}` —
+and **which one to install is a real choice, not always the snapshot**:
+
+| `$TARGET` is… | Install | Because |
+|---|---|---|
+| a repository that will be cloned or used on its own (public, or leaves this workspace) | the snapshot below | the sibling checkout will not exist once the repository travels alone |
+| inside a workspace that keeps several repositories beside one `vibe-ops` checkout, and stays there | **nothing** — the sibling branch in `_run.sh` already finds `$TARGET/../vibe-ops` | a copy here is a stale duplicate the day `vibe-ops` gains a check, and one was found doing exactly that, dated to this repository's first commit, in a real workspace (Plan-020 Track 3) |
+
+The snapshot, when it is the right call:
 
 ```bash
 mkdir -p "$TARGET/scripts"
@@ -222,6 +228,10 @@ cp "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" "$TARGET/scripts/"
 cp -R "${CLAUDE_PLUGIN_ROOT}/scripts/checks" "$TARGET/scripts/"    # the built-in fragments
 chmod +x "$TARGET/scripts/check-agents-md.sh"
 ```
+
+Never run it out of habit for a repository the sibling branch already reaches — verify first:
+`[ -x "$TARGET/../vibe-ops/scripts/check-agents-md.sh" ]`. It does not update itself either way; refreshing
+a snapshot already taken is a deliberate re-copy, same caveat Step 7 states for the CI offer.
 
 ### H2 — Prove it before handing it over
 
