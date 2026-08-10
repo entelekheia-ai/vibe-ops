@@ -433,3 +433,6 @@ Verified by running the CLI against this repository and against the deliberately
   and the mechanical-versus-judgement split this plan's reference gate reuses.
 - [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) — a guard, not a line; the frontmatter track
   is that doctrine applied to the records themselves.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):
+  - `git show 7eb34c5116e9446cebcf3b5f42892fc400fa688b:project/tasks/001-the-document-model-and-its-sensor.md`

@@ -17,9 +17,21 @@
     "test": "node --test \"cli/packages/*/test/*.test.ts\"",
     "check": "sh cli/packages/module-check/sh/check.sh"
   },
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "typescript": "^7.0.2"
+  },
+  "_comment_overrides": "tree-sitter-markdown@0.3.2 declares a peer of tree-sitter ^0.21.1; the pin is 0.25.1, measured (2026-08-10, project/tasks/001-the-document-model-and-its-sensor.md) to produce a byte-for-byte identical parse tree across 0.21.1/0.22.4/0.25.1 on darwin-arm64. The peer range is conservative, not load-bearing.",
+  "overrides": {
+    "@tree-sitter-grammars/tree-sitter-markdown": {
+      "tree-sitter": "0.25.1"
+    }
+  },
+  "allowScripts": {
+    "@tree-sitter-grammars/tree-sitter-markdown@0.3.2": true,
+    "tree-sitter@0.25.1": true
   }
 }
