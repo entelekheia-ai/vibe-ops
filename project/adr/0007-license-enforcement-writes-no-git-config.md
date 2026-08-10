@@ -88,10 +88,10 @@ smaller failure but not a zero one.
 - [Issue #12](https://github.com/entelekheia-ai/vibe-ops/issues/12) — the report, including the
   `dot-agent-spec` incident and the `is_excluded` fix for the second defect (vendored/generated paths),
   which this ADR does not cover — that fix is uncontested and rides the CHANGELOG entry instead.
-- [`skills/license-setup/SKILL.md`](../../skills/license-setup/SKILL.md) — Step 1 Q3 and Step 5, updated
+- [`skills/license-setup/SKILL.md`](../../plugin/skills/license-setup/SKILL.md) — Step 1 Q3 and Step 5, updated
   by this decision.
 - `project/plans/001-knowledge-lifecycle-retrofit.md` (Decision Log, 2026-07-30 entry: "the validator runs
   in CI... `license-setup`'s pre-commit option remains a per-repository choice") — the prior position this
   ADR revisits.
-- [`references/instruction-surfaces.md`](../../references/instruction-surfaces.md) — the general
+- [`references/instruction-surfaces.md`](../../plugin/references/instruction-surfaces.md) — the general
   enforcement-ladder reasoning (hook / CI / type / lint) this decision draws on.

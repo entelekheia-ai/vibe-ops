@@ -82,5 +82,5 @@ Accepted risk: nothing mechanically enforces the scope statement. It is a checkl
 - [ADR-0003](0003-instruction-file-architecture.md) — what belongs in a generated instruction file.
 - [ADR-0004](0004-budgeted-artifacts-and-guards.md) — why a false or conditional line is not merely wasted
   space.
-- [`skills/authoring-agents-md/SKILL.md`](../../skills/authoring-agents-md/SKILL.md) — the step that
+- [`skills/authoring-agents-md/SKILL.md`](../../plugin/skills/authoring-agents-md/SKILL.md) — the step that
   applies this.

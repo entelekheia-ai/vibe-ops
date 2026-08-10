@@ -81,7 +81,7 @@ in mind.
 
 ### What was verified in the planning turn
 
-**The taxonomy defect is real.** [`hooks/plan-progress-nudge.sh`](../../hooks/plan-progress-nudge.sh)
+**The taxonomy defect is real.** [`hooks/plan-progress-nudge.sh`](../../plugin/hooks/plan-progress-nudge.sh)
 calls `resolve-governance.sh plan` and extracts **only `DIR`**, discarding `AUTHORITY` — the file that
 defines the taxonomy. It then hardcodes vibe-ops's vocabulary twice: the detection
 `grep -l '^| Status | In Progress |' … | head -1`, and the four section names plus entry shapes in the
@@ -482,7 +482,7 @@ deliberately — see Open questions.
 
 ### What was routed at closure
 
-- Promoted to [`references/records/task.md`](../../references/records/task.md): a design shared by several
+- Promoted to [`references/records/task.md`](../../plugin/references/records/task.md): a design shared by several
   dossiers needs a plan of its own, because closure deletes dossiers and takes the reasoning with them.
   This plan is the evidence.
 - **Blocked, with what unblocks it:** the missing-changelog entry is mechanically checkable and by ADR-0004

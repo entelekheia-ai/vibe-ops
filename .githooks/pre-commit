@@ -2,7 +2,7 @@
 # pre-commit — run this repository's own governance gate before a commit is allowed to land.
 #
 # Bespoke, not the harness template every *consumer* repository under this workspace root gets: this
-# repository IS the built-ins, so it calls scripts/check-agents-md.sh directly ("."), with no
+# repository IS the built-ins, so it calls cli/packages/module-check/sh/check-agents-md.sh directly ("."), with no
 # VIBE_OPS_CHECK_DIRS to compose and no runner to resolve — it already has the one it ships. Plan-020
 # Track 3.
 #
@@ -21,22 +21,16 @@ GIT_DIR=$(git rev-parse --git-dir)
 export GATE_ARTIFACT_DIR="$GIT_DIR/gate-artifacts"
 mkdir -p "$GATE_ARTIFACT_DIR"
 
-# Declared off — a ledger entry, never a silent pass: each reports SKIP naming its reason. Both are
-# open debt from the plan@0.2 / task@0.2 template change of 2026-08-07, and both are cheap to clear.
-# Delete the entry, do not edit the reason, when its work lands.
-export VIBE_OPS_DISABLED_CHECKS="dogfooding-drift:only project/templates/ moved to 0.2; the shipped copies under skills/setup/templates/ are untouched, so the plugin still scaffolds 0.1 — four-file copy pending
-command-references:the 'vibe-ops:template <type>@<version>' stamp has the shape of a plugin command invocation, so this reads it as a reference to a skill that does not exist — rename pending before any artifact carries it"
-
 # This repository's own fragments' self-test, when and only when a fragment changed — the same
 # discipline every consumer's gate applies to its own extra fragments.
-if git diff --cached --name-only --diff-filter=ACMR | grep -q '^scripts/checks/'; then
-  if ! "$ROOT/scripts/check-agents-md.sh" --self-test; then
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^cli/packages/module-check/sh/checks/'; then
+  if ! "$ROOT/cli/packages/module-check/sh/check-agents-md.sh" --self-test; then
     echo "pre-commit: the built-in checks' self-test failed — commit refused." >&2
     exit 1
   fi
 fi
 
-OUT=$("$ROOT/scripts/check-agents-md.sh" "$ROOT" 2>&1)
+OUT=$("$ROOT/cli/packages/module-check/sh/check-agents-md.sh" "$ROOT" 2>&1)
 RC=$?
 
 if [ "${GATE_VERBOSE:-}" = "1" ]; then

@@ -1,0 +1,25 @@
+{
+  "name": "vibe-ops",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Workspace root. The Claude Code plugin lives in plugin/ and has no build; the CLI's packages live in cli/packages/.",
+  "workspaces": [
+    "cli/packages/*"
+  ],
+  "scripts": {
+    "_comment_build": "core first, explicitly. `--workspaces` runs in directory order, not dependency order, so `cli` sorts before `core` and would typecheck against its stale dist and report success.",
+    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core",
+    "build": "npm run build:foundation && npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "pretest": "npm run build",
+    "test": "node --test \"cli/packages/*/test/*.test.ts\"",
+    "check": "sh cli/packages/module-check/sh/check.sh"
+  },
+  "engines": { "node": ">=22.18" },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}

@@ -23,12 +23,25 @@ jobs:
       # Running this first means a check that has silently stopped detecting anything fails loudly
       # instead of reporting a clean tree.
       - name: Validator self-test
-        run: ./scripts/check-agents-md.sh --self-test
+        run: ./cli/packages/module-check/sh/check-agents-md.sh --self-test
 
       - name: Instruction files
-        run: ./scripts/check-agents-md.sh
+        run: ./cli/packages/module-check/sh/check-agents-md.sh
 
       # skills/license-setup ships templates/ensure-license-headers.sh into every repo the skill
       # touches; this is the first thing that ever actually executes it (issue #12).
       - name: License-header template
-        run: ./scripts/test-license-headers.sh
+        run: ./cli/test/test-license-headers.sh
+
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm run typecheck
+      # `npm test` builds first (pretest): the packages typecheck against each other's dist, so a
+      # stale one reports a false green.
+      - run: npm test

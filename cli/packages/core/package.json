@@ -1,0 +1,15 @@
+{
+  "name": "@entelekheia/vibe-ops-core",
+  "version": "0.0.1",
+  "description": "The module contract, the vibeops.config.ts cascade, and the eita emission seam",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": { "node": ">=22.18" },
+  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+}

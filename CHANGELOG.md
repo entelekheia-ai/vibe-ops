@@ -42,7 +42,7 @@ changes nothing yet.
   missing (still a hard failure, proven by moving `scripts/checks/` aside) versus it holding a fragment
   that did not compose (a hard failure only when there is something to lose).
 
-- **[`hooks/plan-progress-nudge.sh`](hooks/plan-progress-nudge.sh) — the nudge now remembers what it
+- **[`hooks/plan-progress-nudge.sh`](plugin/hooks/plan-progress-nudge.sh) — the nudge now remembers what it
   asked, names one plan at a time, and produces nothing when it declines.** Three defects shipped in
   0.7.0/0.8.0, all in one loop. Its memory of what it had already asked about was rebuilt from empty on
   every firing and repopulated only from the repositories that turn wrote to, so working in a sibling
@@ -58,14 +58,14 @@ changes nothing yet.
   directory, so the decision stays recoverable without being spoken. The reversal, its measurements and
   what it cost are in [Plan-008](project/plans/008-quiet-and-audit-the-plan-progress-nudge.md).
 
-- **[`hooks/plan-approved-copy.sh`](hooks/plan-approved-copy.sh) — the `| Repository |` row no longer
+- **[`hooks/plan-approved-copy.sh`](plugin/hooks/plan-approved-copy.sh) — the `| Repository |` row no longer
   survives into the filed plan.** The row is routing metadata: it exists so an approved plan-mode plan
   written from a workspace root can be filed into the repository it actually belongs to. The hook read it
   and then wrote the plan verbatim, so an absolute path on the author's machine landed in a permanent —
   and possibly public — governance record, in exactly the case the row exists for. It is now stripped as
   the file is written, and the model is told it was, so it does not put it back. The placeholder form the
   template ships is dropped too.
-- **[`scripts/checks/15-manifest-sync.sh`](scripts/checks/15-manifest-sync.sh)** compares `plugin.json`
+- **[`scripts/checks/15-manifest-sync.sh`](cli/packages/module-check/sh/checks/15-manifest-sync.sh)** compares `plugin.json`
   against the newest **released** changelog heading, skipping `[Unreleased]`. Comparing against
   `[Unreleased]` made the check fail on every run of a repository accumulating changes between releases —
   permanently, for one that is deliberately not cutting versions.
@@ -80,16 +80,16 @@ changes nothing yet.
   record skills into `/new <type>`. The rename carries its reference updates rather than leaving them as
   follow-up; records under `project/` keep the old name on purpose, because a record should name what it
   was written against.
-- **[`references/harness-pair.md`](references/harness-pair.md)** — the contract for building a guide and
+- **[`references/harness-pair.md`](plugin/references/harness-pair.md)** — the contract for building a guide and
   its guard as one unit. Why the pair (each hides the other's failure written separately), what binds
   three artifacts into one signal, the fixture-it-fails as a condition of installation, the vocabulary
   boundary, the population rules, and where the emitter lives.
-- **[`scripts/gate-emit.sh`](scripts/gate-emit.sh)** — a POSIX-sh emitter that travels with the plugin, so
+- **[`scripts/gate-emit.sh`](cli/packages/module-check/sh/gate-emit.sh)** — a POSIX-sh emitter that travels with the plugin, so
   a fragment composed from here can report in any repository rather than only one that separately
   installed something. Verified byte-identical to the reference implementation it mirrors.
 - **`/vibe-ops:new-signal`** — turns one rule into the matched pair, with the fixture proving the guard
   fires. Event skill: one signal per run, no update mode.
-- **[`references/exposure-contract.md`](references/exposure-contract.md)** — what a record may carry into a
+- **[`references/exposure-contract.md`](plugin/references/exposure-contract.md)** — what a record may carry into a
   repository that will be cloned on its own and may be made public later. A table of what crosses and what
   does not (another repository's name, a machine path, this repository's security posture, any pointer to a
   private companion), the two rules that make it survivable — write the sentence fresh rather than redacting
@@ -98,7 +98,7 @@ changes nothing yet.
   summary and defers. The single riskiest moments are named where they happen: migrating a document written
   somewhere with more context than the destination has, and lifting a line out of a dossier into the issue
   comment that outlives it.
-- **[`scripts/checks/52-machine-paths.sh`](scripts/checks/52-machine-paths.sh)** — fails when tracked
+- **[`scripts/checks/52-machine-paths.sh`](cli/packages/module-check/sh/checks/52-machine-paths.sh)** — fails when tracked
   markdown carries a home directory or checkout path. The one leak in the contract above that needs no
   supplied list to detect: the shape is identical on every machine. Unlike the deny-list check it names
   what it found, because the username is already in the tree at that point and hiding it would leave nobody
@@ -113,11 +113,11 @@ changes nothing yet.
   line. `skills/setup/templates/harness/checks/_run.sh` also gained a third `resolve_runner()` source — a
   sibling `../vibe-ops` checkout, preferred over `${CLAUDE_PLUGIN_ROOT}` and after a repository's own
   snapshot — so a repository living beside this one in the same workspace needs no copy to refresh.
-- **[`scripts/checks/27-nudge-behaviour.sh`](scripts/checks/27-nudge-behaviour.sh)** — five assertions
+- **[`scripts/checks/27-nudge-behaviour.sh`](cli/packages/module-check/sh/checks/27-nudge-behaviour.sh)** — five assertions
   that run the hook above against fixture repositories: one plan per firing, newest first, nothing
   re-named after being written or after a detour through another repository, and a firing log that is
   actually written. Every one of them fails against the version this release replaces.
-- **[`scripts/measure-nudge-noise.sh`](scripts/measure-nudge-noise.sh)** — the development instrument for
+- **[`scripts/measure-nudge-noise.sh`](cli/test/measure-nudge-noise.sh)** — the development instrument for
   the one thing a hook cannot observe about itself: what the model did after it fired. Bounded at both
   ends (`--since` / `--until`) so a before-and-after comparison is taken with the same command over the
   same kind of window.

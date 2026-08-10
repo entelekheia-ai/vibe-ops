@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "vibe-ops",
-      "source": "./",
+      "source": "./plugin",
       "description": "Born-organized repos: set up or reconcile repos/monorepos and author their governance docs (AGENTS.md, ADR, RFC, plans, tasks, license, README) from one shared source of truth.",
       "version": "0.8.0",
       "author": {

@@ -70,7 +70,7 @@ The script already takes a repository root as its first argument and drives ever
 `git -C "$ROOT"`, so it can check a repository it does not live in. Three things follow from that.
 
 **It runs from the plugin, and is not copied.** Skills invoke
-`${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh <target>`. Copying it into each repository would freeze
+`${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh <target>`. Copying it into each repository would freeze
 it at the version of the day it was written — the greedy-`sed` bug found in Plan-001 would still be live in
 every repository that took a copy — and it would contradict the plugin's own promise of no per-repo copies
 to maintain. The default for `ROOT` changes from "the directory above this script" to the working tree of
@@ -143,7 +143,7 @@ its `Surprises & Discoveries` entries get routed.
 
 ## Success criteria
 
-- `${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh <some-other-repo>` reports on that repository, and
+- `${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh <some-other-repo>` reports on that repository, and
   `git -C <some-other-repo> status --porcelain` is unchanged afterwards.
 - `./scripts/check-agents-md.sh --self-test` still passes, and CI still runs it before the real check.
 - No temporary directory survives an interrupted run.
@@ -423,5 +423,5 @@ prints its own list instead of carrying a manifest (T1).*
 - [Plan-001 — Knowledge Lifecycle Retrofit](001-knowledge-lifecycle-retrofit.md), whose open question about
   shipping the validator this plan answers, and whose retrospective supplies T4 and T7.
 - [ADR-0004 — Budgeted artifacts, and a guard instead of a line](../adr/0004-budgeted-artifacts-and-guards.md)
-- [`references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the promotion test, and
+- [`references/knowledge-lifecycle.md`](../../plugin/references/knowledge-lifecycle.md) — the promotion test, and
   the obligation to prove a guard fails.

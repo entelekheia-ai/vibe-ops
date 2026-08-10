@@ -111,4 +111,4 @@ a text they wrote themselves, which is the failure this ADR exists to remove.
 - [ADR-0004](0004-budgeted-artifacts-and-guards.md) — anything mechanically checkable becomes a guard;
   this is that policy applied to the one artifact nobody re-reads.
 - [ADR-0007](0007-license-enforcement-writes-no-git-config.md) — the previous correction to the same skill.
-- [`skills/license-setup/SKILL.md`](../../skills/license-setup/SKILL.md) Step 2 / 2b.
+- [`skills/license-setup/SKILL.md`](../../plugin/skills/license-setup/SKILL.md) Step 2 / 2b.

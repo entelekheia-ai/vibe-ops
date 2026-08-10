@@ -505,7 +505,7 @@ Running it produced four results worth recording:
 
 1. **One promotion.** "Prove the guard fails" — a check that has stopped detecting anything is
    indistinguishable from a clean repository. It qualifies question 3 of the promotion test itself, so it
-   landed in [`references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md), not in
+   landed in [`references/knowledge-lifecycle.md`](../../plugin/references/knowledge-lifecycle.md), not in
    `AGENTS.md`: it is true of any repository, and a fact true anywhere is not repository knowledge.
 2. **Four demotions identified and blocked.** The `authoring-agents-md` checklist hand-checks four things
    the validator now enforces — every path resolves, no memory slug, the 150-line count, the symlink and
