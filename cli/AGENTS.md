@@ -10,7 +10,7 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 
 | Path | What is not obvious about it |
 |---|---|
-| [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract (`defineModule`, `defineGate`, `defineOps`), the `vibeops.config.ts` cascade, and the eita emission seam. Depends on nothing else here, so it builds first. |
+| [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract (`defineModule`, `defineGate`, `defineOps`), the `vibeops.config.ts` cascade, the eita emission seam, and (Plan-010 Track 1) the `DocumentModel`: a tree-sitter parse behind `GateRunContext.documents`. Depends on nothing else **in this workspace**, so it still builds first — but it now carries its first runtime dependency, and that dependency is **native**. `tree-sitter` ships prebuilt binaries for `darwin-arm64`, `darwin-x64`, `linux-x64` and `win32-x64`; **not** `linux-arm64`, which compiles from source at install time, so `npm install` can fail there where it previously could not. |
 | [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, the **stateless** MCP server, and the `hook` surface (`src/hook.ts`) a skill-scoped `hooks:` block calls by name. Also the programmatic API a third-party module builds against. |
 | [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. |

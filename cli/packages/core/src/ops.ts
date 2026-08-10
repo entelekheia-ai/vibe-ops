@@ -21,6 +21,7 @@
 
 import { createEmitter } from "./emit.ts";
 import { expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+import { createDocumentStore } from "./document.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
 import type { GateFinding, GatePlugin } from "./gate.ts";
@@ -207,6 +208,9 @@ async function run(
   context: ModuleContext,
 ): Promise<ModuleResult> {
   const pluginDir = resolvePluginDir(context.repoRoot);
+  // One store per run, beside pluginDir — lazy, so it costs nothing on a run that never calls .get()
+  // (--list, --help). No gate in this track reads it yet; Track 3 is the first consumer.
+  const documents = createDocumentStore(context.repoRoot);
   const resolved = await resolveAll(definition, context.repoRoot, pluginDir);
 
   if (context.flags["list"] === true) {
@@ -260,7 +264,13 @@ async function run(
   for (const { entry, gate, patterns } of resolved) {
     const label = labelFor(entry);
     const scoped = filterByGlobs(files, patterns);
-    const gateContext = { repoRoot: context.repoRoot, pluginDir, files: scoped, options: entry.options ?? {} };
+    const gateContext = {
+      repoRoot: context.repoRoot,
+      pluginDir,
+      files: scoped,
+      options: entry.options ?? {},
+      documents,
+    };
     let outcome = await gate.run(gateContext);
 
     // Repair before reporting, so a fixed finding is reported as fixed rather than as still failing.

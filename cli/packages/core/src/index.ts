@@ -10,3 +10,7 @@ export type { GateDefinition, GateFinding, GateFix, GateOutcome, GatePlugin, Gat
 export { defineOps } from "./ops.ts";
 export type { OpsDefinition, OpsFinding, OpsGateEntry, OpsRepair, OpsSkip } from "./ops.ts";
 export { expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+export { allGrammars, grammarForExtension } from "./grammars.ts";
+export type { GrammarDescriptor } from "./grammars.ts";
+export { createDocumentStore } from "./document.ts";
+export type { Document, DocumentStore } from "./document.ts";

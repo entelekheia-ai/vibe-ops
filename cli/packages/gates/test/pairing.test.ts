@@ -3,16 +3,23 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createDocumentStore } from "@entelekheia/vibe-ops-core";
+import type { GateRunContext } from "@entelekheia/vibe-ops-core";
 import pairing from "../src/pairing/index.ts";
 
 async function repo(): Promise<string> {
   return mkdtemp(path.join(tmpdir(), "vibeops-pairing-"));
 }
 
+// documents added once here rather than in every call site below — see project/tasks/001-…, item 4.
+function ctx(repoRoot: string, files: readonly string[]): GateRunContext {
+  return { repoRoot, pluginDir: repoRoot, files, options: {}, documents: createDocumentStore(repoRoot) };
+}
+
 test("a root AGENTS.md with no sibling CLAUDE.md fails, not warns", async () => {
   const repoRoot = await repo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
-  const outcome = await pairing.run({ repoRoot, pluginDir: repoRoot, files: ["AGENTS.md"], options: {} });
+  const outcome = await pairing.run(ctx(repoRoot, ["AGENTS.md"]));
   assert.equal(outcome.findings.length, 1);
   assert.equal(outcome.findings[0]!.level ?? "fail", "fail");
 });
@@ -21,12 +28,7 @@ test("a nested AGENTS.md with no sibling CLAUDE.md fails too — depth no longer
   const repoRoot = await repo();
   await mkdir(path.join(repoRoot, "sub"), { recursive: true });
   await writeFile(path.join(repoRoot, "sub", "AGENTS.md"), "# map\n");
-  const outcome = await pairing.run({
-    repoRoot,
-    pluginDir: repoRoot,
-    files: ["sub/AGENTS.md"],
-    options: {},
-  });
+  const outcome = await pairing.run(ctx(repoRoot, ["sub/AGENTS.md"]));
   assert.equal(outcome.findings.length, 1);
   assert.equal(outcome.findings[0]!.level ?? "fail", "fail");
 });
@@ -35,7 +37,7 @@ test("a sibling CLAUDE.md that exists but does not import @AGENTS.md warns, not 
   const repoRoot = await repo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
   await writeFile(path.join(repoRoot, "CLAUDE.md"), "Some Claude-specific note.\n");
-  const outcome = await pairing.run({ repoRoot, pluginDir: repoRoot, files: ["AGENTS.md"], options: {} });
+  const outcome = await pairing.run(ctx(repoRoot, ["AGENTS.md"]));
   assert.equal(outcome.findings.length, 1);
   assert.equal(outcome.findings[0]!.level, "warn");
   assert.match(outcome.findings[0]!.evidence, /does not link back/);
@@ -45,14 +47,14 @@ test("a correctly paired root file passes", async () => {
   const repoRoot = await repo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
   await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
-  const outcome = await pairing.run({ repoRoot, pluginDir: repoRoot, files: ["AGENTS.md"], options: {} });
+  const outcome = await pairing.run(ctx(repoRoot, ["AGENTS.md"]));
   assert.deepEqual(outcome.findings, []);
 });
 
 test("fix() creates the missing sibling, containing exactly @AGENTS.md", async () => {
   const repoRoot = await repo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
-  const context = { repoRoot, pluginDir: repoRoot, files: ["AGENTS.md"], options: {} };
+  const context = ctx(repoRoot, ["AGENTS.md"]);
   const outcome = await pairing.run(context);
   const fixes = await pairing.fix!(context, outcome.findings);
   assert.deepEqual(fixes, [{ file: "CLAUDE.md", action: "created, containing @AGENTS.md" }]);
@@ -66,7 +68,7 @@ test("fix() never touches a CLAUDE.md that exists but does not import — that f
   const repoRoot = await repo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
   await writeFile(path.join(repoRoot, "CLAUDE.md"), "Some Claude-specific note.\n");
-  const context = { repoRoot, pluginDir: repoRoot, files: ["AGENTS.md"], options: {} };
+  const context = ctx(repoRoot, ["AGENTS.md"]);
   const outcome = await pairing.run(context);
   const fixes = await pairing.fix!(context, outcome.findings);
   assert.deepEqual(fixes, []);

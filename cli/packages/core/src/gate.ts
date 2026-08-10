@@ -9,6 +9,8 @@
 // Same relationship eita has between a trait and a profile, and for the same reason: a versioned unit
 // of observation is recombinable only if it holds no opinion about what it is pointed at.
 
+import type { DocumentStore } from "./document.ts";
+
 /** One thing the gate saw. Never a verdict about the repository — see `level`. */
 export interface GateFinding {
   /**
@@ -39,6 +41,13 @@ export interface GateRunContext {
   readonly files: readonly string[];
   /** Whatever the composing ops passed for this entry. A gate validates its own options. */
   readonly options: Readonly<Record<string, unknown>>;
+  /**
+   * The parsed document behind any file in `files`, built once per run. Required rather than optional
+   * so a gate reads structure without a branch for "nobody handed me any" — the store is lazy, so
+   * building it costs nothing on a run that never calls `.get()` (`--list`, `--help`). See
+   * `document.ts`; no gate in this track reads it yet.
+   */
+  readonly documents: DocumentStore;
 }
 
 /** One repair a gate's `fix` made. `action` is a one-line description, in the words a reader needs. */
