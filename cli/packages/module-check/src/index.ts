@@ -30,7 +30,6 @@ export default defineModule(
       { name: "self-test", type: "boolean", description: "Assert every check still fires on a deliberately broken fixture" },
       { name: "verbose", type: "boolean", description: "Print the full run rather than only failures" },
     ],
-    emits: ["checks-run", "checks-failed"],
   },
   async (context: ModuleContext): Promise<ModuleResult> => {
     const argv: string[] = [];
@@ -62,10 +61,9 @@ export default defineModule(
       : output.split("\n").filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
     if (interesting.trim() !== "") context.log(interesting.trimEnd());
 
-    if (context.emit && match) {
-      await context.emit({ id: "checks-run", value: Number(match[1]) });
-      await context.emit({ id: "checks-failed", value: Number(match[2]) });
-    }
+    // No emitter: this module declares no `emits`. "checks-run"/"checks-failed" counted CHECKS, the
+    // taxonomy references/harness-pair.md forbids because it grows with the tooling instead of with
+    // the phenomena (RFC-0001, Rationale). agents-md's memory-slug gate is the replacement signal.
 
     return {
       code,

@@ -1,0 +1,147 @@
+// End-to-end: the real composition, against a fixture repo broken the same five ways
+// check-agents-md.sh's own --self-test breaks its fixture, run through the actual gates package
+// rather than through fakes. This is the comparison RFC-0001 asks for before the shell fragments are
+// ever removed — the same shape of fixture, read by the ported detectors.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import ops from "../src/index.ts";
+import type { ModuleContext } from "@entelekheia/vibe-ops-core";
+import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
+
+async function gitRepo(): Promise<string> {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-agents-md-"));
+  spawnSync("git", ["-C", repoRoot, "init", "-q"]);
+  return repoRoot;
+}
+
+function gitAdd(repoRoot: string): void {
+  spawnSync("git", ["-C", repoRoot, "add", "-A"]);
+}
+
+function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<string, string | boolean> = {}): {
+  context: ModuleContext;
+  logs: string[];
+} {
+  const logs: string[] = [];
+  const context: ModuleContext = {
+    repoRoot,
+    flags,
+    args: [],
+    config,
+    settings: undefined,
+    surface: "cli",
+    log: (message) => logs.push(message),
+    warn: (message) => logs.push(`warning: ${message}`),
+  };
+  return { context, logs };
+}
+
+/** A repository broken in the five ways this ops composes gates to catch. */
+async function brokenFixture(): Promise<string> {
+  const repoRoot = await gitRepo();
+
+  // budget: over the 150-line default, and pairing: no sibling CLAUDE.md
+  await writeFile(path.join(repoRoot, "AGENTS.md"), `${"padding line\n".repeat(200)}see [[project_something]]\n`);
+
+  // check-frontmatter (rule schema): no description
+  await mkdir(path.join(repoRoot, ".agents", "rules"), { recursive: true });
+  await writeFile(path.join(repoRoot, ".agents", "rules", "nodesc.md"), '---\npaths: ["x/**"]\n---\n\nno description.\n');
+
+  // bridge: a regular file where a symlink belongs
+  await mkdir(path.join(repoRoot, ".claude", "rules"), { recursive: true });
+  await writeFile(path.join(repoRoot, ".claude", "rules", "nodesc.md"), "not a symlink\n");
+
+  // check-frontmatter (skill schema): unquoted ": " in a value
+  await mkdir(path.join(repoRoot, "skills", "demo"), { recursive: true });
+  await writeFile(
+    path.join(repoRoot, "skills", "demo", "SKILL.md"),
+    "---\nname: demo\ndescription: template and numbering: an ADR\n---\n\nbody\n",
+  );
+
+  gitAdd(repoRoot);
+  return repoRoot;
+}
+
+test("every gate fires on a repository broken in all five ways", async () => {
+  const repoRoot = await brokenFixture();
+  const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
+  const result = await ops.run(context);
+  const output = logs.join("\n");
+
+  assert.equal(result.code, 1);
+  for (const rule of ["budget", "pairing", "bridge", "frontmatter", "skill-frontmatter", "memory-slug"]) {
+    assert.match(output, new RegExp(`FAIL {2}\\[${rule}\\]`), output);
+  }
+});
+
+test("a clean repository passes all six composed entries", async () => {
+  const repoRoot = await gitRepo();
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
+  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
+  gitAdd(repoRoot);
+
+  const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
+  const result = await ops.run(context);
+  assert.equal(result.code, 0);
+  assert.ok(!logs.some((line) => line.includes("FAIL")), logs.join("\n"));
+  // no .claude/ directory at all — bridge must say so, not report a vacuous ok
+  assert.ok(logs.some((line) => line.includes("SKIP  [bridge]")), logs.join("\n"));
+});
+
+test("only memory-slug is recorded, and only for the entries declaring emits: true", async () => {
+  const repoRoot = await gitRepo();
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "over budget but not what this test checks\n");
+  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
+  gitAdd(repoRoot);
+
+  const artifactDir = path.join(repoRoot, ".git", "gate-artifacts");
+  const { context } = contextFor(repoRoot, { artifactDir });
+  await ops.run(context);
+
+  const files = await import("node:fs/promises").then((fs) => fs.readdir(artifactDir).catch(() => []));
+  assert.deepEqual(files, ["agents-md.jsonl"]);
+
+  const lines = (await readFile(path.join(artifactDir, "agents-md.jsonl"), "utf8")).trim().split("\n");
+  for (const line of lines) {
+    const record = JSON.parse(line);
+    assert.equal(record.id, "memory-slug");
+    for (const forbidden of ["severity", "score", "pass", "verdict", "level"]) {
+      assert.ok(!(forbidden in record), `a recorded observation must not carry a ${forbidden}`);
+    }
+  }
+});
+
+test("memory-slug catches a real slug on AGENTS.md and records exactly one finding", async () => {
+  const repoRoot = await gitRepo();
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n\nsee [[project_something]] for detail.\n");
+  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
+  gitAdd(repoRoot);
+
+  const artifactDir = path.join(repoRoot, ".git", "gate-artifacts");
+  const { context, logs } = contextFor(repoRoot, { artifactDir });
+  const result = await ops.run(context);
+
+  assert.equal(result.code, 1);
+  assert.ok(logs.some((line) => line.includes("FAIL  [memory-slug]") && line.includes("project_something")));
+
+  const record = JSON.parse((await readFile(path.join(artifactDir, "agents-md.jsonl"), "utf8")).trim());
+  assert.equal(record.value.findings, 1);
+});
+
+test("the token <plugin>/ reaches the skill-frontmatter entry against this real repository", async () => {
+  // Not a fixture — the ops run against the actual vibe-ops checkout, whose plugin/ subfolder is
+  // exactly the case the <plugin>/ token exists for. A regression here means every dogfooded skill
+  // path silently stops being checked, in the one repository that would never notice from its own
+  // shell gate (which resolves $PLUGIN_DIR independently).
+  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
+  const { context, logs } = contextFor(repoRoot, {}, { list: true });
+  const result = await ops.run(context);
+  assert.equal(result.code, 0);
+  const skillLine = logs.find((line) => line.includes("skill-frontmatter"));
+  assert.ok(skillLine?.includes("plugin/skills/*/SKILL.md"), logs.join("\n"));
+});

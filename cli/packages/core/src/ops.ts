@@ -1,0 +1,218 @@
+// An ops: a named composition of gates over declared paths, deciding which of them emit.
+//
+// It is a MODULE. defineOps returns the same ModulePlugin defineModule does, so dispatch, flag
+// parsing, the MCP tool schema and the config cascade learn no second concept — an ops is invoked,
+// described and exposed exactly like anything else the CLI runs.
+//
+// THE OPS OWNS EMISSION, NEVER THE GATE. The two things only the producing side can know both belong
+// to the composition: the POPULATION (how many files this entry decided were in scope) and the
+// MOMENT. A gate handed a file list cannot know either, and references/harness-pair.md's rule that
+// ZERO EXAMINED IS NOT A READING is therefore one only an ops can enforce.
+//
+// THE EMITTER IS BUILT HERE, NOT INJECTED. Emission is an ops concern and "if applicable" is decided
+// by the entries, not by the dispatch layer that happens to run them. createEmitter stays in core for
+// the same reason defineModule does — it is the layer's shared implementation, not a second owner.
+// The path it writes to is named by vibeops.config.ts, which the CLI resolves: nothing here knows it.
+//
+// OVERLAPPING OPS DOUBLE-COUNT, DELIBERATELY (RFC-0001, Q2). Two ops running the same gate over
+// intersecting paths produce the same finding twice, and that is correct: they are different signals,
+// because a signal's identity includes the population it was read over. The `ops:<id>` tag on every
+// observation is what carries that identity, and is why nothing here deduplicates.
+
+import { createEmitter } from "./emit.ts";
+import { expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+import { defineModule } from "./module.ts";
+import { loadGate } from "./gate.ts";
+import type { GateFinding, GatePlugin } from "./gate.ts";
+import type { ModulePlugin, ModuleResult } from "./module.ts";
+import type { ModuleContext } from "./context.ts";
+import path from "node:path";
+
+export interface OpsGateEntry {
+  /** A gate name, resolved by the convention in gate.ts. */
+  readonly gate: string;
+  /** Overrides the gate's `defaultPaths`. `<plugin>/` expands to the target's plugin surface. */
+  readonly paths?: readonly string[];
+  /** Whether THIS composition of this gate is worth recording. Per entry, never per gate. */
+  readonly emits?: boolean;
+  /** Passed to the gate verbatim. How one detector serves two schemas without becoming two gates. */
+  readonly options?: Readonly<Record<string, unknown>>;
+  /** Distinguishes two entries that use the same gate. Required when `emits` and the name is not bare. */
+  readonly label?: string;
+}
+
+export interface OpsDefinition {
+  readonly id: string;
+  readonly version: string;
+  readonly summary: string;
+  readonly gates: readonly OpsGateEntry[];
+}
+
+const BARE = /^[a-z][a-z0-9-]*$/;
+
+/** What an emitting entry records under. Static, because `emits` is read before anything runs. */
+function emitIdFor(entry: OpsGateEntry): string {
+  return entry.label ?? entry.gate;
+}
+
+function labelFor(entry: OpsGateEntry): string {
+  return entry.label ?? entry.gate;
+}
+
+export function defineOps(definition: OpsDefinition): ModulePlugin {
+  if (definition.gates.length === 0) {
+    throw new Error(`ops "${definition.id}" composes no gates — it would report a vacuous pass`);
+  }
+  const emits: string[] = [];
+  for (const entry of definition.gates) {
+    if (entry.emits !== true) continue;
+    if (entry.label === undefined && !BARE.test(entry.gate)) {
+      throw new Error(
+        `ops "${definition.id}" declares emits on "${entry.gate}", whose id is not knowable before it ` +
+          `loads — give the entry a label, which is what it will record under`,
+      );
+    }
+    const id = emitIdFor(entry);
+    if (emits.includes(id)) {
+      throw new Error(`ops "${definition.id}" would record two different entries under "${id}" — label one of them`);
+    }
+    emits.push(id);
+  }
+
+  return defineModule(
+    {
+      id: definition.id,
+      version: definition.version,
+      summary: definition.summary,
+      flags: [
+        { name: "list", type: "boolean", description: "Print the gates composed, and the paths each runs over" },
+        { name: "audit", type: "boolean", description: "Report exactly as a run would, and always exit 0" },
+        { name: "verbose", type: "boolean", description: "Print the full run rather than only what failed" },
+      ],
+      ...(emits.length > 0 ? { emits } : {}),
+    },
+    async (context: ModuleContext): Promise<ModuleResult> => run(definition, emits, context),
+  );
+}
+
+interface Resolved {
+  readonly entry: OpsGateEntry;
+  readonly gate: GatePlugin;
+  readonly patterns: readonly string[];
+}
+
+/**
+ * Every gate resolves before any of them runs. A composition naming a gate that does not exist is a
+ * broken composition, and it must fail as one — halfway through a run, with three gates already
+ * reported, it reads as the repository being broken instead.
+ */
+async function resolveAll(definition: OpsDefinition, repoRoot: string, pluginDir: string): Promise<Resolved[]> {
+  const resolved: Resolved[] = [];
+  for (const entry of definition.gates) {
+    const gate = await loadGate(entry.gate);
+    if (BARE.test(entry.gate) && gate.definition.id !== entry.gate) {
+      throw new Error(
+        `ops "${definition.id}" composes "${entry.gate}", which loaded a gate whose id is ` +
+          `"${gate.definition.id}" — the folder and the definition disagree`,
+      );
+    }
+    const declared = entry.paths ?? gate.definition.defaultPaths ?? ["**/*"];
+    resolved.push({
+      entry,
+      gate,
+      patterns: declared.map((pattern) => expandPluginToken(pattern, repoRoot, pluginDir)),
+    });
+  }
+  return resolved;
+}
+
+async function run(
+  definition: OpsDefinition,
+  emits: readonly string[],
+  context: ModuleContext,
+): Promise<ModuleResult> {
+  const pluginDir = resolvePluginDir(context.repoRoot);
+  const resolved = await resolveAll(definition, context.repoRoot, pluginDir);
+
+  if (context.flags["list"] === true) {
+    context.log(`composed ${resolved.length} gates:`);
+    for (const { entry, gate, patterns } of resolved) {
+      const marks = [entry.emits === true ? "emits" : undefined].filter(Boolean).join(" ");
+      context.log(`  ${labelFor(entry).padEnd(18)} ${patterns.join(" ")}${marks === "" ? "" : `  (${marks})`}`);
+      context.log(`  ${" ".repeat(18)} ${gate.definition.summary}`);
+    }
+    return { code: 0, summary: `${resolved.length} gates composed` };
+  }
+
+  // The emitter is doubly opt-in, unchanged: an entry declares `emits` AND the config names a
+  // destination. Either alone produces nothing, so an observation is never written somewhere nobody
+  // chose. Built here rather than taken from context.emit — see the header.
+  const emit =
+    emits.length > 0 && context.config.artifactDir !== undefined
+      ? createEmitter({
+          artifactDir: path.resolve(context.repoRoot, context.config.artifactDir),
+          moduleId: definition.id,
+          moduleVersion: definition.version,
+          repoRoot: context.repoRoot,
+          declared: emits,
+          now: () => new Date().toISOString(),
+        })
+      : undefined;
+
+  const files = trackedFiles(context.repoRoot);
+  const verbose = context.flags["verbose"] === true;
+  let failures = 0;
+  let warnings = 0;
+
+  for (const { entry, gate, patterns } of resolved) {
+    const label = labelFor(entry);
+    const scoped = filterByGlobs(files, patterns);
+    const outcome = await gate.run({
+      repoRoot: context.repoRoot,
+      pluginDir,
+      files: scoped,
+      options: entry.options ?? {},
+    });
+    const examined = outcome.examined ?? scoped.length;
+
+    if (outcome.skipped !== undefined) {
+      context.log(`SKIP  [${label}] ${outcome.skipped}`);
+      continue;
+    }
+
+    for (const finding of outcome.findings) {
+      const where = locate(finding);
+      if ((finding.level ?? "fail") === "warn") {
+        warnings += 1;
+        context.log(`WARN  [${finding.rule}] ${where}${finding.evidence}`);
+      } else {
+        failures += 1;
+        context.log(`FAIL  [${finding.rule}] ${where}${finding.evidence}`);
+      }
+    }
+    if (outcome.findings.length === 0 && verbose) {
+      context.log(`ok    [${label}] ${examined} examined`);
+    }
+
+    // Zero examined writes nothing at all: a record of nothing examined is indistinguishable from a
+    // record of nothing wrong, and only the second is a reading. Zero findings over a non-empty
+    // population is a perfectly good reading and is written.
+    if (emit && entry.emits === true && examined > 0) {
+      await emit({
+        id: emitIdFor(entry),
+        value: { findings: outcome.findings.length, examined },
+        tags: [`ops:${definition.id}`, ...patterns],
+      });
+    }
+  }
+
+  const summary =
+    `${resolved.length} gates, ${failures} failed` + (warnings > 0 ? `, ${warnings} warned` : "");
+  const audit = context.flags["audit"] === true;
+  return { code: audit || failures === 0 ? 0 : 1, summary, data: { failures, warnings } };
+}
+
+function locate(finding: GateFinding): string {
+  if (finding.file === undefined) return "";
+  return finding.line === undefined ? `${finding.file}: ` : `${finding.file}:${finding.line}: `;
+}

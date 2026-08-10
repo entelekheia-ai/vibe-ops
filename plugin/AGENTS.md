@@ -86,7 +86,12 @@ The three "don't do this or it breaks" invariants are in
 
 - **Fields Claude Code honors:** `name`, `description`, `model`, `effort`, `allowed-tools`,
   `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`, `shell`,
-  `when_to_use`, `paths`. `model` and `effort` are **per skill**.
+  `when_to_use`, `paths`, `hooks`. `model` and `effort` are **per skill**.
+- **`hooks:` scopes to the skill's own lifecycle** — installed only while the skill is active, gone when
+  it finishes. Combined with `paths:`, the chain costs nothing standing: `paths:` loads the skill, the
+  skill installs the hook, the hook acts, both leave together. No skill in this plugin uses it yet; see
+  [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md#specification), which
+  postponed its first use pending a sensor for a hook that lives inside a skill rather than `hooks/`.
 - **`paths:` is how a target-state skill reaches an edit it was not invoked for.** A skill carrying one
   **MUST** say near its top how to scale down to a single edit, or it teaches people to ignore it.
 - **No skill sets `disable-model-invocation`.** The flag removes a skill from the model's listing —

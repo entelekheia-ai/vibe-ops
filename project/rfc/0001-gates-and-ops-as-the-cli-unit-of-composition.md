@@ -5,7 +5,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Draft |
+| Status | Accepted |
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
 | Related | [`plugin/references/harness-pair.md`](../../plugin/references/harness-pair.md) · [`cli/AGENTS.md`](../../cli/AGENTS.md) · `eita` RFC-0001 (observations from systems eita does not run) |
@@ -52,7 +52,9 @@ cares, and the two copies would drift exactly the way two copies of anything dri
 
 ## Specification
 
-*Direction, not settled — the open questions below are load-bearing.*
+**Implemented** — `packages/core` (`defineGate`, `defineOps`), `packages/gates` (five ported detectors)
+and `packages/ops-agents-md` (the first ops), running beside the shell fragments they port. Two
+sections below diverge from the shape first drafted here; each says how and why.
 
 ### gate
 
@@ -70,6 +72,14 @@ export default defineGate({
   },
 });
 ```
+
+**Implemented as: a gate lives outside the ops that composes it**, in `packages/gates/`, one folder per
+gate — the same relationship `eita` has between a `trait` and a `profile`. An ops that owned its gates
+outright would force `memory-slug` to be copied into every ops that also needs it, and the copies would
+drift the way two copies of anything drift here (*Motivation*, "Domain modules alone do not fix it"). A
+gate does **not** have to be a standalone npm package the way an `eita` trait is — promoting one to a
+package later costs a line in the resolver, not a rewrite — but it must be resolvable independently of
+any one ops, which ruling it inside `packages/ops-agents-md/` would not have allowed.
 
 ### ops
 
@@ -95,6 +105,16 @@ know both belong to the composition: the **population** (`--examined`) and the *
 file list cannot know how many files the ops decided were in scope, and
 [`harness-pair.md`](../../plugin/references/harness-pair.md) is explicit that *zero examined is not a
 reading* — a rule the ops can enforce and the gate cannot.
+
+**Implemented as: the emitter is built by the ops, not injected by the dispatch layer.** A plain module
+gets `context.emit` from `packages/cli/src/run.ts`, which reads that module's own `emits`. An ops does
+not use that path at all — `defineOps` calls `createEmitter` itself, from `context.config.artifactDir`
+and the ids its entries declare. Emission stays doubly opt-in (an entry declares `emits: true`, the
+config names `artifactDir`), but *which* entries opt in is a composition decision, not a dispatch one.
+One consequence to flag: `run.ts` still injects `context.emit` for ordinary modules, and with
+`module-check` dropping `emits` in this same change (see *Rationale*, below), that injection point has
+no consumer left in this tree. Left as-is rather than removed — the contract is public, and a
+third-party module may still use it.
 
 ### Discovery
 
@@ -162,41 +182,43 @@ this ops, and is why emission is per-entry rather than per-ops.
 
 ## Implementation Notes
 
-Order, and each step is verifiable on its own:
+Order, and each step was verifiable on its own:
 
-1. `packages/core` gains `defineGate` and `defineOps` beside `defineModule`. An ops is a module — same
-   dispatch, same MCP exposure — so nothing in the CLI learns a second concept.
-2. `packages/ops-agents-md`: `budget`, `pairing` (new), `bridge`, `check-frontmatter`, plus `memory-slug`
-   scoped to the instruction surface. Ported out of shell; the other twelve fragments stay.
-3. `vibe-ops check` composes the ops plus the still-shell fragments, so the gate stays green throughout.
-4. `authoring-agents-md` gains the `hooks:` block and its `pairing.sh`.
+1. **Done.** `packages/core` gains `defineGate` and `defineOps` beside `defineModule`. An ops is a
+   module — same dispatch, same MCP exposure — so nothing in the CLI learns a second concept.
+2. **Done.** `packages/gates`: `budget`, `pairing` (new), `bridge`, `check-frontmatter`, `memory-slug` —
+   one folder per gate, ported out of shell. `packages/ops-agents-md` composes them over the instruction
+   surface; the other twelve fragments stay shell (Q4).
+3. **Not done.** `vibe-ops check` still runs only the seventeen shell fragments; `agents-md` is invoked
+   separately and the two are compared by hand, not merged into one aggregator yet. Deliberate — the
+   comparison is the point before either runner is trusted to replace the other.
+4. **Postponed.** `authoring-agents-md`'s `hooks:` block and its `pairing.sh`. Consequence to remember
+   when it is picked up: `sh/checks/25-hooks-registration.sh` only scans `$PLUGIN_DIR/hooks/*.sh`, so the
+   first skill-scoped hook anyone writes will have no sensor at all until that fragment also scans
+   `$PLUGIN_DIR/skills/*/hooks/*.sh`. That extension is part of the same act, not this one.
 
 **`check-frontmatter` replaces two fragments with one parameterised gate.** `40-frontmatter` (rules) and
 `45-skill-frontmatter` (skills) are the same detector against different schemas: *this markdown declares
-the frontmatter its type requires*. One gate, a `schema` argument, and a third type costs a schema rather
-than a fragment.
+the frontmatter its type requires*. One gate, an `options.schema` argument, and a third type costs a
+schema rather than a fragment. The two schemas still report under their original rule ids
+(`frontmatter`, `skill-frontmatter`) rather than a shared one — they are genuinely distinct failure
+modes (an unsurfaced rule vs. a silently-dropped skill), and keeping the ids apart is what lets the
+comparison against the shell fragments in step 3 be exact.
 
-**`skill-frontmatter` leaves the `agents-md` domain.** In this repository `skills/` is the plugin's
-product; in a consumer repository `.agents/skills/` is agent config. The same check belongs to different
-ops depending on the repo, which is precisely what ops are for.
+**`skill-frontmatter` leaves the `agents-md` domain, eventually.** In this repository `skills/` is the
+plugin's product; in a consumer repository `.agents/skills/` is agent config. `ops-agents-md` composes
+both paths for now (`<plugin>/skills/*/SKILL.md` and `.agents/skills/*/SKILL.md`) rather than waiting for
+a domain split that Q4 hasn't resolved yet.
 
-Two corrections this RFC also owes:
+Two corrections this RFC owed, both done in this change:
 
-- `plugin/AGENTS.md` lists the `SKILL.md` frontmatter fields and **omits `hooks`**. The list presents
-  itself as complete, so it is wrong. Fix it with step 4.
-- `packages/module-check` declares `emits: ["checks-run", "checks-failed"]`. Remove it; see *Rationale*.
+- `plugin/AGENTS.md` listed the `SKILL.md` frontmatter fields and omitted `hooks`. Fixed.
+- `packages/module-check` declared `emits: ["checks-run", "checks-failed"]`. Removed; see *Rationale*.
 
 ## Open Questions
 
-1. **Who declares paths — the gate, the ops, or both?** The proposal above is *gate declares a default,
-   ops overrides*, so a gate works with no configuration and can still be recombined. The alternative
-   (ops always declares) is more explicit and more verbose, and makes every ops restate globs that are
-   obvious. Not settled.
-2. **Overlapping ops double-count.** Two ops running the same gate over intersecting paths produce the
-   same finding in two populations, and the `eita` numbers inflate with no way to notice. Options: forbid
-   overlap, deduplicate by `(rule, file, line)` before emission, or accept it and make the population an
-   explicit part of the signal identity. Undecided, and it is the question most likely to be discovered
-   late and expensively.
+Q1 and Q2 are resolved by implementation, below. Q3 and Q4 remain open.
+
 3. **Does an ops declare the glob that a rule then reuses?** If an ops owns the scope, the always-on rule
    governing that scope could point at the same declaration instead of restating it — guide and sensor
    sharing one scope rather than two copies of it. Attractive and unproven; it needs a mechanism for a
@@ -204,6 +226,7 @@ Two corrections this RFC also owes:
 4. **How many ops, and named after what?** `agents-md`, `exposure`, `plugin`, `license` fall out of the
    current seventeen, but that is a classification of the checks that exist rather than of the failures
    that matter. Deriving the second from the first is how a taxonomy ends up shaped like its tooling.
+   `agents-md` answers this for one slice; the other twelve fragments still wait on it.
 
 ## Decisions Closed
 
@@ -224,6 +247,25 @@ Two corrections this RFC also owes:
   session that is not touching those files. 2026-08-10.
 - **Package naming: `packages/ops-<id>` → `@entelekheia/vibe-ops-<id>`.** Rationale: with this RFC `ops-`
   stops being decoration and becomes the artifact type, the way `trait-` is in `eita`. 2026-08-10.
+- **Q1 closed: the gate declares a default, the ops overrides.** `GateDefinition.defaultPaths` is
+  optional; `OpsGateEntry.paths` wins when present. A gate that declares no default at all falls back to
+  `["**/*"]`, which is correct for a gate like `bridge` that re-derives its own population from
+  `.claude/` regardless of what an ops hands it. 2026-08-10.
+- **Q2 closed: duplication across overlapping ops is accepted, not deduplicated.** The `ops:<id>` tag on
+  every emitted observation carries the population as part of the signal's identity, so two readings of
+  the same finding under two ops are two distinct signals, not one recorded twice. Nothing in `core`
+  deduplicates across ops, and nothing should — a consumer that wants to merge them can do so from the
+  tag, but a producer collapsing them first would throw away which composition actually saw it.
+  2026-08-10.
+- **`<plugin>/` in a declared path expands to the target's plugin surface.** `resolvePluginDir` and
+  `expandPluginToken` (`packages/core/src/files.ts`) replicate the shell runner's `$PLUGIN_DIR` rule —
+  `plugin/` when `plugin/.claude-plugin/plugin.json` exists, the repository root otherwise — so an ops
+  entry can name `<plugin>/skills/*/SKILL.md` and be correct in both layouts. Rationale: hardcoding one
+  layout for the other makes a dogfooded pair unreachable in the other, which is exactly the failure the
+  shell runner's own `$ROOT`/`$PLUGIN_DIR` split exists to prevent (`cli/AGENTS.md`). 2026-08-10.
+- **A gate lives in its own package (`packages/gates/`), never inside the ops that composes it.**
+  Rationale: `memory-slug` is one detector two different ops will eventually need; owning it inside
+  `ops-agents-md` would force a second copy the moment a second ops wants it. 2026-08-10.
 
 ## Related
 
@@ -231,5 +273,8 @@ Two corrections this RFC also owes:
   contract this RFC gives a structure to; the vocabulary boundary and the reading rules are stated there
   and are not repeated here.
 - [`cli/AGENTS.md`](../../cli/AGENTS.md) — the module contract gates and ops extend.
+- [`cli/packages/gates/README.md`](../../cli/packages/gates/README.md) — the five gates as implemented.
+- [`cli/packages/ops-agents-md/README.md`](../../cli/packages/ops-agents-md/README.md) — the first ops
+  as implemented, and its comparison table against the shell fragments it ports.
 - [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) — the `hooks:` frontmatter field
   and its lifecycle scoping.

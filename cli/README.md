@@ -22,6 +22,10 @@ vibe-ops check --list           # what would run, and the file each check comes 
 vibe-ops check --self-test      # assert the checks still fire on a deliberately broken fixture
 vibe-ops check --verbose        # the full run, not only what failed
 
+vibe-ops agents-md               # the first ops — runs beside `check`, not instead of it (RFC-0001)
+vibe-ops agents-md --list        # the gates composed, and the paths each runs over
+vibe-ops agents-md --audit       # the same report, always exit 0
+
 vibe-ops @scope/pkg --flag      # a third-party module, by package name
 vibe-ops ./path/to/module       # a module you are developing
 
@@ -84,6 +88,8 @@ behaves identically under MCP and under a terminal.
 |---|---|
 | [`@entelekheia/vibe-ops-core`](packages/core/) | The contract, the config cascade, the observation emitter |
 | [`@entelekheia/vibe-ops-cli`](packages/cli/) | The `vibe-ops` binary, dispatch, and the MCP server |
-| [`@entelekheia/vibe-ops-module-check`](packages/module-check/) | The governance gate |
+| [`@entelekheia/vibe-ops-module-check`](packages/module-check/) | The governance gate — seventeen shell fragments |
+| [`@entelekheia/vibe-ops-gates`](packages/gates/) | Detectors with no notion of scope, one per gate — what an ops composes |
+| [`@entelekheia/vibe-ops-agents-md`](packages/ops-agents-md/) | The first ops: the instruction surface, composed from `vibe-ops-gates` |
 
 Working on them: [`AGENTS.md`](AGENTS.md).

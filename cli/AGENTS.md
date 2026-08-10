@@ -10,10 +10,12 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 
 | Path | What is not obvious about it |
 |---|---|
-| [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract (`defineModule`), the `vibeops.config.ts` cascade, and the eita emission seam. Depends on nothing else here, so it builds first. |
+| [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract (`defineModule`, `defineGate`, `defineOps`), the `vibeops.config.ts` cascade, and the eita emission seam. Depends on nothing else here, so it builds first. |
 | [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, and the **stateless** MCP server. Also the programmatic API a third-party module builds against. |
 | [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. |
+| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate. Five ported from `module-check/sh/checks/` so far; the rest stay shell until an ops composes them (RFC-0001). |
+| [`packages/ops-agents-md/`](packages/ops-agents-md/) | `@entelekheia/vibe-ops-agents-md` — the first ops: composes five `packages/gates/` entries over the instruction surface. Runs **beside** the shell fragments it ports, not instead of them, until the two are shown to agree. |
 | [`test/`](test/) | The **plugin's** shell tests, not the CLI's — `measure-nudge-noise.sh` is the only instrument for what a hook cannot observe about itself: what the model did after it fired. Each package's own tests live in `packages/*/test/`. |
 
 ## The module contract
@@ -45,6 +47,32 @@ export default defineModule(
 - **Branch on `context.surface` before printing or prompting.** Under `mcp` there is no terminal, and
   writing to stdout corrupts the stdio transport. Use `context.log`, never `process.stdout`.
 - **`destructive: true`** makes the CLI confirm before running. Set it on anything not trivially undone.
+
+## Gates and ops
+
+A `check.sh` fragment fuses three things: what it detects, where it looks, and whether it records an
+observation. [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) splits
+them the way `eita` splits `trait` from `profile`. A **gate** (`defineGate`, `packages/gates/`) is a
+pure detector — it does not know which repository it is in or whether anything downstream records what
+it finds. An **ops** (`defineOps`, `packages/ops-<id>/`) is a named composition of gates over declared
+paths, and it decides which of them emit — it *is* a module, so dispatch, MCP and config learn no
+second concept.
+
+- **The ops owns emission, never the gate.** Population (`--examined`) and moment are knowable only to
+  the composition; a gate handed a file list cannot enforce "zero examined is not a reading"
+  ([`plugin/references/harness-pair.md`](../plugin/references/harness-pair.md)).
+- **The emitter is built by the ops, not injected.** `defineOps` calls `createEmitter` itself, from
+  `context.config.artifactDir` — emission is doubly opt-in the same way a plain module's is, but the
+  decision of *what* emits lives in the composition's own entries (`{ gate: "…", emits: true }`).
+- **Overlapping ops double-count, deliberately.** Two ops running the same gate over intersecting paths
+  record the same finding twice, because they are different signals — a signal's identity includes the
+  population it was read over, carried in the `ops:<id>` tag on every observation.
+- **A gate is resolved the same three ways a module is** (`packages/cli/src/resolve.ts`): a bare name
+  under `@entelekheia/vibe-ops-gates/<name>`, a scoped package verbatim, or a path. No registry.
+- **`<plugin>/` in a declared path** expands to wherever the target's plugin surface actually is —
+  `plugin/` here, the root in a flat repo — via `resolvePluginDir`/`expandPluginToken` in
+  `packages/core/src/files.ts`. Hardcoding one layout for the other makes a dogfooded pair unreachable
+  in the other, which is exactly the bug the shell runner's `$PLUGIN_DIR` already exists to avoid.
 
 ## Configuration
 

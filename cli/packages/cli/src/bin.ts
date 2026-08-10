@@ -13,7 +13,7 @@ import { loadModule } from "./resolve.ts";
 import { runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 
-const BUILTINS = ["check"] as const;
+const BUILTINS = ["check", "agents-md"] as const;
 
 function usage(): void {
   p.note(

@@ -5,3 +5,8 @@ export { loadConfig, searchPath, settingsFor } from "./config.ts";
 export type { LoadedConfig, VibeOpsConfig } from "./config.ts";
 export { createEmitter } from "./emit.ts";
 export type { Emitter, EmitterOptions, Observation } from "./emit.ts";
+export { defineGate, gateSpecifierFor, loadGate, GATE_PREFIX } from "./gate.ts";
+export type { GateDefinition, GateFinding, GateOutcome, GatePlugin, GateRunContext } from "./gate.ts";
+export { defineOps } from "./ops.ts";
+export type { OpsDefinition, OpsGateEntry } from "./ops.ts";
+export { expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
