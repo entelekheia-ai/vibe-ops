@@ -592,3 +592,6 @@ guess.
 
 - Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):
   - `git show 271ce0d0e464815f4d21c4c5b83ec905021eb1a8:project/tasks/003-the-inline-layer-gates.md`
+
+- Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):
+  - `git show 6d75400583436578443a7264e4920460092bbb18:project/tasks/004-the-governance-ops.md`

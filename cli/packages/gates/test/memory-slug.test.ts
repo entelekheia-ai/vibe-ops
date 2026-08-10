@@ -47,11 +47,16 @@ test("a clean file passes and is counted as examined", async () => {
   assert.equal(outcome.examined, 1);
 });
 
-test("a shipped template is not examined — it is written to resolve in the target repo", async () => {
+// A shipped template's population exclusion is no longer this gate's concern — the gate examines
+// whatever population it is handed, and excluding `**/templates/**` is the composing ops's job via
+// the `ignore` config key (see cli/packages/core/src/ops.ts and ops-agents-md's own test for the
+// ops-level assertion). A gate that filtered its own population by a repository-specific rule is
+// exactly the divergence project/tasks/004-the-governance-ops.md found and removed.
+test("a file under templates/ is examined like any other — the gate itself no longer filters it", async () => {
   const repoRoot = await repo();
   await mkdir(path.join(repoRoot, "skills", "demo", "templates"), { recursive: true });
   await writeFile(path.join(repoRoot, "skills", "demo", "templates", "demo.md"), "see [[project_x]]\n");
   const outcome = await memorySlug.run(ctx(repoRoot, ["skills/demo/templates/demo.md"]));
-  assert.deepEqual(outcome.findings, []);
-  assert.equal(outcome.examined, 0);
+  assert.equal(outcome.findings.length, 1);
+  assert.equal(outcome.examined, 1);
 });
