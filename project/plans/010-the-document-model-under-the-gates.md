@@ -476,3 +476,6 @@ Verified by running the CLI against this repository and against the deliberately
 
 - Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):
   - `git show 9756b5a89ddd574058c995793df581307472bbf0:project/tasks/002-the-injection-resolver.md`
+
+- Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):
+  - `git show 271ce0d0e464815f4d21c4c5b83ec905021eb1a8:project/tasks/003-the-inline-layer-gates.md`
