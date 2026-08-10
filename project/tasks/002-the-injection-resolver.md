@@ -66,6 +66,22 @@ instruction is to repeat the matrix rather than widen the existing `overrides` e
 version the matrix passes, exact, no caret. Extend the root `package.json`'s `overrides` block to also
 pin yaml's own `tree-sitter` peer resolution. Record every cell, passing and failing, in this dossier.
 
+**Measured (2026-08-10):** three-cell matrix, `@tree-sitter-grammars/tree-sitter-yaml@0.7.1` against
+`tree-sitter` `0.21.1`/`0.22.4`/`0.25.1`, callback-form parse of this repository's own
+`project/log/adding-a-second-tree-sitter-grammar-to-core.md` frontmatter (a folded multi-line
+description, a list, nested keys — not a synthetic fixture).
+
+| `tree-sitter` | root type | error count | node count | histogram vs. `0.22.4` |
+|---|---|---|---|---|
+| `0.21.1` (forced past ERESOLVE) | `stream` | 0 | 57 | identical |
+| `0.22.4` (declared floor, installs clean) | `stream` | 0 | 57 | — |
+| `0.25.1` (forced past ERESOLVE) | `stream` | 0 | 57 | identical |
+
+Same outcome as Track 1's markdown matrix: the ABI held byte-for-byte across the whole range. Pinned
+`@tree-sitter-grammars/tree-sitter-yaml` to `0.7.1` exact in `cli/packages/core/package.json`, and
+extended the root `overrides` to pin yaml's own `tree-sitter` peer to `0.25.1`, alongside markdown's
+existing entry.
+
 ### 2. Read `tree-sitter.json` in `grammars.ts`, alongside `package.json`'s array — P0
 
 **What:** `loadPackage()` in `cli/packages/core/src/grammars.ts` currently reads only `package.json`'s
@@ -151,11 +167,12 @@ bookkeeping.
 
 ```ts
 export interface Layer {
-  readonly languageId: string;          // the resolved grammar's own scope
-  readonly parentStart: number;         // byte offset within the immediate parent
+  readonly languageId: string;                        // the resolved grammar's own scope
+  readonly parentStart: number;                        // byte offset within the immediate parent
   readonly parentEnd: number;
   readonly tree: Parser.Tree;
-  readonly layers: readonly Layer[];    // this layer's own injections, recursively
+  readonly layers: readonly Layer[];                   // this layer's own injections, recursively
+  readonly uncoveredLayers: readonly UncoveredLayer[];  // this layer's own uncovered injections
 }
 export interface UncoveredLayer {
   readonly language: string;            // the captured language string, as written
@@ -165,7 +182,12 @@ export interface UncoveredLayer {
 }
 ```
 
-`Document` gains `readonly uncoveredLayers: readonly UncoveredLayer[]` alongside `layers`.
+`Document` gains `readonly uncoveredLayers: readonly UncoveredLayer[]` alongside `layers`. **Shipped shape
+differs from the design above in one field**, found necessary during implementation, not anticipated by
+it: `Layer` itself also carries `uncoveredLayers`, mirroring its own `layers`. See Surprises &
+Discoveries — without it, an uncovered language found *inside* a resolved layer (markdown's inline layer
+injects html and latex, and neither is installed here) would have nowhere to be recorded and would be
+silently dropped, which is exactly the outcome this track exists to prevent.
 
 **Why:** computed at the same point the top-level tree already is (first `.get()`), not behind a second
 on-demand cache — Track 2's whole acceptance is proving this against one fixture, and a second laziness
@@ -212,14 +234,14 @@ next addition knows to check before assuming either is universal.
 
 ## Implementation order
 
-- [ ] P0 — Matrix and pin for yaml (item 1). Record every cell, passing and failing.
-- [ ] P0 — `tree-sitter.json` support in `grammars.ts` (item 2).
-- [ ] P0 — The three-tier language resolver (item 3).
-- [ ] P0 — The injection resolver, `injections.ts` (item 4).
-- [ ] P0 — Recursion, depth bound, opaque/uncovered split (item 5).
-- [ ] P0 — `Layer`/`UncoveredLayer` wired onto `Document` (item 6).
-- [ ] P0 — `injections.test.ts`, the one-fixture sensor (item 7).
-- [ ] P1 — `cli/AGENTS.md` core row, second manifest convention (item 8).
+- [x] P0 — Matrix and pin for yaml (item 1). Record every cell, passing and failing.
+- [x] P0 — `tree-sitter.json` support in `grammars.ts` (item 2).
+- [x] P0 — The three-tier language resolver (item 3).
+- [x] P0 — The injection resolver, `injections.ts` (item 4).
+- [x] P0 — Recursion, depth bound, opaque/uncovered split (item 5).
+- [x] P0 — `Layer`/`UncoveredLayer` wired onto `Document` (item 6).
+- [x] P0 — `injections.test.ts`, the one-fixture sensor (item 7).
+- [x] P1 — `cli/AGENTS.md` core row, second manifest convention (item 8).
 - [ ] Tick Track 2 in Plan-010 and name this dossier on that line.
 
 Verification, from the npm workspace root:
@@ -265,6 +287,15 @@ work happens; reconstructed at the end it is worthless.
   Evidence: `project/log/adding-a-second-tree-sitter-grammar-to-core.md`, written at Track 1's closure,
   names `cli/packages/core/package.json` as the path where this recurs and instructs measuring rather
   than trusting an override on faith.
+
+- Observation: `Layer` needs its own `uncoveredLayers` field, not only `layers` — the design sketched in
+  item 6 gave a `Layer` no way to carry an uncovered finding discovered while recursing into it, so one
+  would be silently dropped rather than reported.
+  Evidence: markdown's inline grammar injects `html` and `latex` in its own `injections.scm`
+  (`tree-sitter-markdown-inline/queries/injections.scm`), and neither has an installed grammar here.
+  Any real markdown document with inline HTML — confirmed against the item 7 fixture's own
+  `<span>inline html</span>` — produces exactly this case one level into recursion. Corrected before
+  shipping rather than after: `Layer` now carries `uncoveredLayers` alongside `layers`, symmetrically.
 
 ## Closure
 

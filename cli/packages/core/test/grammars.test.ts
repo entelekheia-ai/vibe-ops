@@ -23,6 +23,7 @@ async function repo(): Promise<string> {
 const SNIPPETS: Readonly<Record<string, { readonly text: string; readonly rootType: string }>> = {
   "text.markdown": { text: "# Heading\n\nSome *text* with a [link](https://example.com).\n", rootType: "document" },
   "text.markdown_inline": { text: "Some *text* with a [link](https://example.com).", rootType: "inline" },
+  "source.yaml": { text: "title: fixture\ntags:\n  - one\n  - two\n", rootType: "stream" },
 };
 
 test("Load: every declared grammar parses its snippet with zero ERROR nodes", () => {

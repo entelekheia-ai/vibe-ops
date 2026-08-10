@@ -73,3 +73,14 @@ the override on faith. Repeat Track 1's method — build a small compatibility m
 grammar against the runtime versions in play, parsing a real fixture and diffing the resulting tree
 (root type, node histogram), before adding or widening an `overrides` entry. If a cell fails, that is
 the finding, not a bug in the matrix.
+
+## Confirmed (2026-08-10, Track 2)
+
+`@tree-sitter-grammars/tree-sitter-yaml@0.7.1` (peer `^0.22.4`) reproduced the exact ERESOLVE this entry
+predicted the moment it was added to `cli/packages/core/package.json` alongside markdown's `^0.21.1`.
+The matrix repeated as instructed — `tree-sitter` `0.21.1`/`0.22.4`/`0.25.1` against yaml, parsing this
+repository's own frontmatter (a folded multi-line scalar, a list, nested keys) — and found the same
+outcome as markdown's: byte-for-byte identical parse trees across the whole range (0 errors, 57 nodes,
+root `stream`, on every cell). The root `overrides` entry was extended with a second grammar pinned to
+the same `0.25.1`, alongside markdown's. See `project/tasks/002-the-injection-resolver.md`, item 1, for
+the full per-cell table before that dossier is deleted at closure.

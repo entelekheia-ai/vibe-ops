@@ -13,7 +13,8 @@
   "engines": { "node": ">=22.18" },
   "dependencies": {
     "tree-sitter": "0.25.1",
-    "@tree-sitter-grammars/tree-sitter-markdown": "0.3.2"
+    "@tree-sitter-grammars/tree-sitter-markdown": "0.3.2",
+    "@tree-sitter-grammars/tree-sitter-yaml": "0.7.1"
   },
   "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
 }

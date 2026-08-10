@@ -293,13 +293,23 @@ load-bearing for the records are on the unwatched side.
       the runtime/grammar ABI held stable across the whole `0.21`–`0.25` matrix (see the dossier), so
       "moving the pin" does not discriminate — the Load test's real coverage is the wrong-wrapper
       regression (confirmed to throw) and a runtime old enough to fail outright at install.
-- [ ] **Track 2 — The injection resolver.** Reading a grammar's own `injections.scm`, parsing each
+- [x] **Track 2 — The injection resolver.** Reading a grammar's own `injections.scm`, parsing each
       injected span with the grammar it names, mapping positions back to the host, recursing under a
       depth bound, and recording a named language with no grammar as uncovered rather than as absent. At
       the end a markdown document exposes its frontmatter as a parsed YAML layer and its inline content
       as a parsed layer, and the hand-rolled block-to-inline hand-off does not exist anywhere in the
       tree. Acceptance is a fixture whose fenced block is in a language with no installed grammar
       reporting `uncovered` for that span while the rest of the document reports normally.
+      `project/tasks/002-the-injection-resolver.md`. Shipped as designed, with two corrections made
+      during the work rather than assumed going in: positions are carried **parent-relative** (the byte
+      range within the immediate parent's own text), not eagerly resolved to a host-absolute offset —
+      cheaper to compute at each recursion level, and no consumer yet needs a host-absolute one; and a
+      `Layer` carries its own `uncoveredLayers` alongside `layers`, not only `Document` — markdown's
+      inline grammar injects `html` and `latex`, neither installed here, so an uncovered finding one
+      level into recursion needs somewhere to land other than being silently dropped. The yaml
+      compatibility matrix (`tree-sitter` `0.21.1`/`0.22.4`/`0.25.1` against
+      `@tree-sitter-grammars/tree-sitter-yaml@0.7.1`) repeated Track 1's finding: the ABI held
+      byte-for-byte across the whole range.
 - [ ] **Track 3 — The link gate, beside its fragment.** `cli/packages/gates/markdown-link/`, ported
       from `cli/packages/module-check/sh/checks/20-links.sh`, reading the model rather than the file.
       At the end both run and both report. Acceptance is the comparison from *Reading a disagreement*:
@@ -420,6 +430,20 @@ Verified by running the CLI against this repository and against the deliberately
   whether to vendor or write a grammar for any given embedded language is a decision per language.
 - **Whether the model should serve the non-markdown gates.** `bridge` and `budget` work today. The
   grammar set covers shell, JSON and TypeScript, so the capability exists; the demand does not yet.
+- **Two Track 2 findings hold beyond this repository and have no reachable destination in it.** This
+  repository's own governance describes a `project/learnings/` tier for exactly this — a toolchain fact
+  true regardless of which repository someone is in — filed by a `route-learnings` skill "never by
+  hand." Neither the directory nor that skill exists here yet, so the promotion is blocked rather than
+  forced by hand against the stated norm. What unblocks it: scaffolding `project/learnings/` and a
+  `route-learnings` skill for this repository. The two findings themselves, preserved so they are not
+  lost when this blocker clears: (1) the `tree-sitter` npm package's JS `Query` class exposes `#set!`
+  predicate results at runtime as `.setProperties`, on both the `Query` instance (per pattern index) and
+  each `QueryMatch` (when its pattern has one) — undocumented in the package's own `.d.ts`, which
+  mentions neither "predicate" nor "setProperties" nor "#set" anywhere. (2) grammar packages for
+  tree-sitter declare their manifest one of two ways — a `"tree-sitter"` array inside their own
+  `package.json` (older), or a standalone `tree-sitter.json` with a `"grammars"` array (newer,
+  schema-validated) — and a consumer reading only the first will silently resolve zero grammars for a
+  package using the second.
 - **Whether any of this is reachable from a browser.** The markdown grammar publishes no WebAssembly
   build. A missing-symbol shim was shown to load a grammar the runtime otherwise refuses, which
   suggests the obstacle is surmountable, but nothing has been built and no consumer needs it.

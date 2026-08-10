@@ -4,6 +4,14 @@
 // of something the package already states, and it is the copy that goes stale the day a grammar adds a
 // file type. See project/tasks/001-the-document-model-and-its-sensor.md, item 2, for the two traps
 // this file exists to pay for exactly once.
+//
+// Two manifest conventions coexist in the ecosystem. markdown declares its grammars inside the
+// `"tree-sitter"` array of its own `package.json` — the shape `RawTreeSitterDescriptor` below models
+// directly. yaml declares no `"tree-sitter"` key in `package.json` at all; it ships a standalone
+// `tree-sitter.json` instead (schema: tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json),
+// with its grammars under a `"grammars"` array using the same field names. Both are normalized into
+// `RawTreeSitterDescriptor` before anything downstream sees them, so nothing past `loadPackage` needs to
+// know which convention a given package used.
 
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -28,21 +36,38 @@ export interface GrammarDescriptor {
   readonly language: Parser.Language;
 }
 
-/** The shape a grammar package's `package.json` `tree-sitter` array holds, one entry per grammar. */
+/**
+ * The normalized shape of one grammar entry, whichever manifest convention supplied it. `path` is
+ * `package.json`'s own per-grammar directory name (e.g. `"tree-sitter-markdown-inline"`); `tree-sitter.json`
+ * entries carry no equivalent, and nothing downstream reads it — see the comment on `resolveLanguageObject`.
+ */
 interface RawTreeSitterDescriptor {
   readonly scope: string;
-  readonly path: string;
+  readonly path?: string;
   readonly "file-types"?: readonly string[];
   readonly "injection-regex"?: string;
   readonly injections?: string;
 }
 
+/** The shape a grammar package's own `package.json` `"tree-sitter"` array holds. */
+interface PackageJsonManifest {
+  readonly "tree-sitter"?: readonly RawTreeSitterDescriptor[];
+}
+
+/** The shape a standalone `tree-sitter.json`'s `"grammars"` array holds — same fields, `name` instead of `path`. */
+interface TreeSitterJsonManifest {
+  readonly grammars?: ReadonlyArray<Omit<RawTreeSitterDescriptor, "path"> & { readonly name: string }>;
+}
+
 /**
- * Every grammar package this workspace pulls in, by npm specifier. Adding a grammar (Track 2's yaml,
- * eventually) means adding one entry here — the resolution below already reads everything else from
- * the package itself.
+ * Every grammar package this workspace pulls in, by npm specifier. Adding a grammar (Track 2's yaml)
+ * means adding one entry here — the resolution below already reads everything else from the package
+ * itself, whichever manifest convention it uses.
  */
-const GRAMMAR_PACKAGE_NAMES: readonly string[] = ["@tree-sitter-grammars/tree-sitter-markdown"];
+const GRAMMAR_PACKAGE_NAMES: readonly string[] = [
+  "@tree-sitter-grammars/tree-sitter-markdown",
+  "@tree-sitter-grammars/tree-sitter-yaml",
+];
 
 /**
  * Which property of the package's default export holds a given descriptor's language wrapper.
@@ -59,10 +84,31 @@ function resolveLanguageObject(
 ): Parser.Language {
   if (raw.scope === "text.markdown") return moduleExport as unknown as Parser.Language;
   if (raw.scope === "text.markdown_inline") return moduleExport.inline as Parser.Language;
+  // Same trap as markdown, same fix: the module's default export is itself the wrapper `setLanguage`
+  // needs — `moduleExport.language` is the raw native object and throws on first node access (measured
+  // against tree-sitter@0.25.1: `Cannot read properties of undefined (reading '114')`).
+  if (raw.scope === "source.yaml") return moduleExport as unknown as Parser.Language;
   throw new Error(
     `grammars.ts does not know how to resolve the language object for scope "${raw.scope}" ` +
       `in ${packageName} — add a case to resolveLanguageObject`,
   );
+}
+
+/**
+ * The package's own manifest, normalized to `RawTreeSitterDescriptor[]` regardless of which convention
+ * it uses: `package.json`'s `"tree-sitter"` array first, falling back to a package-root `tree-sitter.json`'s
+ * `"grammars"` array when `package.json` carries no `"tree-sitter"` field at all (yaml's convention).
+ */
+function readManifest(packageName: string, packageRoot: string): readonly RawTreeSitterDescriptor[] {
+  const packageJson = require(`${packageName}/package.json`) as PackageJsonManifest;
+  if (packageJson["tree-sitter"] !== undefined) return packageJson["tree-sitter"];
+
+  const treeSitterJsonPath = path.join(packageRoot, "tree-sitter.json");
+  const treeSitterJson = require(treeSitterJsonPath) as TreeSitterJsonManifest;
+  if (treeSitterJson.grammars !== undefined) {
+    return treeSitterJson.grammars.map(({ name, ...rest }) => rest);
+  }
+  return [];
 }
 
 function loadPackage(packageName: string): GrammarDescriptor[] {
@@ -71,16 +117,16 @@ function loadPackage(packageName: string): GrammarDescriptor[] {
   // (measured against tree-sitter@0.25.1: `Cannot read properties of undefined (reading '91')`,
   // inside the library's own `unmarshalNode`). It is not a silent shortcut on this pinned runtime.
   const moduleExport = require(packageName) as Record<string, unknown>;
-  const manifest = require(`${packageName}/package.json`) as {
-    "tree-sitter"?: readonly RawTreeSitterDescriptor[];
-  };
-  const raw = manifest["tree-sitter"];
-  if (raw === undefined || raw.length === 0) {
-    throw new Error(`${packageName} declares no "tree-sitter" array in its package.json`);
-  }
   // `injections` in the manifest is relative to the package root, not to the descriptor's own `path`
   // subdirectory — resolved once here rather than re-derived by every caller.
   const packageRoot = path.dirname(require.resolve(`${packageName}/package.json`));
+  const raw = readManifest(packageName, packageRoot);
+  if (raw.length === 0) {
+    throw new Error(
+      `${packageName} declares no grammars in its "tree-sitter" package.json array or its ` +
+        `tree-sitter.json "grammars" array`,
+    );
+  }
   return raw.map((d) => ({
     scope: d.scope,
     fileTypes: d["file-types"] ?? [],
@@ -119,4 +165,30 @@ export function allGrammars(): readonly GrammarDescriptor[] {
 /** The grammar declared for a file extension (no leading dot). `undefined` when nothing declares it. */
 export function grammarForExtension(extension: string): GrammarDescriptor | undefined {
   return extensionMap().get(extension);
+}
+
+/**
+ * Resolves a language string captured from an injection query (`"yaml"`, `"yml"`, `"markdown_inline"`,
+ * …) to the grammar that covers it, trying three tiers in order. Each is necessary — none subsumes the
+ * others — proven by two concrete cases, not hypothesized (project/tasks/002-the-injection-resolver.md,
+ * item 3):
+ *
+ * (a) `injectionRegex` test — yaml's own `"^yaml$"` matches `"yaml"`.
+ * (b) exact membership in `fileTypes` — yaml's regex does *not* match `"yml"`, which markdown's normal
+ *     frontmatter route emits and which *is* in yaml's own `file-types`.
+ * (c) exact equality against the grammar's own runtime `.name` — the inline grammar has no file type and
+ *     no `injection-regex` of its own; it resolves only because `markdown.inline.name === "markdown_inline"`.
+ */
+export function resolveInjectionLanguage(language: string): GrammarDescriptor | undefined {
+  const grammars = allGrammars();
+  for (const d of grammars) {
+    if (d.injectionRegex !== undefined && new RegExp(d.injectionRegex).test(language)) return d;
+  }
+  for (const d of grammars) {
+    if (d.fileTypes.includes(language)) return d;
+  }
+  for (const d of grammars) {
+    if (d.language.name === language) return d;
+  }
+  return undefined;
 }
