@@ -51,11 +51,14 @@ export default defineGate(
         for (const node of layer.tree.rootNode.descendantsOfType("code_span")) {
           const inner = stripCodeSpanDelimiters(node.text);
           if (!inner.startsWith(BREADCRUMB_PREFIX)) continue;
-          // `<sha>`, `<path>`, `NNN-slug.md` — governance.md and every task/plan template teach this
-          // convention using placeholder syntax, in a real code_span, starting with "git show ". A real
-          // sha is never spelled with "<" in it, so this is the one signal that distinguishes "teaching
-          // the form" from "attempting to use it" without hand-listing every doc that does the teaching.
-          if (inner.includes("<")) continue;
+          // Three ways a code_span starting with "git show " is not an attempted reference: teaching
+          // the form with placeholder syntax (`<sha>`, `<path>` — a real sha is never spelled with "<"
+          // in it, so this is exact), and the bare prefix on its own (` `` `git show ` `` `` — this
+          // repository's task-003 closure wrote exactly that sentence, describing the fix for the
+          // placeholder case above, and it has no ":" — a real reference always has one, separating
+          // the sha from the path). Requiring a colon is what distinguishes "mentioning the command" from
+          // "using it": nothing that merely mentions "git show " goes on to write a colon right after.
+          if (inner.includes("<") || !inner.includes(":")) continue;
 
           const line = lineAt(document.text, hostStart + node.startIndex);
           const match = BREADCRUMB_PATTERN.exec(inner);

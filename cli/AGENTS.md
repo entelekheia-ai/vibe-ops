@@ -14,8 +14,9 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 | [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, the **stateless** MCP server, and the `hook` surface (`src/hook.ts`) a skill-scoped `hooks:` block calls by name. Also the programmatic API a third-party module builds against. |
 | [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. |
-| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate. Four ported from `module-check/sh/checks/`; `pairing` and `claude-md-content` are new, with no shell precedent. `markdown-link` (Plan-010 Track 3) ports `20-links.sh` onto `GateRunContext.documents` instead of a stripped-then-regexed file; `breadcrumb` (Track 4) is new, checking a `git show <sha>:<path>` reference in a `code_span` against this repository's own history — both are the first readers of `documents`. The rest stay shell until an ops composes them (RFC-0001). |
+| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate. Four ported from `module-check/sh/checks/`; `pairing` and `claude-md-content` are new, with no shell precedent. `markdown-link` (Plan-010 Track 3) ports `20-links.sh` onto `GateRunContext.documents` instead of a stripped-then-regexed file; `breadcrumb` (Track 4) is new, checking a `git show <sha>:<path>` reference in a `code_span` against this repository's own history — both are the first readers of `documents`. `record-header` (Track 5) is new: a governance record's `| Field | Value |` table — the first `pipe_table` before its first level-2 heading, never simply the first one — declares its type's required fields (`options.schema`: `adr`/`plan`/`rfc`/`task`). `fragment-parity` (Track 6) is new and holds no repository knowledge of its own: given `{runner, fragment, against}` it runs a shell fragment and the gate that ported it over the same population, and reports only a file the fragment flagged that the port did not (`port-regression`) — this is the comparison RFC-0001 asks for before a fragment is ever removed. The rest stay shell until an ops composes them. |
 | [`packages/ops-agents-md/`](packages/ops-agents-md/) | `@entelekheia/vibe-ops-agents-md` — the first ops: composes seven `packages/gates/` entries over the instruction surface, five of them ports. Runs **beside** the shell fragments it ports, not instead of them, until the two are shown to agree. |
+| [`packages/ops-governance/`](packages/ops-governance/) | `@entelekheia/vibe-ops-governance` — the second ops: four `record-header` entries (one per record type), `markdown-link`, `breadcrumb`, and `fragment-parity` comparing `20-links.sh` against `markdown-link`. |
 | [`test/`](test/) | The **plugin's** shell tests, not the CLI's — `measure-nudge-noise.sh` is the only instrument for what a hook cannot observe about itself: what the model did after it fired. Each package's own tests live in `packages/*/test/`. |
 
 ## The module contract
@@ -125,6 +126,31 @@ file's settings for every other module.
 
 `.ts` is loaded by dynamic `import()` and relies on Node's native type stripping (**≥22.18**), so a
 config file costs no dependency and no build step. `.mjs` and `.js` work identically.
+
+**An ops's own settings slice may carry `ignore` and `disabled`, typed and honored by `defineOps`
+itself — never inside a gate.** They are the population half of the split RFC-0001 draws between a gate
+(a pure detector) and an ops (a named composition): `ignore` and `disabled` change **what was read**,
+which only the composition can decide; a gate's own `options` (`schema`, `fragment`, `against`, …)
+change **how a gate judges**, and stay free-form, validated by the gate. A gate must never filter its
+own population by a repository-specific rule — that was `memory-slug`'s hardcoded `/templates/` check,
+one of three divergent copies of the same exclusion (task 004), and a fourth copy inside a different
+gate would have matched the pattern rather than fixed it.
+
+```ts
+settings: {
+  governance: {
+    ignore: { "*": ["**/templates/**"] },              // every entry in this ops
+    disabled: { "record-header-rfc": "still migrating" }, // a reason, never a boolean
+  },
+},
+```
+
+`"*"` applies to every entry in the ops; a gate's own label narrows further, additively with `"*"`,
+never replacing it. `disabled` takes a reason string — never a boolean — so a disablement is a ledger
+entry rather than a silent pass, and the disabled gate reports `SKIP` naming the reason instead of
+running at all. A run also reports `ignored` beside `examined`: a population that shrank in silence is
+indistinguishable from a clean run, and only one of the two is a reading. `SKIP` (like `ok`) prints only
+under `--verbose` — silence is the default outcome for a clean or disabled entry, matching `check.sh`.
 
 ## The eita seam
 

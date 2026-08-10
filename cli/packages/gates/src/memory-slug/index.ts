@@ -26,8 +26,6 @@ export default defineGate(
     let examined = 0;
 
     for (const file of files) {
-      // A link inside a shipped template is written to resolve in the *target* repo, not this one.
-      if (file.includes("/templates/")) continue;
       examined += 1;
 
       const content = await readFile(path.join(repoRoot, file), "utf8");

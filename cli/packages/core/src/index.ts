@@ -8,8 +8,16 @@ export type { Emitter, EmitterOptions, Observation } from "./emit.ts";
 export { defineGate, gateSpecifierFor, loadGate, GATE_PREFIX } from "./gate.ts";
 export type { GateDefinition, GateFinding, GateFix, GateOutcome, GatePlugin, GateRunContext } from "./gate.ts";
 export { defineOps } from "./ops.ts";
-export type { OpsDefinition, OpsFinding, OpsGateEntry, OpsRepair, OpsSkip } from "./ops.ts";
-export { expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+export type {
+  GovernedSettings,
+  OpsDefinition,
+  OpsFinding,
+  OpsGateEntry,
+  OpsPopulation,
+  OpsRepair,
+  OpsSkip,
+} from "./ops.ts";
+export { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
 export { allGrammars, grammarForExtension } from "./grammars.ts";
 export type { GrammarDescriptor } from "./grammars.ts";
 export { createDocumentStore } from "./document.ts";

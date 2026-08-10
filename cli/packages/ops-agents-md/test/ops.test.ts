@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import ops from "../src/index.ts";
+import { settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext } from "@entelekheia/vibe-ops-core";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
@@ -33,7 +34,7 @@ function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<strin
     flags,
     args: [],
     config,
-    settings: undefined,
+    settings: settingsFor(config, "agents-md"),
     surface: "cli",
     log: (message) => logs.push(message),
     warn: (message) => logs.push(`warning: ${message}`),
@@ -133,6 +134,51 @@ test("memory-slug catches a real slug on AGENTS.md and records exactly one findi
 
   const record = JSON.parse((await readFile(path.join(artifactDir, "agents-md.jsonl"), "utf8")).trim());
   assert.equal(record.value.findings, 1);
+});
+
+test("settings.agents-md.ignore excludes a shipped template's memory-slug link; without it, the link is a finding", async () => {
+  const repoRoot = await gitRepo();
+  // Must match one of memory-slug's own declared paths (AGENTS.md/CLAUDE.md/README.md) — a shipped
+  // template README is exactly the case that produced the 13 false findings this task fixed.
+  await mkdir(path.join(repoRoot, "skills", "demo", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "skills", "demo", "templates", "README.md"), "see [[project_x]]\n");
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
+  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
+  gitAdd(repoRoot);
+
+  const unfiltered = contextFor(repoRoot, {}, { verbose: true });
+  const unfilteredResult = await ops.run(unfiltered.context);
+  assert.equal(unfilteredResult.code, 1);
+  assert.ok(unfiltered.logs.some((line) => line.includes("FAIL  [memory-slug]") && line.includes("templates")));
+
+  const governed = contextFor(
+    repoRoot,
+    { settings: { "agents-md": { ignore: { "*": ["**/templates/**"] } } } },
+    { verbose: true },
+  );
+  const governedResult = await ops.run(governed.context);
+  assert.equal(governedResult.code, 0);
+  assert.ok(!governed.logs.some((line) => line.includes("FAIL")), governed.logs.join("\n"));
+  const okLine = governed.logs.find((line) => line.includes("ok    [memory-slug]"));
+  assert.ok(okLine?.includes("ignored"), governed.logs.join("\n"));
+});
+
+test("a gate named in settings.agents-md.disabled reports SKIP with the reason, and never runs", async () => {
+  const repoRoot = await gitRepo();
+  // Over budget — would FAIL [budget] if the gate ran at all.
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "padding line\n".repeat(200));
+  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
+  gitAdd(repoRoot);
+
+  const { context, logs } = contextFor(
+    repoRoot,
+    { settings: { "agents-md": { disabled: { budget: "budget still under review" } } } },
+    { verbose: true },
+  );
+  const result = await ops.run(context);
+  assert.equal(result.code, 0);
+  assert.ok(!logs.some((line) => line.includes("FAIL  [budget]")), logs.join("\n"));
+  assert.ok(logs.some((line) => line.includes("SKIP  [budget] budget still under review")), logs.join("\n"));
 });
 
 test("the token <plugin>/ reaches the skill-frontmatter entry against this real repository", async () => {

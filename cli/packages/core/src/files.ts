@@ -43,3 +43,9 @@ export function expandPluginToken(pattern: string, repoRoot: string, pluginDir: 
 export function filterByGlobs(files: readonly string[], patterns: readonly string[]): readonly string[] {
   return files.filter((file) => patterns.some((pattern) => path.matchesGlob(file, pattern)));
 }
+
+/** Files matching NONE of the patterns — the population contract's `ignore` side of `filterByGlobs`. */
+export function excludeByGlobs(files: readonly string[], patterns: readonly string[]): readonly string[] {
+  if (patterns.length === 0) return files;
+  return files.filter((file) => !patterns.some((pattern) => path.matchesGlob(file, pattern)));
+}

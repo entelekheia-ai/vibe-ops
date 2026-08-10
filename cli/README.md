@@ -41,6 +41,10 @@ vibe-ops agents-md --audit       # the same report, always exit 0
 vibe-ops agents-md --file AGENTS.md         # scope to one file — does not need to be tracked
 vibe-ops agents-md --fix pairing            # repair only what "pairing" can fix; bare --fix repairs all
 
+vibe-ops governance              # the second ops — adr/plan/rfc/task header tables, links, breadcrumbs
+vibe-ops governance --list       # the gates composed, and the paths each runs over
+vibe-ops governance --verbose    # the full run, not only what failed
+
 vibe-ops @scope/pkg --flag      # a third-party module, by package name
 vibe-ops ./path/to/module       # a module you are developing
 
@@ -64,14 +68,38 @@ facts and personal preferences each have a home and neither restates the other. 
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export default {
-  modules: ["check", "agents-md"],     // which modules `vibe-ops mcp` exposes
-  artifactDir: ".git/gate-artifacts",  // absent disables observation recording entirely
-  settings: {},                        // per-module, keyed by module id
+  modules: ["check", "agents-md", "governance"],  // which modules `vibe-ops mcp` exposes
+  artifactDir: ".git/gate-artifacts",             // absent disables observation recording entirely
+  settings: {},                                   // per-ops, keyed by ops id
 } satisfies VibeOpsConfig;
 ```
 
 `.ts` needs no loader and no build step — Node strips the types natively (**≥22.18**). `.mjs` and `.js`
 work the same way.
+
+### `ignore` and `disabled` — the population contract, for an ops
+
+Two keys any ops's own `settings` slice may carry, typed and honored by `defineOps` itself — never
+inside a gate. `ignore` changes **what was read**; a gate's own `options` change **how it judges**, and
+stay free-form because only the gate can validate them. Mixing the two into one gate-internal filter is
+exactly the divergence this contract replaced: `**/templates/**` used to be excluded three different
+ways (the shell runner's own file listing, a hardcoded check inside one gate, and not at all inside
+another), and the third case alone was 13 false findings the day it was measured.
+
+```ts
+settings: {
+  governance: {
+    // "*" applies to every entry in this ops; a gate's own label narrows further, additively.
+    ignore: { "*": ["**/templates/**"] },
+    // A reason, never a boolean — a disablement is a ledger entry, not a silent pass. Reports
+    // SKIP naming the reason, and is visible only under --verbose, same as any other SKIP.
+    disabled: { "record-header-rfc": "rfc records still migrating to the new header shape" },
+  },
+},
+```
+
+A run also reports `ignored` beside `examined` — a population that shrank in silence would be
+indistinguishable from a clean run, and only one of the two is a reading.
 
 ## Writing a module
 
@@ -110,5 +138,6 @@ behaves identically under MCP and under a terminal.
 | [`@entelekheia/vibe-ops-module-check`](packages/module-check/) | The governance gate — seventeen shell fragments |
 | [`@entelekheia/vibe-ops-gates`](packages/gates/) | Detectors with no notion of scope, one per gate — what an ops composes |
 | [`@entelekheia/vibe-ops-agents-md`](packages/ops-agents-md/) | The first ops: the instruction surface, composed from `vibe-ops-gates` |
+| [`@entelekheia/vibe-ops-governance`](packages/ops-governance/) | The second ops: adr/plan/rfc/task header tables, links, and archival breadcrumbs |
 
 Working on them: [`AGENTS.md`](AGENTS.md).

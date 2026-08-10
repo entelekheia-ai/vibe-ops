@@ -16,7 +16,7 @@ import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook } from "./hook.ts";
 
-const BUILTINS = ["check", "agents-md"] as const;
+const BUILTINS = ["check", "agents-md", "governance"] as const;
 
 function usage(): void {
   p.note(

@@ -18,9 +18,19 @@
 // intersecting paths produce the same finding twice, and that is correct: they are different signals,
 // because a signal's identity includes the population it was read over. The `ops:<id>` tag on every
 // observation is what carries that identity, and is why nothing here deduplicates.
+//
+// POPULATION VS BEHAVIOUR, AS TWO DIFFERENT SETTINGS SHAPES. `ignore` and `disabled` (below) change
+// WHAT WAS READ and are therefore typed and owned here, declared per repository under
+// `settings.<ops id>` in vibeops.config.ts; `options` on an OpsGateEntry changes HOW A GATE JUDGES and
+// stays free-form, validated by the gate itself. Before this existed, the one population exclusion this
+// repository needed (`**/templates/**`, a template's links resolve in the *target* repo, not this one)
+// existed as three divergent copies — the shell runner's own `tracked_md()`, a hardcoded filter inside
+// `memory-slug`, and no filter at all in `markdown-link`, which is why an unfiltered run of the ops
+// reported 13 false findings the day this was measured. A gate must never filter its own population by
+// a repository-specific rule; that rule belongs here, where every entry in an ops can share it.
 
 import { createEmitter } from "./emit.ts";
-import { expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+import { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
 import { createDocumentStore } from "./document.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
@@ -56,6 +66,24 @@ export interface OpsFinding {
 export interface OpsSkip {
   readonly gate: string;
   readonly reason: string;
+}
+
+/** How many files an entry's population held, and how many `ignore` removed from it before the gate ran. */
+export interface OpsPopulation {
+  readonly gate: string;
+  readonly examined: number;
+  readonly ignored: number;
+}
+
+/**
+ * The population contract: `settings.<ops id>` in vibeops.config.ts, read by every entry in this ops.
+ * `"*"` applies to every entry; a gate's own label narrows further, additively with `"*"`, never
+ * replacing it. Neither key is validated by a gate — see the header comment.
+ */
+export interface GovernedSettings {
+  readonly ignore?: Readonly<Record<string, readonly string[]>>;
+  /** A reason a gate does not run at all here, never a boolean — a disablement is a ledger entry. */
+  readonly disabled?: Readonly<Record<string, string>>;
 }
 
 /** One repair, as the caller receives it — which entry made it, and what it did. */
@@ -253,17 +281,32 @@ async function run(
   const verbose = context.flags["verbose"] === true;
   const cli = context.surface === "cli";
   const fixSpec = fixSpecFrom(context.flags["fix"], resolved, definition.id);
+  const governed = context.settings as GovernedSettings | undefined;
   // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so
   // a report that lives only in context.log arrives there as a count with nothing behind it.
   const findings: OpsFinding[] = [];
   const skipped: OpsSkip[] = [];
   const repaired: OpsRepair[] = [];
+  const population: OpsPopulation[] = [];
   let failures = 0;
   let warnings = 0;
 
   for (const { entry, gate, patterns } of resolved) {
     const label = labelFor(entry);
-    const scoped = filterByGlobs(files, patterns);
+
+    // `disabled` is checked before the gate ever runs — the ledger entry this is meant to be would be
+    // pointless if the gate ran anyway and its findings were merely hidden afterward.
+    const disabledReason = governed?.disabled?.[label];
+    if (disabledReason !== undefined) {
+      skipped.push({ gate: label, reason: disabledReason });
+      if (cli && verbose) context.log(`SKIP  [${label}] ${disabledReason}`);
+      continue;
+    }
+
+    const declared = filterByGlobs(files, patterns);
+    const ignorePatterns = [...(governed?.ignore?.["*"] ?? []), ...(governed?.ignore?.[label] ?? [])];
+    const scoped = excludeByGlobs(declared, ignorePatterns);
+    const ignoredCount = declared.length - scoped.length;
     const gateContext = {
       repoRoot: context.repoRoot,
       pluginDir,
@@ -296,9 +339,11 @@ async function run(
 
     if (outcome.skipped !== undefined) {
       skipped.push({ gate: label, reason: outcome.skipped });
-      if (cli) context.log(`SKIP  [${label}] ${outcome.skipped}`);
+      if (cli && verbose) context.log(`SKIP  [${label}] ${outcome.skipped}`);
       continue;
     }
+
+    population.push({ gate: label, examined, ignored: ignoredCount });
 
     for (const finding of outcome.findings) {
       const level = finding.level ?? "fail";
@@ -315,7 +360,8 @@ async function run(
       if (cli) context.log(`${level === "warn" ? "WARN" : "FAIL"}  [${finding.rule}] ${locate(finding)}${finding.evidence}`);
     }
     if (cli && outcome.findings.length === 0 && verbose) {
-      context.log(`ok    [${label}] ${examined} examined`);
+      const ignoredSuffix = ignoredCount > 0 ? `, ${ignoredCount} ignored` : "";
+      context.log(`ok    [${label}] ${examined} examined${ignoredSuffix}`);
     }
 
     // Zero examined writes nothing at all: a record of nothing examined is indistinguishable from a
@@ -336,8 +382,9 @@ async function run(
     (repaired.length > 0 ? `, ${repaired.length} repaired` : "");
   const audit = context.flags["audit"] === true;
   // No counts: the arrays carry them, and a count beside the array it summarises is a second thing
-  // to keep in step with the first.
-  return { code: audit || failures === 0 ? 0 : 1, summary, data: { findings, skipped, repaired } };
+  // to keep in step with the first. `population` is the exception the header comment explains: a
+  // population that shrank in silence is indistinguishable from a clean run, and only one of them is.
+  return { code: audit || failures === 0 ? 0 : 1, summary, data: { findings, skipped, repaired, population } };
 }
 
 function locate(finding: GateFinding): string {

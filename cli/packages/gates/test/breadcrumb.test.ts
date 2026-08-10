@@ -80,6 +80,13 @@ test("a documentation placeholder (git show <sha>:<path>) is not flagged malform
   assert.deepEqual(outcome.findings, []);
 });
 
+test("the bare prefix, with no colon and no sha, is not flagged malformed — it mentions the command, it does not use it", async () => {
+  const { repoRoot } = await gitRepoWithOneCommit();
+  await writeFile(path.join(repoRoot, "f.md"), "the fix worked by requiring `git show ` to be followed by a colon.\n");
+  const outcome = await breadcrumb.run(ctx(repoRoot, ["f.md"]));
+  assert.deepEqual(outcome.findings, []);
+});
+
 test("a code span with no 'git show ' prefix is not a breadcrumb and produces no finding", async () => {
   const { repoRoot } = await gitRepoWithOneCommit();
   await writeFile(path.join(repoRoot, "f.md"), "Run `npm test` first.\n");
