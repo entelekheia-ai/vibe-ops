@@ -26,6 +26,7 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the deterministic hal
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement. |
 | [`new`](skills/new/SKILL.md) | Creates one governance record of any of the four kinds, using the *target repo's* own template and numbering. The body holds only what all four share; what diverges lives in [`references/records/<type>.md`](references/records/) and is delivered by the resolver, so only the matching one is ever read. |
 | [`close`](skills/close/SKILL.md) | Closes the loop for a task or a plan. A task dossier is distilled and deleted; a plan's file **is not deleted** — retrospective, demotion check, issue closed, file kept. |
+| [`new-log`](skills/new-log/SKILL.md) | Writes one `project/log/` entry: a trap, addressed by the path where it recurs. Separate from `/new` because a log is **not numbered** and so never touches the resolver, and path-scoped because its normal caller is `close`, not a person. |
 | [`migrate`](skills/migrate/SKILL.md) | Brings artifacts up to the current template, reading the version stamp. Per-jump detail lives in [`migrations/`](skills/migrate/migrations/), never in the SKILL body; a jump with no note stops the run instead of being invented. |
 | [`new-migration`](skills/new-migration/SKILL.md) | The other half of `migrate`: moves a template's version and writes its note, as one act. Path-scoped to `templates/*.md`, so it loads when the debt is created. |
 

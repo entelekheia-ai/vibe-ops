@@ -77,24 +77,42 @@ template's own comment. Closure does not re-open that question.
 This step captures a *learning* — the non-obvious fact discovered while doing the work, which has no home
 in any other artifact and evaporates when the record closes.
 
-**Input:** every entry under `Surprises & Discoveries` — for a task, in the source doc if it is a plan, and
-in the dossier itself; for a plan, its own section. If there are no entries and the work genuinely
-surprised no one, say so and move on; an empty routing step is a legitimate outcome, a skipped one is not.
+**Input:** every entry under `Surprises & Discoveries` **in the dossier**. From `task@0.2` that is the only
+place they live — a plan carries no such section, because a permanent file cannot discharge what is written
+into it. Closing a **plan** therefore routes nothing: its `Decision Log` is design and stays with the plan.
+If there are no entries and the work genuinely surprised no one, say so and move on; an empty routing step
+is a legitimate outcome, a skipped one is not.
 
-**Per entry, apply the promotion test** in
+Routing runs in two passes: **filter, then place.** They answer different questions and neither replaces
+the other.
+
+**Pass 1 — the filter.** Questions 1–3 of the promotion test in
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test).
-Four questions, in order — the first three can eliminate the entry, the fourth routes what survives:
+Any one of them can eliminate the entry:
 
 1. **Recurrence** — would it burn a fresh agent more than once?
 2. **Non-discoverability** — would a competent agent reading the code find it in a few minutes?
 3. **Not already enforced** — does a test, type, lint rule or hook already make the mistake impossible? If
    one *could*, **write the guard, not the prose.**
-4. **Blast radius** — where it lands, by what the fact is
-   ([the routing table](../../references/instruction-surfaces.md#where-each-fact-goes)).
 
 Do not restate the questions' reasoning here or in the repo you are closing work in — read the reference.
-An entry that fails 1 or 2 is not discarded: it stays in `project/log/`, or — for a plan — in the plan file
-itself, which exists for the rich context of one unit of work whether or not a decision came out of it.
+
+**An entry that fails the filter is dropped, deliberately and out loud.** It does not fall through to
+`project/log/`: that tier is a destination reached on its own merits, never the overflow bucket for
+rejected candidates. Filing rejects one tier down is exactly what carried `project/learnings/` past its
+budget, and it is why the tier below is the one that rots.
+
+**Pass 2 — place what survived**, by what the fact *is*
+([the routing table](../../references/instruction-surfaces.md#where-each-fact-goes)):
+
+1. **Does it hold beyond this repository?** → `project/learnings/`.
+2. **Can you name the file, folder or package where someone meets it again?** → `project/log/`, and that
+   answer **is** the entry's `path:` / `relatedTo:`. If you cannot name one, it does not go here.
+3. **Is it a prescription for how an existing skill should behave?** → make the edit to that `SKILL.md`,
+   then record the entry as discharged with a pointer to it. A prescription filed as prose becomes a
+   second copy of an instruction, and the copy that runs is the one in the skill.
+4. **None of these?** → dropped. A finding too large to have a path is usually a decision (an ADR) rather
+   than a trap.
 
 **A promotion can be blocked.** If the right surface cannot receive it yet — the guard exists but is not
 reachable from where the prose lives, the rule belongs to a repository you are not in — **record the
