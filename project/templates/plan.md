@@ -13,18 +13,26 @@
  A plan answers "how do we build X?". An RFC asks "should we, and how?"; a task dossier is ephemeral.
  A plan is PERMANENT: it stays as the design record after the work ships.
 
- A plan is a LIVING DOCUMENT. The four sections below the divider are not written at the end — they are
- maintained while the work happens, and a plan whose Progress does not match reality is a bug.
+ A plan is an EPIC, not a work log. It carries the design and the decisions; the doing — steps, attempts,
+ dead ends, what surprised you — belongs in the task dossier each track spawns. A task is deleted at
+ closure, so a note written there is discharged by construction; a plan is permanent, so a note written
+ here stays pending forever. That asymmetry is the whole reason for the split.
 
- Write PROSE. Prefer sentences over bullet lists in the narrative sections; checklists belong in Progress
- and nowhere else. (This is the deliberate inverse of AGENTS.md, which is a map and not a narrative.)
+ A plan is a LIVING DOCUMENT. The two sections below the divider are not written at the end — they are
+ maintained while the work happens.
+
+ Write PROSE. Prefer sentences over bullet lists in the narrative sections; the only checklist is the
+ track list. (This is the deliberate inverse of AGENTS.md, which is a map and not a narrative.)
 
  Write SELF-CONTAINED. Assume a reader who has only the current working tree and this one file: no memory
  of prior plans, no other context. Name files by full path. Define any non-obvious term where you first
  use it. Never write "as decided previously" or "see the architecture doc" — say the thing here.
 
- Delete these comments before committing.
+ Delete these comments before committing — except the template-version line below, which stays.
 -->
+
+<!-- vibe-ops:template plan@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
+     against an older template. Removing it makes this file invisible to migration. -->
 
 # Plan-NNN: Title
 
@@ -72,9 +80,21 @@
 
 ## Tracks
 
-<!-- The work, broken into independently verifiable units. Introduce each with a short paragraph: its
-     scope, what will exist at the end that did not exist before, and the acceptance you expect to
-     observe. A track is a story — goal, work, result, proof — not a bureaucratic heading. -->
+<!-- The work, broken into independently verifiable units, and the plan's ONLY checklist.
+
+     ONE CHECKBOX PER TRACK, AND NO FINER. Per-step progress belongs in the task dossier that track
+     spawns; a plan tracking individual steps has stopped being an epic and become a work log. If you
+     find yourself wanting a sub-checkbox here, that is the signal to open a task.
+
+     Introduce each track with a short paragraph: its scope, what will exist at the end that did not
+     exist before, and the acceptance you expect to observe. A track is a story — goal, work, result,
+     proof — not a bureaucratic heading. Name the task dossier once it exists. -->
+
+- [ ] **Track 1 — Title.** <!-- scope; what exists at the end; the acceptance. Task: tasks/NNN-slug.md -->
+- [ ] **Track 2 — Title.** <!-- … -->
+- [ ] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
+      issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
+      track list that is otherwise complete but has this box open is not finished.
 
 ## Success criteria
 
@@ -84,31 +104,12 @@
 
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
-## Progress
-
-<!-- The only section where checklists are mandatory. Record EVERY stopping point, even if that means
-     splitting a partially finished item into what is done and what remains. This must always reflect
-     the actual current state of the work. Timestamps make the rate of progress visible. -->
-
-- [ ] Example step.
-- [ ] Example partially completed step (done: X; remaining: Y).
-- [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
-      check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
-      actually closed; a Progress list that is otherwise complete but has this box open is not finished.
-
-## Surprises & Discoveries
-
-<!-- Unexpected behavior, bugs, wrong assumptions, or insights found while implementing — with concise
-     evidence. This is the section that feeds the repo's durable knowledge at closure; an empty one on a
-     finished plan almost always means it was not kept up, not that nothing surprised anyone. -->
-
-- Observation: …
-  Evidence: …
-
 ## Decision Log
 
-<!-- Every decision made while working the plan, including the ones that seemed small. If a decision is
-     hard to reverse, also write an ADR and link it here. -->
+<!-- Every decision made while working the plan, including the ones that seemed small — and ONLY
+     decisions. A decision changes the design; anything that merely records what happened while doing
+     the work goes to the task dossier instead. If a decision is hard to reverse, also write an ADR and
+     link it here. -->
 
 - Decision: …
   Rationale: …

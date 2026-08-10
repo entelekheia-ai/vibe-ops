@@ -11,8 +11,12 @@
 <!--
  RFC TEMPLATE — copy to rfc/<NNNN>-<kebab-name>.md and fill in.
  An RFC answers "should we do X, and how?". It requires ratification (see rfc/AGENTS.md).
- Delete these HTML comments before committing. Keep the section order.
+ Delete these HTML comments before committing — except the template-version line below. Keep the section
+ order.
 -->
+
+<!-- vibe-ops:template rfc@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
+     against an older template. Removing it makes this file invisible to migration. -->
 
 # RFC-NNNN: Title
 

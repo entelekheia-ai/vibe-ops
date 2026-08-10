@@ -39,13 +39,26 @@ Resolved by what the fact *is*, not by who wrote it or when:
 | Scoped to a path or file type | path-scoped rule (`paths: ["glob"]`) | Loads only when relevant, keeping the always-on block small |
 | "Do this and it breaks" | always-on rule, one topic per file | Named by filename, individually removable |
 | "This is how the repo is shaped" | `AGENTS.md` | It is the map, and the map is what a newcomer reads first |
+| "We tried this and it failed" — and you can name the file, folder or package where someone meets it again | `project/log/`, with that answer as its `path:` / `relatedTo:` | A trap is past-tense and never becomes false; it retires when the path it warns about is gone |
 | "How to do X" | a skill | Needed occasionally; permanent context is the wrong price |
+| **A prescription for how an existing skill should behave** | an edit to that `SKILL.md`, and the originating entry marked discharged with a pointer to it | The prescription is the change; leaving it as prose means the same instruction is now written twice and only one of them runs |
 | Hard-to-reverse choice already made | an ADR | Not an instruction at all — a record |
 | True in *any* repository | the maintainer's own notes | Not repository knowledge; writing it here means writing it again in the next repo |
 
 Rows three and four **load identically**. The split between them is organizational, not a difference in
 compliance — it makes the file a maintainer looks in predictable. Claiming it raises adherence would be
 false.
+
+**The log row is the one with a field, and the field is the admission test.** If you cannot name the path
+or the package, the fact has no locatable place to recur, and it is not a log entry — it is either a
+decision (an ADR) or nothing. That also gives the tier its only retirement detector: a `path:` that no
+longer exists on disk marks the entry as a candidate for deletion.
+
+**The prescription row exists because the alternative is silent duplication.** A finding that says *"this
+skill should ask a fifth question"* is not knowledge to file — it is an edit to make. Filed as prose it
+becomes a second copy of an instruction, and the copy that runs is the one in the `SKILL.md`. Once the edit
+lands, the entry that prescribed it is **discharged**: kept as the record that the change happened, marked
+so nobody reads it as open work.
 
 Never put the same fact on two of these surfaces. Both load anyway, so it is pure duplication with a drift
 surface attached.

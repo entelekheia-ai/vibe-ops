@@ -395,6 +395,21 @@ installed copy once a version is cut.
 
 ## Decision Log
 
+- Decision: the plan template dropped `Progress` and `Surprises & Discoveries` (now `plan@0.2`), and this
+  hook was **deliberately left broken** rather than updated in the same pass.
+  Rationale: the maintainer's call was to fix the source first and let the downstream break, on the
+  argument that an organised source repairs the rest more cheaply than keeping every consumer in step
+  during the change. So the injected text still names four living sections where the template now has two
+  (`Decision Log`, `Outcomes & Retrospective`), and repairing it belongs to this plan.
+  The substantive half, which is this plan's subject rather than a side effect: **the hook offers exactly
+  one destination, and that is half of a routing decision.** `rg -i task` over the whole hook returns only
+  two comments — the task dossier is never named. Measured across the workspace root on the same day:
+  46 entries in one plan's `Surprises` against **five across fourteen task dossiers**, eleven of which hold
+  zero. The hook is not misbehaving; it is doing what it says, and what it says sends the doing-notes to
+  the permanent file. Whatever this plan does about volume, the destination list is the part that changes
+  where the writing lands.
+  Date / Author: 2026-08-07 / Danilo Borges
+
 - Decision: reverse [Plan-006](006-plan-progress-nudge-and-state-cleanup.md)'s Goal 1 — a declined firing
   produces no output to the user.
   Rationale: Goal 1 required "an explicit statement that there was nothing worth recording". That

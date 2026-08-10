@@ -113,6 +113,8 @@ which loads on its own. Not repeated here.
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement (CI, or an opt-in local hook). |
 | [`new`](skills/new/SKILL.md) | Creates one governance record of any of the four kinds, using the *target repo's* own template and numbering. The body holds only what all four share; what diverges lives in [`references/records/<type>.md`](references/records/) and is delivered by the resolver, so only the one matching the argument is ever read. |
 | [`close`](skills/close/SKILL.md) | Closes the loop for a task or a plan: write back, propagate to living docs, route the learnings. A task dossier is distilled and deleted; a plan's file **is not deleted** — retrospective against the goals, the demotion check, issue closed, file kept. |
+| [`migrate`](skills/migrate/SKILL.md) | Brings artifacts written against an older template up to the current one, per artifact rather than per plugin — reads the `vibe-ops:template <type>@<version>` stamp each template writes above the H1. Per-jump detail lives in [`migrations/<type>-<from>-to-<to>.md`](skills/migrate/migrations/), never in the SKILL body; a jump with no note stops the run instead of being invented. |
+| [`new-migration`](skills/new-migration/SKILL.md) | The other half of `migrate`: moves a template's version and writes the note that comes with it, as one act. Path-scoped to `project/templates/*.md`, so it loads at the moment the debt is created. Its two hard rules are what `migrate` depends on — a dropped section must name a destination, and every step is classified mechanical or needs-a-decision. |
 
 ## Source of truth
 

@@ -13,8 +13,16 @@
  A dossier is the detailed WORKING LOG for one issue, for work already decided (see the project/**
  governance rule). If the design is still open, write an RFC first. The dossier is EPHEMERAL: committed
  live, then closed via /vibe-ops:close task (write-back to the source doc, then distill + delete).
- Delete these comments before committing.
+
+ THIS FILE IS WHERE THE DOING IS RECORDED — every attempt, dead end, wrong assumption and surprise. Not
+ the plan. The dossier is deleted at closure, so what is written here is routed out by construction; the
+ plan is permanent, so anything written there stays pending forever.
+
+ Delete these comments before committing — except the template-version line below, which stays.
 -->
+
+<!-- vibe-ops:template task@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
+     against an older template. Removing it makes this file invisible to migration. -->
 
 # Task: Title
 
@@ -24,6 +32,7 @@
 | Created | YYYY-MM-DD |
 | Author | Your Name |
 | Issue | <!-- <repo-url>/issues/NNN, or "pending" until opened --> |
+| Plan | <!-- plans/NNN-slug.md and the track this dossier serves, or remove this row --> |
 
 <!-- Status lifecycle: Planned → In Progress → Done → (dossier removed; git history is the archive) -->
 
@@ -48,20 +57,35 @@
 
 ## Implementation order
 
-```
-P0:  …
-P1:  …
-```
+<!-- The step-level checklist — this is the only place in the governance set where per-step progress
+     belongs. Record EVERY stopping point, splitting a partially finished item into what is done and what
+     remains rather than leaving it ambiguous. This must always reflect the actual current state.
+
+     A plan's track list has one box for this whole dossier; the detail lives here and dies here. -->
+
+- [ ] P0 — …
+- [ ] P0 — … (done: X; remaining: Y)
+- [ ] P1 — …
 
 ## Surprises & Discoveries
 
-<!-- Optional, but fill it WHILE the work happens — reconstructed from memory at the end it is worthless.
-     One entry per non-obvious fact the work turned up; closure routes each one somewhere durable instead
-     of deleting it with this file. If the task came from a plan, keep the entries in the plan's own
-     section instead of duplicating them here.
+<!-- Fill it WHILE the work happens — reconstructed from memory at the end it is worthless. One entry per
+     non-obvious fact the work turned up. THIS is the home for them: a surprise found while doing the work
+     belongs here even when the task came from a plan, because closure routes each entry somewhere durable
+     and this file is then deleted. Only a decision that changes the DESIGN goes up to the plan.
+
+     At closure each entry is routed by three questions, in order:
+       1. Does it hold beyond this repository?  → project/learnings/
+       2. Can you name the file, folder or package where someone meets it again?
+          → project/log/, and that answer IS the entry's `path:` / `relatedTo:` field
+       3. Neither?  → dropped. Too large to have a path at all usually means it was a decision (an ADR)
+          rather than a trap.
 
      Observation: <the non-obvious fact>
      Evidence: <what proves it — the error, the measurement, the doc that says so> -->
+
+- Observation: …
+  Evidence: …
 
 ## Closure
 
