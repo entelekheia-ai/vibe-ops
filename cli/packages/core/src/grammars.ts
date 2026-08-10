@@ -14,10 +14,18 @@
 // know which convention a given package used.
 
 import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import type Parser from "tree-sitter";
 
 const require = createRequire(import.meta.url);
+
+// One level up from src/ (or dist/ — tsc preserves the depth), so this resolves identically whether
+// running from a checkout or from a built package, as long as `queries/` ships beside `dist/` — see
+// the `files` guard in loadPackage below.
+const CORE_PACKAGE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const SUPPLEMENTAL_INJECTIONS_DIR = path.join(CORE_PACKAGE_ROOT, "queries", "injections");
 
 /** One grammar within a package. A package may ship more than one — markdown ships two. */
 export interface GrammarDescriptor {
@@ -32,6 +40,12 @@ export interface GrammarDescriptor {
    * grammar.
    */
   readonly injectionsPath?: string;
+  /**
+   * Absolute path to this workspace's own supplement to the grammar's `injections.scm`, when one exists
+   * at `queries/injections/<scope>.scm`. Additive only — see `SUPPLEMENTAL_SCOPES` below for why a scope
+   * must be declared there to get one loaded, and `injections.ts` for how the two queries combine.
+   */
+  readonly supplementalInjectionsPath?: string;
   /** The module wrapper `setLanguage` expects — never the raw `.language` object, see the trap below. */
   readonly language: Parser.Language;
 }
@@ -68,6 +82,15 @@ const GRAMMAR_PACKAGE_NAMES: readonly string[] = [
   "@tree-sitter-grammars/tree-sitter-markdown",
   "@tree-sitter-grammars/tree-sitter-yaml",
 ];
+
+/**
+ * Grammar scopes this workspace maintains a supplement for. A scope must be listed here to get one
+ * loaded — not inferred by scanning `queries/injections/` — so that the two failure modes below are
+ * distinguishable rather than both reading as "no supplement": a listed scope with no matching grammar
+ * (a typo, or the grammar was removed) and a listed scope whose file is missing (the packaging trap —
+ * `queries/` not shipped in `files`). Both throw at load time; see `attachSupplementalInjections`.
+ */
+const SUPPLEMENTAL_SCOPES: readonly string[] = ["text.markdown"];
 
 /**
  * Which property of the package's default export holds a given descriptor's language wrapper.
@@ -136,6 +159,33 @@ function loadPackage(packageName: string): GrammarDescriptor[] {
   }));
 }
 
+/**
+ * Attaches `supplementalInjectionsPath` to the descriptor for each `SUPPLEMENTAL_SCOPES` entry, failing
+ * loudly rather than leaving a supplement to silently match nothing — the failure mode this mechanism
+ * exists to remove (see the field's own comment on `GrammarDescriptor`).
+ */
+function attachSupplementalInjections(grammars: readonly GrammarDescriptor[]): GrammarDescriptor[] {
+  const result = [...grammars];
+  for (const scope of SUPPLEMENTAL_SCOPES) {
+    const index = result.findIndex((d) => d.scope === scope);
+    if (index === -1) {
+      throw new Error(
+        `SUPPLEMENTAL_SCOPES names "${scope}", but no registered grammar declares that scope — ` +
+          `it would silently never be attached`,
+      );
+    }
+    const supplementalInjectionsPath = path.join(SUPPLEMENTAL_INJECTIONS_DIR, `${scope}.scm`);
+    if (!existsSync(supplementalInjectionsPath)) {
+      throw new Error(
+        `SUPPLEMENTAL_SCOPES names "${scope}", but ${supplementalInjectionsPath} does not exist — ` +
+          `either the file was never written or "queries" is missing from this package's "files"`,
+      );
+    }
+    result[index] = { ...result[index]!, supplementalInjectionsPath };
+  }
+  return result;
+}
+
 // Built on first use, not at import time: requiring a grammar package loads its native binding, and a
 // `--list` or `--help` run should not pay for that. The same laziness `DocumentStore` applies to
 // parsing a file applies here to loading a language at all.
@@ -143,7 +193,7 @@ let cachedRegistry: readonly GrammarDescriptor[] | undefined;
 
 function registry(): readonly GrammarDescriptor[] {
   if (cachedRegistry === undefined) {
-    cachedRegistry = GRAMMAR_PACKAGE_NAMES.flatMap(loadPackage);
+    cachedRegistry = attachSupplementalInjections(GRAMMAR_PACKAGE_NAMES.flatMap(loadPackage));
   }
   return cachedRegistry;
 }

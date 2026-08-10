@@ -5,7 +5,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "files": ["dist"],
+  "files": ["dist", "queries"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"

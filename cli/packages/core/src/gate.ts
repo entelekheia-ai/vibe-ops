@@ -45,7 +45,8 @@ export interface GateRunContext {
    * The parsed document behind any file in `files`, built once per run. Required rather than optional
    * so a gate reads structure without a branch for "nobody handed me any" — the store is lazy, so
    * building it costs nothing on a run that never calls `.get()` (`--list`, `--help`). See
-   * `document.ts`; no gate in this track reads it yet.
+   * `document.ts`. `gates/markdown-link` and `gates/breadcrumb` are its first two readers — both walk
+   * `document.layers` via `walkLayersWithHostPositions` rather than opening the file a second time.
    */
   readonly documents: DocumentStore;
 }

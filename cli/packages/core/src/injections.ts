@@ -17,6 +17,13 @@ export interface Layer {
   readonly parentStart: number;
   readonly parentEnd: number;
   readonly tree: Parser.Tree;
+  /**
+   * Whether this layer came from the grammar's own `injections.scm` or from this workspace's supplement
+   * to it (`queries/injections/<scope>.scm`, see `grammars.ts`). A gate wants one walk over every layer
+   * regardless of origin; this is the field that answers "what did the supplement add?" without a
+   * second, parallel array.
+   */
+  readonly origin: "declared" | "supplemental";
   /** This layer's own injections, recursed into. */
   readonly layers: readonly Layer[];
   /**
@@ -52,22 +59,45 @@ const EMPTY_RESULT: LayerResult = { layers: [], uncoveredLayers: [] };
 // unbounded grammar set is not guaranteed acyclic.
 const MAX_INJECTION_DEPTH = 8;
 
+type QueryOrigin = "declared" | "supplemental";
+
 const injectionQueryCache = new Map<string, Parser.Query>();
 
-function injectionQueryFor(grammar: GrammarDescriptor): Parser.Query | undefined {
-  if (grammar.injectionsPath === undefined) return undefined;
-  const cached = injectionQueryCache.get(grammar.injectionsPath);
+function loadQuery(queryPath: string, language: Parser.Language): Parser.Query {
+  const cached = injectionQueryCache.get(queryPath);
   if (cached !== undefined) return cached;
-  const source = readFileSync(grammar.injectionsPath, "utf8");
-  const query = new Parser.Query(grammar.language, source);
-  injectionQueryCache.set(grammar.injectionsPath, query);
+  const source = readFileSync(queryPath, "utf8");
+  const query = new Parser.Query(language, source);
+  injectionQueryCache.set(queryPath, query);
   return query;
+}
+
+/**
+ * Both of a grammar's injection queries, declared and supplemental, run and concatenated identically —
+ * no branch here on which one found a match. A grammar with no supplement for its scope simply has one
+ * entry, the same as before this mechanism existed.
+ */
+function injectionQueriesFor(
+  grammar: GrammarDescriptor,
+): ReadonlyArray<{ readonly query: Parser.Query; readonly origin: QueryOrigin }> {
+  const queries: Array<{ query: Parser.Query; origin: QueryOrigin }> = [];
+  if (grammar.injectionsPath !== undefined) {
+    queries.push({ query: loadQuery(grammar.injectionsPath, grammar.language), origin: "declared" });
+  }
+  if (grammar.supplementalInjectionsPath !== undefined) {
+    queries.push({
+      query: loadQuery(grammar.supplementalInjectionsPath, grammar.language),
+      origin: "supplemental",
+    });
+  }
+  return queries;
 }
 
 interface RawInjection {
   /** `undefined` means the pattern captured content with no named language — opaque, not uncovered. */
   readonly language: string | undefined;
   readonly contentNode: Parser.SyntaxNode;
+  readonly origin: QueryOrigin;
 }
 
 // `QueryMatch.setProperties` is populated at runtime by every `(#set! injection.language "…")` pattern
@@ -82,16 +112,16 @@ type QueryMatchWithSetProperties = Parser.QueryMatch & {
 };
 
 function queryInjections(grammar: GrammarDescriptor, node: Parser.SyntaxNode): readonly RawInjection[] {
-  const query = injectionQueryFor(grammar);
-  if (query === undefined) return [];
   const raw: RawInjection[] = [];
-  for (const match of query.matches(node) as readonly QueryMatchWithSetProperties[]) {
-    const contentNode = match.captures.find((c) => c.name === "injection.content")?.node;
-    if (contentNode === undefined) continue;
-    const language =
-      match.setProperties?.["injection.language"] ??
-      match.captures.find((c) => c.name === "injection.language")?.node.text;
-    raw.push({ language, contentNode });
+  for (const { query, origin } of injectionQueriesFor(grammar)) {
+    for (const match of query.matches(node) as readonly QueryMatchWithSetProperties[]) {
+      const contentNode = match.captures.find((c) => c.name === "injection.content")?.node;
+      if (contentNode === undefined) continue;
+      const language =
+        match.setProperties?.["injection.language"] ??
+        match.captures.find((c) => c.name === "injection.language")?.node.text;
+      raw.push({ language, contentNode, origin });
+    }
   }
   return raw;
 }
@@ -114,7 +144,7 @@ export function resolveLayers(
   const layers: Layer[] = [];
   const uncoveredLayers: UncoveredLayer[] = [];
 
-  for (const { language, contentNode } of raw) {
+  for (const { language, contentNode, origin } of raw) {
     if (language === undefined) continue; // opaque: no language claimed, so no coverage to report
 
     const parentStart = contentNode.startIndex;
@@ -139,6 +169,7 @@ export function resolveLayers(
       parentStart,
       parentEnd,
       tree: nestedTree,
+      origin,
       layers: nested.layers,
       uncoveredLayers: nested.uncoveredLayers,
     });

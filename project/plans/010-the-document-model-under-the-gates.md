@@ -310,14 +310,27 @@ load-bearing for the records are on the unwatched side.
       compatibility matrix (`tree-sitter` `0.21.1`/`0.22.4`/`0.25.1` against
       `@tree-sitter-grammars/tree-sitter-yaml@0.7.1`) repeated Track 1's finding: the ABI held
       byte-for-byte across the whole range.
-- [ ] **Track 3 — The link gate, beside its fragment.** `cli/packages/gates/markdown-link/`, ported
+- [x] **Track 3 — The link gate, beside its fragment.** `cli/packages/gates/markdown-link/`, ported
       from `cli/packages/module-check/sh/checks/20-links.sh`, reading the model rather than the file.
-      At the end both run and both report. Acceptance is the comparison from *Reading a disagreement*:
-      every finding the fragment produces is also produced by the gate, and the gate produces more.
-- [ ] **Track 4 — The reference gate.** `cli/packages/gates/breadcrumb/`, detection only, with the four
+      At the end both run and both report. Acceptance predicted the comparison from *Reading a
+      disagreement* would land on "only the new one — expected, report as coverage gained": every
+      finding the fragment produces also produced by the gate, and the gate producing more. The
+      measured comparison instead landed on **"both — agreement"**, at zero: this repository currently
+      has no broken relative link, so there is nothing for either detector to disagree about. No
+      regression (the fragment-only branch, the one this track actually guards against) is confirmed
+      empty. Coverage gained is real but does not show up as extra *findings* in a clean repository — it
+      is proven directly instead: item 1's supplement (below) delivers 83 links across 17 files that
+      exist only inside table cells, matching an independent count taken from the block tree, and every
+      one of them already resolves. `project/tasks/003-the-inline-layer-gates.md`.
+- [x] **Track 4 — The reference gate.** `cli/packages/gates/breadcrumb/`, detection only, with the four
       failure modes above and the level each carries. At the end a repository's archival references are
-      checked for the first time. Acceptance is a fixture carrying one of each mode and a run that fires
-      on exactly those.
+      checked for the first time. Acceptance (a fixture carrying one of each mode, firing on exactly
+      those) held; the corpus run surfaced one thing the fixture couldn't: a `code_span` starting with
+      `git show ` is not always an attempted reference — this repository's own governance docs teach the
+      convention using `<sha>`/`<path>` placeholders, in a real code span, matching the gate's own
+      trigger prefix. Excluding any inner text containing `<` (never present in a real sha) removed all
+      7 false positives with no effect on the 6 real breadcrumbs, which all resolve cleanly.
+      `project/tasks/003-the-inline-layer-gates.md`.
 - [ ] **Track 5 — Frontmatter for the record types.** Schemas for `plan`, `adr`, `rfc` and `research`
       in the existing gate. At the end a record missing a required header field fails. Acceptance is
       that this repository's own records pass, and a deliberately stripped copy of each fails.

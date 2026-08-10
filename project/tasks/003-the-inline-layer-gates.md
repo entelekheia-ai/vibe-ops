@@ -196,6 +196,29 @@ produced are the ones that matter: each is something the port lost, and after it
 to be empty. **Turning this comparison into a reported finding is Track 6's job, not this task's** — here
 it is a measurement written into the record.
 
+**Measured (2026-08-10), against this repository's own 72 tracked markdown files (`git ls-files '*.md'`
+minus `/templates/` — 93 was the file count at planning time; the corpus moved under concurrent work
+before implementation started):**
+
+| | shell fragment (`20-links.sh`) | `gates/markdown-link` |
+|---|---|---|
+| Findings | 0 | 0 |
+
+Agreement, not divergence — every relative link in this repository already resolves, so there was nothing
+broken for either to disagree about. The port is proven by what it *recovers*, not by this table: of 388
+links the inline layer resolves overall, **83 across 17 files exist only because of the item-1 supplement**
+(`origin: "supplemental"`) — fewer than the 93-across-19 estimate taken at planning time, for the same
+reason the file count moved. Every one of those 83 is a link the shell fragment already saw (its regex has
+no notion of structure) but this gate could not have, without item 1 — the counterfactual the "regression"
+warning in item 1 was written against.
+
+`gates/breadcrumb` has no fragment to compare against — it is new — but the same corpus run is its first
+integration check beyond its own fixtures: 0 findings over all 6 real breadcrumbs in this repository
+(`project/plans/007-…`, `project/plans/010-…`) and the documentation that teaches the convention using
+`<sha>`/`<path>` placeholders (`.agents/rules/governance.md`, `project/adr/0006-…`, two more plan files,
+and this dossier's own item 4). The first run flagged all 7 placeholder mentions as "malformed" before the
+`<`-in-the-reference exclusion was added — see Surprises.
+
 ### 6. The two comments this task makes false — P1
 
 **What:** the note on `documents` in `cli/packages/core/src/gate.ts` says "no gate in this track reads it
@@ -212,14 +235,14 @@ is the whole story.
 
 ## Implementation order
 
-- [ ] P0 — Supplement queries as a mechanism, plus the markdown supplement as its first user (item 1).
+- [x] P0 — Supplement queries as a mechanism, plus the markdown supplement as its first user (item 1).
       Two sensors: the 93-links-across-19-files count, and a supplement naming an unknown scope or a
       missing file failing loudly at load rather than matching nothing.
-- [ ] P0 — Position mapping and its host-line lookup (item 2).
-- [ ] P0 — `gates/markdown-link/` and its test (item 3).
-- [ ] P0 — `gates/breadcrumb/` and its test (item 4).
-- [ ] P0 — The comparison, run and recorded with its numbers (item 5).
-- [ ] P1 — The two stale comments (item 6).
+- [x] P0 — Position mapping and its host-line lookup (item 2).
+- [x] P0 — `gates/markdown-link/` and its test (item 3).
+- [x] P0 — `gates/breadcrumb/` and its test (item 4).
+- [x] P0 — The comparison, run and recorded with its numbers (item 5).
+- [x] P1 — The two stale comments (item 6).
 - [ ] Tick Tracks 3 and 4 in Plan-010 and name this dossier on both lines.
 
 Verification, from the npm workspace root:
@@ -269,6 +292,25 @@ happens; reconstructed at the end it is worthless.
   holding one opaque `inline` node whose children are loose punctuation tokens; the same text parsed with
   the inline grammar produces `inline_link` with `link_text` and `link_destination`, and `code_span` with
   its delimiters. A link written inside a code span produces a `code_span` with no link node at all.
+
+- Observation: a `code_span` starting with `git show ` is not always an attempted breadcrumb — this
+  repository's own governance docs teach the convention using placeholder syntax (`` `git show
+  <sha>:<path>` ``), in a real `code_span`, matching the gate's own trigger prefix.
+  Evidence: the first corpus run of `gates/breadcrumb` flagged 7 findings, all "malformed breadcrumb
+  reference", none a real broken reference — 4 files teaching the form
+  (`.agents/rules/governance.md` and its `.claude/` symlink counted separately by `git ls-files`,
+  `project/adr/0006-…`, two plan files) plus this dossier's own item 4. A real sha is never spelled with
+  `<` in it, so excluding any inner text containing `<` removed all 7 with no effect on the 6 real
+  breadcrumbs (`project/plans/007-…`, `project/plans/010-…`), which all resolve cleanly. Not filed as a
+  guard elsewhere — the exclusion is the gate's own logic, not a separate mechanism.
+
+- Observation: the 93-links-across-19-files count taken at planning time does not reproduce exactly —
+  this repository moved under concurrent work between planning and implementation, the ordinary condition
+  this workspace runs under, not a bug in either measurement.
+  Evidence: `git ls-files '*.md'` minus `/templates/` returned 72 files at implementation time (93 at
+  planning time), and the supplement recovered 83 links across 17 files (93 across 19 at planning time).
+  Both numbers moved together in the same direction, consistent with fewer files rather than a
+  measurement disagreement — recorded in item 5 rather than treated as a discrepancy to chase.
 
 ## Closure
 

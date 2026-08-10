@@ -5,6 +5,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -62,6 +63,18 @@ test("The ceiling: a fixture over 32,767 bytes parses with no ERROR, via the cal
   assert.ok(document.tree !== undefined, "no tree — the callback form regressed to the string form");
   assert.equal(document.tree.rootNode.hasError, false);
   assert.equal(document.text.length, text.length);
+});
+
+test("Supplement: text.markdown carries a supplementalInjectionsPath, and it points at a real file", () => {
+  // The load-time guards themselves (an unlisted scope, a listed scope whose file is missing) throw
+  // before `allGrammars()` returns anything at all, so they cannot be exercised as a normal assertion
+  // here — verified manually against the built package instead (project/tasks/003-…, item 1). This
+  // asserts the one thing a passing run can: the wiring that survived actually resolved to a real file,
+  // not `undefined` read as "no supplement" by accident.
+  const markdown = allGrammars().find((g) => g.scope === "text.markdown");
+  assert.ok(markdown !== undefined, "text.markdown did not resolve at all");
+  assert.ok(markdown.supplementalInjectionsPath !== undefined, "no supplementalInjectionsPath attached");
+  assert.ok(existsSync(markdown.supplementalInjectionsPath), "the attached path does not exist on disk");
 });
 
 test("Resolution: .md resolves to a grammar; an unknown extension does not, and says why", async () => {
