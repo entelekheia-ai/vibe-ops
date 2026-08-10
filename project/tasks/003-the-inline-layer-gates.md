@@ -243,7 +243,7 @@ is the whole story.
 - [x] P0 — `gates/breadcrumb/` and its test (item 4).
 - [x] P0 — The comparison, run and recorded with its numbers (item 5).
 - [x] P1 — The two stale comments (item 6).
-- [ ] Tick Tracks 3 and 4 in Plan-010 and name this dossier on both lines.
+- [x] Tick Tracks 3 and 4 in Plan-010 and name this dossier on both lines.
 
 Verification, from the npm workspace root:
 
@@ -314,5 +314,5 @@ happens; reconstructed at the end it is worthless.
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
+- [x] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
       runs; a dossier that looks otherwise finished but has this box open is not done.
