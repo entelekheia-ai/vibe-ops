@@ -169,14 +169,10 @@ if [ "$DRY" = yes ]; then
   say "PLAN_SHA=$PLAN_SHA"
   exit 0
 fi
-SELF=$0
-case "$SELF" in /*) ;; *) SELF="$(pwd)/$SELF" ;; esac
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$(dirname "$SELF")")")}"
-CHECK="$PLUGIN_ROOT/../cli/packages/module-check/sh/check-agents-md.sh"
-if [ -f "$CHECK" ]; then
-  bash "$CHECK" . 2>&1 | grep -iE '^(ok|FAIL|SKIP)[[:space:]]+\[links\]' || say "  (links check produced no line)"
+if command -v vibe-ops >/dev/null 2>&1; then
+  vibe-ops check . 2>&1 | grep -iE '^(ok|FAIL|SKIP)[[:space:]]+\[links\]' || say "  (links check produced no line)"
 else
-  say "  (validator not found at $CHECK - run the repo's own link check)"
+  say "  (vibe-ops not on PATH — run the repo's own link check)"
 fi
 
 # ---------------------------------------------------------------- step 8

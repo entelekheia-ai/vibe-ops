@@ -11,11 +11,11 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 | Path | What is not obvious about it |
 |---|---|
 | [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract (`defineModule`, `defineGate`, `defineOps`), the `vibeops.config.ts` cascade, and the eita emission seam. Depends on nothing else here, so it builds first. |
-| [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, and the **stateless** MCP server. Also the programmatic API a third-party module builds against. |
+| [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, the **stateless** MCP server, and the `hook` surface (`src/hook.ts`) a skill-scoped `hooks:` block calls by name. Also the programmatic API a third-party module builds against. |
 | [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. |
-| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate. Five ported from `module-check/sh/checks/` so far; the rest stay shell until an ops composes them (RFC-0001). |
-| [`packages/ops-agents-md/`](packages/ops-agents-md/) | `@entelekheia/vibe-ops-agents-md` — the first ops: composes five `packages/gates/` entries over the instruction surface. Runs **beside** the shell fragments it ports, not instead of them, until the two are shown to agree. |
+| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate. Four ported from `module-check/sh/checks/`; `pairing` and `claude-md-content` are new, with no shell precedent. The rest stay shell until an ops composes them (RFC-0001). |
+| [`packages/ops-agents-md/`](packages/ops-agents-md/) | `@entelekheia/vibe-ops-agents-md` — the first ops: composes seven `packages/gates/` entries over the instruction surface, five of them ports. Runs **beside** the shell fragments it ports, not instead of them, until the two are shown to agree. |
 | [`test/`](test/) | The **plugin's** shell tests, not the CLI's — `measure-nudge-noise.sh` is the only instrument for what a hook cannot observe about itself: what the model did after it fired. Each package's own tests live in `packages/*/test/`. |
 
 ## The module contract
@@ -78,6 +78,42 @@ second concept.
   `plugin/` here, the root in a flat repo — via `resolvePluginDir`/`expandPluginToken` in
   `packages/core/src/files.ts`. Hardcoding one layout for the other makes a dogfooded pair unreachable
   in the other, which is exactly the bug the shell runner's `$PLUGIN_DIR` already exists to avoid.
+- **A gate declares `fixable: true` and a `fix()` third argument to `defineGate` together, or neither.**
+  `fix()` receives the findings `run()` just returned and repairs the mechanical ones — `pairing` creates
+  a missing sibling `CLAUDE.md` but never edits one that exists without the import, because that is a
+  judgement about someone else's content, not a mechanical repair.
+- **`--file <path>` scopes an ops to one file instead of the tracked-file sweep**, and does not require
+  the file to be tracked — a hook fires right after a write, before `git add`. **`--fix` repairs only
+  what it names**: bare for every fixable gate in the composition, `--fix pairing` for one,
+  `--fix a,b` for several; naming a gate the composition does not contain fails before anything runs.
+  Every repaired finding is re-run to confirm, and the result reports `repaired` separately from
+  `findings` still standing — a `--fix` that covered two of five gates says so, rather than a green line.
+- **A `--file` run emits nothing**, even when the entry it scopes declares `emits: true`. A signal's
+  identity includes the population it was read over (RFC-0001), and a per-write reading of one file is a
+  different signal from a repository sweep — conflating them under the same id would make the series
+  uninterpretable. A per-edit signal, if ever wanted, needs its own id.
+
+## The hook surface
+
+`vibe-ops hook <ops> [--fix <gates>]` ([`packages/cli/src/hook.ts`](packages/cli/src/hook.ts)) is what a
+skill-scoped `PostToolUse` `hooks:` block names as its `command` — no shipped script, because the CLI
+reads the payload and answers in the hook's own protocol itself. `Surface` (`packages/core/src/context.ts`)
+has a third value, `"hook"`, alongside `"cli"` and `"mcp"`; a module prints only under `"cli"`, so under
+`"hook"` nothing reaches stdout except the one line this verb itself writes.
+
+- **Reads `tool_input.file_path` off stdin**, exits silently (no output, exit 0) unless its basename is
+  `AGENTS.md` or `CLAUDE.md`, then runs `<ops> --file <that path>` with the caller's own flags.
+- **Silence is the default outcome.** Repairing nothing and finding nothing produces no output at all —
+  the same "silent unless its exact condition holds" discipline every hook in `plugin/hooks/` follows.
+- **Always exits 0.** This is an advisory surface, never a blocking one; a finding it cannot fix is
+  reported in `additionalContext`, not enforced by exit code.
+- **A malformed payload or an unresolvable ops fails silent, not open-while-appearing-to-work**
+  (ADR-0009 obligation 3) — the sensor for a broken *registration* is `25-hooks-registration.sh`, not
+  this process's exit code.
+- **Both sides of `--file`'s path comparison are realpath-ed** (`toRepoRelative` in `ops.ts`) — a hook
+  payload's path is Claude Code's own bookkeeping, unresolved, and `repoRoot` came from
+  `git rev-parse --show-toplevel`, which resolves symlinks. macOS resolving `/tmp` through `/private/tmp`
+  is what caught this live: resolving only one side scoped every gate to an empty population.
 
 ## Configuration
 
@@ -124,6 +160,9 @@ node cli/packages/cli/dist/bin.js check
   which is exactly where the self-test fixture caught it.
 - **`sh/` ships in the package's `files`**, so the fragments travel with an install and are resolved
   relative to the module — never from `PATH`, never by searching upward for a checkout.
+- **`npm link -w @entelekheia/vibe-ops-cli` puts `vibe-ops` on PATH**, resolving its unpublished internal
+  dependencies from this workspace's own `node_modules` rather than a registry. Needed to exercise the
+  `hook` surface as a skill actually calls it — `cli/README.md` has the full recipe.
 
 ## Keeping this file current
 

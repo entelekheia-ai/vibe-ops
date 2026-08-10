@@ -24,6 +24,13 @@ export interface ModuleFlag {
   readonly type: "string" | "boolean";
   readonly description: string;
   readonly default?: string | boolean;
+  /**
+   * A `string` flag's value when the caller writes the bare `--name` with nothing after it. Node's
+   * `parseArgs` rejects that on a `string` option, so the CLI rewrites `--name` to `--name=<implicit>`
+   * before parsing — which is what lets `--fix` mean "everything" while `--fix pairing` still means one
+   * gate. Unused on a `boolean` flag, which already has this for free.
+   */
+  readonly implicit?: string;
 }
 
 export interface ModuleDefinition {

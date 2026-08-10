@@ -74,12 +74,14 @@ test("every gate fires on a repository broken in all five ways", async () => {
   const output = logs.join("\n");
 
   assert.equal(result.code, 1);
-  for (const rule of ["budget", "pairing", "bridge", "frontmatter", "skill-frontmatter", "memory-slug"]) {
+  // pairing's rule names its failure mode, not the gate — this fixture triggers the "no sibling at
+  // all" mode, not the "sibling exists without the import" one (that one is a warn, not a fail).
+  for (const rule of ["budget", "no-sibling-claude-md", "bridge", "frontmatter", "skill-frontmatter", "memory-slug"]) {
     assert.match(output, new RegExp(`FAIL {2}\\[${rule}\\]`), output);
   }
 });
 
-test("a clean repository passes all six composed entries", async () => {
+test("a clean repository passes all seven composed entries", async () => {
   const repoRoot = await gitRepo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
   await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");

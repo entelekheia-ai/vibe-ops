@@ -48,7 +48,7 @@ or *conflicting*, with the verb to apply:
 
 ```bash
 ls -a "$TARGET"; ls "$TARGET/project" "$TARGET/.agents/rules" "$TARGET/.claude/rules" 2>/dev/null
-"${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" "$TARGET"   # skip if $TARGET is not a git repo yet
+(cd "$TARGET" && vibe-ops check .)   # skip if $TARGET is not a git repo yet
 ```
 
 The script reports the mechanical part of the drift — the `AGENTS.md` budget, links that no longer
@@ -146,7 +146,7 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 - Verify the baseline mechanically — the checks run against tracked files, so this comes after staging:
 
   ```bash
-  "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" "$TARGET"
+  (cd "$TARGET" && vibe-ops check .)
   ```
 
   A red run here means the skeleton this skill just laid down is broken — most often a `.claude/` symlink
@@ -163,8 +163,8 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 
   ```bash
   mkdir -p scripts .github/workflows
-  cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" scripts/
-  cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" scripts/
+  cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" scripts/  # plugin-root-paths: allow
+  cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" scripts/  # plugin-root-paths: allow
   chmod +x scripts/check-agents-md.sh
   cp "${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/github/workflows/check.yml" .github/workflows/
   ./scripts/check-agents-md.sh --self-test && ./scripts/check-agents-md.sh
@@ -224,8 +224,8 @@ The snapshot, when it is the right call:
 
 ```bash
 mkdir -p "$TARGET/scripts"
-cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" "$TARGET/scripts/"
-cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" "$TARGET/scripts/"    # the built-in fragments
+cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" "$TARGET/scripts/"  # plugin-root-paths: allow
+cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" "$TARGET/scripts/"    # the built-in fragments, plugin-root-paths: allow
 chmod +x "$TARGET/scripts/check-agents-md.sh"
 ```
 

@@ -41,6 +41,12 @@ export interface GateRunContext {
   readonly options: Readonly<Record<string, unknown>>;
 }
 
+/** One repair a gate's `fix` made. `action` is a one-line description, in the words a reader needs. */
+export interface GateFix {
+  readonly file: string;
+  readonly action: string;
+}
+
 export interface GateOutcome {
   readonly findings: readonly GateFinding[];
   /**
@@ -73,6 +79,8 @@ export interface GateDefinition {
 export interface GatePlugin {
   readonly definition: GateDefinition;
   run(context: GateRunContext): Promise<GateOutcome>;
+  /** Present only when `definition.fixable` is true — the agreement is enforced at define time. */
+  fix?(context: GateRunContext, findings: readonly GateFinding[]): Promise<readonly GateFix[]>;
 }
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -80,6 +88,7 @@ const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 export function defineGate(
   definition: GateDefinition,
   run: (context: GateRunContext) => Promise<GateOutcome>,
+  fix?: (context: GateRunContext, findings: readonly GateFinding[]) => Promise<readonly GateFix[]>,
 ): GatePlugin {
   if (!ID_PATTERN.test(definition.id)) {
     throw new Error(`gate id "${definition.id}" must be lowercase, starting with a letter`);
@@ -87,7 +96,16 @@ export function defineGate(
   if (definition.summary.trim() === "") {
     throw new Error(`gate "${definition.id}" declares no summary — it would be invisible in --list`);
   }
-  return { definition, run };
+  // The declaration and the code cannot silently disagree — the same rule the emitter applies to
+  // `emits`. A gate that forgets to declare `fixable: true` would have its fix silently never called;
+  // one that declares it and forgets `fix` would report a repair capability nothing backs.
+  if (definition.fixable === true && fix === undefined) {
+    throw new Error(`gate "${definition.id}" declares fixable: true but defineGate was given no fix()`);
+  }
+  if (definition.fixable !== true && fix !== undefined) {
+    throw new Error(`gate "${definition.id}" was given a fix() but does not declare fixable: true`);
+  }
+  return fix === undefined ? { definition, run } : { definition, run, fix };
 }
 
 /**

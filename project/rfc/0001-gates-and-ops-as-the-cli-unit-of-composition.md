@@ -52,9 +52,10 @@ cares, and the two copies would drift exactly the way two copies of anything dri
 
 ## Specification
 
-**Implemented** — `packages/core` (`defineGate`, `defineOps`), `packages/gates` (five ported detectors)
-and `packages/ops-agents-md` (the first ops), running beside the shell fragments they port. Two
-sections below diverge from the shape first drafted here; each says how and why.
+**Implemented** — `packages/core` (`defineGate`, `defineOps`), `packages/gates` (four ported detectors
+plus `pairing` and `claude-md-content`, new) and `packages/ops-agents-md` (the first ops), running beside
+the shell fragments they port. `--file`, selective `--fix`, and the skill-scoped hook that calls both
+shipped in Plan-009. Sections below diverge from the shape first drafted here; each says how and why.
 
 ### gate
 
@@ -133,15 +134,27 @@ Stays, as an aggregator over the ops named in `vibeops.config.ts`. The eight rep
 |---|---|---|
 | `--check` (default) | run the ops; exit ≠ 0 on failure | no |
 | `--audit` | same report, always exit 0 | no |
-| `--fix` | apply only what is mechanically fixable | yes |
+| `--fix [<gates>]` | apply only what is mechanically fixable — bare for every fixable gate, named for one or several | yes |
+| `--file <path>` | scope to one file, tracked or not | no |
 | `--list` | which gates composed, over which paths | no |
-| `--explain <rule-id>` | what the rule means and how to satisfy it | no |
+| `--explain <rule-id>` | what the rule means and how to satisfy it — still open | no |
 
-**`--fix` must state its own coverage.** For `agents-md` it can repair `pairing` (write `CLAUDE.md`
-containing `@AGENTS.md`) and `bridge` (recreate a symlink whose target exists). It cannot repair `budget`
-(relocation is judgement, and the rule is explicit that it is *not* compression) or `check-frontmatter`
-(writing a `description:` requires content). A `--fix` that announces repair and covers two of five is a
-false green unless it says so in its output.
+**`--fix` must state its own coverage.** For `agents-md` it can repair `pairing`'s missing-sibling finding
+(write `CLAUDE.md` containing `@AGENTS.md`). It cannot repair `budget` (relocation is judgement, and the
+rule is explicit that it is *not* compression), `check-frontmatter` (writing a `description:` requires
+content), or `pairing`'s *other* finding — a `CLAUDE.md` that exists but does not import back, which
+would mean editing content someone else wrote. A `--fix` that announces repair and covers less than it
+implies is a false green unless it says so in its output.
+
+**Implemented as: coverage is stated structurally, not by convention.** A gate declares `fixable: true`
+together with a `fix()` third argument to `defineGate`, enforced together at define time — `pairing` is
+the only one so far; `bridge` was drafted here as a second candidate but shipped without one, since
+recreating a symlink turned out to need no more mechanism than `pairing` already has, and adding it
+unexercised would be exactly the "freshly-written, never caught anything" trap `packages/module-check`
+already avoids for the shell fragments themselves. `--fix` also had to become selective
+(`--fix pairing`, not only bare `--fix`) once a caller *reacting to one edit* existed — a hook fixing an
+unrelated gate that merely happened to be fixable was never something the original bare form could
+refuse.
 
 ### The skill-scoped hook
 
@@ -160,6 +173,27 @@ For `authoring-agents-md`, a `PostToolUse` hook on `Write|Edit`:
 
 **The guarantee comes from `paths:`, not from the hook.** If the skill does not load, the hook does not
 exist — the hook is the acting arm, the path-scope is the coverage.
+
+**Measured 2026-08-10, this is a coverage bound, not a trigger.** `paths:` matching makes the skill
+*eligible* to load; it does not make Claude Code load it on every matching write. A real session's first
+attempt — writing an `AGENTS.md` with the skill not already active — installed no hook at all. Only after
+the skill was explicitly invoked did the next matching write fire it (Plan-009, Decision Log). So "the
+hook acts whenever the path matches" is not the guarantee this section can make; "the hook cannot act
+unless the path matches, and cannot act at all unless the skill is active" is. A full `vibe-ops agents-md`
+sweep remains the only unconditional check.
+
+**Implemented as: the hook is the `vibe-ops` command itself — no script ships with the skill.** A script
+would exist only to pull `tool_input.file_path` off stdin and wrap the result back into the hook's
+response envelope, and the CLI's `hook` verb (`packages/cli/src/hook.ts`) does both — deleting three
+hazards the six hand-written hooks in `plugin/hooks/` each carry a copy of: a `jq`-or-nothing dependency,
+hand-rolled JSON escaping, and a second parse of the payload shape. The registration names `vibe-ops`
+directly as `command`, with no `sh -c` guard in front of it — see *Rationale*, "Why the hook fails loud,
+not silent." "Ask" shipped as **warn**, not an interactive prompt: the hook reports via
+`additionalContext` (`claude-md-content`, a new gate, and `pairing`'s second finding, an existing
+`CLAUDE.md` with no import), and it is the model reading that context — not the hook — that decides
+whether to ask the user anything. `additionalContext` carries no framing either way, so the model
+remains free to correctly decline (`plan-progress-nudge.sh` measured that `decision:block` arrives framed
+as a denial, which is wrong for exactly this kind of observation).
 
 ## Rationale
 
@@ -180,22 +214,38 @@ then staying → the guide worked → consider deleting the guide"* — is only 
 trying to correct a **behaviour**. `memory-slug` scoped to the instruction surface is the exception in
 this ops, and is why emission is per-entry rather than per-ops.
 
+**Why the hook fails loud, not silent.** An early draft wrapped the registration in
+`sh -c "command -v vibe-ops && exec … || exit 0"`, so a machine without the CLI would see nothing. That
+is the wrong silence: it makes an unusable installation — the plugin and the CLI are co-dependent,
+per Plan-009 — look identical to a working one that simply found nothing to fix. ADR-0009 obligation 3
+forbids failing *open while appearing to work*, not failing loudly; naming `vibe-ops` directly as
+`command` means a missing install surfaces as a hook failure, attributable and fixed by one `npm link`.
+
 ## Implementation Notes
 
 Order, and each step was verifiable on its own:
 
 1. **Done.** `packages/core` gains `defineGate` and `defineOps` beside `defineModule`. An ops is a
    module — same dispatch, same MCP exposure — so nothing in the CLI learns a second concept.
-2. **Done.** `packages/gates`: `budget`, `pairing` (new), `bridge`, `check-frontmatter`, `memory-slug` —
-   one folder per gate, ported out of shell. `packages/ops-agents-md` composes them over the instruction
-   surface; the other twelve fragments stay shell (Q4).
+2. **Done.** `packages/gates`: `budget`, `bridge`, `check-frontmatter`, `memory-slug` — ported out of
+   shell — plus `pairing` and `claude-md-content`, new, with no shell precedent. One folder per gate.
+   `packages/ops-agents-md` composes all six over the instruction surface; the other twelve fragments
+   stay shell (Q4).
 3. **Not done.** `vibe-ops check` still runs only the seventeen shell fragments; `agents-md` is invoked
    separately and the two are compared by hand, not merged into one aggregator yet. Deliberate — the
    comparison is the point before either runner is trusted to replace the other.
-4. **Postponed.** `authoring-agents-md`'s `hooks:` block and its `pairing.sh`. Consequence to remember
-   when it is picked up: `sh/checks/25-hooks-registration.sh` only scans `$PLUGIN_DIR/hooks/*.sh`, so the
-   first skill-scoped hook anyone writes will have no sensor at all until that fragment also scans
-   `$PLUGIN_DIR/skills/*/hooks/*.sh`. That extension is part of the same act, not this one.
+4. **Done (Plan-009).** `authoring-agents-md`'s `hooks:` block, calling `vibe-ops hook agents-md --fix
+   pairing` directly rather than a shipped script (see "The skill-scoped hook," above). The consequence
+   this item used to flag — `25-hooks-registration.sh` only scanning `$PLUGIN_DIR/hooks/*.sh`, blind to a
+   skill's own block — is closed the same way: with no script under `skills/*/hooks/` to scan (there is
+   none — the command *is* the hook), the check instead validates the shape of every skill's `hooks:`
+   block itself: a known event, a `command`, and any `${CLAUDE_SKILL_DIR}/`-relative path it names
+   existing. Two further things Plan-009 found while closing this out, neither anticipated here: `--file`
+   and selective `--fix` had to exist first, so the hook could act on one file without touching every
+   other `AGENTS.md` in the repository; and `${CLAUDE_PLUGIN_ROOT}/../cli/...`, written at ten call sites
+   before any of them had a command to call instead, needed its own guard
+   (`70-plugin-root-paths.sh`) to stop resolving silently in this working tree while resolving nowhere
+   an installed plugin can reach.
 
 **`check-frontmatter` replaces two fragments with one parameterised gate.** `40-frontmatter` (rules) and
 `45-skill-frontmatter` (skills) are the same detector against different schemas: *this markdown declares
@@ -266,15 +316,32 @@ Q1 and Q2 are resolved by implementation, below. Q3 and Q4 remain open.
 - **A gate lives in its own package (`packages/gates/`), never inside the ops that composes it.**
   Rationale: `memory-slug` is one detector two different ops will eventually need; owning it inside
   `ops-agents-md` would force a second copy the moment a second ops wants it. 2026-08-10.
+- **`--fix` ships, reversing its earlier deferral, and takes an optional list of gate labels.**
+  Rationale: the original objection — a `--fix` covering two of five gates announcing a repair it did not
+  make — is answered structurally (`fixable`/`fix()` declared together, findings re-run to confirm,
+  `repaired` reported apart from what still fails) rather than by leaving the verb unbuilt. It had to be
+  selective the moment a caller reacting to one edit existed: a bare `--fix` would let a hook rewrite
+  files the edit never touched. 2026-08-10 (Plan-009).
+- **`pairing` splits its two findings by failure mode, not by root-vs-nested depth.** Rationale: a nested
+  `AGENTS.md` with no sibling used to warn on the theory that a path-scoped rule was an available
+  alternative — a choice made *before* the file existed. Once it exists it either loads or it does not,
+  at every depth, and the repair is the same one line either way. 2026-08-10 (Plan-009).
+- **The hook is the `vibe-ops` command itself; no skill ships a script.** Rationale: see "The
+  skill-scoped hook," Implemented as, above. 2026-08-10 (Plan-009).
 
 ## Related
 
 - [`plugin/references/harness-pair.md`](../../plugin/references/harness-pair.md) — the guide/sensor/reading
   contract this RFC gives a structure to; the vocabulary boundary and the reading rules are stated there
   and are not repeated here.
-- [`cli/AGENTS.md`](../../cli/AGENTS.md) — the module contract gates and ops extend.
-- [`cli/packages/gates/README.md`](../../cli/packages/gates/README.md) — the five gates as implemented.
+- [`cli/AGENTS.md`](../../cli/AGENTS.md) — the module contract gates and ops extend, plus `--file`,
+  selective `--fix`, and the `hook` surface.
+- [`cli/packages/gates/README.md`](../../cli/packages/gates/README.md) — the six gates as implemented.
 - [`cli/packages/ops-agents-md/README.md`](../../cli/packages/ops-agents-md/README.md) — the first ops
   as implemented, and its comparison table against the shell fragments it ports.
 - [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) — the `hooks:` frontmatter field
   and its lifecycle scoping.
+- [Plan-009](../plans/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) — executed this RFC's
+  postponed step 4 and "The skill-scoped hook"; its own Decision Log carries choices scoped to that
+  implementation rather than to this RFC (the symlink fix in `toRepoRelative`, the `project/` exclusion
+  from `plugin-root-paths`, the known gap where a CLAUDE.md-only edit does not re-trigger `pairing`).

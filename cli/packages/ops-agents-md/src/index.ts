@@ -5,10 +5,11 @@
 // to be copied into every ops that also needs it, and the copies would drift exactly the way two
 // copies of anything drift in this repository. See project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md.
 //
-// This ops runs BESIDE cli/packages/module-check/sh/check.sh, not instead of it — the five gates below
-// port 10-budget.sh, 30-bridge.sh, 40-frontmatter.sh, 45-skill-frontmatter.sh and 60-memory-slugs.sh,
-// and the two are meant to be compared, finding by finding, before the shell fragments are ever
-// removed. That removal is a separate, later act.
+// This ops runs BESIDE cli/packages/module-check/sh/check.sh, not instead of it — five of the seven
+// entries below port 10-budget.sh, 30-bridge.sh, 40-frontmatter.sh, 45-skill-frontmatter.sh and
+// 60-memory-slugs.sh, and the two are meant to be compared, finding by finding, before the shell
+// fragments are ever removed. That removal is a separate, later act. `pairing` and `claude-md-content`
+// are not ports — the shell runner never checked the AGENTS.md ↔ CLAUDE.md pairing at all.
 
 import { defineOps } from "@entelekheia/vibe-ops-core";
 
@@ -19,6 +20,7 @@ export default defineOps({
   gates: [
     { gate: "budget", paths: ["AGENTS.md"] },
     { gate: "pairing", paths: ["**/AGENTS.md"] },
+    { gate: "claude-md-content", paths: ["**/CLAUDE.md"] },
     { gate: "bridge" },
     { gate: "check-frontmatter", paths: [".agents/rules/*.md"], options: { schema: "rule" } },
     {

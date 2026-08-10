@@ -8,8 +8,10 @@ import type { Emitter } from "./emit.ts";
 /**
  * How the caller reached this module. A module that prints, prompts, or asks for confirmation must
  * branch on it: under `mcp` there is no terminal, and writing to stdout corrupts the stdio transport.
+ * `hook` is the same constraint for a different reason — stdout there is one line of hook-protocol
+ * JSON, so a module printing through `log`/`warn` would corrupt that instead.
  */
-export type Surface = "cli" | "mcp";
+export type Surface = "cli" | "mcp" | "hook";
 
 export interface ModuleContext {
   /** Absolute path to the repository being acted on. */

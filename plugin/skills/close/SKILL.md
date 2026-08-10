@@ -143,7 +143,7 @@ Skip anything that didn't change — this is not a full documentation audit, onl
 Then check the edits did not break anything mechanically:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" .
+vibe-ops check .
 ```
 
 Links are the reason: propagating a change is where a doc gets moved or a section renamed, and a link that

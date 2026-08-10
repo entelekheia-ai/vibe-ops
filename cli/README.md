@@ -6,13 +6,26 @@ MCP tools.
 
 ## Install
 
-Not published yet. From a clone of this repository:
+Not published to a registry yet. From a clone of this repository:
 
 ```bash
 npm install          # from the repository root — one node_modules for the whole tree
 npm run build
 node cli/packages/cli/dist/bin.js check
 ```
+
+To get `vibe-ops` as a command on PATH — the plugin's skill-scoped hooks call it by name, not by path —
+link the workspace instead of installing from a registry:
+
+```bash
+npm link -w @entelekheia/vibe-ops-cli   # from the repository root, after npm install && npm run build
+vibe-ops check
+```
+
+`npm link` resolves the three internal `@entelekheia/vibe-ops-*` dependencies from this workspace's own
+`node_modules` rather than a registry, so it works even though nothing here is published. Rebuilding
+(`npm run build`) is picked up by the next invocation — each run of the command is a fresh process, so
+there is no server to restart.
 
 ## Usage
 
@@ -25,12 +38,18 @@ vibe-ops check --verbose        # the full run, not only what failed
 vibe-ops agents-md               # the first ops — runs beside `check`, not instead of it (RFC-0001)
 vibe-ops agents-md --list        # the gates composed, and the paths each runs over
 vibe-ops agents-md --audit       # the same report, always exit 0
+vibe-ops agents-md --file AGENTS.md         # scope to one file — does not need to be tracked
+vibe-ops agents-md --fix pairing            # repair only what "pairing" can fix; bare --fix repairs all
 
 vibe-ops @scope/pkg --flag      # a third-party module, by package name
 vibe-ops ./path/to/module       # a module you are developing
 
 vibe-ops mcp                    # every module as MCP tools, over stdio
 vibe-ops mcp --http --port 7337 # the same, over stateless streamable HTTP
+
+vibe-ops hook agents-md --fix pairing       # a PostToolUse hook's own command — reads its payload on
+                                             # stdin, answers on stdout, silent unless there's something
+                                             # to say. What a skill's `hooks:` block names directly.
 ```
 
 A clean run prints one summary line. The expensive reader is an agent, not a terminal, and seventeen `ok`
@@ -45,7 +64,7 @@ facts and personal preferences each have a home and neither restates the other. 
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export default {
-  modules: ["check"],                  // which modules `vibe-ops mcp` exposes
+  modules: ["check", "agents-md"],     // which modules `vibe-ops mcp` exposes
   artifactDir: ".git/gate-artifacts",  // absent disables observation recording entirely
   settings: {},                        // per-module, keyed by module id
 } satisfies VibeOpsConfig;
@@ -87,7 +106,7 @@ behaves identically under MCP and under a terminal.
 | Package | What it is |
 |---|---|
 | [`@entelekheia/vibe-ops-core`](packages/core/) | The contract, the config cascade, the observation emitter |
-| [`@entelekheia/vibe-ops-cli`](packages/cli/) | The `vibe-ops` binary, dispatch, and the MCP server |
+| [`@entelekheia/vibe-ops-cli`](packages/cli/) | The `vibe-ops` binary, dispatch, the MCP server, and the `hook` surface a skill's `hooks:` block calls by name |
 | [`@entelekheia/vibe-ops-module-check`](packages/module-check/) | The governance gate — seventeen shell fragments |
 | [`@entelekheia/vibe-ops-gates`](packages/gates/) | Detectors with no notion of scope, one per gate — what an ops composes |
 | [`@entelekheia/vibe-ops-agents-md`](packages/ops-agents-md/) | The first ops: the instruction surface, composed from `vibe-ops-gates` |

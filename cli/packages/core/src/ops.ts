@@ -27,6 +27,7 @@ import type { GateFinding, GatePlugin } from "./gate.ts";
 import type { ModulePlugin, ModuleResult } from "./module.ts";
 import type { ModuleContext } from "./context.ts";
 import path from "node:path";
+import { realpathSync } from "node:fs";
 
 export interface OpsGateEntry {
   /** A gate name, resolved by the convention in gate.ts. */
@@ -54,6 +55,13 @@ export interface OpsFinding {
 export interface OpsSkip {
   readonly gate: string;
   readonly reason: string;
+}
+
+/** One repair, as the caller receives it — which entry made it, and what it did. */
+export interface OpsRepair {
+  readonly gate: string;
+  readonly file: string;
+  readonly action: string;
 }
 
 export interface OpsDefinition {
@@ -103,11 +111,63 @@ export function defineOps(definition: OpsDefinition): ModulePlugin {
         { name: "list", type: "boolean", description: "Print the gates composed, and the paths each runs over" },
         { name: "audit", type: "boolean", description: "Report exactly as a run would, and always exit 0" },
         { name: "verbose", type: "boolean", description: "Print the full run rather than only what failed" },
+        { name: "file", type: "string", description: "Scope to one file instead of every tracked file" },
+        {
+          name: "fix",
+          type: "string",
+          implicit: "all",
+          description: "Repair what's fixable: bare for every fixable gate, or a comma list of labels",
+        },
       ],
       ...(emits.length > 0 ? { emits } : {}),
     },
     async (context: ModuleContext): Promise<ModuleResult> => run(definition, emits, context),
   );
+}
+
+/** Best-effort realpath: a file that does not exist yet (or a dangling symlink) resolves to itself. */
+function tryRealpath(p: string): string {
+  try {
+    return realpathSync(p);
+  } catch {
+    return p;
+  }
+}
+
+/**
+ * `--file` is not required to be tracked — a just-written file is not in `git ls-files` yet.
+ *
+ * Both sides are realpath-ed before comparing, and deliberately not just the file: `repoRoot` from
+ * `repoRootFrom` already went through `git rev-parse --show-toplevel`, which resolves symlinks, but a
+ * caller's own path usually has not — a hook payload's `tool_input.file_path` is Claude Code's own
+ * bookkeeping, unresolved, and on macOS `/tmp` is itself a symlink to `/private/tmp`. Resolving only
+ * `file` fixed the hook and broke a unit test that hands `toRepoRelative` a raw `mkdtemp` path as
+ * `repoRoot` — `/var` is exactly the same kind of symlink on the same platform. Resolving both sides
+ * is correct either way: realpath-ing an already-resolved path is a no-op.
+ */
+function toRepoRelative(file: string, repoRoot: string): string {
+  const abs = path.isAbsolute(file) ? file : path.resolve(repoRoot, file);
+  return path.relative(tryRealpath(repoRoot), tryRealpath(abs));
+}
+
+/**
+ * What `--fix` selects. `"all"` for the bare flag (every fixable gate); a `Set` of labels for a named
+ * list, validated against the composition before anything runs — the same "fail before, not partway
+ * through" discipline `resolveAll` already applies to an unresolvable gate.
+ */
+function fixSpecFrom(flag: unknown, resolved: readonly Resolved[], opsId: string): "all" | Set<string> | undefined {
+  if (typeof flag !== "string") return undefined;
+  if (flag === "all") return "all";
+  const targets = new Set(flag.split(",").map((s) => s.trim()).filter((s) => s !== ""));
+  const labels = new Set(resolved.map(({ entry }) => labelFor(entry)));
+  for (const target of targets) {
+    if (!labels.has(target)) {
+      throw new Error(
+        `ops "${opsId}" has no gate named "${target}" to --fix (composed: ${[...labels].join(", ") || "none"})`,
+      );
+    }
+  }
+  return targets;
 }
 
 interface Resolved {
@@ -182,25 +242,46 @@ async function run(
         })
       : undefined;
 
-  const files = trackedFiles(context.repoRoot);
+  // `--file` scopes to one path instead of the tracked-file sweep — a hook reacting to a single write
+  // must not touch, or even read, everything else in the repository.
+  const fileFlag = context.flags["file"];
+  const files = typeof fileFlag === "string" ? [toRepoRelative(fileFlag, context.repoRoot)] : trackedFiles(context.repoRoot);
   const verbose = context.flags["verbose"] === true;
   const cli = context.surface === "cli";
+  const fixSpec = fixSpecFrom(context.flags["fix"], resolved, definition.id);
   // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so
   // a report that lives only in context.log arrives there as a count with nothing behind it.
   const findings: OpsFinding[] = [];
   const skipped: OpsSkip[] = [];
+  const repaired: OpsRepair[] = [];
   let failures = 0;
   let warnings = 0;
 
   for (const { entry, gate, patterns } of resolved) {
     const label = labelFor(entry);
     const scoped = filterByGlobs(files, patterns);
-    const outcome = await gate.run({
-      repoRoot: context.repoRoot,
-      pluginDir,
-      files: scoped,
-      options: entry.options ?? {},
-    });
+    const gateContext = { repoRoot: context.repoRoot, pluginDir, files: scoped, options: entry.options ?? {} };
+    let outcome = await gate.run(gateContext);
+
+    // Repair before reporting, so a fixed finding is reported as fixed rather than as still failing.
+    const shouldFix = fixSpec !== undefined && (fixSpec === "all" || fixSpec.has(label));
+    if (shouldFix && outcome.skipped === undefined && outcome.findings.length > 0) {
+      if (gate.fix === undefined) {
+        // "all" asks for every FIXABLE gate, so a non-fixable one is silently out of scope for it —
+        // only an explicit, specific ask that cannot be honoured is worth a word.
+        if (fixSpec !== "all") context.warn(`--fix named "${label}", which is not fixable`);
+      } else {
+        const fixes = await gate.fix(gateContext, outcome.findings);
+        for (const applied of fixes) {
+          repaired.push({ gate: label, file: applied.file, action: applied.action });
+          if (cli) context.log(`FIXED [${label}] ${applied.file}: ${applied.action}`);
+        }
+        // Re-run to confirm rather than assume: a fix() that changed something other than what it
+        // claimed, or a finding it declined to act on, must still show up below as still failing.
+        if (fixes.length > 0) outcome = await gate.run(gateContext);
+      }
+    }
+
     const examined = outcome.examined ?? scoped.length;
 
     if (outcome.skipped !== undefined) {
@@ -240,11 +321,13 @@ async function run(
   }
 
   const summary =
-    `${resolved.length} gates, ${failures} failed` + (warnings > 0 ? `, ${warnings} warned` : "");
+    `${resolved.length} gates, ${failures} failed` +
+    (warnings > 0 ? `, ${warnings} warned` : "") +
+    (repaired.length > 0 ? `, ${repaired.length} repaired` : "");
   const audit = context.flags["audit"] === true;
   // No counts: the arrays carry them, and a count beside the array it summarises is a second thing
   // to keep in step with the first.
-  return { code: audit || failures === 0 ? 0 : 1, summary, data: { findings, skipped } };
+  return { code: audit || failures === 0 ? 0 : 1, summary, data: { findings, skipped, repaired } };
 }
 
 function locate(finding: GateFinding): string {

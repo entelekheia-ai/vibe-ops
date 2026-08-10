@@ -4,6 +4,7 @@
 //   vibe-ops check [--verbose]        a built-in module
 //   vibe-ops @scope/pkg --command     a third-party module, by package name
 //   vibe-ops mcp [--http --port N]    every module, as MCP tools
+//   vibe-ops hook <ops> [flags]       a skill-scoped PostToolUse hook, reading its payload on stdin
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";
@@ -12,6 +13,8 @@ import { loadConfig } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
 import { runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
+import { applyImplicitFlags } from "./flags.ts";
+import { runHook } from "./hook.ts";
 
 const BUILTINS = ["check", "agents-md"] as const;
 
@@ -22,6 +25,7 @@ function usage(): void {
       "vibe-ops @scope/pkg [flags]   run a third-party module by package name",
       "vibe-ops ./path [flags]       run a module from a local path",
       "vibe-ops mcp [--http] [--port N]",
+      "vibe-ops hook <ops> [flags]   reads a PostToolUse payload on stdin, answers in its protocol",
       "",
       "Configuration cascades from vibeops.config.ts in the repository up to your home directory.",
     ].join("\n"),
@@ -37,7 +41,12 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
 
   let parsed;
   try {
-    parsed = parseArgs({ args: argv, options, allowPositionals: true, strict: true });
+    parsed = parseArgs({
+      args: applyImplicitFlags(argv, plugin.definition.flags ?? []),
+      options,
+      allowPositionals: true,
+      strict: true,
+    });
   } catch (error) {
     p.log.error(`${(error as Error).message}`);
     p.note(
@@ -92,6 +101,15 @@ async function main(argv: readonly string[]): Promise<number> {
     // Never returns. Both transports are event-driven, so returning an exit code here would let the
     // caller below tear the server down the instant it finished connecting.
     return await new Promise<number>(() => {});
+  }
+
+  if (command === "hook") {
+    const [opsName, ...hookArgv] = rest;
+    if (opsName === undefined) {
+      p.log.error("vibe-ops hook needs an ops name: vibe-ops hook <ops> [flags]");
+      return 2;
+    }
+    return runHook(opsName, hookArgv);
   }
 
   return runNamed(command, rest);

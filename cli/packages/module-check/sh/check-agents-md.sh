@@ -323,6 +323,10 @@ self_test() {
     echo '- [memory](x) see [[project_something]]'
     echo '- run `${CLAUDE_PLUGIN_ROOT}/scripts/does-not-ship.sh` — a path in a command, not a link'
     echo '- built from `/Users/somebody/checkouts/thing` — a home directory in a committed document'
+    # a ${CLAUDE_PLUGIN_ROOT}/../ climb (plan-009) — unreachable from any install even though it
+    # resolves in this fixture's own tree, beside one marked allow that must NOT fire
+    echo '- run `${CLAUDE_PLUGIN_ROOT}/../cli/ghost.sh` — climbs out of the plugin root'
+    echo '- run `${CLAUDE_PLUGIN_ROOT}/../cli/shipped.sh` — plugin-root-paths: allow'
   } >> "$tmp/AGENTS.md"
   # `[[...]]` shapes that are NOT memory links, beside one that is. A fixture with only the real slug
   # would pass whether or not the check distinguishes them, so the two decoys are what give the assertion
@@ -357,6 +361,11 @@ self_test() {
   printf '{"description":"Five guards.","hooks":{"Stop":[{"hooks":[{"type":"command","command":"sh","args":["${CLAUDE_PLUGIN_ROOT}/hooks/missing.sh"]}]}]}}\n' \
     > "$tmp/hooks/hooks.json"
   : > "$tmp/hooks/orphan.sh"
+  # a skill's OWN hooks: frontmatter block (plan-009) — an event that does not exist, so hooks.json
+  # existing at all does not accidentally cover this second, unrelated population
+  mkdir -p "$tmp/skills/broken-hook"
+  printf -- '---\nname: broken-hook\ndescription: fixture\nhooks:\n  NotARealEvent:\n    - matcher: "Write"\n      hooks:\n        - type: command\n          command: vibe-ops\n---\n\nfixture\n' \
+    > "$tmp/skills/broken-hook/SKILL.md"
   # a dogfooded pair that has diverged: this repo's own GOVERNANCE.md against its shipped counterpart
   mkdir -p "$tmp/skills/setup/templates/root"
   printf '# Governance\n\nThe real one.\n' > "$tmp/GOVERNANCE.md"
@@ -413,6 +422,24 @@ self_test() {
   fi
   if printf '%s\n' "$got" | grep -q 'machine-paths.*decoys.md'; then
     echo "SELF-TEST FAILED: machine-paths matched an elided path (/Users/…/ or /Users/.../)"
+    return 1
+  fi
+  # plugin-root-paths' climb guard (plan-009) must fire on the unmarked ../ reference and NOT on the
+  # one carrying "plugin-root-paths: allow" — the two decoys are what give this assertion its meaning,
+  # the same way the memory-slugs and machine-paths decoys above do.
+  if ! printf '%s\n' "$got" | grep -q 'plugin-root-paths.*ghost\.sh climbs out'; then
+    echo "SELF-TEST FAILED: an unmarked \${CLAUDE_PLUGIN_ROOT}/../ reference did not fire plugin-root-paths"
+    return 1
+  fi
+  if printf '%s\n' "$got" | grep -q 'plugin-root-paths.*shipped\.sh'; then
+    echo "SELF-TEST FAILED: a \${CLAUDE_PLUGIN_ROOT}/../ reference marked \"plugin-root-paths: allow\" still fired"
+    return 1
+  fi
+  # hooks-registration must fire on BOTH populations, not only the older hooks.json one — a skill's own
+  # hooks: block naming an unknown event is a distinct fixture from the missing-script hooks.json above,
+  # and the generic "did hooks-registration fire at all" assertion in the loop cannot tell them apart.
+  if ! printf '%s\n' "$got" | grep -q 'hooks-registration.*unknown event'; then
+    echo "SELF-TEST FAILED: a skill's hooks: block naming an unknown event did not fire hooks-registration"
     return 1
   fi
   # a hit must be traceable without the string being repeated: the deny-list line is named, the name is not

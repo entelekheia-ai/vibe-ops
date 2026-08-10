@@ -8,6 +8,14 @@ paths:
   - "**/AGENTS.md"
   - "CLAUDE.md"
   - "**/CLAUDE.md"
+hooks:
+  PostToolUse:
+    - matcher: "Write|Edit|MultiEdit"
+      hooks:
+        - type: command
+          command: vibe-ops
+          args: ["hook", "agents-md", "--fix", "pairing"]
+          timeout: 10
 ---
 
 # Authoring an AGENTS.md
@@ -49,7 +57,7 @@ Decide what this file covers, because it decides everything else:
 Read the current file and produce a gap list before writing:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" .   # budget, links, the bridge, rule frontmatter
+vibe-ops check .   # budget, links, the bridge, rule frontmatter
 ls -a; ls .agents/rules .claude/rules 2>/dev/null
 ```
 
@@ -151,12 +159,15 @@ Bake a section into the file that makes updating it **part of any task that touc
 ## Step 8 — `CLAUDE.md`
 
 Ensure a `CLAUDE.md` exists containing `@AGENTS.md`, plus only content another agent would ignore or
-misread. If there is none, one line is the correct end state — not a stub.
+misread. If there is none, one line is the correct end state — not a stub. This skill's own `hooks:`
+block does this mechanically after every `AGENTS.md` write when `vibe-ops` is on PATH — but do it
+yourself too, rather than assume the hook fired: it is silent on success, and a session without the
+command installed gets no hook at all.
 
 ## Step 9 — Verify mechanically
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" .
+vibe-ops check .
 ```
 
 The line budget, every relative link resolving inside the repository, `.claude/` holding real symlinks
@@ -165,9 +176,9 @@ line of nonsense), every rule declaring a `description:`, and no personal-memory
 It reads the repository and writes nothing into it, so it is safe against a repo you do not own.
 
 If this repository has names that must never appear in it, supply them for the run — `PRIVATE_NAMES='one
-name per line' "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" .` — they are held in a temporary file for
-the run and deleted when it ends. **Never write that list into the repository**; a command that spells out
-private names in order to grep for them has already leaked them.
+name per line' vibe-ops check .` (the CLI passes its own environment through to the check it runs) —
+they are held in a temporary file for the run and deleted when it ends. **Never write that list into the
+repository**; a command that spells out private names in order to grep for them has already leaked them.
 
 A finding is not advisory. Fix it, or state why the run is expected to fail, before reporting done.
 

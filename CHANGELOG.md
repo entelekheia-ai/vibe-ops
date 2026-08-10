@@ -14,9 +14,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Three unrelated pieces of work. One changes a hook's behaviour in every repository this plugin is installed
-in; one closes a leak the record-writing skills had no rule against; the third is design groundwork that
-changes nothing yet.
+Four pieces of work. One changes a hook's behaviour in every repository this plugin is installed in; one
+closes a leak the record-writing skills had no rule against; the third is design groundwork that reaches
+a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAUDE.md` pairing on write.
 
 > **Nothing here is scheduled for a release.** The version is frozen deliberately while the plugin is
 > installed from a directory source and exercised in place, so this section keeps growing and no
@@ -129,6 +129,36 @@ changes nothing yet.
   with the trigger that would reopen each.
 - **Sources credited** in [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) for the above, including the note
   that ICD 203 was read through a secondary explainer because the primary PDF yielded no extractable text.
+- **`authoring-agents-md`'s first skill-scoped `hooks:` block, and the CLI it calls**
+  ([Plan-009](project/plans/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md), verified in a real
+  `claude --plugin-dir` session). Once the skill is active, writing an `AGENTS.md` with no sibling
+  `CLAUDE.md` creates one automatically; a `CLAUDE.md` that exists but does not link back, or carries
+  content beyond its import, produces one advisory line — never a block. RFC-0001's postponed step 4 and
+  its "skill-scoped hook" section are both implemented.
+
+  **`paths:` alone does not guarantee the skill is active** — measured in the same session: a matching
+  write with the skill not already loaded installed no hook. `vibe-ops agents-md` (a full sweep) remains
+  the only unconditional check; this hook is a convenience on top of it, not a replacement for it.
+
+  The hook is the `vibe-ops` command itself — `vibe-ops hook <ops> [--fix <gates>]`
+  (`packages/cli/src/hook.ts`), a new `Surface` alongside `"cli"` and `"mcp"` — not a shipped script: it
+  reads the `PostToolUse` payload off stdin and answers in the hook's own protocol, so no skill hand-parses
+  JSON or hand-rolls the response envelope. `vibe-ops` is now installable as a command
+  (`npm link -w @entelekheia/vibe-ops-cli`; recipe in `cli/README.md`), which the plugin and the CLI are
+  now co-dependent on — a missing install fails the hook loudly, by design, rather than silently doing
+  nothing.
+
+  Getting there needed three things the ops didn't have: **`--file <path>`**, scoping a run to one file
+  without requiring it to be tracked; a **selective `--fix`** (`--fix pairing`, or bare for every fixable
+  gate), because a caller reacting to one edit must not repair an unrelated gate that merely happens to be
+  fixable; and `defineGate`'s `fixable`/`fix()` contract actually exercised — `pairing` now repairs its
+  missing-sibling finding and splits its two findings by failure mode rather than by root-versus-nested
+  depth (a nested `AGENTS.md` with no sibling now fails, like a root one, instead of warning). A new gate,
+  `claude-md-content`, catches a `CLAUDE.md` carrying stray content. The sensor,
+  `25-hooks-registration.sh`, now validates a skill's own `hooks:` block shape, not only
+  `hooks/hooks.json`; and `70-plugin-root-paths.sh` gained a guard against a path that climbs out of the
+  plugin root with `../` — it resolves in this working tree but in no installed plugin — closing ten
+  call sites that had quietly depended on it.
 
 ### Changed
 

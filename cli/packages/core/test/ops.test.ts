@@ -17,6 +17,33 @@ async function writeFakeGate(dir: string, id: string, body: string): Promise<str
   return file;
 }
 
+/**
+ * A gate whose `run` reports a finding until its `fix` has run — a marker file on disk stands in for
+ * "the thing this gate checks is now fixed", so re-running `run` after `fix` genuinely re-examines
+ * state rather than the test asserting on a call count.
+ */
+async function writeMarkerGate(dir: string, id: string, marker: string): Promise<string> {
+  const file = path.join(dir, `${id}.mjs`);
+  await writeFile(
+    file,
+    `import { existsSync, writeFileSync } from "node:fs";
+import path from "node:path";
+export default {
+  definition: { id: "${id}", summary: "fake", fixable: true },
+  run: async (ctx) => {
+    const at = path.join(ctx.repoRoot, "${marker}");
+    return { findings: existsSync(at) ? [] : [{ rule: "${id}", evidence: "needs fixing" }] };
+  },
+  fix: async (ctx) => {
+    writeFileSync(path.join(ctx.repoRoot, "${marker}"), "fixed\\n");
+    return [{ file: "${marker}", action: "created marker" }];
+  },
+};
+`,
+  );
+  return file;
+}
+
 function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<string, string | boolean> = {}): {
   context: ModuleContext;
   logs: string[];
@@ -229,4 +256,97 @@ test("under MCP the report is in data, not in text a client will discard", async
   const result = await plugin.run(mcp);
   assert.equal(logs.length, 0, "printing under mcp duplicates what structuredContent already carries");
   assert.equal((result.data as { findings: unknown[] }).findings.length, 1);
+});
+
+test("--file scopes to exactly one path, and does not require it to be tracked", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "seer", `{ findings: ctx.files.map((f) => ({ rule: "seer", file: f, evidence: f })) }`);
+  await writeFile(path.join(dir, "elsewhere.md"), "should not be seen\n");
+  await writeFile(path.join(dir, "only-this.md"), "never git-added — untracked on purpose\n");
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "seer.mjs") }],
+  });
+  const { context } = contextFor(dir, {}, { file: "only-this.md" });
+  const result = await plugin.run(context);
+  const { findings } = result.data as { findings: { file?: string }[] };
+  assert.deepEqual(findings.map((f) => f.file), ["only-this.md"]);
+});
+
+test("--fix bare repairs every fixable gate the composition contains", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  const a = await writeMarkerGate(dir, "fixable-a", "a.marker");
+  const b = await writeMarkerGate(dir, "fixable-b", "b.marker");
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: a }, { gate: b }],
+  });
+  const { context } = contextFor(dir, {}, { fix: "all" });
+  const result = await plugin.run(context);
+  const { findings, repaired } = result.data as { findings: unknown[]; repaired: { gate: string }[] };
+  assert.equal(result.code, 0);
+  assert.deepEqual(findings, []);
+  assert.deepEqual(
+    repaired.map((r) => r.gate).sort(),
+    [a, b].sort(),
+  );
+});
+
+test("--fix <label> repairs only that entry, leaving an unnamed fixable gate still failing", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  const a = await writeMarkerGate(dir, "fixable-a", "a.marker");
+  const b = await writeMarkerGate(dir, "fixable-b", "b.marker");
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [
+      { gate: a, label: "only-a" },
+      { gate: b, label: "only-b" },
+    ],
+  });
+  const { context } = contextFor(dir, {}, { fix: "only-a" });
+  const result = await plugin.run(context);
+  const { findings, repaired } = result.data as {
+    findings: { gate: string }[];
+    repaired: { gate: string }[];
+  };
+  assert.equal(result.code, 1, "only-b is still failing — the run must not report a false green");
+  assert.deepEqual(repaired.map((r) => r.gate), ["only-a"]);
+  assert.deepEqual(findings.map((f) => f.gate), ["only-b"]);
+});
+
+test("--fix naming a gate the composition does not contain fails before any gate runs", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  const a = await writeMarkerGate(dir, "fixable-a", "a.marker");
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: a, label: "only-a" }],
+  });
+  const { context } = contextFor(dir, {}, { fix: "nosuchgate" });
+  await assert.rejects(() => plugin.run(context), /has no gate named "nosuchgate"/);
+  await assert.rejects(() => readFile(path.join(dir, "a.marker")), "the named gate's fix must not have run either");
+});
+
+test("--fix naming a gate that is not fixable warns and repairs nothing", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "budget", `{ findings: [{ rule: "budget", evidence: "over" }] }`);
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "budget.mjs"), label: "budget" }],
+  });
+  const { context, logs } = contextFor(dir, {}, { fix: "budget" });
+  const result = await plugin.run(context);
+  const { repaired } = result.data as { repaired: unknown[] };
+  assert.deepEqual(repaired, []);
+  assert.equal(result.code, 1, "the finding it could not fix must still be reported as failing");
+  assert.ok(logs.some((line) => line.includes(`--fix named "budget", which is not fixable`)), logs.join("\n"));
 });

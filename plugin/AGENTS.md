@@ -89,12 +89,23 @@ The three "don't do this or it breaks" invariants are in
   `disallowed-tools`, `argument-hint`, `disable-model-invocation`, `user-invocable`, `shell`,
   `when_to_use`, `paths`, `hooks`. `model` and `effort` are **per skill**.
 - **`hooks:` scopes to the skill's own lifecycle** — installed only while the skill is active, gone when
-  it finishes. Combined with `paths:`, the chain costs nothing standing: `paths:` loads the skill, the
-  skill installs the hook, the hook acts, both leave together. No skill in this plugin uses it yet; see
-  [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md#specification), which
-  postponed its first use pending a sensor for a hook that lives inside a skill rather than `hooks/`.
-- **`paths:` is how a target-state skill reaches an edit it was not invoked for.** A skill carrying one
-  **MUST** say near its top how to scale down to a single edit, or it teaches people to ignore it.
+  it finishes. Combined with `paths:`, the chain costs nothing standing: `paths:` makes the skill
+  *eligible* to load on a matching edit — **it does not guarantee the load fires**, measured 2026-08-10:
+  a `Write` to a matching file with the skill not already active installed no hook, and only did once the
+  skill had been explicitly invoked first (Plan-009, Decision Log). Once it does load, the skill installs
+  the hook, the hook acts, both leave together. `authoring-agents-md` is the first user —
+  its `hooks:` block names `vibe-ops` (the CLI, on PATH) directly as the command, not a shipped script:
+  the CLI's `hook` surface reads the `PostToolUse` payload itself and answers in the hook's protocol, so
+  no skill needs to hand-parse JSON or hand-roll the response envelope. **This makes the plugin and the
+  CLI co-dependent** — a machine without `vibe-ops` on PATH gets a loud hook failure, not a silent no-op,
+  by design (`cli/README.md` has the install recipe: `npm link -w @entelekheia/vibe-ops-cli`). Sensor:
+  [`25-hooks-registration.sh`](../cli/packages/module-check/sh/checks/25-hooks-registration.sh) validates
+  every skill's `hooks:` block shape, not only `hooks/hooks.json`. See
+  [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md#specification) and
+  [Plan-009](../project/plans/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md).
+- **`paths:` is how a target-state skill *can* reach an edit it was not invoked for — not a guarantee
+  that it will**, per the measurement above. A skill carrying one **MUST** say near its top how to scale
+  down to a single edit, or it teaches people to ignore it.
 - **No skill sets `disable-model-invocation`.** The flag removes a skill from the model's listing —
   zero context cost, and in exchange it can only fire from a typed `/command`, including when the user
   asks for exactly that job in plain language. That failure is silent and looks like the skill not
