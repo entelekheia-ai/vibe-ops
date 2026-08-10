@@ -15,7 +15,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | Shipped |
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
 | Depends on | RFC-0001 (Accepted) — gates and ops as the unit of composition |
@@ -331,16 +331,61 @@ load-bearing for the records are on the unwatched side.
       trigger prefix. Excluding any inner text containing `<` (never present in a real sha) removed all
       7 false positives with no effect on the 6 real breadcrumbs, which all resolve cleanly.
       `project/tasks/003-the-inline-layer-gates.md`.
-- [ ] **Track 5 — Frontmatter for the record types.** Schemas for `plan`, `adr`, `rfc` and `research`
-      in the existing gate. At the end a record missing a required header field fails. Acceptance is
-      that this repository's own records pass, and a deliberately stripped copy of each fails.
-- [ ] **Track 6 — The ops.** A composition over the governance surface that decides which of the above
-      emit, and that carries the fragment comparison as a finding. At the end one command reports the
-      whole surface. Acceptance is `--list` naming every gate and its paths, and a clean run on this
-      repository.
-- [ ] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
-      issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
-      track list that is otherwise complete but has this box open is not finished.
+- [x] **Track 5 — Header schemas for the record types.** Planned as schemas for `plan`, `adr`, `rfc`
+      and `research` inside the *existing* `check-frontmatter` gate. Both halves of that premise were
+      wrong, found while sizing the work rather than assumed: a governance record carries a
+      `| Field | Value |` markdown table right after its H1, never YAML frontmatter —
+      `check-frontmatter` reads only `lines[0] === "---"` and had never touched one — so the fields live
+      in a different *place*, not merely a different shape. And `research` has no schema anywhere in
+      this repository's tooling to validate against: `resolve-governance.sh` rejects it outright, no
+      template exists for it, the skill that would create one is `Backlog`, and 0 of 5 existing research
+      documents carry a header table at all. Shipped instead: a **new gate**,
+      `cli/packages/gates/record-header/`, reading the block layer via `document.tree` for the first
+      `pipe_table` reached before the first level-2 heading (measured exact over this repository's 28
+      tracked records: 21 hits, 7 correct misses, 0 misfires — "the first `pipe_table`", unqualified,
+      instead grabs a content table in 4 research documents). Schemas for `adr`, `plan`, `rfc` and
+      **`task`** (not originally listed, added because task dossiers carry the same table with one more
+      required field, `Issue`); `research` carries none, the reason recorded above rather than invented.
+      Presence only — no value validated. Acceptance held as stated: this repository's own adr and plan
+      records pass (asserted directly against the real checkout in
+      `cli/packages/gates/test/record-header.test.ts`), and a stripped copy of each fails naming the
+      missing field. `project/tasks/004-the-governance-ops.md`.
+- [x] **Track 6 — The ops, and the comparison as its own gate.** Planned as a composition that "carries
+      the fragment comparison as a finding" — that phrasing assumed `defineOps` had a seam for
+      composition-specific logic, and it does not: `defineOps` is purely declarative
+      (`{id, version, summary, gates}`), so the comparison could not live *in* the ops as written.
+      Shipped as a **gate instead**, `cli/packages/gates/fragment-parity/`, parameterized
+      (`{runner, fragment, against}`) and holding no repository knowledge of its own — it spawns the
+      named shell runner, parses its `FAIL  [<fragment>] <file>: …` lines, resolves `against` through
+      `loadGate` (already exported for this purpose), and runs it fresh over the *same* population this
+      entry declares. Only one direction is reported, `port-regression` — the fragment flagged a file
+      the port did not — because the reverse (the port catching more) is the expected, desired outcome
+      and not a finding. This generalizes to every other fragment eventually ported by editing
+      `options`, and it leaves the repository the day its `fragment` does. The composition itself,
+      `cli/packages/ops-governance/`, holds seven entries: four `record-header` schemas, `markdown-link`,
+      `breadcrumb`, and one `fragment-parity` comparing `20-links.sh` against `markdown-link`.
+      Acceptance held: `vibe-ops governance --list` names all seven with their paths, and
+      `vibe-ops governance --verbose` against this repository reports `7 gates, 0 failed`.
+      `project/tasks/004-the-governance-ops.md`.
+- [x] **Track 5.5 — The population contract (not originally planned).** Sizing Track 6's acceptance —
+      "a clean run on this repository" — by actually running the Track 3/4 gates unfiltered, the way a
+      composition would, found 14 findings, **all false**: 13 from `markdown-link` on shipped templates
+      under `plugin/skills/*/templates/`, whose links are written to resolve in a *target* repository,
+      not this one; 1 from `breadcrumb` on the bare code span `` `git show ` `` at
+      `project/plans/010-…md:329` — the sentence, written during Track 4's own closure, describing the
+      fix for the *previous* false positive. Both were population faults, not detection faults, and the
+      root cause was the same in both: the `/templates/` exclusion already existed in three divergent
+      copies (the shell runner's own file listing, a hardcoded filter inside `memory-slug`, and no
+      filter at all inside `markdown-link`), and a fourth copy would have matched the pattern rather
+      than fixed it. Shipped: two typed config keys any ops's `settings` slice may carry — `ignore`
+      (glob exclusions, `"*"` for every entry, a gate's own label for one) and `disabled` (a reason
+      string, never a boolean — a disablement is a ledger entry, not a silent pass) — read and applied
+      by `defineOps` itself, never inside a gate. `memory-slug`'s hardcoded filter was deleted as the
+      demotion this produced. `breadcrumb`'s bare-prefix false positive was a genuine gate fix, not a
+      population fault: requiring a colon (never present in a bare mention of the command) alongside the
+      existing `<`-exclusion (never present in a real sha) resolved it. `project/tasks/004-the-governance-ops.md`.
+- [x] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
+      issue closed. The plan file itself is kept.
 
 ## Success criteria
 
@@ -423,9 +468,73 @@ Verified by running the CLI against this repository and against the deliberately
   fragment an observable trigger rather than a feeling that enough time has passed.
   Date / Author: 2026-08-10 / Danilo Borges
 
+- Decision: a governance record's required fields are a new gate, `record-header`, reading the block
+  layer's own `pipe_table` — not a third schema inside `check-frontmatter`.
+  Rationale: the two guarded surfaces before this plan (a rule, a skill) are read by a machine and use
+  YAML frontmatter; a record is read only by people and agents and uses a markdown table right after its
+  H1. The extraction is a different tree walk over a different node type, and `GateFinding.rule` is
+  meant to name the failure mode — reporting a missing table row as `[frontmatter]` names something the
+  file does not have and never should.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: the fragment/port comparison from *Reading a disagreement* is a gate, `fragment-parity`,
+  parameterized and composed by the ops — not logic carried inside `defineOps` itself.
+  Rationale: `defineOps` is purely declarative (`{id, version, summary, gates}`) with no seam for
+  per-composition behaviour, so "the ops carries the comparison as a finding" had nowhere to live as
+  originally phrased. A gate that takes `{runner, fragment, against}` as options generalizes to every
+  other fragment eventually ported by editing configuration, needs no change to core, and disappears
+  from the repository the same way any other gate does — by removing the entry that composes it.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: population exclusions (`ignore`, `disabled`) are typed keys on an ops's own config settings,
+  owned and applied by `defineOps` — never inside a gate.
+  Rationale: sizing Track 6's acceptance by actually running the Track 3/4 gates unfiltered found 14
+  false findings, both population faults rather than detection faults, and both traced to the same
+  cause — a repository-specific exclusion (`**/templates/**`) already existed in three divergent copies
+  (the shell runner's own listing, a hardcoded filter inside one gate, no filter inside another), and a
+  fourth copy inside a third gate would have matched the pattern rather than broken it. A signal's
+  identity includes the population it was read over (RFC-0001), so that population may not be
+  reinvented per gate; a gate's own `options` stay free-form because only the gate can validate them,
+  and validating them does not change what was examined.
+  Date / Author: 2026-08-10 / Danilo Borges
+
 ## Outcomes & Retrospective
 
-*Not started.*
+Goal by goal, against what shipped:
+
+1. **Met.** No gate under `cli/packages/gates/` contains a markdown regular expression; every one that
+   needs structure reads `GateRunContext.documents`, layered via `injections.ts`.
+2. **Met.** A link inside a code span or fenced block is never collected — `markdown-link` walks
+   `inline_link`/`image` node types the grammar itself excludes from those regions; nothing strips
+   anything first.
+3. **Met.** `breadcrumb` checks all three ways: the commit resolves, the path existed in that commit,
+   and the file is gone from the working tree (warn, not fail — deleting it is a judgement this tool
+   does not make).
+4. **Met, with the shape corrected mid-plan.** The original phrasing ("in the existing gate") assumed
+   records use frontmatter; they use a header table, so this landed as a new gate
+   (`record-header`) rather than a new schema. `research` carries no schema — nothing declares its
+   shape, a decision this plan does not own — and `task` gained one that was never listed, because task
+   dossiers carry the same table with one more required field.
+5. **Met, relocated.** "The ops carries the comparison as a finding" had no seam in `defineOps` as
+   written; it shipped as `fragment-parity`, a parameterized gate the ops composes instead.
+
+Success criteria: every bullet under *Success criteria* was run and holds, with one correction already
+recorded against Track 3 — the predicted comparison direction ("only the new one") did not occur because
+this repository currently has no broken relative link; the *absence* of a fragment-only regression is
+what was confirmed, and coverage gained was proven directly (83 links found only via the supplement)
+rather than showing up as extra findings in an already-clean repository.
+
+What was cut: nothing from the original *Scope*. What was added and not originally scoped: the
+`ignore`/`disabled` population contract (Track 5.5) — required to make Track 6's own acceptance
+("a clean run") true rather than accidentally true of a hand-filtered probe — and the `task` schema on
+`record-header`.
+
+What is still open, carried forward rather than silently dropped: every item under *Open questions*
+below is unchanged by this plan's closure and remains real — none of them was Track 5 or Track 6's job.
+`markdown-link`'s and `breadcrumb`'s shell precedents (`20-links.sh` and the pairless `breadcrumb`, which
+has none) still run beside their ports, per RFC-0001, until `fragment-parity` — now built — has reported
+zero `port-regression` findings for long enough that removing `20-links.sh` is a decision rather than a
+guess.
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
@@ -470,6 +579,10 @@ Verified by running the CLI against this repository and against the deliberately
   and the mechanical-versus-judgement split this plan's reference gate reuses.
 - [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) — a guard, not a line; the frontmatter track
   is that doctrine applied to the records themselves.
+- [ADR-0010](../adr/0010-supplement-injection-queries-not-a-branch-per-grammar-gap.md) — the injection
+  mechanism Track 3 designed, feeding the same `markdown-link` gate Track 5.5 later scoped by config.
+- [ADR-0011](../adr/0011-population-belongs-to-configuration-not-a-gate.md) — the `ignore`/`disabled`
+  population contract Track 5.5 introduced.
 
 - Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):
   - `git show 7eb34c5116e9446cebcf3b5f42892fc400fa688b:project/tasks/001-the-document-model-and-its-sensor.md`

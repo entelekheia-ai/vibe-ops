@@ -15,7 +15,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Planned |
+| Status | Done |
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
 | Issue | none |
@@ -246,15 +246,20 @@ is a prediction, and recording which way it was wrong is worth more than quietly
 
 ## Implementation order
 
-- [ ] P0 — `ignore` + `disabled` in the core, `SKIP` behind `--verbose`, `ignored` reported alongside
-      `examined`, and `memory-slug`'s hardcoded filter deleted (item 1). Sensor: the 13 `markdown-link`
-      findings go to zero with no change to that gate's own code.
-- [ ] P0 — `breadcrumb`'s bare-prefix false positive (item 2).
-- [ ] P0 — `gates/record-header/` and its test (item 3).
-- [ ] P0 — `gates/fragment-parity/` and its test (item 4).
-- [ ] P0 — `ops-governance/`, `BUILTINS`, and the configured module list (item 5).
-- [ ] P1 — The documents (item 6).
-- [ ] P0 — Tick Tracks 5 and 6 in Plan-010, then run `/vibe-ops:close plan` (item 7).
+- [x] P0 — `ignore` + `disabled` in the core, `SKIP` behind `--verbose`, `ignored` reported alongside
+      `examined`, and `memory-slug`'s hardcoded filter deleted (item 1). Sensor confirmed: the 13
+      `markdown-link` findings go to zero with no change to that gate's own code — only a config entry.
+- [x] P0 — `breadcrumb`'s bare-prefix false positive (item 2). Fixed by requiring a colon in addition to
+      the existing `<`-exclusion.
+- [x] P0 — `gates/record-header/` and its test (item 3). Shipped with a `task` schema in addition to the
+      three named in the work item — see Surprises.
+- [x] P0 — `gates/fragment-parity/` and its test (item 4).
+- [x] P0 — `ops-governance/`, `BUILTINS`, and the configured module list (item 5). Shipped as four
+      separate `record-header` entries (one per schema, each labelled), not the single combined entry
+      the work item's own illustrative snippet showed — the snippet omitted `options.schema`, which
+      each type actually requires.
+- [x] P1 — The documents (item 6).
+- [x] P0 — Tick Tracks 5 and 6 in Plan-010, then run `/vibe-ops:close plan` (item 7).
 
 Verification, from the npm workspace root:
 
@@ -313,7 +318,24 @@ happens; reconstructed at the end it is worthless.
   is in the backlog and opens by calling itself a deliberately thin placeholder; and 0 of the 5 existing
   research documents carry a header table.
 
+- Observation: a `GateFinding.rule` set to the gate's bare id, when one gate is composed under several
+  labels distinguishing a schema, makes the FAIL line ambiguous even though the ops's own log lines
+  (`ok`/`SKIP`) print the label.
+  Evidence: with `record-header`'s `rule` hardcoded to `"record-header"`, all four schema entries
+  (`adr`/`plan`/`rfc`/`task`) produced identical `FAIL  [record-header] …` lines — the ops log format
+  (`ops.ts`) prints `finding.rule`, not the composing entry's label, for the FAIL/WARN line specifically,
+  unlike the `ok`/`SKIP` lines which do print the label. Fixed by setting `rule` to
+  `record-header-${schema}`, matching the precedent `check-frontmatter` already set (`rule: "frontmatter"`
+  vs `"skill-frontmatter"`) for the same reason.
+
+- Observation: this task's own illustrative composition snippet (`{ gate: "record-header", paths: [...four
+  types...] }`, no `options.schema`) could not have shipped as written — `record-header` requires a schema
+  per type, and the four types need different required fields.
+  Evidence: `cli/packages/gates/src/record-header/index.ts` throws if `options.schema` is absent or not
+  one of `adr`/`plan`/`rfc`/`task`. The composition shipped as four separate entries instead, each with
+  its own `paths` and `options.schema`, each individually labelled — see `ops-governance/src/index.ts`.
+
 ## Closure
 
-- [ ] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
+- [x] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
       runs; a dossier that looks otherwise finished but has this box open is not done.
