@@ -147,22 +147,40 @@ addressable at all.
 The part that matters for this repository is **who decides the routing**, and the answer is already
 correct in the ecosystem: the grammar that owns an extension declares its own injections, in a query
 file it ships. That is not a configuration this plan writes; it is a fact this plan reads. The markdown
-grammar's own declaration is four lines and settles four different cases:
+grammar's own declaration settles five different cases (verified against the installed package,
+2026-08-10 — the block half of a two-part frontmatter route is easy to miss reading the query by eye,
+because it names no field the naive case does):
 
 ```scheme
 (fenced_code_block (info_string (language) @injection.language)
                    (code_fence_content) @injection.content)
 ((html_block) @injection.content (#set! injection.language "html"))
+(document . (section . (thematic_break) (_) @injection.content (thematic_break))
+ (#set! injection.language "yaml"))
 ([(minus_metadata) (plus_metadata)] @injection.content (#set! injection.language "yml"))
 ((inline) @injection.content (#set! injection.language "markdown_inline"))
 ```
 
 The fence route is **dynamic** — the language comes from the fence's own label, so a grammar arriving
-later needs no change here. The frontmatter route means the metadata block is YAML *by declaration*,
-which is how the frontmatter gate gets a parsed mapping instead of a line scan. And the last line is the
-one that pays immediately: markdown's block and inline grammars are two parsers, and the hand-off
-between them **is itself an injection**. Implementing the resolver generically therefore removes
-special-case code rather than adding it.
+later needs no change here. **Frontmatter is two routes, not one**: the fourth line is the metadata node
+the parser already names (`minus_metadata`/`plus_metadata`); the third is a second, structural route for
+a frontmatter block the grammar has not (yet) recognized as metadata — a leading section bounded by two
+thematic breaks — so a document whose frontmatter the parser missed is still read as YAML rather than
+silently treated as prose. Either way the frontmatter gate gets a parsed mapping instead of a line scan.
+The last line is the one that pays immediately: markdown's block and inline grammars are two parsers,
+and the hand-off between them **is itself an injection**. Implementing the resolver generically
+therefore removes special-case code rather than adding it.
+
+The inline grammar declares two injections of its own, reached only by recursing into the last line
+above — markdown's `injections.scm` never names them directly:
+
+```scheme
+((html_tag) @injection.content (#set! injection.language "html"))
+((latex_block) @injection.content (#set! injection.language "latex"))
+```
+
+This is what makes the resolver's recursion a measured requirement rather than a defensive one: markdown
+injects inline, and inline injects again, on the first document the resolver ever sees.
 
 ```mermaid
 flowchart TD
@@ -267,11 +285,14 @@ load-bearing for the records are on the unwatched side.
 
 ## Tracks
 
-- [ ] **Track 1 — The model and its sensor.** `DocumentModel` in `cli/packages/core/`, grammar
+- [x] **Track 1 — The model and its sensor.** `DocumentModel` in `cli/packages/core/`, grammar
       resolution by extension, the callback-form parse, and the per-run cache; plus the test that loads
       every declared grammar and fails when one cannot. At the end, `cli/packages/core/` exposes a
-      parsed document and a test proves the grammar set is loadable under the pinned runtime. Acceptance
-      is that test failing when the runtime is moved off the pin.
+      parsed document and a test proves the grammar set is loadable under the pinned runtime.
+      `project/tasks/001-the-document-model-and-its-sensor.md`. Acceptance, measured rather than assumed:
+      the runtime/grammar ABI held stable across the whole `0.21`–`0.25` matrix (see the dossier), so
+      "moving the pin" does not discriminate — the Load test's real coverage is the wrong-wrapper
+      regression (confirmed to throw) and a runtime old enough to fail outright at install.
 - [ ] **Track 2 — The injection resolver.** Reading a grammar's own `injections.scm`, parsing each
       injected span with the grammar it names, mapping positions back to the host, recursing under a
       depth bound, and recording a named language with no grammar as uncovered rather than as absent. At

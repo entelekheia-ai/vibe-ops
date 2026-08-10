@@ -15,7 +15,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Planned |
+| Status | Done |
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
 | Issue | none |
@@ -80,6 +80,26 @@ grammar, not smuggled in here.
 **If no cell passes, the track stops and reports.** Working around a runtime that cannot load its own
 grammars would be building on the thing this track exists to detect.
 
+**Measured 2026-08-10, darwin-arm64, fixture = this repository's own `CHANGELOG.md` (44,328 bytes on
+disk).** Each cell: construct a `Parser`, `setLanguage(module)` — the module wrapper, not `module.language`
+— parse with the callback form, walk the tree counting `ERROR`/`isMissing` nodes and a full node-type
+histogram.
+
+| `tree-sitter` | Install | `ERROR` nodes | `totalNodes` | Histogram vs. baseline |
+|---|---|---|---|---|
+| `0.21.1` | clean (declared peer) | 0 | 4229 | baseline |
+| `0.22.4` | `--force` (peer wants `^0.21.1`) | 0 | 4229 | **identical** |
+| `0.25.1` | `--force` (peer wants `^0.21.1`) | 0 | 4229 | **identical** |
+
+All three cells pass, and all three produce the byte-for-byte same histogram — same `atx_heading` (37),
+same `list_item` (89), same total node count, down to the punctuation-token tallies. The declared peer
+range is conservative, not load-bearing: the ABI has not moved across `0.21`–`0.25`. **Pinned:
+`tree-sitter@0.25.1`** (highest that passes) in `cli/packages/core/package.json`, exact, no caret.
+
+`link`/`shortcut_link`/`fenced_code_block` all read `0` in the histogram — not a defect. The block grammar
+parses those spans as opaque `inline` nodes; resolving them is the second grammar in the same package
+(`text.markdown_inline`), which is a Track 2 concern, not this one.
+
 ### 2. The grammar registry, read from each package's own manifest — P0
 
 **What:** `cli/packages/core/src/grammars.ts` — the declared list of grammar packages, and resolution
@@ -107,7 +127,11 @@ Two traps, both already paid for once:
 
 - The module exports `{ name, language, inline, nodeTypeInfo }`, and `setLanguage` must be given the
   **module wrapper**, not `module.language`. Passing the raw language object leaves `nodeSubclasses`
-  undefined and the tree comes back with wrong node types. It does not throw.
+  undefined — **measured against `tree-sitter@0.25.1`, this throws** a `TypeError` on the first node
+  access (`Cannot read properties of undefined (reading '91')`, inside the library's own
+  `unmarshalNode`), not the silent wrong-node-types corruption this bullet originally assumed from
+  prior research on an unspecified earlier version. Corrected rather than left standing, because the
+  Load test in item 5 relies on exactly this: the trap is asserted to be *loud*, and it is.
 - `inline` is a **second grammar from the same package**, and it is not reachable by index from the
   descriptor array, whose `path` is a directory name. Map the `text.markdown_inline` descriptor to
   `module.inline` explicitly.
@@ -217,16 +241,16 @@ fires on the first document the resolver ever sees.
 
 ## Implementation order
 
-- [ ] P0 — Matrix and pin (item 1). Record every cell, passing and failing.
-- [ ] P0 — `grammars.ts`, extension map read from the descriptors (item 2).
-- [ ] P0 — `document.ts` and the store: callback-form parse, lazy cache (item 3).
-- [ ] P0 — Export both from `cli/packages/core/src/index.ts`.
-- [ ] P0 — `GateRunContext.documents`, wired in `ops.ts` (item 4).
-- [ ] P0 — The six gate test files moved onto the new context shape (item 4).
-- [ ] P0 — `grammars.test.ts`, all three tests (item 5).
-- [ ] P1 — `cli/AGENTS.md` core row (item 6).
-- [ ] P1 — Plan-010's quoted query corrected (item 7).
-- [ ] Tick Track 1 in Plan-010 and name this dossier on that line.
+- [x] P0 — Matrix and pin (item 1). Record every cell, passing and failing.
+- [x] P0 — `grammars.ts`, extension map read from the descriptors (item 2).
+- [x] P0 — `document.ts` and the store: callback-form parse, lazy cache (item 3).
+- [x] P0 — Export both from `cli/packages/core/src/index.ts`.
+- [x] P0 — `GateRunContext.documents`, wired in `ops.ts` (item 4).
+- [x] P0 — The six gate test files moved onto the new context shape (item 4).
+- [x] P0 — `grammars.test.ts`, all three tests (item 5).
+- [x] P1 — `cli/AGENTS.md` core row (item 6).
+- [x] P1 — Plan-010's quoted query corrected (item 7).
+- [x] Tick Track 1 in Plan-010 and name this dossier on that line.
 
 Verification, from the npm workspace root:
 
@@ -238,10 +262,16 @@ npm test
 node cli/packages/cli/dist/bin.js agents-md --list
 ```
 
-The track is done when `npm test` passes; moving the pin to an adjacent version makes
-`grammars.test.ts` fail; a document over 32,767 bytes parses with no `ERROR` node; and `agents-md`
-reports exactly what it reported before — no gate reads the model yet, so any change there is a
-regression rather than progress.
+The track is done when `npm test` passes; a document over 32,767 bytes parses with no `ERROR` node; and
+`agents-md` reports exactly what it reported before — no gate reads the model yet, so any change there
+is a regression rather than progress.
+
+**"Moving the pin makes the test fail" needed correcting against measurement — see Surprises &
+Discoveries below.** It does not hold for *any* adjacent version, because the matrix in item 1 found
+the ABI stable across the whole `0.21`–`0.25` range. What the Load test in item 5 actually catches,
+confirmed by measurement: the wrong-wrapper regression (item 2's trap, now a thrown `TypeError`, not a
+silent one) and a runtime old enough to fail outright — `tree-sitter@0.20.0` cannot even install against
+this toolchain's Node version. The sensor is real; the specific claim about *adjacent* versions was not.
 
 ## Surprises & Discoveries
 
@@ -261,7 +291,31 @@ happens; reconstructed at the end it is worthless.
   `injection-regex: "^(markdown|md)$"` per descriptor, alongside the path to each grammar's
   `injections.scm`.
 
+- Observation: the matrix in item 1 found the tree-sitter/markdown ABI stable across the entire
+  measured range, not merely at the declared peer. The original plan for this track's acceptance —
+  "moving the pin to an adjacent version makes `grammars.test.ts` fail" — does not hold, and stood
+  uncorrected until this measurement.
+  Evidence: `tree-sitter` 0.21.1, 0.22.4 and 0.25.1 against markdown 0.3.2 produced byte-for-byte
+  identical parse trees of a 44,065-character fixture (4229 nodes, identical histogram). The runtime
+  binds through N-API, which is why minor-version drift within a stable N-API window costs nothing —
+  the coupling the peer range warns about is real, but coarser than "any version off the declared peer".
+
+- Observation: the "wrong wrapper" trap recorded under item 2 (`setLanguage(module.language)` instead
+  of `setLanguage(module)`) throws on this pinned runtime; a prior note (sourced from research on an
+  unspecified earlier tree-sitter version, corrected in item 2 above) had it as a silent corruption.
+  Evidence: on `tree-sitter@0.25.1`, calling `.setLanguage(md.language)` and then reading
+  `tree.rootNode.type` throws `TypeError: Cannot read properties of undefined (reading '91')` inside the
+  library's own `unmarshalNode` — confirming `grammars.test.ts`'s Load test genuinely discriminates this
+  regression rather than passing it silently.
+
+- Observation: a tree-sitter version old enough to predate this toolchain's Node ABI fails at
+  `npm install`, not at parse time — a different failure mode than the ERROR-node count the matrix in
+  item 1 measured for.
+  Evidence: `tree-sitter@0.20.0` ships no `darwin-arm64` prebuild for Node 26 and its `node-gyp rebuild`
+  fallback fails outright on this machine (`gyp ERR!`, exit non-zero) — probed in the same scratch
+  directory as the matrix, outside the three cells this track's pin decision is based on.
+
 ## Closure
 
-- [ ] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
+- [x] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
       runs; a dossier that looks otherwise finished but has this box open is not done.
