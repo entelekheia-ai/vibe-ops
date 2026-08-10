@@ -184,6 +184,49 @@ test("--list prints every composed gate without running any of them", async () =
   const { context, logs } = contextFor(dir, {}, { list: true });
   const result = await plugin.run(context);
   assert.equal(result.code, 0);
-  assert.ok(logs.some((line) => line.includes("composed 1 gates")));
+  // The array is the report. Its length is the count, so nothing states the count separately.
+  const { gates } = result.data as { gates: { label: string; emits: boolean }[] };
+  assert.equal(gates.length, 1);
+  assert.equal(gates[0]!.label, path.join(dir, "never-run.mjs"));
+  assert.equal(gates[0]!.emits, false);
   assert.ok(!logs.some((line) => line.includes("FAIL")));
+});
+
+test("a run returns every finding structured, not only in the log lines", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "noisy", `{ findings: [{ rule: "noisy", file: "a.md", line: 3, evidence: "bad" }] }`);
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "noisy.mjs") }],
+  });
+  const { context } = contextFor(dir, {}, {});
+  const result = await plugin.run(context);
+  const { findings } = result.data as { findings: Record<string, unknown>[] };
+  assert.equal(findings.length, 1);
+  assert.deepEqual(findings[0], {
+    gate: path.join(dir, "noisy.mjs"),
+    rule: "noisy",
+    file: "a.md",
+    line: 3,
+    evidence: "bad",
+    level: "fail",
+  });
+});
+
+test("under MCP the report is in data, not in text a client will discard", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "noisy", `{ findings: [{ rule: "noisy", evidence: "bad" }] }`);
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "noisy.mjs") }],
+  });
+  const { context, logs } = contextFor(dir, {}, {});
+  const mcp: ModuleContext = { ...context, surface: "mcp" };
+  const result = await plugin.run(mcp);
+  assert.equal(logs.length, 0, "printing under mcp duplicates what structuredContent already carries");
+  assert.equal((result.data as { findings: unknown[] }).findings.length, 1);
 });

@@ -19,6 +19,20 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const RUNNER = path.join(here, "..", "sh", "check-agents-md.sh");
 
 const SUMMARY_PATTERN = /^(\d+) checks, (\d+) failed$/m;
+// The runner's own line shapes: `FAIL  [id] evidence`, `SKIP  [id] reason`, and, under --list,
+// two columns of id and source. Parsed rather than passed through as a blob, because the MCP client
+// renders `structuredContent` and discards the text — a raw blob there is a string nobody can index.
+const REPORT_LINE = /^(FAIL|WARN|SKIP)\s+\[([^\]]+)\]\s*(.*)$/;
+const LIST_LINE = /^ {2}(\S+)\s+(\S+)$/;
+
+function parseList(output: string): { readonly id: string; readonly source: string }[] {
+  const checks: { id: string; source: string }[] = [];
+  for (const line of output.split("\n")) {
+    const match = LIST_LINE.exec(line);
+    if (match) checks.push({ id: match[1]!, source: match[2]! });
+  }
+  return checks;
+}
 
 export default defineModule(
   {
@@ -56,19 +70,38 @@ export default defineModule(
     // Only the failing and warning lines reach the caller by default. The expensive reader is an
     // agent, not a terminal, and a clean run of seventeen `ok` lines says nothing that the summary
     // does not.
-    const interesting = context.flags["verbose"] === true || context.flags["list"] === true
-      ? output
-      : output.split("\n").filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
-    if (interesting.trim() !== "") context.log(interesting.trimEnd());
+    if (context.surface === "cli") {
+      const interesting = context.flags["verbose"] === true || context.flags["list"] === true
+        ? output
+        : output.split("\n").filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
+      if (interesting.trim() !== "") context.log(interesting.trimEnd());
+    }
 
     // No emitter: this module declares no `emits`. "checks-run"/"checks-failed" counted CHECKS, the
     // taxonomy references/harness-pair.md forbids because it grows with the tooling instead of with
     // the phenomena (RFC-0001, Rationale). agents-md's memory-slug gate is the replacement signal.
 
-    return {
-      code,
-      summary: match ? `${match[1]} checks, ${match[2]} failed` : `check exited ${code}`,
-      data: { exitCode: code, output },
-    };
+    const summary = match ? `${match[1]} checks, ${match[2]} failed` : `check exited ${code}`;
+
+    if (context.flags["list"] === true) {
+      return { code, summary, data: { checks: parseList(output) } };
+    }
+    // --self-test asserts a fixture behaves; its report is a narrative, not a finding list, so it is
+    // the one mode where the runner's own text is the answer.
+    if (context.flags["self-test"] === true) {
+      return { code, summary, data: { output } };
+    }
+
+    const findings: { level: string; check: string; evidence: string }[] = [];
+    const skipped: { check: string; reason: string }[] = [];
+    for (const line of output.split("\n")) {
+      const parsed = REPORT_LINE.exec(line);
+      if (!parsed) continue;
+      const [, kind, id, rest] = parsed;
+      if (kind === "SKIP") skipped.push({ check: id!, reason: rest! });
+      else findings.push({ level: kind === "WARN" ? "warn" : "fail", check: id!, evidence: rest! });
+    }
+
+    return { code, summary, data: { findings, skipped } };
   },
 );

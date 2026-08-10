@@ -46,6 +46,11 @@ export default defineModule(
   behaves identically under MCP and under a terminal.
 - **Branch on `context.surface` before printing or prompting.** Under `mcp` there is no terminal, and
   writing to stdout corrupts the stdio transport. Use `context.log`, never `process.stdout`.
+- **The report goes in `data`; `context.log` is the terminal's copy of it.** An MCP client renders
+  `structuredContent` and **discards the text content** — measured against Claude Code 2.1.226, where
+  `agents-md` returned `{failures:0}` and its findings never arrived. So `data` must stand alone, and
+  a module logs only when `surface === "cli"`. Report arrays carry their own length: no `count`
+  beside the array it summarises, and no "composed N" preamble.
 - **`destructive: true`** makes the CLI confirm before running. Set it on anything not trivially undone.
 
 ## Gates and ops

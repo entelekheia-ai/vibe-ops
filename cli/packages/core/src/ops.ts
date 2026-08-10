@@ -41,6 +41,21 @@ export interface OpsGateEntry {
   readonly label?: string;
 }
 
+/** One finding as the caller receives it — the gate that produced it, plus the finding itself. */
+export interface OpsFinding {
+  readonly gate: string;
+  readonly rule: string;
+  readonly file?: string;
+  readonly line?: number;
+  readonly evidence: string;
+  readonly level: "fail" | "warn";
+}
+
+export interface OpsSkip {
+  readonly gate: string;
+  readonly reason: string;
+}
+
 export interface OpsDefinition {
   readonly id: string;
   readonly version: string;
@@ -135,13 +150,21 @@ async function run(
   const resolved = await resolveAll(definition, context.repoRoot, pluginDir);
 
   if (context.flags["list"] === true) {
-    context.log(`composed ${resolved.length} gates:`);
-    for (const { entry, gate, patterns } of resolved) {
-      const marks = [entry.emits === true ? "emits" : undefined].filter(Boolean).join(" ");
-      context.log(`  ${labelFor(entry).padEnd(18)} ${patterns.join(" ")}${marks === "" ? "" : `  (${marks})`}`);
-      context.log(`  ${" ".repeat(18)} ${gate.definition.summary}`);
+    const gates = resolved.map(({ entry, gate, patterns }) => ({
+      label: labelFor(entry),
+      gate: entry.gate,
+      paths: patterns,
+      summary: gate.definition.summary,
+      emits: entry.emits === true,
+    }));
+    if (context.surface === "cli") {
+      for (const { entry, gate, patterns } of resolved) {
+        const marks = entry.emits === true ? "  (emits)" : "";
+        context.log(`  ${labelFor(entry).padEnd(18)} ${patterns.join(" ")}${marks}`);
+        context.log(`  ${" ".repeat(18)} ${gate.definition.summary}`);
+      }
     }
-    return { code: 0, summary: `${resolved.length} gates composed` };
+    return { code: 0, summary: `${resolved.length} gates composed`, data: { gates } };
   }
 
   // The emitter is doubly opt-in, unchanged: an entry declares `emits` AND the config names a
@@ -161,6 +184,11 @@ async function run(
 
   const files = trackedFiles(context.repoRoot);
   const verbose = context.flags["verbose"] === true;
+  const cli = context.surface === "cli";
+  // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so
+  // a report that lives only in context.log arrives there as a count with nothing behind it.
+  const findings: OpsFinding[] = [];
+  const skipped: OpsSkip[] = [];
   let failures = 0;
   let warnings = 0;
 
@@ -176,21 +204,26 @@ async function run(
     const examined = outcome.examined ?? scoped.length;
 
     if (outcome.skipped !== undefined) {
-      context.log(`SKIP  [${label}] ${outcome.skipped}`);
+      skipped.push({ gate: label, reason: outcome.skipped });
+      if (cli) context.log(`SKIP  [${label}] ${outcome.skipped}`);
       continue;
     }
 
     for (const finding of outcome.findings) {
-      const where = locate(finding);
-      if ((finding.level ?? "fail") === "warn") {
-        warnings += 1;
-        context.log(`WARN  [${finding.rule}] ${where}${finding.evidence}`);
-      } else {
-        failures += 1;
-        context.log(`FAIL  [${finding.rule}] ${where}${finding.evidence}`);
-      }
+      const level = finding.level ?? "fail";
+      if (level === "warn") warnings += 1;
+      else failures += 1;
+      findings.push({
+        gate: label,
+        rule: finding.rule,
+        ...(finding.file === undefined ? {} : { file: finding.file }),
+        ...(finding.line === undefined ? {} : { line: finding.line }),
+        evidence: finding.evidence,
+        level,
+      });
+      if (cli) context.log(`${level === "warn" ? "WARN" : "FAIL"}  [${finding.rule}] ${locate(finding)}${finding.evidence}`);
     }
-    if (outcome.findings.length === 0 && verbose) {
+    if (cli && outcome.findings.length === 0 && verbose) {
       context.log(`ok    [${label}] ${examined} examined`);
     }
 
@@ -209,7 +242,9 @@ async function run(
   const summary =
     `${resolved.length} gates, ${failures} failed` + (warnings > 0 ? `, ${warnings} warned` : "");
   const audit = context.flags["audit"] === true;
-  return { code: audit || failures === 0 ? 0 : 1, summary, data: { failures, warnings } };
+  // No counts: the arrays carry them, and a count beside the array it summarises is a second thing
+  // to keep in step with the first.
+  return { code: audit || failures === 0 ? 0 : 1, summary, data: { findings, skipped } };
 }
 
 function locate(finding: GateFinding): string {
