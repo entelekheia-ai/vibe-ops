@@ -287,6 +287,21 @@ installed copy once a version is cut.
 
 ## Surprises & Discoveries
 
+- Observation: skill-scoped hooks exist, and they are **not** an alternative for this one — which draws
+  the line this plan should have been able to state and could not.
+  Evidence: `hooks:` is a `SKILL.md` frontmatter field (2026-08-10, Claude Code hooks reference): hooks
+  "scoped to the component's lifecycle", running "only when that component is active" and cleaned up when
+  it finishes. That makes a whole class of hook free — it costs nothing in a session that never activates
+  the skill, so it never needs to be made quiet. `authoring-agents-md` takes exactly that shape in
+  [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md): `paths:` loads the skill, the
+  skill installs the hook, both leave together.
+  Why it does not apply here: a scoped hook fires alongside a **deliberate action**, and this nudge exists
+  for the case where there is no deliberate action — nobody invokes a skill for the plan they forgot to
+  update. The trigger is an absence, so there is nothing to scope it to. **Scoping is the cheaper answer
+  wherever a hook accompanies an intent; quieting is what remains for a hook whose whole job is to notice
+  an omission.** Worth recording because "why not just scope it to a skill?" is the first question anyone
+  arriving at this plan now asks, and answering it from scratch costs the same reading twice.
+
 - Observation: obeying the hook is what makes it ask again.
   Evidence: a plan the turn wrote is skipped with `continue` before it is recorded into the set written
   back to disk, so compliance removes it from the memo. The two plans the model wrote entries into were
