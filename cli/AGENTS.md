@@ -91,6 +91,10 @@ second concept.
   `plugin/` here, the root in a flat repo — via `resolvePluginDir`/`expandPluginToken` in
   `packages/core/src/files.ts`. Hardcoding one layout for the other makes a dogfooded pair unreachable
   in the other, which is exactly the bug the shell runner's `$PLUGIN_DIR` already exists to avoid.
+  **A path inside a gate's free-form `options` needs the same token and gets no help finding out** —
+  `paths` is expanded by the ops, `options` is not, and nothing type-checks a string. A gate handed a
+  path expands it itself (`template-version` does); a fixture shaped like *this* repository will never
+  reveal the omission, so the end-to-end fixtures are deliberately flat.
 - **A gate declares `fixable: true` and a `fix()` third argument to `defineGate` together, or neither.**
   `fix()` receives the findings `run()` just returned and repairs the mechanical ones — `pairing` creates
   a missing sibling `CLAUDE.md` but never edits one that exists without the import, because that is a

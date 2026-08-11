@@ -192,8 +192,14 @@ memory is the failure this plan exists to prevent.
 - **Track 6 is next and is the largest remaining**, and it absorbed `/vibe-ops:migrate`'s Step 1 — its
   dossier carries the measurement of what Step 1 reports today and why it needs the verb Track 6 builds.
 - **Track 7 is independent** and can move at any point.
-- **Two P1 items are open in Track 4's dossier**: a version on each of the seventeen shell fragments, and
-  `fragment-parity` recording both versions it compared.
+- **Two P1 items from Track 4 are still open**, and are recorded here because the dossier that held them
+  has been closed and deleted: a version declaration on each of the seventeen shell fragments under
+  `cli/packages/module-check/sh/checks/`, replacing the single hand-written instance; and
+  `fragment-parity` recording both versions it compared, without which a parity result is not evidence
+  the next time either side moves.
+- **The dossiers for Tracks 1–5 are gone**, closed on 2026-08-11. `git log -- project/tasks/` finds the
+  commit that still contains each one, and every reference to them was rewritten into a runnable
+  `git show` at closure.
 
 **Read no further than you need.** Each dossier is self-contained for its own track; reading all seven is
 how a recovery spends its context on the six tracks it is not doing.
@@ -469,6 +475,21 @@ shape, and moving anything to offset 0 breaks all of them at once.
 of every artifact it ever wrote, while the shell path beside it was ingested normally and `cli/AGENTS.md`
 asserted the two shared a shape. Emission succeeded, the file appeared, and only a reader was missing —
 which is the shape of every defect this plan is about.
+
+**What Tracks 1–5 routed at closure**, so the plan records it once the dossiers are gone: two traps to
+`project/log/` — that moving a declaration to offset 0 disables every parser anchored there, and that a
+producer writing successfully into a registry is no evidence anything can read it. One decision to
+[ADR-0012](../adr/0012-a-findings-level-belongs-to-configuration.md), a finding's level belonging to
+configuration. Two prescriptions to where they execute rather than to prose: `/new-migration` now says to
+state a destination positionally, and `cli/AGENTS.md` now says a path inside a gate's free-form `options`
+needs the `<plugin>/` token and gets no help finding out. Everything else was dropped deliberately —
+mostly because a test or a type already makes the mistake impossible, which is the filter working.
+
+The demotion check found nothing to delete. The nearest candidate is the version paragraph in
+`.agents/rules/governance.md`: the `template-version` gate now mechanically enforces its
+*absent-is-unknown* half, but the same paragraph carries where the declaration lives and the rule against
+a second copy, neither of which any guard covers. Trimming to the unguarded remainder would leave a
+sentence that no longer explains itself.
 
 *Written against the goals in full at closure, per `/vibe-ops:close-plan`.*
 

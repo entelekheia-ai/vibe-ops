@@ -61,6 +61,11 @@ Two completeness rules, both hard:
 - **A dropped section with no stated destination is an unfinished note.** Content does not evaporate
   because the template stopped asking for it. If the honest destination is *dropped*, say so explicitly —
   silence reads as an oversight and `/migrate` will refuse to act on it.
+- **Say WHERE positionally and absolutely, never relative to something that may not be there.** "At
+  offset 0, before whatever is currently first" holds for every artifact; "above the licence block" holds
+  only for the ones that have one. Written from the template alone the second phrasing looks equivalent,
+  because the template always has the block — the artifacts are where they differ, which is what Step 4
+  is for.
 - **Every step is classified mechanical or needs-a-decision.** This is a contract, not a courtesy:
   `/migrate` uses the split to decide what it may touch unattended. An unclassified step is one it must
   treat as unsafe.

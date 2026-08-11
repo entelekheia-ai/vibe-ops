@@ -19,6 +19,20 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   not intersect; npm install ERESOLVEs until the runtime is pinned exactly and the grammar's peer is
   overridden — measure the ABI before trusting that.
 
+## `cli/packages/core/src/`
+
+- [`emitting-an-observation-nothing-can-read.md`](emitting-an-observation-nothing-can-read.md) — The
+  TypeScript emitter wrote a shape the receiving translator refuses at line 1, for its whole existence,
+  while the shell producer beside it was ingested normally — emission succeeding says a file was written,
+  never that anything can read it.
+
+## `cli/packages/records/src/`
+
+- [`moving-a-declaration-to-offset-zero.md`](moving-a-declaration-to-offset-zero.md) — Frontmatter is found
+  as the YAML layer at offset 0 and a leading copyright comment was found at NR == 1, so putting frontmatter
+  first silently disabled the drift gate — moving anything to the top of a file breaks every parser anchored
+  there at once, and all of them fail quietly.
+
 ## `plugin/skills/setup/templates/harness/checks/`
 
 - [`scaffolding-a-repo-gate-after-the-scripts-split.md`](scaffolding-a-repo-gate-after-the-scripts-split.md) —
