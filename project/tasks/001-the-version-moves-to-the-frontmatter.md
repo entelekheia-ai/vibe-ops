@@ -84,10 +84,21 @@ edit one needs to know which of the two is authoritative.
 
 ## Implementation order
 
-- [ ] P0 — Decide the field name and integer form; write it into Plan-012's Decision Log
-- [ ] P0 — `/vibe-ops:new-migration` for each of the five types (parallelisable per type, one contract each)
-- [ ] P0 — Extend the record resolver to parse frontmatter; keep the comment reader for unmigrated records
+- [x] (2026-08-11) P0 — Field name and integer form decided: `vibe-ops-template: <type>@<integer>`, in
+      Plan-012's Decision Log with the reasoning for the vendor prefix and for keeping the `0.x` history
+- [x] (2026-08-11) P0 — All five templates moved and all five migration notes written: `plan@3`,
+      `task@3`, `adr@2`, `rfc@2`, `log@2`. `log`'s note is the one that diverges — its frontmatter
+      already existed, so the note forbids inserting a second block
+- [x] (2026-08-11) P0 — The **shipped** copies under `skills/setup/templates/project/templates/` moved
+      too (five files). Not in this dossier when it was written; found by the gate
+- [x] (2026-08-11) P0 — `35-dogfooding-drift.sh`'s `strip_leading_copyright_comment` taught about
+      leading frontmatter; `vibe-ops check` green and `--self-test` confirms the check still fires
+- [x] (2026-08-11) P0 — `/vibe-ops:new-migration` Step 2 corrected: it instructed stamping in a comment
+      above the H1, which this track made wrong for all five types
+- [ ] P0 — Extend the record resolver to parse frontmatter; keep the comment reader for unmigrated
+      records. **Smaller than estimated** — `readFrontmatter` already exists and is untyped by key
 - [ ] P0 — Confirm `/vibe-ops:migrate` still detects and refuses correctly against both forms
+- [ ] P1 — Fix `frontmatter.ts`'s doc comment, which now describes the previous world
 - [ ] P1 — Document the header table as presentation only, in one place
 
 ## Surprises & Discoveries
@@ -95,8 +106,50 @@ edit one needs to know which of the two is authoritative.
 <!-- Fill WHILE the work happens. Routed at closure: beyond this repository → project/learnings/;
      nameable file/folder/package → project/log/ with that as its path:; neither → dropped. -->
 
-- Observation: …
-  Evidence: …
+- Observation: a migration note for this jump written from the template diff alone says "insert the
+  frontmatter above the licence block", and that instruction is wrong for most of the files it applies to.
+  Evidence: of the three plans stamped `plan@0.2`, only `010` carries a licence comment; `009` and `011`
+  open directly on the stamp comment. Both shapes are real in one directory. The instruction that holds
+  for all of them is positional and absolute — *at offset 0, before whatever is currently first* — which
+  is only visible by looking at the artifacts, never at the template. This is what `/new-migration`
+  Step 4 exists to catch, caught on its first use.
+
+- Observation: frontmatter position is a parser contract here, not a formatting preference, and getting it
+  wrong fails silently.
+  Evidence: `cli/packages/records/src/frontmatter.ts` finds frontmatter as the `source.yaml` layer whose
+  `hostStart === 0`, deliberately, so that a fenced yaml example further down a document is not mistaken
+  for metadata. A file with a licence block ahead of its frontmatter therefore has no frontmatter as far
+  as every consumer is concerned — and it still renders correctly, so the version simply reads as absent.
+
+- Observation: the frontmatter reader this track assumed it would have to build already exists, and
+  carries no per-key typing.
+  Evidence: `readFrontmatter` is implemented and exported from `packages/records`, returning `keys`,
+  `scalars` and `lists` as open maps. Adding `vibe-ops-template` needs no type change and no new parser —
+  work item 3 is substantially smaller than this dossier estimated when it was written.
+
+- Observation: putting frontmatter at offset 0 silently disabled the guard that keeps the two copies of
+  each template in sync, and the failure mode was permanent rather than intermittent.
+  Evidence: `35-dogfooding-drift.sh` compares a dogfooded template against the copy shipped to other
+  repositories, stripping the licence header the shipped copy must not carry. Its stripper keyed on
+  `NR == 1`, so with frontmatter ahead of the licence block the block stopped being recognised — it then
+  entered the comparison, the shipped copy has none by design, and the two sides could never match again.
+  The gate caught it on the first run after the edit and named all four pairs. Two lessons, and the second
+  is the transferable one: a positional parser is a dependency on a file's shape, and moving anything to
+  offset 0 breaks every one of them at once; and the check that fails immediately after a deliberate
+  change is more likely to be the change's blast radius than a false positive.
+
+- Observation: the five templates exist in two copies, and this dossier was written as though they existed
+  in one.
+  Evidence: `skills/setup/templates/project/templates/` holds the copy `setup repo` ships into other
+  repositories, and the dossier's work item 2 said "all five templates" meaning five files when the real
+  number was ten. Nothing in the plan or the dossier would have revealed it; the gate did, immediately.
+  The shipped copies also carry **no** copyright block at all, which is why the offset-0 instruction in
+  every migration note had to be positional rather than "above the licence block".
+
+- Observation: `frontmatter.ts`'s own doc comment goes stale as a result of this track.
+  Evidence: it states "a file with no frontmatter is the ordinary case for three of the four record
+  types", which stops being true the moment all five templates carry it. Fix it in this track rather than
+  leaving a correct-looking sentence that describes the previous world.
 
 ## Closure
 

@@ -1,3 +1,7 @@
+---
+vibe-ops-template: plan@3
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -28,11 +32,10 @@
  of prior plans, no other context. Name files by full path. Define any non-obvious term where you first
  use it. Never write "as decided previously" or "see the architecture doc" — say the thing here.
 
- Delete these comments before committing — except the template-version line below, which stays.
+ Delete these comments before committing. The `vibe-ops-template` line in the frontmatter at the top of
+ this file STAYS: /vibe-ops:migrate reads it to find artifacts written against an older template, and
+ removing it makes this file invisible to migration.
 -->
-
-<!-- vibe-ops-template plan@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Plan-NNN: Title
 

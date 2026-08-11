@@ -1,4 +1,5 @@
 ---
+vibe-ops-template: log@2
 name: <slug — identical to the filename, without .md>
 description: <one line, standing alone: what was attempted and what happened. This is the row in the
              index and the text a hook injects, so it is read far more often than the body.>
@@ -36,11 +37,10 @@ source: <the commit, task or plan this came from>
  GAPPY BY DESIGN. Most surprises are not traps. A small directory is this tier working, not neglected —
  an entry that fails the admission test is dropped, never filed here for lack of anywhere better.
 
- Delete these comments before committing — except the template-version line below, which stays.
+ Delete these comments before committing. The `vibe-ops-template` key in the frontmatter at the top of
+ this file STAYS: /vibe-ops:migrate reads it to find artifacts written against an older template, and
+ removing it makes this file invisible to migration.
 -->
-
-<!-- vibe-ops-template log@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # <the trap, as one sentence someone would recognise before hitting it>
 

@@ -1,3 +1,7 @@
+---
+vibe-ops-template: task@3
+---
+
 <!--
  TASK DOSSIER TEMPLATE — copy to tasks/<NNN>-<slug>.md (NNN = the GitHub issue number).
  A dossier is the detailed WORKING LOG for one issue, for work already decided (see the project/**
@@ -8,11 +12,10 @@
  the plan. The dossier is deleted at closure, so what is written here is routed out by construction; the
  plan is permanent, so anything written there stays pending forever.
 
- Delete these comments before committing — except the template-version line below, which stays.
+ Delete these comments before committing. The `vibe-ops-template` line in the frontmatter at the top of
+ this file STAYS: /vibe-ops:migrate reads it to find artifacts written against an older template, and
+ removing it makes this file invisible to migration.
 -->
-
-<!-- vibe-ops-template task@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Task: Title
 

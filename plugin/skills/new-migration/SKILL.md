@@ -31,16 +31,20 @@ list). A change in wording that leaves the structure alone needs no note and **M
 
 ## Step 2 — Choose the version
 
-Patch-level does not exist here. **A template version moves when an artifact written against it would now
-be shaped differently** — that is the only test, because the version's whole job is to tell `/migrate`
-whether a file needs work.
+Patch-level does not exist here, and neither does semver. **A template version is a single integer, and it
+moves when an artifact written against it would now be shaped differently** — that is the only test,
+because the version's whole job is to tell `/migrate` whether a file needs work. The package's own semver
+is a different number answering a different question, and the two never merge.
 
 If nothing about existing artifacts changes, do not move the version.
 
-Stamp it in the template, above the H1, in the comment that survives the instruction-block deletion:
+Declare it in the template's **frontmatter, at offset 0** — the first bytes of the file, ahead of any
+licence block:
 
-```html
-<!-- vibe-ops-template <type>@<version> — KEEP THIS LINE. /vibe-ops:migrate reads it ... -->
+```yaml
+---
+vibe-ops-template: <type>@<version>
+---
 ```
 
 ## Step 3 — Write the note

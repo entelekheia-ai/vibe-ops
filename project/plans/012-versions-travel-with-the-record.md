@@ -309,6 +309,24 @@ Run from the repository root:
   accident.
   Date / Author: 2026-08-11 / Danilo Borges
 
+- Decision: the frontmatter key is `vibe-ops-template`, carrying `<type>@<integer>` — one key, vendor
+  prefixed, value shaped exactly like today's comment stamp.
+  Rationale: these templates ship into other people's repositories, where other tools read frontmatter and
+  `type` and `version` are contested names; a vendor prefix cannot collide. Keeping the `<type>@<version>`
+  value means every existing grep, every migration note filename and everything already written about the
+  stamp stays true — only its location moves. A single line is also matchable from a shell fragment
+  without a YAML parser, which a nested block would not be.
+  Date / Author: 2026-08-11 / Danilo Borges
+
+- Decision: each type's integer is its **count of shapes**, and the `0.x` history is kept rather than
+  renamed — `plan` and `task` go to `@3`, `adr`, `rfc` and `log` go to `@2`.
+  Rationale: the integer has to mean "which shape is this", and three plans are already stamped `plan@0.2`
+  on disk. Renaming the history to `1`/`2` would orphan those three and rename two migration notes that
+  are already written and correct; restarting everything at `@1` would erase that `plan` and `task` have
+  changed shape twice, which is precisely the information the dispatch in Track 6 exists to act on. The
+  resulting note filenames (`plan-0.2-to-3.md`) read oddly and are the honest record of what happened.
+  Date / Author: 2026-08-11 / Danilo Borges
+
 - Decision: the emitter converges on the shape the receiving side already accepts, rather than the
   receiving side gaining a branch for the shape the emitter currently writes.
   Rationale: a translator with one branch per producer shape is a lookup table mapping artifact to

@@ -15,11 +15,27 @@
 # LEADING HTML comment block that contains the word "Copyright", so an ordinary leading comment (the
 # PLAN TEMPLATE usage note, for instance) is left alone and still compared.
 
+# Plan-012 moved every template's version declaration into YAML frontmatter at offset 0, which put a
+# block ahead of the copyright comment this function exists to strip. The original keyed on NR == 1, so
+# the comment stopped being recognised the moment frontmatter preceded it — and the failure was not a
+# missed strip but a permanent one: the licence block then entered the comparison, the shipped copy has
+# none by design (80-template-attribution.sh enforces that), and the two sides could never match again.
+# So the leading frontmatter is passed through UNCHANGED — the version must agree between the two copies,
+# and a mismatch there is real drift — and the copyright comment is then looked for at the first content
+# line after it, rather than at line 1.
+
 # strip_leading_copyright_comment <file> — the file's content with a leading `<!-- ... Copyright ...
 # -->` block (plus the one blank line after it) removed; unchanged if no such block opens the file.
+# A leading `---` frontmatter block is printed as-is and does not stop the copyright block being found.
 strip_leading_copyright_comment() {
   awk '
-    NR == 1 && $0 ~ /^<!--[[:space:]]*$/ { incomment = 1; buf = $0 "\n"; next }
+    BEGIN { atstart = 1 }
+    # Leading frontmatter: emitted verbatim, then the search for the copyright block resumes after it.
+    NR == 1 && $0 == "---" { print; infm = 1; atstart = 0; next }
+    infm { print; if ($0 == "---") { infm = 0; afterfm = 1 } next }
+    afterfm && /^[[:space:]]*$/ { print; next }
+    afterfm { afterfm = 0; atstart = 1 }
+    atstart && $0 ~ /^<!--[[:space:]]*$/ { incomment = 1; atstart = 0; buf = $0 "\n"; next }
     incomment {
       buf = buf $0 "\n"
       if ($0 ~ /Copyright/) sawcopy = 1
@@ -32,7 +48,7 @@ strip_leading_copyright_comment() {
       next
     }
     skipping && /^[[:space:]]*$/ { skipping = 0; next }
-    { print }
+    { atstart = 0; print }
   ' "$1"
 }
 

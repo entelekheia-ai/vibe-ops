@@ -1,3 +1,7 @@
+---
+vibe-ops-template: rfc@2
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -11,12 +15,10 @@
 <!--
  RFC TEMPLATE — copy to rfc/<NNNN>-<kebab-name>.md and fill in.
  An RFC answers "should we do X, and how?". It requires ratification (see rfc/AGENTS.md).
- Delete these HTML comments before committing — except the template-version line below. Keep the section
- order.
+ Delete these HTML comments before committing, and keep the section order. The `vibe-ops-template` line
+ in the frontmatter at the top of this file STAYS: /vibe-ops:migrate reads it to find artifacts written
+ against an older template, and removing it makes this file invisible to migration.
 -->
-
-<!-- vibe-ops-template rfc@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # RFC-NNNN: Title
 
