@@ -14,9 +14,36 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Four pieces of work. One changes a hook's behaviour in every repository this plugin is installed in; one
+Five pieces of work. One changes a hook's behaviour in every repository this plugin is installed in; one
 closes a leak the record-writing skills had no rule against; the third is design groundwork that reaches
-a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAUDE.md` pairing on write.
+a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAUDE.md` pairing on write. The
+fifth moves the whole governance lifecycle out of shell and into the CLI, and is the one that changes what
+a user types.
+
+### Changed — the governance lifecycle is three CLI nouns (Plan-011)
+
+- **`/vibe-ops:close` is now `/vibe-ops:close-task` and `/vibe-ops:close-plan`.** The two lifecycles end
+  differently — a dossier is deleted, a plan moves folder — and `paths:`/`hooks:` are declared per skill,
+  so one file could not carry a trigger for each. Both keep the routing step verbatim.
+- **A closed plan moves to `project/plans/shipped/` and keeps its number.** `vibe-ops plan close` sets the
+  terminal status, `git mv`s the file, and **repoints links in both directions**: every link into the
+  plan, and every relative link the plan itself carries from one level deeper. Nothing is deleted — the
+  plan is the record someone reads in a year.
+- **`vibe-ops` gains three governance nouns with verbs**, reachable identically from a terminal, over MCP
+  and from a hook: `plan resolve|status|context|file|close`, `task resolve|close|guard`,
+  `log resolve|index|sweep|lint`, plus `records --type` for the two record types with no noun of their own.
+  `plan status` is new detection — it reads a plan's `Status` against its own track checkboxes, which no
+  guard did before.
+- **`log index` generates `project/log/README.md` from the entries themselves**, and `new-log`'s Step 5
+  becomes "run it". The index rows *are* each entry's `description:`; the grouping is derived from `path:`.
+- **Seven shipped shell scripts are gone**, 1,107 lines of them, each deleted in the same commit as its
+  replacement. `plugin/scripts/` is down to `session-touched-repos.sh`, which is session bookkeeping
+  rather than governance logic. **This makes the plugin and the CLI co-dependent**: five of the seven hook
+  registrations now name `vibe-ops` directly, so a machine without it on `PATH` gets a loud failure rather
+  than an install that looks like it works.
+- **Record structure is read from a parse tree, not from lines.** A checkbox quoted in a fenced example is
+  not a track; a closure marker quoted in a transcript does not block a deletion; a link written inside a
+  code span is not rewritten when a dossier closes. Each of those was measured, not assumed.
 
 > **Nothing here is scheduled for a release.** The version is frozen deliberately while the plugin is
 > installed from a directory source and exercised in place, so this section keeps growing and no

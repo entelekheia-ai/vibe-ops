@@ -106,6 +106,20 @@ emoji: `startIndex` 39, `text.indexOf` 39, byte offset 43. Reading a node from t
 `hostStart` (it is already host-absolute), but `lineAt(document.text, node.startIndex)` is still the
 correct call, and keeping one idiom for both is why every gate uses it.
 
+### Editing: splice a node's own span, and its span includes its padding
+
+Rewriting through the tree means replacing `[node.startIndex, node.endIndex)` rather than substituting
+over the text — which is what keeps an edit from catching a second thing that merely looks the same on
+that line.
+
+**A node's span often includes surrounding whitespace, and you have to look rather than assume.** Measured
+on `| Status | Shipped |`: the `pipe_table_cell` node's text is `"Shipped "`, trailing space and all, so
+splicing `" ${value} "` produces `|  Shipped |`. Carry the original padding over instead — it is also what
+keeps a table someone aligned by hand aligned, and keeps the diff to the thing that changed.
+
+Apply splices **back to front** when there is more than one, so an earlier replacement cannot invalidate a
+later offset.
+
 ### A named language with no grammar is uncovered, never clean
 
 `document.uncoveredLayers` (and `Layer.uncoveredLayers`, one level in) carries every region whose language

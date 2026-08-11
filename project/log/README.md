@@ -5,6 +5,13 @@ whole piece of work (that is `project/adr/<id>-log.md`). Grouped by `path:` pref
 a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 [`new-log`](../../plugin/skills/new-log/SKILL.md) for how an entry is written.
 
+## `(repository root)`
+
+- [`adding-a-second-foundation-package-to-the-cli-workspace.md`](adding-a-second-foundation-package-to-the-cli-workspace.md) —
+  A workspace package that other packages import but that sorts after them alphabetically is built against
+  its stale dist/ by `npm run build --workspaces`, which typechecks and reports success; the fix is a line
+  in build:foundation, and nothing detects the next one.
+
 ## `cli/packages/core/`
 
 - [`adding-a-second-tree-sitter-grammar-to-core.md`](adding-a-second-tree-sitter-grammar-to-core.md) — Two

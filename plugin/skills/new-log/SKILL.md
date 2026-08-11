@@ -85,14 +85,14 @@ Do not touch `project/log/RETIRED.md` — it is append-only and belongs to retir
 
 ## Before finishing
 
-- [ ] `path:` or `relatedTo:` is filled, and it is the answer to *where does someone meet this again*
-- [ ] The slug describes the attempt, and matches `name:`
-- [ ] `kind:` is `trap` or `debt` — debt fires on the same path and says the opposite
-- [ ] No `status:` field; retirement is deletion, not a state
-- [ ] `attempted:` is a real date from `date +%Y-%m-%d`, never guessed
+- [ ] `vibe-ops log lint` is clean — it checks `name:` against the filename, `kind:` ∈ {trap, debt}, the
+      absence of `status:`, a real `attempted:` date, and that a recurrence surface exists at all
+- [ ] `path:` or `relatedTo:` is not merely filled but is genuinely *where someone meets this again* —
+      the lint can see the field, not whether it is true
+- [ ] The slug describes the **attempt**, not the component
 - [ ] The "not current truth" banner is intact
 - [ ] The template's guidance comments are deleted; the version stamp is not
-- [ ] `vibe-ops log lint` is clean, and `vibe-ops log index` has been run
+- [ ] `vibe-ops log index` has been run
 
 ## ⟳ After every use: review this skill
 

@@ -311,7 +311,7 @@ implement the same rule.
 - [x] **Track 8 — Docs, in the same act.** `cli/AGENTS.md` (the `commands` contract, the three nouns, the
       action/detection line), `plugin/AGENTS.md` (the skill table, the hook list going from six scripts to
       one), `README.md`, and `70-plugin-root-paths.sh` losing the paths of seven deleted scripts.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file moves to `project/plans/shipped/` by its own Track 6.
 
 ## Success criteria
@@ -598,7 +598,66 @@ here that was not observed in a transcript.
 
 ## Outcomes & Retrospective
 
-<!-- Written at track completion, not now. -->
+**Against the five goals.**
+
+1. **`vibe-ops <plan|task|log> <verb>` behaves identically from a terminal, over MCP, and from a hook.**
+   Met, but not on the first pass, and the gap was invisible from the code. `mcp.ts` passed `args: []`
+   unconditionally, so every verb taking positional arguments — `task close`, `task guard`, `plan close` —
+   was reachable from a terminal and from nowhere else, failing over MCP as an *empty batch* rather than
+   as a missing input. Fixing it exposed the second half: `destructive` was enforced by a TTY prompt in
+   `bin.ts`, which is exactly the file MCP does not go through, so an irreversible verb would have become
+   reachable with no consent step at all. Both gates now live in `runModule`, and
+   `cli/packages/cli/test/mcp-nouns.test.ts` asserts the claim **per track** rather than per reading —
+   which is the part of this goal worth keeping, because the goal was believed met for two tracks while it
+   was false.
+2. **The format is read from the artifact, once, and never restated in shell prose.** Met. The
+   living-section names now cross the boundary as a list from the template's own markers and are written
+   down in exactly one place; the status chain, the terminal state, the closure box, the header table and
+   the record's frontmatter are all read from the parse tree. Defect 1 is closed at the source rather than
+   corrected: there is no second place for the names to drift *to*.
+3. **`/close` becomes `/close-task` and `/close-plan`, each carrying its own `paths:` and `hooks:`.** Met,
+   with one deliberate divergence from this plan's own Design table, recorded in the Decision Log:
+   `close-task` registers no hook, because Track 4 had already made `task-guard` always-on and registering
+   it twice would fire one rule twice.
+4. **A closed plan moves to `project/plans/shipped/` and keeps its number.** Met, and verified by running
+   it on this repository's own eight shipped plans: `EXISTING=11`, `NEXT=012`, unchanged across the move.
+5. **No shell file implements governance logic that a CLI command implements.** Met. Seven scripts
+   deleted, 1,107 lines to two files that are not governance logic — `session-touched-repos.sh` and
+   `session-state-cleanup.sh`, both named as out of scope on day one. Every rewire landed in the same
+   commit as its replacement, so no window existed where a hook and a command both implemented one rule.
+
+**Success criteria: all run, two of them wrong in a way worth recording.**
+
+- `vibe-ops mcp` was predicted to list six tools. It lists seven — the prediction omitted `records`, and
+  the omission had been copied into `vibeops.config.ts`, so `/new`'s Step 0 was unreachable over MCP for
+  the whole plan. Found by running the criterion rather than by reading it. Fixed at closure.
+- `vibe-ops task resolve --json | diff - <(sh plugin/scripts/resolve-governance.sh task …)` **cannot be
+  run at the end**, because Track 8 deletes the script it diffs against. The criterion was not wrong about
+  what to measure, it was wrong about *when*: parity is a Track 2 acceptance and was measured there,
+  field for field, while both existed. A criterion that only holds mid-plan should say so.
+- `vibe-ops check .` was predicted to pass "with seven fewer plugin-root paths".
+  `70-plugin-root-paths.sh` needed no edit at all: it scans for `${CLAUDE_PLUGIN_ROOT}/…` references and
+  checks they resolve, so seven deleted scripts cost it nothing. The prediction assumed a guard that
+  hardcodes what it guards; the guard was written generically, and outlived the paths.
+
+**What the tracks cost, against what was expected.** Track 3 was re-done: the first implementation read
+the template and the authority with `readFileSync` and line scans, and had to be rewritten onto the
+`DocumentStore` after the maintainer asked whether the tree was being used. That correction then paid
+three more times — the closure box, the frontmatter, and `task close`'s link repoint were each written
+tree-first, and each turned out to have a real failure a text scan would have had. The measured one:
+`\[([^\]]*)\]\([^)]*<base>\)` matches three spans in a document holding one real link, one in a code
+span and one in a fenced block, and rewriting the other two damages a document that was explaining its own
+link syntax — which is the ordinary shape of a plan referring to a task dossier.
+
+**Two defects found by running rather than reading**, both of which typechecked and would have shipped:
+a `pipe_table_cell` node's span already includes its padding, so `withStatus` produced `|  Shipped |`; and
+`records` sorts after every `module-*` that depends on it, so `npm run build --workspaces` compiled them
+against its stale `dist/` — the same false green `cli/AGENTS.md` already documents for `core`, reappearing
+the moment a second foundation package existed.
+
+**Still open, inherited by nobody yet.** Plan-009 remains `Shipped` with its own `close plan` box
+unchecked — the finding `plan status` was built to make visible, now visible, and still true. Closing it
+is a run of `/vibe-ops:close-plan` against 009, not work this plan owes.
 
 ---
 

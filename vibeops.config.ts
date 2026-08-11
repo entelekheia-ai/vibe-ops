@@ -6,7 +6,7 @@ import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export default {
   // Which modules `vibe-ops mcp` exposes as tools. Absent means the built-ins.
-  modules: ["check", "agents-md", "governance", "plan", "task", "log"],
+  modules: ["check", "agents-md", "governance", "plan", "task", "log", "records"],
 
   // Absent would disable emission entirely. Pointed inside .git/ deliberately: these are observations
   // about a working tree, not a product of it, and committing them would make every run a diff.
