@@ -6,3 +6,5 @@ that goal requires.
 
 - [**Write a gate that reads document structure**](write-a-gate.md) — from empty folder to composed and
   running, including the four traps that fail silently rather than loudly.
+- [**Add a hook**](write-a-hook.md) — from "should this be a hook at all" to a real session firing it,
+  including why a hook that never runs is indistinguishable from one with nothing to say.
