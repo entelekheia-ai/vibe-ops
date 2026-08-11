@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-11 |
 | Author | Danilo Borges |
 | Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-011](shipped/011-the-governance-lifecycle-becomes-three-cli-nouns.md) |
@@ -180,13 +180,32 @@ rather than hand-written.
 ### Recovering after a compaction
 
 This file is written to be the whole context. A session that loses its history recovers by reading this
-plan and the task dossiers in `project/tasks/` named by the tracks below — in that order, and nothing
-else. Anything a track needed that is not in one of those files was not written down, and rewriting it
-from memory is the failure this plan exists to prevent.
+plan and then the one dossier for the track it is about to work — in that order, and nothing else.
+Anything a track needed that is not in one of those files was not written down, and rewriting it from
+memory is the failure this plan exists to prevent.
+
+**Where the work actually is**, as of 2026-08-11:
+
+- **Tracks 1–5 landed.** Their dossiers stay open on purpose (see the Decision Log): closure is a
+  ceremony deferred to the end of the plan, so a ticked track with an open dossier is the intended state
+  here, not an oversight.
+- **Track 6 is next and is the largest remaining**, and it absorbed `/vibe-ops:migrate`'s Step 1 — its
+  dossier carries the measurement of what Step 1 reports today and why it needs the verb Track 6 builds.
+- **Track 7 is independent** and can move at any point.
+- **Two P1 items are open in Track 4's dossier**: a version on each of the seventeen shell fragments, and
+  `fragment-parity` recording both versions it compared.
+
+**Read no further than you need.** Each dossier is self-contained for its own track; reading all seven is
+how a recovery spends its context on the six tracks it is not doing.
+
+**Verify the state rather than trusting this list.** `vibe-ops check .` and `npm test` from the
+repository root say whether the tree is where these notes claim, and `vibe-ops governance --verbose`
+prints the health reading Track 2 produces. The last of those is the fastest way to see what this plan
+has actually bought so far.
 
 ## Tracks
 
-- [ ] **Track 1 — The version moves to the frontmatter.** Every template under `plugin/templates/` gains
+- [x] **Track 1 — The version moves to the frontmatter.** Every template under `plugin/templates/` gains
       frontmatter carrying its version; the header table becomes presentation only. Each type takes a
       version jump with its migration note, written through `/vibe-ops:new-migration` — five types, five
       notes. At the end the version is read from a parsed field rather than from a position described in
@@ -195,7 +214,7 @@ from memory is the failure this plan exists to prevent.
       invented for a jump that did not happen.
       Task: `project/tasks/001-the-version-moves-to-the-frontmatter.md`
 
-- [ ] **Track 2 — The sensor, and the health reading it produces.** A check fragment that reads the
+- [x] **Track 2 — The sensor, and the health reading it produces.** A check fragment that reads the
       frontmatter version and reports a record without one as `UNKNOWN`, naming the file. Its real output
       is the health reading: what is open, and what is behind a version — the signal that says where an
       upgrade or a fix is owed. At the end the unversioned and out-of-date populations are reported by the
@@ -203,7 +222,7 @@ from memory is the failure this plan exists to prevent.
       reports unknown, open-and-behind, and behind separately; its fixture proves each fires.
       Task: `project/tasks/002-the-sensor-and-the-health-reading.md`
 
-- [ ] **Track 3 — The emitted record reaches eita.** `cli/packages/core/src/emit.ts` writes the
+- [x] **Track 3 — The emitted record reaches eita.** `cli/packages/core/src/emit.ts` writes the
       header-plus-findings shape the receiving side accepts, carrying its own schema version, the
       population examined and the moment. The local artifacts written under the old shape are deleted, not
       converted. At the end an artifact produced by an ops is ingested the way the shell path already is.
@@ -211,7 +230,7 @@ from memory is the failure this plan exists to prevent.
       nowhere.
       Task: `project/tasks/003-the-emitted-record-reaches-eita.md`
 
-- [ ] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
+- [x] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
       that moves only on a break, and it travels into the emitted record's instrument field. The seventeen
       shell fragments gain the same declaration, replacing the one hand-written instance. Breaking for the
       ten gates in `cli/packages/gates/`. At the end two observations recorded under one id at different
@@ -219,7 +238,7 @@ from memory is the failure this plan exists to prevent.
       fragment declares a version; an emission carries it; `defineGate` rejects a definition without one.
       Task: `project/tasks/004-the-detector-says-which-detector-it-is.md`
 
-- [ ] **Track 5 — Backfill the declarations.** Every governance record under `project/` except research
+- [x] **Track 5 — Backfill the declarations.** Every governance record under `project/` except research
       declares the template version it was written against. Mechanical for the types whose template has
       only ever had one version; the plans require reading each file's actual shape before claiming one,
       because the declaration is an assertion about the file and not a default. At the end Track 2's
@@ -417,7 +436,41 @@ Run from the repository root:
 
 ## Outcomes & Retrospective
 
-*Not yet written — the plan has not started.*
+**Tracks 1 through 5 have landed; 6 and 7 have not started.** Written here at the halfway point rather
+than at closure, because this file is the recovery surface a session with no history reads first.
+
+Where the six goals stand. Goals 1, 2 and 5 are met for the record and gate surfaces: every template and
+every gate declares a version, an undeclared record fails the gate rather than defaulting, and an emitted
+observation carries the gate that produced it with its own version. Goal 6 is met and readable — `0
+failed, 8 warned`, the eight being the plans still at `plan@0.1`, of which only 004 (Backlog) and 008 (In
+Progress) are open. Goal 3 is **not** met: nothing dispatches on version yet, which is Track 6. Goal 4 is
+met by construction so far, and Track 6 is where it can most easily be lost.
+
+Four things are worth carrying forward.
+
+**The plan's own track order was wrong twice, in the same direction both times.** Track 1's frontmatter
+move had to precede the sensor, because a sensor built against the comment position would have been
+invalidated by the move behind it. Track 4 had to precede Track 3, because the emitted header's `tool` is
+the gate with its version and the ops's version there would have conflated every detector in a
+composition. Both were discovered by looking at the thing rather than at the plan, and both were cheap
+because they were found before the code was written rather than after.
+
+**Two tracks could not land separately, and the test is what said so.** Tracks 2 and 5 shipped as one
+commit: the end-to-end test asserting this repository runs clean cannot pass while thirty-five records
+are undeclared, so the sensor and the backfill are one landing. The plan implies they are separable.
+
+**The gate found more than the plan did, twice.** The dogfooding-drift gate caught that five templates
+were ten files, and then that the frontmatter move had silently disabled the gate itself — its stripper
+keyed on `NR == 1`. The compiler caught that every gate needed a version, which a grep would have
+approximated. The lesson is not "run the gate" but that a positional parser is a dependency on a file's
+shape, and moving anything to offset 0 breaks all of them at once.
+
+**The emitter had never produced anything a consumer could read.** Not a regression: it failed at line 1
+of every artifact it ever wrote, while the shell path beside it was ingested normally and `cli/AGENTS.md`
+asserted the two shared a shape. Emission succeeded, the file appeared, and only a reader was missing —
+which is the shape of every defect this plan is about.
+
+*Written against the goals in full at closure, per `/vibe-ops:close-plan`.*
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
