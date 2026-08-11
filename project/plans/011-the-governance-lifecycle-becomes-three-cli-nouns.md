@@ -304,14 +304,14 @@ implement the same rule.
       `plan close` moving the file, `plan-approved-copy.sh` rewired and deleted. At the end the seven
       shipped plans have moved, `plan resolve` still reports `NEXT=012`, and every link into
       `project/plans/` still resolves under `vibe-ops governance`.
-- [ ] **Track 7 — `/close-task` and `/close-plan`.** The split, each with its `paths:`, its `hooks:`
+- [x] **Track 7 — `/close-task` and `/close-plan`.** The split, each with its `paths:`, its `hooks:`
       block and its half of the ceremony; `close/` removed. At the end `claude plugin validate . --strict`
       passes, `25-hooks-registration.sh` accepts both blocks, and neither skill's description exceeds the
       per-skill character cap.
 - [ ] **Track 8 — Docs, in the same act.** `cli/AGENTS.md` (the `commands` contract, the three nouns, the
       action/detection line), `plugin/AGENTS.md` (the skill table, the hook list going from six scripts to
       one), `README.md`, and `70-plugin-root-paths.sh` losing the paths of seven deleted scripts.
-- [ ] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
+- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file moves to `project/plans/shipped/` by its own Track 6.
 
 ## Success criteria
@@ -348,6 +348,20 @@ here that was not observed in a transcript.
 ---
 
 ## Decision Log
+
+- Decision: `close-task` registers NO hook of its own, and `close-plan` registers `hook plan-status`.
+  This diverges from this plan's own Design table, which gave `close-task` a `PreToolUse` on `Bash` →
+  `vibe-ops task guard`.
+  Rationale: the table was written before Track 4, which made `task-guard` an ALWAYS-ON registration in
+  `hooks.json`. Adding it again as a skill-scoped hook would register the same rule twice, and this plan's
+  own Decision Log already says what that costs — "two implementations of one rule both firing means the
+  rule fires twice". The guard being always-on is also strictly better for what it guards: a hand deletion
+  is refused whether or not the closing skill was ever loaded. `close-plan`'s hook survives the same test
+  because it is genuinely new: closure's whole job is setting `Status` to the terminal state, and the
+  defect this plan exists for is a plan sitting there with an open track box. `plan-status` reports it at
+  the moment of the write, scoped to the file just written rather than sweeping — which `vibe-ops plan
+  status` already answers on demand.
+  Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: `plan close` repoints links in BOTH directions — inbound links to the plan, and the plan's own
   outbound relative links, re-based for its new depth. This answers the plan's third Open question:

@@ -81,7 +81,9 @@ skills say so rather than pretending otherwise.
 - [`.agents/rules/governance.md`](../../.agents/rules/governance.md) — the lifecycle mechanics.
 - [`skills/new/SKILL.md`](../../plugin/skills/new/SKILL.md) with
   [`references/records/task.md`](../../plugin/references/records/task.md) ·
-  [`skills/close/SKILL.md`](../../plugin/skills/close/SKILL.md) — the two ends of it. (Pointer repaired when
-  `new-task` was folded into `/new`, and again when `close-task`/`close-plan` were folded into `/close`;
-  the decision above is unchanged.)
+  [`skills/close-task/SKILL.md`](../../plugin/skills/close-task/SKILL.md) — the two ends of it. (Pointer
+  repaired when `new-task` was folded into `/new`; again when `close-task`/`close-plan` were folded into
+  `/close`; and a third time when Plan-011 split them back apart, because the two lifecycles end
+  differently and `paths:`/`hooks:` are declared per skill. The decision above is unchanged by all three,
+  which is the point of recording it separately from the skills that implement it.)
 - [ADR-0002](0002-knowledge-lifecycle.md) — what closure does with what the work taught.

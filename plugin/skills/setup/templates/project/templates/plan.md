@@ -82,7 +82,7 @@
 
 - [ ] **Track 1 — Title.** <!-- scope; what exists at the end; the acceptance. Task: tasks/NNN-slug.md -->
 - [ ] **Track 2 — Title.** <!-- … -->
-- [ ] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
+- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
       track list that is otherwise complete but has this box open is not finished.
 

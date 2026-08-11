@@ -91,7 +91,8 @@ changes at all. An empty directory is just the maximum-gap case.
 |---|---|
 | `/vibe-ops:setup <repo\|harness>` | Set up **or reconcile** a repo or npm-workspaces monorepo (`repo`), or the guide-and-sensor apparatus that checks it (`harness`). `audit` reports without writing. |
 | `/vibe-ops:new <adr\|rfc\|plan\|task>` | Open one governance record, using the *target repo's* own template and numbering. |
-| `/vibe-ops:close <task\|plan>` | Close the loop — write back, propagate, route what the work taught. A task dossier is distilled and deleted; a plan is kept, because it is the permanent record. |
+| `/vibe-ops:close-task` | Close a dossier — write back, route what the work taught, distil into the issue, then delete it leaving a git breadcrumb. |
+| `/vibe-ops:close-plan` | Close a plan — retrospective against its own goals, demotion check, issue closed, then the file moves to `shipped/` with its number. Never deleted. |
 | `/vibe-ops:authoring-agents-md` · `authoring-readme` | Write or repair the two files a newcomer — human or agent — reads first. |
 | `/vibe-ops:license-setup` | `LICENSE`, fork attribution, and optional header enforcement. |
 

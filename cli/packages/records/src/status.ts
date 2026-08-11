@@ -37,7 +37,7 @@ function findH2Section(root: Parser.SyntaxNode, headingText: string): Parser.Syn
 
 /**
  * Every `- [ ]`/`- [x]` under the `## Tracks` section — one checkbox per track, plus the closure line
- * ("Run `/vibe-ops:close plan`") the `plan@0.2` template itself adds as the section's last item.
+ * ("Run `/vibe-ops:close-plan`") the `plan@0.2` template itself adds as the section's last item.
  *
  * Reads the block tree, not the text: `task_list_marker_checked`/`task_list_marker_unchecked` are real
  * node types, so a checkbox written inside a fenced example block is structurally not one of these and

@@ -2,7 +2,7 @@
  TASK DOSSIER TEMPLATE — copy to tasks/<NNN>-<slug>.md (NNN = the GitHub issue number).
  A dossier is the detailed WORKING LOG for one issue, for work already decided (see the project/**
  governance rule). If the design is still open, write an RFC first. The dossier is EPHEMERAL: committed
- live, then closed via /vibe-ops:close task (write-back to the source doc, then distill + delete).
+ live, then closed via /vibe-ops:close-task (write-back to the source doc, then distill + delete).
 
  THIS FILE IS WHERE THE DOING IS RECORDED — every attempt, dead end, wrong assumption and surprise. Not
  the plan. The dossier is deleted at closure, so what is written here is routed out by construction; the
@@ -79,7 +79,7 @@
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close task` — do not just delete this file. Stays unchecked until closure actually
+- [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually
       runs; a dossier that looks otherwise finished but has this box open is not done.
 
 <!-- close's task branch writes back to the doc that started this work, propagates to living docs, spawns an ADR

@@ -20,7 +20,7 @@ closure; the design stays in the plan, which is permanent.**
 Split the existing checklist by grain:
 
 - **A track-level item** — "Track 2 done" — becomes the checkbox on that track in `## Tracks`. Mechanical.
-- **The `Run /vibe-ops:close plan` item** moves to the end of the track list, keeping its checked state.
+- **The `Run /vibe-ops:close-plan` item** moves to the end of the track list, keeping its checked state.
   Mechanical.
 - **A step-level item** — anything finer than a track — has no home in 0.2 by design. It belongs to the
   task dossier that track spawns. **Needs a decision:** creating dossiers retroactively for finished work

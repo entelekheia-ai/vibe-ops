@@ -1,76 +1,61 @@
 ---
-name: close
-description: 'Close a finished task dossier or plan. For a task: write back to the source doc with what actually happened, propagate to living docs, spawn an ADR if a decision emerged, route what the work taught, then distill and delete the dossier. For a plan: write the retrospective against its own goals, route every Surprises & Discoveries entry, run the demotion check, then close the tracking issue while keeping the plan file. Use when a task/issue is done, when the user says "wrap this up" or "close the task", when a plan''s last track lands, or when the user says a plan is done or shipped.'
-argument-hint: "<task|plan> <slug or number>"
+name: close-task
+description: Close a finished task dossier. Write back to the source doc with what actually happened, propagate to living docs, spawn an ADR if a decision emerged, route every Surprises & Discoveries entry through the promotion test, then distill the summary into the issue and delete the dossier, leaving a git breadcrumb. Use when a task or issue is done, or when the user says "wrap this up", "close the task", or asks to delete a task dossier.
+argument-hint: "<slug or number>"
 effort: high
+paths:
+  - "project/tasks/*.md"
+  - "**/project/tasks/*.md"
 ---
 
-# /close — Close the loop: a task's dossier is deleted, a plan's file stays
+# /close-task — the dossier is distilled, then deleted
 
-Two lifecycles share one closing ceremony. A **task** dossier is ephemeral — closing it means writing
-back what happened, routing what it taught, then distilling and deleting. A **plan** is the permanent
-design record — closing it means writing the retrospective, routing what it taught, and keeping the file.
-Get the type wrong and the wrong thing happens: a plan is not supposed to disappear, and a task dossier is
-not supposed to survive.
+A task dossier is **ephemeral**: closing it means writing back what happened, routing what it taught, and
+then distilling and deleting. Its sibling is [`/close-plan`](../close-plan/SKILL.md), and the two are
+separate skills because they end differently — a plan is never deleted, and getting that wrong destroys
+the record someone reads in a year.
 
-The failure each half prevents: a task finishes and the dossier gets deleted (or forgotten) while the doc
-that *planned* the work is left describing intent that no longer matches reality — the fix is not a new
-document type, it's writing back before distilling. A plan runs every track, closes its issue, and routes
-nothing, because the routing step used to live only in task-closure and a plan that never spawned a task
-dossier never reached it — **a plan that ships without a task is exactly the case with no other exit.**
+The failure this half prevents: a task finishes and the dossier gets deleted (or forgotten) while the doc
+that *planned* the work is left describing intent that no longer matches reality. The fix is not a new
+document type — it is writing back before distilling.
 
-**Usage:** `/close <task|plan> <id>` — e.g. `/close task 042` or `/close plan 002`. If the type is
-omitted, this skill resolves it by checking `project/tasks/` and `project/plans/` for a matching id or
-slug; if it matches in both trees, or in neither, ask rather than guess.
+**Usage:** `/close-task <id>` — e.g. `/close-task 042`. Locate `project/tasks/<NNN>-<slug>.md`; if `<id>`
+matches nothing there, say so rather than guessing at a plan.
 
 **This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one
 unit of work, once. Routing what the work *taught* is governed by
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
 promotion test lives there, not in this file.
 
+**The dossier cannot be deleted by hand while its `## Closure` box is unchecked** — `vibe-ops hook
+task-guard` refuses it, in every session, whether or not this skill is loaded. Step 6 is what ticks that
+box, so the ceremony passes through and only a shortcut is stopped.
+
 ---
 
-## Step 0 — Resolve which one, and find the record
+## Step 0 — Find the record
 
-If the type wasn't given, look for `<id>` under both governance directories — the same ones
-`resolve-governance.sh task` / `resolve-governance.sh plan` report as `DIR=`. Exactly one match: proceed.
-Zero or two: ask.
-
-**Task:** locate `project/tasks/<NNN>-<slug>.md` (or `<slug>.md`). Read it in full — the `Context` section
-names why the work exists; if it was spawned from an RFC, plan brief, or another doc, that's the **source
-doc**. If the dossier itself *is* the source doc, it is still the target of Step 1 — the write-back and the
-dossier are the same file until the closing step deletes it.
-
-**Plan:** locate `project/plans/<NNN>-*.md`, or wherever this repo keeps them — the `project/**` governance
-rule is the authority. Read it in full, then verify against its own text: every track in `Progress` is
-checked, or the unchecked ones are explicitly cut, **not silently dropped**; every `Success criteria` item
-was actually run — run it now if the output is not recorded. If work remains, stop and say what. A plan
-closed while a track is open makes the file lie, and the file is the part that survives.
+`vibe-ops task resolve` reports where dossiers live in this repository. Locate
+`project/tasks/<NNN>-<slug>.md` (or `<slug>.md`) and **read it in full** — the `Context` section names why
+the work exists; if it was spawned from an RFC, plan brief, or another doc, that is the **source doc**. If
+the dossier itself *is* the source doc, it is still the target of Step 1: the write-back and the dossier
+are the same file until the closing step deletes it.
 
 ## Step 1 — Write back what actually happened
 
-**Task:** open the source doc and update it to reflect reality, not the original plan — what shipped as
-planned, what changed, what got cut, what appeared mid-work that wasn't anticipated. If the source doc is
-an `Accepted` RFC or a brief meant to freeze after implementation, don't rewrite it in place — add a short
-"Implementation note" pointing at what actually happened, or move it per this repo's RFC lifecycle. This
-step is **not optional and not the same as** the executive summary in the closing step: the source doc is
-read by someone who finds it later without the issue open in front of them.
+Open the source doc and update it to reflect reality, not the original plan — what shipped as planned,
+what changed, what got cut, what appeared mid-work that was not anticipated. If the source doc is an
+`Accepted` RFC or a brief meant to freeze after implementation, do not rewrite it in place — add a short
+"Implementation note" pointing at what actually happened, or move it per this repo's RFC lifecycle.
 
-**Plan:** fill `Outcomes & Retrospective` by reading the plan's own `Goals` and `Success criteria` and
-answering them one by one. Not a summary of what was done — **a comparison between what was promised and
-what exists.** Say what was cut and why, what is still open and who inherits it. If an acceptance criterion
-turned out to be wrong, record that it was wrong and in which direction: a criterion is a prediction, and a
-plan that tracks its bad predictions is worth more than one that quietly edits them.
+This step is **not optional and not the same as** the executive summary in Step 6: the source doc is read
+by someone who finds it later without the issue open in front of them.
 
-## Step 2 — ADR, if a decision emerged (task only)
+## Step 2 — ADR, if a decision emerged
 
-If the work settled something hard to reverse that wasn't already an ADR (a library choice, an API shape, a
-rejected alternative worth recording), run `/vibe-ops:new adr` now, before closing the task. If there's rich
-context an ADR is too terse to carry, write a paired `project/log/<slug>.md` linked to it.
-
-A plan has no equivalent step here: a hard-to-reverse decision made while a plan is in progress already
-belongs in the plan's own `Decision Log`, with an ADR written and linked at the time — see the plan
-template's own comment. Closure does not re-open that question.
+If the work settled something hard to reverse that was not already an ADR (a library choice, an API shape,
+a rejected alternative worth recording), run `/vibe-ops:new adr` now, before closing the task. If there is
+rich context an ADR is too terse to carry, write a paired `project/log/<slug>.md` linked to it.
 
 ## Step 3 — Route what the work taught
 
@@ -149,19 +134,17 @@ vibe-ops check .
 Links are the reason: propagating a change is where a doc gets moved or a section renamed, and a link that
 stopped resolving is invisible in a diff. Skip this only if the work touched no markdown at all.
 
-## Step 6 — Close it out
-
-**Task — distill and delete:**
+## Step 6 — Distill, then delete
 
 1. **Write the executive summary to a file** — what shipped, for someone who will never read the dossier:
    what shipped per track with PR links; **outcome against the prediction**; **what was routed** before the
    dossier was deleted, naming each promoted learning and its destination. Do not write the breadcrumb or
    the "removed by the lifecycle" note — those are appended mechanically below.
 
-   **This summary is the most exposed text either skill produces**, and it is produced by copying upward
-   out of a document that was never as exposed. The dossier is about to be deleted; the comment is
-   permanent and, on a public repository, world-readable the instant it is posted — editing it later leaves
-   an edit history. Apply
+   **This summary is the most exposed text this skill produces**, and it is produced by copying upward out
+   of a document that was never as exposed. The dossier is about to be deleted; the comment is permanent
+   and, on a public repository, world-readable the instant it is posted — editing it later leaves an edit
+   history. Apply
    [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md) to
    every line as you lift it: a repository name that explained a delay inside the dossier becomes the
    constraint it imposed; a path pasted from a terminal becomes a repository-relative one; a routed
@@ -192,37 +175,29 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    **It exits non-zero if any tracked file still links to a deleted dossier.** That is the one outcome
    worth stopping for — fix those references before moving on, rather than treating the closure as done.
 
-**Plan — set terminal status, keep the file:**
-
-- Set the plan's `Status` to what this repo's governance calls its terminal state (`Shipped`, unless the
-  `project/**` rule says otherwise). **Do not delete the file and do not archive it** — someone reads it in
-  a year to find out why the thing is shaped this way.
-- Write the executive summary into the **tracking issue**, if there is one, and close it. The issue owns
-  status and the summary; the file owns the design and the working record — closing the issue does not end
-  the file's life.
-- If the plan's last commits are not merged, say so rather than closing an issue that describes unmerged
-  work.
-
 ## Checklist
 
-- [ ] Type resolved unambiguously — given explicitly, or found in exactly one of `project/tasks/` /
-      `project/plans/`
-- [ ] `[task]` Source doc updated with what actually happened — not skipped because "the issue has it"
-- [ ] `[plan]` Every track checked or explicitly cut; every success criterion actually run;
-      `Outcomes & Retrospective` compares promise to reality, including what was cut and what is open
-- [ ] `[task]` ADR written if a hard-to-reverse decision emerged; paired `project/log/` entry if there's
-      context an ADR can't carry
+- [ ] Source doc updated with what actually happened — not skipped because "the issue has it"
+- [ ] ADR written if a hard-to-reverse decision emerged; paired `project/log/` entry if there is context
+      an ADR cannot carry
 - [ ] Every `Surprises & Discoveries` entry routed — promoted, guarded, left in place, or explicitly
       dropped; none silently deleted with the record. Any guard written was proven to fail on something
       broken
 - [ ] Demotion check done: any `AGENTS.md` line or rule this work made redundant is deleted
 - [ ] Blocked promotions and demotions recorded with what unblocks them, not dropped
-- [ ] Docs the work made stale are updated, or confirmed none did, and `check-agents-md.sh` is green
-      afterwards
-- [ ] `[task]` `vibe-ops task close` previewed with `--dry-run`, output shown and confirmed before the real run;
-      every dossier in the batch passed to one invocation; breadcrumb recorded in the issue; the link check
+- [ ] Docs the work made stale are updated, or confirmed none did, and `vibe-ops check .` is green
+- [ ] `vibe-ops task close` previewed with `--dry-run`, output shown and confirmed before the real run;
+      every dossier in the batch passed to one invocation; breadcrumb recorded in the issue; the check
       **after** deletion is green
-- [ ] `[plan]` `Status` set to the terminal state and **the plan file still exists**; tracking issue carries
-      the summary and is closed
-- [ ] Every line written to an **issue** — the executive summary, the retrospective — passed the exposure
-      contract at the moment it was lifted out of the record, not afterwards
+- [ ] Every line written to an **issue** passed the exposure contract at the moment it was lifted out of
+      the record, not afterwards
+
+## ⟳ After every use: review this skill
+
+Step 3's filter is the one that decays quietly. An entry promoted that should have been dropped costs a
+line in a file everyone reads; an entry dropped that should have been promoted costs the next session the
+same hours. If a rejection felt wrong, the edit belongs in
+[`knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md), not here — this skill points at the
+test rather than restating it, deliberately.
+
+If a closure produced no edits to this skill, say so — a ceremony that ran cleanly is signal too.
