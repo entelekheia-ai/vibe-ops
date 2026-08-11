@@ -18,8 +18,13 @@ export interface ModuleContext {
   readonly repoRoot: string;
   /** Parsed flags, already validated against the module's declared `flags`. */
   readonly flags: Readonly<Record<string, string | boolean>>;
-  /** Positional arguments after the module name. */
+  /** Positional arguments after the module name (or after the command, when one was dispatched). */
   readonly args: readonly string[];
+  /**
+   * The verb dispatched, when the module declares `commands` — `"status"` for `vibe-ops plan status`.
+   * Absent for a module with no `commands`, which is every module before this field existed.
+   */
+  readonly command?: string;
   readonly config: VibeOpsConfig;
   /** This module's slice of `config.settings`, resolved by id. */
   readonly settings: unknown;

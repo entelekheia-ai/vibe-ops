@@ -33,6 +33,21 @@ export interface ModuleFlag {
   readonly implicit?: string;
 }
 
+/**
+ * One verb under a noun module — `vibe-ops plan status`, not a module of its own. A module that
+ * declares `commands` is dispatched by its first positional argument; one that does not keeps today's
+ * flat shape. `flags` here are merged with the module's own for this verb only, so `plan status` and
+ * `plan close` do not have to share a single flag namespace.
+ */
+export interface ModuleCommand {
+  readonly name: string;
+  /** One line. Shown under the noun in `vibe-ops --help` and as this verb's MCP enum description. */
+  readonly summary: string;
+  readonly flags?: readonly ModuleFlag[];
+  /** Overrides the module's own `destructive` for this verb only — `task close` confirms, `task resolve` does not. */
+  readonly destructive?: boolean;
+}
+
 export interface ModuleDefinition {
   /** Invocation name: `vibe-ops <id>`. Lowercase, hyphenated. */
   readonly id: string;
@@ -40,6 +55,13 @@ export interface ModuleDefinition {
   /** One line. Shown in `vibe-ops --help` and used as the MCP tool description. */
   readonly summary: string;
   readonly flags?: readonly ModuleFlag[];
+  /**
+   * Verbs this module dispatches on its first positional argument — `vibe-ops plan status`. Absent
+   * means the module has no noun/verb split and reads `context.args` itself, today's shape. Declaring
+   * an empty array is rejected: it would make the module look command-shaped everywhere (an MCP
+   * `command` enum with no members, `--help` printing an empty verb list) while having none.
+   */
+  readonly commands?: readonly ModuleCommand[];
   /**
    * Whether this module observes something worth recording. A module that declares `emits` gets an
    * eita emitter on its context; one that does not gets `undefined` and cannot record by accident.
@@ -71,6 +93,34 @@ export function defineModule(
   for (const flag of definition.flags ?? []) {
     if (seen.has(flag.name)) throw new Error(`module "${definition.id}" declares --${flag.name} twice`);
     seen.add(flag.name);
+  }
+  if (definition.commands !== undefined) {
+    if (definition.commands.length === 0) {
+      throw new Error(
+        `module "${definition.id}" declares an empty commands array — omit the field instead of a` +
+          ` command-shaped module with no commands`,
+      );
+    }
+    const seenCommands = new Set<string>();
+    for (const command of definition.commands) {
+      if (!ID_PATTERN.test(command.name)) {
+        throw new Error(`module "${definition.id}" declares command "${command.name}" — must be lowercase, starting with a letter`);
+      }
+      if (seenCommands.has(command.name)) {
+        throw new Error(`module "${definition.id}" declares command "${command.name}" twice`);
+      }
+      seenCommands.add(command.name);
+      if (command.summary.trim() === "") {
+        throw new Error(`module "${definition.id}" command "${command.name}" declares no summary`);
+      }
+      const seenCommandFlags = new Set<string>();
+      for (const flag of command.flags ?? []) {
+        if (seenCommandFlags.has(flag.name)) {
+          throw new Error(`module "${definition.id}" command "${command.name}" declares --${flag.name} twice`);
+        }
+        seenCommandFlags.add(flag.name);
+      }
+    }
   }
   return { definition, run };
 }

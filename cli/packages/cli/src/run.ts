@@ -14,6 +14,8 @@ export interface RunOptions {
   readonly cwd: string;
   readonly surface: Surface;
   readonly sink: (message: string) => void;
+  /** The verb dispatched, for a module declaring `commands`. See `ModuleContext.command`. */
+  readonly command?: string;
 }
 
 export function repoRootFrom(cwd: string): string {
@@ -23,7 +25,25 @@ export function repoRootFrom(cwd: string): string {
 }
 
 export async function runModule(options: RunOptions): Promise<ModuleResult> {
-  const { plugin, flags, args, cwd, surface, sink } = options;
+  const { plugin, flags, args, cwd, surface, sink, command } = options;
+
+  // Authoritative here, not only in the terminal's own dispatch — the terminal validates early to pick
+  // the right flag set to parse, but MCP hands `command` straight through with no such gate, so an
+  // unknown or missing verb must be caught once, in the one place both surfaces call through.
+  const commands = plugin.definition.commands;
+  if (commands !== undefined) {
+    const names = commands.map((c) => c.name);
+    if (command === undefined || !names.includes(command)) {
+      return {
+        code: 2,
+        summary:
+          command === undefined
+            ? `${plugin.definition.id} needs a command: ${names.join(", ")}`
+            : `${plugin.definition.id} has no command "${command}" — valid: ${names.join(", ")}`,
+      };
+    }
+  }
+
   const repoRoot = repoRootFrom(cwd);
   const { config } = await loadConfig(repoRoot);
 
@@ -53,6 +73,7 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     repoRoot,
     flags: resolved,
     args,
+    command,
     config,
     settings: settingsFor(config, plugin.definition.id),
     surface,

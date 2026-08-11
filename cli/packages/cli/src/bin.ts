@@ -10,6 +10,7 @@
 import { parseArgs } from "node:util";
 import * as p from "@clack/prompts";
 import { loadConfig } from "@entelekheia/vibe-ops-core";
+import type { ModuleCommand } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
 import { runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
@@ -18,10 +19,31 @@ import { runHook } from "./hook.ts";
 
 const BUILTINS = ["check", "agents-md", "governance"] as const;
 
-function usage(): void {
+/**
+ * A built-in declaring `commands` gets its verbs listed under it in `--help` — otherwise a noun module
+ * looks identical to a flat one until someone reads its source. Best-effort: a built-in that fails to
+ * load (a broken workspace link) is skipped rather than taking `--help` down with it.
+ */
+async function verbLinesFor(names: readonly string[]): Promise<string[]> {
+  const lines: string[] = [];
+  for (const name of names) {
+    try {
+      const { definition } = await loadModule(name);
+      if (definition.commands === undefined) continue;
+      lines.push(`  ${name} <${definition.commands.map((c) => c.name).join("|")}>`);
+    } catch {
+      // Not this function's job to explain a broken built-in — runNamed() will, if invoked directly.
+    }
+  }
+  return lines;
+}
+
+async function usage(): Promise<void> {
+  const verbLines = await verbLinesFor(BUILTINS);
   p.note(
     [
       "vibe-ops <module> [flags]     run a module (built-in: " + BUILTINS.join(", ") + ")",
+      ...verbLines,
       "vibe-ops @scope/pkg [flags]   run a third-party module by package name",
       "vibe-ops ./path [flags]       run a module from a local path",
       "vibe-ops mcp [--http] [--port N]",
@@ -36,13 +58,38 @@ function usage(): void {
 /** Flags are parsed against what the module declares, so an unknown flag is caught rather than ignored. */
 async function runNamed(name: string, argv: string[]): Promise<number> {
   const plugin = await loadModule(name);
+  const commands = plugin.definition.commands;
+
+  // A module declaring `commands` is dispatched by its first positional argument. Flag parsing happens
+  // AFTER the command is known, because a command's own flags are only valid for that verb — `plan
+  // status` and `plan close` do not share a flag namespace.
+  let command: string | undefined;
+  let rest = argv;
+  let commandDef: ModuleCommand | undefined;
+  if (commands !== undefined) {
+    const [first, ...tail] = argv;
+    commandDef = commands.find((c) => c.name === first);
+    if (commandDef === undefined) {
+      const names = commands.map((c) => c.name).join(", ");
+      p.log.error(
+        first === undefined
+          ? `${plugin.definition.id} needs a command: ${names}`
+          : `${plugin.definition.id} has no command "${first}" — valid: ${names}`,
+      );
+      return 2;
+    }
+    command = first;
+    rest = tail;
+  }
+
+  const declaredFlags = [...(plugin.definition.flags ?? []), ...(commandDef?.flags ?? [])];
   const options: Record<string, { type: "string" | "boolean" }> = {};
-  for (const flag of plugin.definition.flags ?? []) options[flag.name] = { type: flag.type };
+  for (const flag of declaredFlags) options[flag.name] = { type: flag.type };
 
   let parsed;
   try {
     parsed = parseArgs({
-      args: applyImplicitFlags(argv, plugin.definition.flags ?? []),
+      args: applyImplicitFlags(rest, declaredFlags),
       options,
       allowPositionals: true,
       strict: true,
@@ -50,14 +97,16 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
   } catch (error) {
     p.log.error(`${(error as Error).message}`);
     p.note(
-      (plugin.definition.flags ?? []).map((f) => `--${f.name.padEnd(12)} ${f.description}`).join("\n") || "(no flags)",
-      `${plugin.definition.id} flags`,
+      declaredFlags.map((f) => `--${f.name.padEnd(12)} ${f.description}`).join("\n") || "(no flags)",
+      command !== undefined ? `${plugin.definition.id} ${command} flags` : `${plugin.definition.id} flags`,
     );
     return 2;
   }
 
-  if (plugin.definition.destructive === true && process.stdout.isTTY) {
-    const ok = await p.confirm({ message: `${plugin.definition.id} makes irreversible changes. Continue?` });
+  const destructive = commandDef?.destructive ?? plugin.definition.destructive;
+  if (destructive === true && process.stdout.isTTY) {
+    const label = command !== undefined ? `${plugin.definition.id} ${command}` : plugin.definition.id;
+    const ok = await p.confirm({ message: `${label} makes irreversible changes. Continue?` });
     if (p.isCancel(ok) || !ok) {
       p.cancel("cancelled");
       return 130;
@@ -70,6 +119,7 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     args: parsed.positionals,
     cwd: process.cwd(),
     surface: "cli",
+    command,
     sink: (message) => process.stdout.write(`${message}\n`),
   });
 
@@ -84,7 +134,7 @@ async function main(argv: readonly string[]): Promise<number> {
   const [command, ...rest] = argv;
 
   if (command === undefined || command === "-h" || command === "--help") {
-    usage();
+    await usage();
     return command === undefined ? 2 : 0;
   }
 

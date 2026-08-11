@@ -19,7 +19,21 @@ function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
   const shape: Record<string, z.ZodType> = {
     repo: z.string().optional().describe("Path inside the repository to act on. Defaults to the server's cwd."),
   };
-  for (const flag of plugin.definition.flags ?? []) {
+  const { commands } = plugin.definition;
+  if (commands !== undefined) {
+    const names = commands.map((c) => c.name) as [string, ...string[]];
+    const description = commands.map((c) => `${c.name}: ${c.summary}`).join(" | ");
+    shape.command = z.enum(names).describe(description);
+  }
+  // Flags are unioned across every command (plus the module's own) rather than scoped per command —
+  // an MCP input schema is one static shape per tool, not one per enum value, so a flag valid only
+  // for one verb still appears for the others; the module itself rejects a flag its dispatched verb
+  // does not use, the same way the terminal does.
+  const allFlags = [...(plugin.definition.flags ?? []), ...(commands ?? []).flatMap((c) => c.flags ?? [])];
+  const seen = new Set<string>();
+  for (const flag of allFlags) {
+    if (seen.has(flag.name)) continue;
+    seen.add(flag.name);
     shape[flag.name] =
       flag.type === "boolean"
         ? z.boolean().optional().describe(flag.description)
@@ -39,7 +53,7 @@ export async function buildServer(moduleNames: readonly string[]): Promise<McpSe
       id,
       { title: id, description: summary, inputSchema: shapeFor(plugin) },
       async (input: Record<string, unknown>) => {
-        const { repo, ...rest } = input;
+        const { repo, command, ...rest } = input;
         const lines: string[] = [];
         const result = await runModule({
           plugin,
@@ -47,6 +61,7 @@ export async function buildServer(moduleNames: readonly string[]): Promise<McpSe
           args: [],
           cwd: typeof repo === "string" ? repo : process.cwd(),
           surface: "mcp",
+          command: typeof command === "string" ? command : undefined,
           sink: (message) => lines.push(message),
         });
         const text = [result.summary, ...lines].filter((part) => part !== undefined && part !== "").join("\n");

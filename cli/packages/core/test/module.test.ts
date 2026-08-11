@@ -18,6 +18,85 @@ test("a module with no summary is rejected — it would be invisible in --help a
   assert.throws(() => defineModule({ id: "x", version: "1", summary: "  " }, ok), /summary/);
 });
 
+test("a module declaring an empty commands array is rejected — omit the field instead", () => {
+  assert.throws(() => defineModule({ id: "x", version: "1", summary: "s", commands: [] }, ok), /empty commands/);
+});
+
+test("a duplicated command name is rejected", () => {
+  assert.throws(
+    () =>
+      defineModule(
+        {
+          id: "x",
+          version: "1",
+          summary: "s",
+          commands: [
+            { name: "status", summary: "a" },
+            { name: "status", summary: "b" },
+          ],
+        },
+        ok,
+      ),
+    /command "status" twice/,
+  );
+});
+
+test("a command name must be lowercase and hyphenated, same as a module id", () => {
+  assert.throws(
+    () => defineModule({ id: "x", version: "1", summary: "s", commands: [{ name: "Status", summary: "a" }] }, ok),
+    /lowercase/,
+  );
+});
+
+test("a command with no summary is rejected", () => {
+  assert.throws(
+    () => defineModule({ id: "x", version: "1", summary: "s", commands: [{ name: "status", summary: "  " }] }, ok),
+    /no summary/,
+  );
+});
+
+test("a duplicated flag within one command is rejected", () => {
+  assert.throws(
+    () =>
+      defineModule(
+        {
+          id: "x",
+          version: "1",
+          summary: "s",
+          commands: [
+            {
+              name: "close",
+              summary: "a",
+              flags: [
+                { name: "fix", type: "boolean", description: "d" },
+                { name: "fix", type: "string", description: "d" },
+              ],
+            },
+          ],
+        },
+        ok,
+      ),
+    /declares --fix twice/,
+  );
+});
+
+test("a well-formed commands array is accepted", () => {
+  assert.doesNotThrow(() =>
+    defineModule(
+      {
+        id: "plan",
+        version: "1",
+        summary: "s",
+        commands: [
+          { name: "resolve", summary: "resolves the layout" },
+          { name: "close", summary: "closes it", destructive: true },
+        ],
+      },
+      ok,
+    ),
+  );
+});
+
 test("a duplicated flag is rejected", () => {
   assert.throws(
     () =>
