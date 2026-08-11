@@ -1,0 +1,183 @@
+// Every noun/verb over the MCP surface, through a real client on a real transport. Plan-011's first goal
+// is that `vibe-ops <noun> <verb>` behaves identically from a terminal, over MCP, and from a hook — and
+// "identically" was not true: `mcp.ts` passed `args: []` unconditionally, so every verb taking positional
+// arguments was reachable from a terminal and from nowhere else, and failed here as an empty batch rather
+// than as a missing input. This file is what makes that claim checkable per track rather than per read.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { buildServer } from "../src/mcp.ts";
+
+const NOUNS = ["plan", "task", "log", "records"];
+
+async function client(): Promise<Client> {
+  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+  const server = await buildServer(NOUNS);
+  const c = new Client({ name: "test", version: "0" });
+  await Promise.all([server.connect(serverSide), c.connect(clientSide)]);
+  return c;
+}
+
+interface CallResult {
+  readonly exitCode: number;
+  readonly data: unknown;
+  readonly text: string;
+}
+
+async function call(c: Client, name: string, args: Record<string, unknown>): Promise<CallResult> {
+  const result = (await c.callTool({ name, arguments: args })) as {
+    structuredContent?: { exitCode: number; data: unknown };
+    content?: { type: string; text?: string }[];
+  };
+  return {
+    exitCode: result.structuredContent?.exitCode ?? -1,
+    data: result.structuredContent?.data ?? null,
+    text: (result.content ?? []).map((part) => part.text ?? "").join("\n"),
+  };
+}
+
+function git(repo: string, args: readonly string[]): string {
+  return execFileSync("git", args, { cwd: repo, encoding: "utf8" });
+}
+
+/** A repository with a plan template, one incoherent plan, and one open task dossier. */
+async function fixture(): Promise<string> {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-mcp-"));
+  git(repo, ["init", "-q"]);
+  git(repo, ["config", "user.email", "t@example.invalid"]);
+  git(repo, ["config", "user.name", "T"]);
+
+  await mkdir(path.join(repo, "project", "plans"), { recursive: true });
+  await mkdir(path.join(repo, "project", "tasks"), { recursive: true });
+  await mkdir(path.join(repo, "project", "templates"), { recursive: true });
+
+  await writeFile(
+    path.join(repo, "project", "templates", "plan.md"),
+    [
+      "<!-- Status lifecycle: Backlog → In Progress → Shipped. -->",
+      "",
+      "# Plan-NNN",
+      "",
+      "<!-- ===== LIVING SECTIONS -->",
+      "",
+      "## Decision Log",
+      "",
+      "## Outcomes & Retrospective",
+      "",
+      "<!-- ===== END LIVING SECTIONS -->",
+      "",
+    ].join("\n"),
+  );
+  await writeFile(
+    path.join(repo, "project", "plans", "001-p.md"),
+    ["# Plan-001", "", "| Field | Value |", "|---|---|", "| Status | Shipped |", "", "## Tracks", "", "- [ ] open", ""].join("\n"),
+  );
+  await writeFile(
+    path.join(repo, "project", "tasks", "001-alpha.md"),
+    ["# Task-001", "", "## Closure", "", "- [ ] Run `/vibe-ops:close task` — do not just delete.", ""].join("\n"),
+  );
+  git(repo, ["add", "."]);
+  git(repo, ["commit", "-q", "-m", "seed"]);
+  return repo;
+}
+
+test("every noun is a tool, and each declares its verbs, its positionals, and (only where needed) confirm", async () => {
+  const tools = (await (await client()).listTools()).tools;
+  assert.deepEqual(
+    tools.map((t) => t.name).sort(),
+    [...NOUNS].sort(),
+  );
+
+  for (const tool of tools) {
+    const properties = (tool.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
+    assert.ok("args" in properties, `${tool.name} must accept positionals over MCP, not only from a terminal`);
+  }
+
+  const task = tools.find((t) => t.name === "task");
+  const plan = tools.find((t) => t.name === "plan");
+  const taskProperties = (task?.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
+  const planProperties = (plan?.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
+  assert.ok("confirm" in taskProperties, "task carries a destructive verb, so it must expose confirm");
+  assert.ok(!("confirm" in planProperties), "plan has no destructive verb yet — an unusable field is noise");
+});
+
+test("Track 2 over MCP: <noun> resolve answers with the resolved record", async () => {
+  const c = await client();
+  const repo = await fixture();
+  for (const noun of ["plan", "task", "log"]) {
+    const result = await call(c, noun, { repo, command: "resolve" });
+    assert.equal(result.exitCode, 0, `${noun} resolve: ${result.text}`);
+    assert.equal((result.data as { type: string }).type, noun === "log" ? "log" : noun);
+  }
+  const records = await call(c, "records", { repo, type: "adr" });
+  assert.equal(records.exitCode, 0, records.text);
+});
+
+test("Track 3 over MCP: plan status finds the incoherent plan, and plan context carries the living sections", async () => {
+  const c = await client();
+  const repo = await fixture();
+
+  const status = await call(c, "plan", { repo, command: "status" });
+  assert.equal(status.exitCode, 0, status.text);
+  const { findings } = status.data as { findings: readonly { file: string; reason: string }[] };
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0]?.reason, "terminal-with-open-tracks");
+
+  const context = await call(c, "plan", { repo, command: "context" });
+  assert.equal(context.exitCode, 0, context.text);
+  assert.match((context.data as { text: string }).text, /Decision Log, Outcomes & Retrospective/);
+});
+
+test("Track 4 over MCP: task guard reads positionals — the input that never arrived before", async () => {
+  const c = await client();
+  const repo = await fixture();
+
+  const withArgs = await call(c, "task", { repo, command: "guard", args: ["project/tasks/001-alpha.md"] });
+  assert.equal(withArgs.exitCode, 0, withArgs.text);
+  assert.deepEqual((withArgs.data as { open: string[] }).open, ["project/tasks/001-alpha.md"]);
+
+  // Without them the module says what is missing, rather than quietly acting on an empty set.
+  const without = await call(c, "task", { repo, command: "guard" });
+  assert.equal(without.exitCode, 2);
+  assert.match(without.text, /needs at least one dossier path/);
+});
+
+test("Track 4 over MCP: a destructive verb is refused without confirm, and runs with it", async () => {
+  const c = await client();
+  const repo = await fixture();
+  const head = git(repo, ["rev-parse", "HEAD"]);
+
+  const refused = await call(c, "task", { repo, command: "close", args: ["project/tasks/001-alpha.md"] });
+  assert.equal(refused.exitCode, 2);
+  assert.match(refused.text, /destructive — re-send with confirm: true/);
+  assert.equal(git(repo, ["rev-parse", "HEAD"]), head, "and nothing happened");
+  assert.equal(existsSync(path.join(repo, "project/tasks/001-alpha.md")), true);
+
+  // --dry-run is still gated: a caller that cannot say confirm cannot reach the verb at all, which keeps
+  // one answer to "may this tool call delete files" rather than one per flag combination.
+  const dry = await call(c, "task", { repo, command: "close", args: ["project/tasks/001-alpha.md"], "dry-run": true });
+  assert.equal(dry.exitCode, 2);
+
+  const done = await call(c, "task", {
+    repo,
+    command: "close",
+    args: ["project/tasks/001-alpha.md"],
+    confirm: true,
+  });
+  assert.equal(done.exitCode, 0, done.text);
+  assert.equal(existsSync(path.join(repo, "project/tasks/001-alpha.md")), false);
+  assert.match((done.data as { dossierSha: string }).dossierSha, /^[0-9a-f]{40}$/);
+});
+
+test("an unknown verb over MCP is refused by the module, not by the schema alone", async () => {
+  const c = await client();
+  const result = await call(c, "plan", { repo: await fixture(), command: "nope" });
+  assert.equal(result.exitCode, -1, "the enum rejects it at the transport, before the module is reached");
+});

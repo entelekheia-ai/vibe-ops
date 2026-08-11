@@ -16,6 +16,12 @@ export interface RunOptions {
   readonly sink: (message: string) => void;
   /** The verb dispatched, for a module declaring `commands`. See `ModuleContext.command`. */
   readonly command?: string;
+  /**
+   * That the caller has already obtained consent for a `destructive` command. The terminal sets it after
+   * its own prompt; MCP has no prompt to run, so it sets it only from an explicit `confirm` in the tool
+   * input. Absent on a destructive command, the run is refused rather than performed.
+   */
+  readonly confirmed?: boolean;
 }
 
 export function repoRootFrom(cwd: string): string {
@@ -25,15 +31,16 @@ export function repoRootFrom(cwd: string): string {
 }
 
 export async function runModule(options: RunOptions): Promise<ModuleResult> {
-  const { plugin, flags, args, cwd, surface, sink, command } = options;
+  const { plugin, flags, args, cwd, surface, sink, command, confirmed } = options;
 
   // Authoritative here, not only in the terminal's own dispatch — the terminal validates early to pick
   // the right flag set to parse, but MCP hands `command` straight through with no such gate, so an
   // unknown or missing verb must be caught once, in the one place both surfaces call through.
   const commands = plugin.definition.commands;
+  const commandDef = commands?.find((c) => c.name === command);
   if (commands !== undefined) {
     const names = commands.map((c) => c.name);
-    if (command === undefined || !names.includes(command)) {
+    if (command === undefined || commandDef === undefined) {
       return {
         code: 2,
         summary:
@@ -42,6 +49,21 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
             : `${plugin.definition.id} has no command "${command}" — valid: ${names.join(", ")}`,
       };
     }
+  }
+
+  // A destructive run under MCP has no terminal to prompt at, and a caller that never saw a prompt has
+  // not consented to anything. The terminal's own confirmation is a TTY prompt and is passed in as
+  // `confirmed`; MCP's is an explicit `confirm: true` in the tool input. Neither surface may skip it by
+  // being the surface it is — this is the one gate that must not live in `bin.ts`, because bin.ts is
+  // exactly the file MCP does not go through.
+  if ((commandDef?.destructive ?? plugin.definition.destructive) === true && confirmed !== true) {
+    return {
+      code: 2,
+      summary:
+        surface === "mcp"
+          ? `${plugin.definition.id} ${String(command ?? "")} is destructive — re-send with confirm: true to run it`.trim()
+          : `${plugin.definition.id} ${String(command ?? "")} is destructive and was not confirmed`.trim(),
+    };
   }
 
   const repoRoot = repoRootFrom(cwd);

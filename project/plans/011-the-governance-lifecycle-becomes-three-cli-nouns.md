@@ -349,6 +349,31 @@ here that was not observed in a transcript.
 
 ## Decision Log
 
+- Decision: MCP carries positional arguments (`args`), and a `destructive` command over MCP is refused
+  without an explicit `confirm: true`. Both gates live in `runModule`, never in `bin.ts`.
+  Rationale: Goal 1 says a verb behaves identically from a terminal, over MCP and from a hook, and it was
+  not true — `mcp.ts` passed `args: []` unconditionally, so `task close` and `task guard` were reachable
+  from a terminal and from nowhere else, failing over MCP as an *empty batch* rather than as a missing
+  input. Fixing that exposed the second half: `destructive` was enforced by a TTY prompt in `bin.ts`,
+  which is precisely the file MCP does not go through, so an irreversible verb would have become
+  reachable with no consent step at all. The terminal's model is unchanged (a skill invoking `task close`
+  through a Bash tool has no TTY and does its own `--dry-run` preview first); MCP gains the one it never
+  had. `--dry-run` is gated too, deliberately — one answer to "may this tool call delete files", not one
+  per flag combination. `cli/packages/cli/test/mcp-nouns.test.ts` now exercises every noun and verb over
+  a real client and transport, per track.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `task close` finds and rewrites referring links through the inline layer, never with a
+  pattern over the text.
+  Rationale: measured 2026-08-10 on a fixture holding one real link, one written inside a code span, and
+  one inside a fenced block — `finalize.sh`'s pattern matches all three, the tree finds the one. The two
+  it would also have rewritten are a document explaining its own reference syntax, which is the ordinary
+  shape of a plan that refers to a task dossier, not an edge case; rewriting them damages the file while
+  reporting a successful closure. The check after the deletion uses the same reader, so "was it
+  repointed" and "does one survive" cannot disagree — and it runs against a SECOND `DocumentStore`,
+  because the first parsed those files before they were rewritten and a store has no invalidation.
+  Date / Author: 2026-08-10 / Danilo Borges
+
 - Decision: `task close`'s step 7 asks "does any tracked file still link to a deleted dossier", in-process,
   instead of running the whole links gate and grepping one line out of it as `finalize.sh` did. A file left
   dangling is the one outcome that exits non-zero.

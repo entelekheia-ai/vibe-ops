@@ -124,6 +124,11 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     cwd: process.cwd(),
     surface: "cli",
     command,
+    // The terminal's consent is the prompt above; without a TTY there is nobody to prompt, and this
+    // surface keeps the behaviour it has always had — a skill invokes `task close` through a Bash tool,
+    // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
+    // surface with no such story, which is why the gate in runModule exists and why only it is refused.
+    confirmed: true,
     sink: (message) => process.stdout.write(`${message}\n`),
   });
 

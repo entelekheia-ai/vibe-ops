@@ -18,8 +18,10 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import type { DocumentStore } from "@entelekheia/vibe-ops-core";
 import { tickClosureBox } from "./closure.ts";
+import { linksToBasenames, spliceLinks } from "./links.ts";
 
 export interface TaskCloseOptions {
   readonly repoRoot: string;
@@ -68,11 +70,6 @@ function slugOf(dossier: string): string {
   return path.basename(dossier).replace(/\.md$/, "");
 }
 
-/** Escapes a literal for use inside a `RegExp` — a dossier basename carries `-` and `.`. */
-function escapeRegExp(literal: string): string {
-  return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 export function closeTasks(options: TaskCloseOptions, documents: DocumentStore): TaskCloseResult {
   const { repoRoot, dossiers, plan, summaryFile, dryRun } = options;
   const steps: string[] = [];
@@ -91,6 +88,9 @@ export function closeTasks(options: TaskCloseOptions, documents: DocumentStore):
   if (plan !== undefined && !existsSync(path.join(repoRoot, plan))) {
     throw new TaskCloseError(`no such plan: ${plan}`);
   }
+
+  const basenames = dossiers.map((dossier) => path.basename(dossier));
+  const byBasename = new Map(dossiers.map((dossier) => [path.basename(dossier), dossier]));
 
   // -------------------------------------------------------------------- step 0
   say("== referrers (collected before any deletion)");
@@ -148,22 +148,29 @@ export function closeTasks(options: TaskCloseOptions, documents: DocumentStore):
 
   // A closed dossier is named in plain text with a runnable `git show`, never left as a link: a link to
   // a deleted file makes a healthy repository look broken.
+  //
+  // Which spans get rewritten is decided by the tree, never by a pattern over the text — see links.ts for
+  // the measurement. A plan that documents its own reference syntax in a code span is the ordinary case
+  // here, not an edge one, and rewriting that example would damage the document while looking correct.
   const repointed: string[] = [];
   for (const referrer of referrers) {
-    const absolute = path.join(repoRoot, referrer);
-    if (!existsSync(absolute)) continue;
-    let text = dryRun ? "" : readFileSync(absolute, "utf8");
-    for (const dossier of dossiers) {
-      const base = path.basename(dossier);
-      if (dryRun) {
-        say(`  would repoint in ${referrer}: links to ${base} -> plain text + git show ${dossierSha}:${dossier}`);
-        continue;
-      }
-      const link = new RegExp(`\\[([^\\]]*)\\]\\([^)]*${escapeRegExp(base)}\\)`, "g");
-      text = text.replace(link, `$1 (closed dossier — \`git show ${dossierSha}:${dossier}\`)`);
+    if (!existsSync(path.join(repoRoot, referrer))) continue;
+
+    const links = linksToBasenames(documents.get(referrer), basenames);
+    if (links.length === 0) {
+      say(`  ${referrer} names a dossier but carries no link to it — left alone`);
+      continue;
     }
-    if (dryRun) continue;
-    writeFileSync(absolute, text);
+    if (dryRun) {
+      for (const link of links) say(`  would repoint in ${referrer}: ${link.target} -> plain text + git show`);
+      continue;
+    }
+
+    const next = spliceLinks(documents.get(referrer), links, (link) => {
+      const dossier = byBasename.get(path.posix.basename(link.target.split("#")[0] ?? ""));
+      return `${link.text} (closed dossier — \`git show ${dossierSha}:${dossier}\`)`;
+    });
+    writeFileSync(path.join(repoRoot, referrer), next);
     repointed.push(referrer);
     say(`  repointed: ${referrer}`);
   }
@@ -214,17 +221,16 @@ export function closeTasks(options: TaskCloseOptions, documents: DocumentStore):
   if (dryRun) {
     say("  skipped under --dry-run: nothing was deleted, so a pass here would mean nothing");
   } else {
-    for (const dossier of dossiers) {
-      const base = path.basename(dossier);
-      // Matched the same way the repoint matched, by basename inside a link target — a referrer writes
-      // `](../tasks/001-x.md)`, so grepping the repository-relative path would miss exactly the links
-      // the repoint was aiming at, and report clean.
-      const link = new RegExp(`\\[[^\\]]*\\]\\([^)]*${escapeRegExp(base)}\\)`);
-      for (const hit of gitGrepFiles(repoRoot, base)) {
-        if (!link.test(readFileSync(path.join(repoRoot, hit), "utf8"))) continue;
-        if (!dangling.includes(hit)) dangling.push(hit);
-        say(`  still links to the deleted ${dossier}: ${hit}`);
-      }
+    // A SECOND store, deliberately: the one above parsed each referrer before it was rewritten, and a
+    // check that re-read the cache would be reporting on the text as it was, not as it is. The store is
+    // a per-run cache with no invalidation, so "after the mutations" means a new one.
+    const after = createDocumentStore(repoRoot);
+    for (const hit of dossiers.flatMap((dossier) => gitGrepFiles(repoRoot, path.basename(dossier)))) {
+      if (dangling.includes(hit)) continue;
+      const links = linksToBasenames(after.get(hit), basenames);
+      if (links.length === 0) continue;
+      dangling.push(hit);
+      say(`  still links to a deleted dossier: ${hit} (${links.map((l) => l.target).join(", ")})`);
     }
     if (dangling.length === 0) say("  no tracked file still links to a deleted dossier");
   }

@@ -82,6 +82,59 @@ test("property 1: referrers are collected across the whole batch, before anythin
   assert.ok(order.indexOf("== referrers (collected before any deletion)") < order.indexOf("== delete the dossiers and repoint what referred to them"));
 });
 
+test("the repoint rewrites real links only — a code span and a fenced example survive it", async () => {
+  // Measured 2026-08-10 on this exact fixture: the pattern finalize.sh used matches all THREE, the tree
+  // finds the one. A plan referring to a dossier is the document most likely to be showing its own
+  // reference syntax, so rewriting the other two damages it while looking like a successful closure.
+  const repo = await fixture();
+  await writeFile(
+    path.join(repo, "project", "plans", "README.md"),
+    [
+      "# Plans",
+      "",
+      "A real reference: [alpha](../tasks/001-alpha.md).",
+      "",
+      "We write them as `[name](../tasks/001-alpha.md)` — a code span, not a link.",
+      "",
+      "```sh",
+      "grep -l '[x](../tasks/001-alpha.md)' .",
+      "```",
+      "",
+    ].join("\n"),
+  );
+  git(repo, ["add", "."]);
+  git(repo, ["commit", "-q", "-m", "a referrer that documents its own syntax"]);
+
+  const result = closeTasks(
+    { repoRoot: repo, dossiers: ["project/tasks/001-alpha.md"], dryRun: false },
+    createDocumentStore(repo),
+  );
+  const readme = await readFile(path.join(repo, "project", "plans", "README.md"), "utf8");
+
+  assert.match(readme, /A real reference: alpha \(closed dossier — `git show [0-9a-f]{40}:project\/tasks\/001-alpha\.md`\)\./);
+  assert.match(readme, /`\[name\]\(\.\.\/tasks\/001-alpha\.md\)` — a code span/, "the code span is untouched");
+  assert.match(readme, /grep -l '\[x\]\(\.\.\/tasks\/001-alpha\.md\)' \./, "the fenced example is untouched");
+  assert.deepEqual(result.dangling, [], "and neither survivor counts as a dangling link, because neither is one");
+});
+
+test("a referrer that names a dossier without linking to it is left alone", async () => {
+  const repo = await fixture();
+  await writeFile(
+    path.join(repo, "project", "plans", "README.md"),
+    "# Plans\n\nThe work is tracked in 001-alpha.md, mentioned in prose only.\n",
+  );
+  git(repo, ["add", "."]);
+  git(repo, ["commit", "-q", "-m", "prose mention"]);
+
+  const result = closeTasks(
+    { repoRoot: repo, dossiers: ["project/tasks/001-alpha.md"], dryRun: false },
+    createDocumentStore(repo),
+  );
+  assert.deepEqual(result.repointed, []);
+  assert.ok(result.steps.some((s) => s.includes("carries no link to it — left alone")));
+  assert.match(await readFile(path.join(repo, "project", "plans", "README.md"), "utf8"), /in 001-alpha\.md, mentioned/);
+});
+
 test("property 2: the breadcrumb sha names a commit that STILL CONTAINS the dossier", async () => {
   const repo = await fixture();
   const result = closeAll(repo, { plan: "project/plans/001-p.md" });

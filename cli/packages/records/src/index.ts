@@ -18,6 +18,8 @@ export {
 export { planStatusFindings, trackCheckboxes } from "./status.ts";
 export { closureBoxOpen, tickClosureBox } from "./closure.ts";
 export { closeTasks, TaskCloseError } from "./close.ts";
+export { linksToBasenames, spliceLinks } from "./links.ts";
+export type { FoundLink } from "./links.ts";
 export type { TaskCloseOptions, TaskCloseResult } from "./close.ts";
 export type { PlanStatusFinding } from "./status.ts";
 export { planModeGuidance } from "./context-text.ts";

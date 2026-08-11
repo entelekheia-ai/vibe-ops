@@ -25,6 +25,27 @@ function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
     const description = commands.map((c) => `${c.name}: ${c.summary}`).join(" | ");
     shape.command = z.enum(names).describe(description);
   }
+
+  // Positional arguments, which every surface but this one already had. `mcp.ts` passed `args: []` and
+  // nothing else, so a verb taking positionals — `task close <dossier>...`, `task guard <dossier>...` —
+  // was reachable from a terminal and from nowhere else, failing over MCP as an empty batch rather than
+  // as a missing input. Declared for every tool: nothing in a definition says "this command takes
+  // positionals", and one static shape per tool is the same trade the flag union below already makes.
+  shape.args = z
+    .array(z.string())
+    .optional()
+    .describe("Positional arguments for the command — e.g. the dossier paths for task close/guard.");
+
+  // A destructive command has a confirmation step on every other surface: the terminal prompts, and a
+  // skill previews with --dry-run and waits. This is that step here. There is no prompt to run inside a
+  // tool call, so consent has to be something the caller sends; `runModule` is what enforces it, because
+  // `bin.ts` — where the terminal's prompt lives — is exactly the file this surface does not go through.
+  if ((commands ?? []).some((c) => c.destructive === true) || plugin.definition.destructive === true) {
+    shape.confirm = z
+      .boolean()
+      .optional()
+      .describe("Required to run a destructive command. Preview with dry-run first; this is not undoable.");
+  }
   // Flags are unioned across every command (plus the module's own) rather than scoped per command —
   // an MCP input schema is one static shape per tool, not one per enum value, so a flag valid only
   // for one verb still appears for the others; the module itself rejects a flag its dispatched verb
@@ -53,15 +74,16 @@ export async function buildServer(moduleNames: readonly string[]): Promise<McpSe
       id,
       { title: id, description: summary, inputSchema: shapeFor(plugin) },
       async (input: Record<string, unknown>) => {
-        const { repo, command, ...rest } = input;
+        const { repo, command, args, confirm, ...rest } = input;
         const lines: string[] = [];
         const result = await runModule({
           plugin,
           flags: rest as Record<string, string | boolean>,
-          args: [],
+          args: Array.isArray(args) ? (args as string[]).map(String) : [],
           cwd: typeof repo === "string" ? repo : process.cwd(),
           surface: "mcp",
           command: typeof command === "string" ? command : undefined,
+          confirmed: confirm === true,
           sink: (message) => lines.push(message),
         });
         const text = [result.summary, ...lines].filter((part) => part !== undefined && part !== "").join("\n");
