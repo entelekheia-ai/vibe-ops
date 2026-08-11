@@ -1,3 +1,6 @@
+<!-- vibe-ops-template plan@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
+     against an older template. Removing it makes this file invisible to migration. -->
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 

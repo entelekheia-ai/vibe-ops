@@ -1,3 +1,7 @@
+---
+vibe-ops-template: task@3
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -7,9 +11,6 @@
 
  https://www.apache.org/licenses/LICENSE-2.0
 -->
-
-<!-- vibe-ops-template task@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Task: The sensor, and the health reading it produces
 
@@ -89,21 +90,52 @@ plan is about.
 
 ## Implementation order
 
-- [ ] P0 — Read three existing fragments for the conventions (`head_`, `skip`, `$ROOT`/`$PLUGIN_DIR`)
-- [ ] P0 — Write the fragment reading frontmatter via the Track 1 resolver, not a second parser
-- [ ] P0 — Add the three reported numbers; keep them separate in the output
-- [ ] P0 — Add the fixtures, including the prose-mention case; confirm each fires
-- [ ] P0 — Run against this repository; expect real numbers, not zero
-- [ ] P1 — Exclude research with a stated reason
-- [ ] P1 — Fix the same substring defect in `/vibe-ops:migrate`'s Step 1 detection command
+- [x] (2026-08-11) P0 — Written as a **gate**, not a shell fragment: `cli/packages/gates/template-version/`,
+      reading through Track 1's `readTemplateVersion`. The dossier asked for both a fragment and no second
+      parser, and once the reader was TypeScript those stopped fitting — see Plan-012's Decision Log
+- [x] (2026-08-11) P0 — Four rules, each acted on differently: `undeclared`, `behind`, `ahead`,
+      `mismatch`. `behind` carries the record's own Status, so open-and-behind reads off the findings
+      without the gate aggregating anything
+- [x] (2026-08-11) P0 — Composed into `ops-governance`, one entry per record type, each handed its own
+      template rather than a version number — a template bump needs no edit to the composition
+- [x] (2026-08-11) P0 — Eleven gate tests plus two end-to-end, including the prose-mention case at the
+      surface where someone meets it
+- [x] (2026-08-11) P0 — Run against this repository: 0 failed, 8 warned. The eight are exactly the plans
+      still at `plan@0.1`, of which **004 (Backlog) and 008 (In Progress) are the open ones**
+- [x] (2026-08-11) P1 — Research excluded by a `disabled` entry naming its reason, so it reports SKIP
+      rather than being absent from the composition
+- [x] (2026-08-11) P0 — `level` became configuration (`settings.<ops>.level`), so `behind` warning is a
+      default this repository can override rather than a verdict baked into the gate
+- [ ] P1 — Fix the same substring defect in `/vibe-ops:migrate`'s Step 1 detection command. Inherited
+      from Track 1 and **still open**: the reader exists, the skill still greps
 
 ## Surprises & Discoveries
 
 <!-- Fill WHILE the work happens. Routed at closure: beyond this repository → project/learnings/;
      nameable file/folder/package → project/log/ with that as its path:; neither → dropped. -->
 
-- Observation: …
-  Evidence: …
+- Observation: a gate hardcoding a finding's level is the same class of error as a gate hardcoding its
+  own population, and the repository already had the argument written down for the second one only.
+  Evidence: `GateFinding.level` is documented as stripped before the emitter, because "a producer that
+  records a verdict has already done the consuming product's job for it" — which makes the verdict a
+  consumer concern by the repository's own reasoning. `GovernedSettings` nonetheless carried only
+  `ignore` and `disabled`, and `finding.level ?? "fail"` left the detector with the last word. Now three
+  members of one family, and the gate's declaration is the default rather than the answer.
+
+- Observation: a gate handed a path in `options` must expand `<plugin>/`, and a fixture that mirrors this
+  repository's layout will never catch that it does not.
+  Evidence: `options.template` was written as a literal `plugin/templates/adr.md`, which resolves here
+  and nowhere else. The end-to-end fixture is deliberately **flat** — no `plugin/` directory — and that
+  is the only reason it surfaced. `cli/AGENTS.md` already records the same failure for `$ROOT` versus
+  `$PLUGIN_DIR` on the shell side; this is the TypeScript instance of it, in a field that is free-form
+  and therefore not type-checked into correctness.
+
+- Observation: "the template is missing" and "the template declares nothing" are different states, and
+  reporting both as a finding makes a gate accuse a small repository of being broken.
+  Evidence: the fixture repository keeps ADRs and nothing else, so four of the six entries pointed at
+  templates that do not exist and each reported the *template* as undeclared. A repository that keeps no
+  plans has nothing to read, not a defect — it is the "zero examined is not a reading" rule arriving one
+  level up, and the answer is `skipped` naming the path.
 
 ## Closure
 

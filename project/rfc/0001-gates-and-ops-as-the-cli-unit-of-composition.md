@@ -1,5 +1,6 @@
-<!-- vibe-ops-template rfc@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
+---
+vibe-ops-template: rfc@2
+---
 
 # RFC-0001: Gates and ops as the CLI's unit of composition
 

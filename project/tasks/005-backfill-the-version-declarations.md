@@ -1,3 +1,7 @@
+---
+vibe-ops-template: task@3
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -7,9 +11,6 @@
 
  https://www.apache.org/licenses/LICENSE-2.0
 -->
-
-<!-- vibe-ops-template task@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Task: Backfill the version declarations
 
@@ -78,11 +79,25 @@ resolver.
 
 ## Implementation order
 
-- [ ] P0 — Run Track 2's fragment; take its output as the work list
-- [ ] P0 — Declare the version on the single-version types (parallelisable)
-- [ ] P0 — Read and declare each plan, one at a time; list any left undeclared and why
-- [ ] P0 — Re-run the fragment; expect zero unknowns, or exactly the files deliberately left
-- [ ] P1 — Check the open-and-behind reading against what the work predicted
+**Landed together with Track 2, and not by choice.** The end-to-end test asserting this repository runs
+clean is what forced it: the sensor cannot be committed green while thirty-five records are undeclared,
+so the sensor and the backfill are one landing. Recorded rather than smoothed over — the plan's own track
+order implies they are separable and they were not.
+
+- [x] (2026-08-11) P0 — Took the gate's own output as the work list, rather than a hand-built one
+- [x] (2026-08-11) P0 — 11 ADRs, 1 RFC, 2 log entries and 7 dossiers **migrated**, not merely declared:
+      for these four types the jump *is* the declaration moving, so applying the note leaves them current
+- [x] (2026-08-11) P0 — Plans 009, 010, 011 and 012 were `plan@0.2`, a mechanical jump — now `plan@3`
+- [x] (2026-08-11) P0 — The eight `plan@0.1` plans declare **`plan@0.1`, in the comment form of their own
+      era**, not frontmatter. Declaring the current form on 0.1 content would produce a file no migration
+      note describes: content at 0.1, declaration at 3, and the 0.2→3 note expecting a comment to delete
+- [x] (2026-08-11) P0 — Re-run: zero undeclared, eight warned, research skipped by its stated reason
+- [x] (2026-08-11) P1 — The open-and-behind reading is real: of the eight behind, **004 is Backlog and
+      008 is In Progress**; the other six are Shipped and cost nothing to leave
+
+Left open deliberately: those eight plans still need the `plan-0.1-to-0.2` content migration, one entry
+at a time. That is `/vibe-ops:migrate`'s job and Plan-012 scoped it out; the gate now names them, which
+is the point.
 
 ## Surprises & Discoveries
 

@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import ops from "../src/index.ts";
-import { settingsFor } from "@entelekheia/vibe-ops-core";
+import { loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext } from "@entelekheia/vibe-ops-core";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
@@ -42,7 +42,7 @@ function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<strin
   return { context, logs };
 }
 
-test("--list composes seven entries: four record-header schemas, markdown-link, breadcrumb, fragment-parity", async () => {
+test("--list composes every entry, in order: the record-header schemas, the template-version ones, then the rest", async () => {
   const repoRoot = await gitRepo();
   gitAdd(repoRoot);
   const { context } = contextFor(repoRoot, {}, { list: true });
@@ -50,7 +50,21 @@ test("--list composes seven entries: four record-header schemas, markdown-link, 
   const data = result.data as { gates: readonly { label: string }[] };
   assert.deepEqual(
     data.gates.map((g) => g.label),
-    ["record-header-adr", "record-header-plan", "record-header-rfc", "record-header-task", "markdown-link", "breadcrumb", "fragment-parity"],
+    [
+      "record-header-adr",
+      "record-header-plan",
+      "record-header-rfc",
+      "record-header-task",
+      "template-version-adr",
+      "template-version-plan",
+      "template-version-rfc",
+      "template-version-task",
+      "template-version-log",
+      "template-version-research",
+      "markdown-link",
+      "breadcrumb",
+      "fragment-parity",
+    ],
   );
 });
 
@@ -69,9 +83,38 @@ test("an adr missing a required field fails record-header-adr, naming the field"
   assert.ok(logs.some((line) => line.includes("FAIL  [record-header-adr]") && line.includes("Date")), logs.join("\n"));
 });
 
-test("a clean repository with correctly-shaped records passes all seven entries", async () => {
+// The fixture is FLAT — no plugin/ directory — on purpose. `template-version` is handed
+// `<plugin>/templates/adr.md`, which expands to the repository root here and to `plugin/` in a repo
+// shaped like this one. Hardcoding either layout makes the pair unreachable in the other, and a flat
+// fixture is the only thing that catches it.
+test("a clean repository with correctly-shaped records passes every entry", async () => {
   const repoRoot = await gitRepo();
   await mkdir(path.join(repoRoot, "project", "adr"), { recursive: true });
+  await mkdir(path.join(repoRoot, "templates"), { recursive: true });
+  await writeFile(
+    path.join(repoRoot, "templates", "adr.md"),
+    ["---", "vibe-ops-template: adr@2", "---", "", "# ADR-NNNN: Title", ""].join("\n"),
+  );
+  await writeFile(
+    path.join(repoRoot, "project", "adr", "0001-x.md"),
+    ["---", "vibe-ops-template: adr@2", "---", "", "# ADR-0001: X", "", "| Field | Value |", "|---|---|", "| Status | Accepted |", "| Date | 2026-08-10 |", "| Deciders | Someone |", "", "## Context", "", "body.", ""].join("\n"),
+  );
+  gitAdd(repoRoot);
+
+  const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
+  const result = await ops.run(context);
+  assert.equal(result.code, 0, logs.join("\n"));
+  assert.ok(!logs.some((line) => line.includes("FAIL")), logs.join("\n"));
+});
+
+test("a record declaring no version fails the run, rather than being read as the oldest shape", async () => {
+  const repoRoot = await gitRepo();
+  await mkdir(path.join(repoRoot, "project", "adr"), { recursive: true });
+  await mkdir(path.join(repoRoot, "templates"), { recursive: true });
+  await writeFile(
+    path.join(repoRoot, "templates", "adr.md"),
+    ["---", "vibe-ops-template: adr@2", "---", "", "# ADR-NNNN: Title", ""].join("\n"),
+  );
   await writeFile(
     path.join(repoRoot, "project", "adr", "0001-x.md"),
     ["# ADR-0001: X", "", "| Field | Value |", "|---|---|", "| Status | Accepted |", "| Date | 2026-08-10 |", "| Deciders | Someone |", "", "## Context", "", "body.", ""].join("\n"),
@@ -80,18 +123,38 @@ test("a clean repository with correctly-shaped records passes all seven entries"
 
   const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
   const result = await ops.run(context);
-  assert.equal(result.code, 0);
-  assert.ok(!logs.some((line) => line.includes("FAIL")), logs.join("\n"));
+  assert.equal(result.code, 1);
+  assert.ok(logs.some((line) => line.startsWith("FAIL  [template-version-undeclared]")), logs.join("\n"));
 });
 
-test("against this repository's own checkout — a clean run, with population reported", async () => {
+// This one loads the repository's REAL vibeops.config.ts rather than a copy of its settings written out
+// here. The copy is what this test used to carry, and it is the same duplication the ops's own `ignore`
+// exists to remove: an exclusion declared in two places drifts, and the copy is always the stale one.
+// Adding a `disabled` entry to the real config is what surfaced it — the test went red while the tree
+// was correct.
+test("against this repository's own checkout, under its own config — nothing fails", async () => {
   const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
-  const { context, logs } = contextFor(
-    repoRoot,
-    { settings: { governance: { ignore: { "*": ["**/templates/**"] } } } },
-    { verbose: true },
-  );
+  const { config } = await loadConfig(repoRoot);
+  const { context, logs } = contextFor(repoRoot, config, { verbose: true });
   const result = await ops.run(context);
   assert.equal(result.code, 0, logs.join("\n"));
   assert.ok(logs.some((line) => line.includes("ok    [markdown-link]") && line.includes("ignored")), logs.join("\n"));
+});
+
+// Warnings are not failures, and this repository has real ones: every plan still at plan@0.1 is behind
+// and says so. Asserted rather than left implicit, because "0 failed" alone would also be true of a run
+// that had stopped looking.
+test("against this repository's own checkout — records behind their template warn, and do not fail", async () => {
+  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
+  const { config } = await loadConfig(repoRoot);
+  const { context, logs } = contextFor(repoRoot, config, { verbose: true });
+  await ops.run(context);
+  assert.ok(
+    logs.some((line) => line.startsWith("WARN  [template-version-behind]")),
+    "expected at least one record behind its template, reported as a warning",
+  );
+  assert.ok(
+    logs.some((line) => line.includes("SKIP  [template-version-research]")),
+    "research is excluded by a stated reason, never by silence",
+  );
 });

@@ -1,3 +1,7 @@
+---
+vibe-ops-template: task@3
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -7,9 +11,6 @@
 
  https://www.apache.org/licenses/LICENSE-2.0
 -->
-
-<!-- vibe-ops-template task@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Task: Verbs dispatch on the version they were handed
 

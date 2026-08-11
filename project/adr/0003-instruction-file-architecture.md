@@ -1,3 +1,7 @@
+---
+vibe-ops-template: adr@2
+---
+
 # ADR-0003: `.agents/` is canonical, `.claude/` mirrors it, and each fact has one surface
 
 | Field | Value |

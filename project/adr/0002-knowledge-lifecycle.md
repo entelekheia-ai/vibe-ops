@@ -1,3 +1,7 @@
+---
+vibe-ops-template: adr@2
+---
+
 # ADR-0002: Learnings are routed by a promotion test, not authored top-down
 
 | Field | Value |

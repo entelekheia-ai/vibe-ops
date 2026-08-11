@@ -1,3 +1,7 @@
+---
+vibe-ops-template: adr@2
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -7,9 +11,6 @@
 
  https://www.apache.org/licenses/LICENSE-2.0
 -->
-
-<!-- vibe-ops-template adr@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # ADR-0011: Population belongs to configuration, not a gate
 

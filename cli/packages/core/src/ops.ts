@@ -28,6 +28,17 @@
 // `memory-slug`, and no filter at all in `markdown-link`, which is why an unfiltered run of the ops
 // reported 13 false findings the day this was measured. A gate must never filter its own population by
 // a repository-specific rule; that rule belongs here, where every entry in an ops can share it.
+//
+// `level` IS THE THIRD MEMBER OF THAT FAMILY, for the same reason. A finding's level is not detection:
+// `GateFinding.level` is stripped before anything reaches the emitter, precisely because a producer that
+// records a verdict has already done the consuming product's job. Whether a rule BLOCKS is therefore the
+// repository's call, alongside "these files do not count" (`ignore`) and "this rule does not apply here"
+// (`disabled`). A gate still declares a level, and that declaration is the DEFAULT — what the detector
+// thinks its finding is worth, overridden by the repository that has to live with it.
+//
+// Without this, a gate hardcoding `warn` is unfixable from outside it: `template-version-behind` warns
+// because a template bump leaves every record behind at once, which is right while a migration is in
+// flight and wrong for a repository that has finished one and wants the gate to hold the line.
 
 import { createEmitter } from "./emit.ts";
 import { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
@@ -84,6 +95,13 @@ export interface GovernedSettings {
   readonly ignore?: Readonly<Record<string, readonly string[]>>;
   /** A reason a gate does not run at all here, never a boolean — a disablement is a ledger entry. */
   readonly disabled?: Readonly<Record<string, string>>;
+  /**
+   * Whether a finding blocks, decided by the repository rather than by the detector that raised it.
+   * Keyed by a finding's `rule`, by an entry's `label`, or by `"*"` for every finding this ops produces
+   * — **most specific wins**, unlike `ignore`, which is additive. A gate's own declared level is the
+   * default underneath all three.
+   */
+  readonly level?: Readonly<Record<string, "fail" | "warn">>;
 }
 
 /** One repair, as the caller receives it — which entry made it, and what it did. */
@@ -346,7 +364,14 @@ async function run(
     population.push({ gate: label, examined, ignored: ignoredCount });
 
     for (const finding of outcome.findings) {
-      const level = finding.level ?? "fail";
+      // Most specific wins: the rule this finding names, else the entry it came from, else every finding
+      // in this ops, else what the gate itself declared, else fail.
+      const level =
+        governed?.level?.[finding.rule] ??
+        governed?.level?.[label] ??
+        governed?.level?.["*"] ??
+        finding.level ??
+        "fail";
       if (level === "warn") warnings += 1;
       else failures += 1;
       findings.push({

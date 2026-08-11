@@ -1,5 +1,6 @@
-<!-- vibe-ops-template plan@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
+---
+vibe-ops-template: plan@3
+---
 
 # Plan-011: The governance lifecycle becomes three CLI nouns
 

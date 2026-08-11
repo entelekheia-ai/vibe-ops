@@ -44,7 +44,12 @@ export default {
   return file;
 }
 
-function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<string, string | boolean> = {}): {
+function contextFor(
+  repoRoot: string,
+  config: VibeOpsConfig,
+  flags: Record<string, string | boolean> = {},
+  settings: unknown = undefined,
+): {
   context: ModuleContext;
   logs: string[];
 } {
@@ -54,7 +59,7 @@ function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<strin
     flags,
     args: [],
     config,
-    settings: undefined,
+    settings,
     surface: "cli",
     log: (message) => logs.push(message),
     warn: (message) => logs.push(`warning: ${message}`),
@@ -349,4 +354,87 @@ test("--fix naming a gate that is not fixable warns and repairs nothing", async 
   assert.deepEqual(repaired, []);
   assert.equal(result.code, 1, "the finding it could not fix must still be reported as failing");
   assert.ok(logs.some((line) => line.includes(`--fix named "budget", which is not fixable`)), logs.join("\n"));
+});
+
+// `level` — the repository's call, not the detector's.
+//
+// A gate declaring `warn` is declaring a DEFAULT. Before this existed, that default was final: a gate
+// that warns because a migration is in flight had no way to hold the line once the migration finished,
+// short of editing the gate that every other repository also loads.
+
+/** A gate that raises two rules under one label, so per-rule targeting is actually observable. */
+async function writeTwoRuleGate(dir: string, id: string): Promise<string> {
+  return writeFakeGate(
+    dir,
+    id,
+    `{ findings: [
+        { rule: "soft", evidence: "a", level: "warn" },
+        { rule: "hard", evidence: "b" }
+      ], examined: 1 }`,
+  );
+}
+
+async function runWithLevel(level: Record<string, "fail" | "warn"> | undefined) {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-level-"));
+  await writeTwoRuleGate(dir, "watcher");
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "watcher.mjs"), label: "entry" }],
+  });
+  const { context, logs } = contextFor(dir, {}, { verbose: true }, level === undefined ? undefined : { level });
+  const result = await plugin.run(context);
+  return { result, logs };
+}
+
+test("with no config, a gate's declared level stands: warn does not fail the run", async () => {
+  const { result, logs } = await runWithLevel(undefined);
+  assert.equal(result.code, 1, "the un-declared finding still fails");
+  assert.ok(logs.some((l) => l.startsWith("WARN  [soft]")), logs.join("\n"));
+  assert.ok(logs.some((l) => l.startsWith("FAIL  [hard]")), logs.join("\n"));
+});
+
+test("level keyed by rule overrides what the gate declared", async () => {
+  const { logs } = await runWithLevel({ soft: "fail" });
+  assert.ok(logs.some((l) => l.startsWith("FAIL  [soft]")), logs.join("\n"));
+});
+
+test("level keyed by rule can also soften a finding the gate left at fail", async () => {
+  const { result, logs } = await runWithLevel({ hard: "warn", soft: "warn" });
+  assert.equal(result.code, 0, "nothing fails once both rules are warnings");
+  assert.ok(logs.some((l) => l.startsWith("WARN  [hard]")), logs.join("\n"));
+});
+
+test("level keyed by the entry's label covers every rule it raises", async () => {
+  const { result } = await runWithLevel({ entry: "warn" });
+  assert.equal(result.code, 0);
+});
+
+test('level keyed by "*" covers every entry in the ops', async () => {
+  const { result } = await runWithLevel({ "*": "warn" });
+  assert.equal(result.code, 0);
+});
+
+test("most specific wins: rule beats label beats star", async () => {
+  const { logs } = await runWithLevel({ "*": "warn", entry: "warn", hard: "fail" });
+  assert.ok(logs.some((l) => l.startsWith("FAIL  [hard]")), logs.join("\n"));
+  assert.ok(logs.some((l) => l.startsWith("WARN  [soft]")), logs.join("\n"));
+});
+
+test("an overridden level still never reaches the emitted observation", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-level-emit-"));
+  await writeTwoRuleGate(dir, "watcher");
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "watcher.mjs"), label: "entry", emits: true }],
+  });
+  const artifactDir = path.join(dir, "artifacts");
+  const { context } = contextFor(dir, { artifactDir }, {}, { level: { soft: "fail" } });
+  await plugin.run(context);
+  const written = JSON.parse((await readFile(path.join(artifactDir, "demo.jsonl"), "utf8")).trim());
+  assert.ok(!("level" in written), "a verdict must not travel with an observation");
+  assert.ok(!("level" in (written.value as object)), "a verdict must not travel with an observation");
 });

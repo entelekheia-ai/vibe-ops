@@ -31,6 +31,21 @@ export default {
     // repository's to judge. Declared once here rather than duplicated inside each gate that would
     // otherwise re-invent it; see the "POPULATION VS BEHAVIOUR" note in cli/packages/core/src/ops.ts.
     "agents-md": { ignore: { "*": ["**/templates/**"] } },
-    governance: { ignore: { "*": ["**/templates/**"] } },
+    governance: {
+      ignore: {
+        "*": ["**/templates/**"],
+        // A directory's index is not one of its records. `project/log/README.md` is generated from the
+        // entries and carries no version of its own, so scoping it in would report a permanent finding
+        // nobody can close — the shape of a check people learn to ignore.
+        "template-version-log": ["project/log/README.md", "project/log/RETIRED.md"],
+      },
+      // Research is deliberately outside the versioning scheme: the type has no template of its own and
+      // its shape is not settled (Plan-012). Declared and disabled rather than left out of the
+      // composition, so the run reports SKIP naming the reason — an excluded population that says
+      // nothing is indistinguishable from a clean one.
+      disabled: {
+        "template-version-research": "research has no template; its shape is not settled — Plan-012",
+      },
+    },
   },
 } satisfies VibeOpsConfig;

@@ -1,4 +1,5 @@
 ---
+vibe-ops-template: log@2
 name: adding-a-second-foundation-package-to-the-cli-workspace
 description: A workspace package that other packages import but that sorts after them alphabetically is
              built against its stale dist/ by `npm run build --workspaces`, which typechecks and reports
@@ -10,9 +11,6 @@ path:
 attempted: 2026-08-10
 source: project/plans/011-the-governance-lifecycle-becomes-three-cli-nouns.md (Track 3)
 ---
-
-<!-- vibe-ops-template log@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Adding a package that other packages import, whose name sorts after theirs
 

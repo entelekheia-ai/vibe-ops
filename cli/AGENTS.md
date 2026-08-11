@@ -145,20 +145,30 @@ file's settings for every other module.
 `.ts` is loaded by dynamic `import()` and relies on Node's native type stripping (**≥22.18**), so a
 config file costs no dependency and no build step. `.mjs` and `.js` work identically.
 
-**An ops's own settings slice may carry `ignore` and `disabled`, typed and honored by `defineOps`
-itself — never inside a gate.** They are the population half of the split RFC-0001 draws between a gate
-(a pure detector) and an ops (a named composition): `ignore` and `disabled` change **what was read**,
-which only the composition can decide; a gate's own `options` (`schema`, `fragment`, `against`, …)
-change **how a gate judges**, and stay free-form, validated by the gate. A gate must never filter its
-own population by a repository-specific rule — that was `memory-slug`'s hardcoded `/templates/` check,
-one of three divergent copies of the same exclusion (task 004), and a fourth copy inside a different
-gate would have matched the pattern rather than fixed it.
+**An ops's own settings slice may carry `ignore`, `disabled` and `level`, typed and honored by
+`defineOps` itself — never inside a gate.** They are the repository's half of the split RFC-0001 draws
+between a gate (a pure detector) and an ops (a named composition): `ignore` and `disabled` change
+**what was read** and `level` changes **whether a finding blocks**, none of which a detector may decide;
+a gate's own `options` (`schema`, `fragment`, `against`, …) change **how a gate judges**, and stay
+free-form, validated by the gate. A gate must never filter its own population by a repository-specific
+rule — that was `memory-slug`'s hardcoded `/templates/` check, one of three divergent copies of the same
+exclusion (task 004), and a fourth copy inside a different gate would have matched the pattern rather
+than fixed it.
+
+**`level` is the same argument applied to the verdict.** `GateFinding.level` is stripped before anything
+reaches the emitter, because a producer that records a verdict has already done the consuming product's
+job — so whether a rule blocks belongs to the repository too. A gate still declares a level and that is
+the **default**; config keyed by a finding's `rule`, an entry's `label`, or `"*"` overrides it, **most
+specific wins** (unlike `ignore`, which is additive). Without it a gate hardcoding `warn` is unfixable
+from outside: `template-version-behind` warns because a template bump leaves every record behind at
+once, which is right mid-migration and wrong for a repository that has finished one.
 
 ```ts
 settings: {
   governance: {
     ignore: { "*": ["**/templates/**"] },              // every entry in this ops
     disabled: { "record-header-rfc": "still migrating" }, // a reason, never a boolean
+    level: { "template-version-behind": "fail" },      // by rule, label, or "*"; most specific wins
   },
 },
 ```

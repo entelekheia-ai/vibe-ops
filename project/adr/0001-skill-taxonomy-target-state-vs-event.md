@@ -1,3 +1,7 @@
+---
+vibe-ops-template: adr@2
+---
+
 # ADR-0001: Two kinds of skill — target-state and event
 
 | Field | Value |

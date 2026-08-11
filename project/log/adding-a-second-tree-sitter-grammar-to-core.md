@@ -1,4 +1,5 @@
 ---
+vibe-ops-template: log@2
 name: adding-a-second-tree-sitter-grammar-to-core
 description: Two tree-sitter grammar packages in cli/packages/core/ declare peer ranges for the
              tree-sitter runtime that do not intersect; npm install ERESOLVEs until the runtime is
@@ -19,9 +20,6 @@ source: project/tasks/001-the-document-model-and-its-sensor.md (Plan-010, Track 
 
  https://www.apache.org/licenses/LICENSE-2.0
 -->
-
-<!-- vibe-ops-template log@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Adding a second tree-sitter grammar to core will ERESOLVE against the first
 

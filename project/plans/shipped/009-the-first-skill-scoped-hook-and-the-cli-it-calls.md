@@ -1,5 +1,6 @@
-<!-- vibe-ops-template plan@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
+---
+vibe-ops-template: plan@3
+---
 
 # Plan-009: The first skill-scoped hook, and the CLI it calls
 

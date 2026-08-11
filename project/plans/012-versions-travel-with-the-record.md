@@ -1,3 +1,7 @@
+---
+vibe-ops-template: plan@3
+---
+
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 
@@ -7,9 +11,6 @@
 
  https://www.apache.org/licenses/LICENSE-2.0
 -->
-
-<!-- vibe-ops-template plan@0.2 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
 
 # Plan-012: Versions travel with the record
 
@@ -325,6 +326,39 @@ Run from the repository root:
   are already written and correct; restarting everything at `@1` would erase that `plan` and `task` have
   changed shape twice, which is precisely the information the dispatch in Track 6 exists to act on. The
   resulting note filenames (`plan-0.2-to-3.md`) read oddly and are the honest record of what happened.
+  Date / Author: 2026-08-11 / Danilo Borges
+
+- Decision: a record **behind** the current version is a warning; **undeclared**, **ahead** and
+  **mismatched** are failures.
+  Rationale: the three failures are each a file nobody has correctly classified, and they are closeable
+  the moment someone looks. Being behind is not — a template bump leaves every existing record behind at
+  once, by construction, and they are migrated one at a time with a decision per artifact. A gate that
+  goes red for the whole of that interval is the gate people switch off within the week, and it would
+  make the version bump itself the expensive act. Warning keeps the reading visible and the gate usable,
+  which is what "an indicator of where an upgrade is owed" has to mean to survive.
+  Date / Author: 2026-08-11 / Danilo Borges
+
+- Decision: a finding's **level is configuration**, not the detector's verdict. `settings.<ops>.level`
+  overrides it, keyed by a finding's `rule`, an entry's `label`, or `"*"` — most specific wins — with the
+  gate's own declared level as the default underneath.
+  Rationale: `GateFinding.level` is already stripped before anything reaches the emitter, on the stated
+  grounds that a producer recording a verdict has done the consuming product's job for it. If that is
+  true of the artifact it is true of the gate: whether a rule *blocks* is the repository's call, and it
+  belongs beside `ignore` ("these files do not count") and `disabled` ("this rule does not apply here")
+  rather than inside the detector. This extends [ADR-0011](../adr/0011-population-belongs-to-configuration-not-a-gate.md)
+  from population to verdict; it may deserve an ADR of its own. The concrete need: `template-version-behind`
+  warns because a template bump leaves every record behind at once, which is right while a migration is
+  in flight and wrong for a repository that has finished one and wants the gate to hold the line —
+  unfixable from outside a gate that hardcodes it.
+  Date / Author: 2026-08-11 / Danilo Borges
+
+- Decision: the sensor is a **gate** in TypeScript, not an eighteenth shell fragment.
+  Rationale: Track 2's dossier asked for both a shell fragment and for it to read through Track 1's
+  reader rather than a second parser, and once that reader turned out to be TypeScript the two halves
+  stopped fitting. A shell fragment would have re-derived frontmatter parsing and header anchoring in
+  awk — the duplicate the instruction existed to prevent, and the exact defect that made this
+  repository's first measurement wrong. `packages/gates` already depends on `packages/records` and
+  `record-header` already imports its shared reader, so the precedent was set rather than invented.
   Date / Author: 2026-08-11 / Danilo Borges
 
 - Decision: the emitter converges on the shape the receiving side already accepts, rather than the
