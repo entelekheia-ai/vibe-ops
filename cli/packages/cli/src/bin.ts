@@ -8,6 +8,7 @@
 //                                       ops <ops> [flags]  PostToolUse, an ops over the written file
 //                                       plan-context       UserPromptSubmit, the plan format in plan mode
 //                                       new-context        UserPromptExpansion, before a typed /vibe-ops:new
+//                                       task-guard         PreToolUse, refuses an unclosed dossier deletion
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";

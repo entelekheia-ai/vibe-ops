@@ -170,8 +170,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    invoked by the model rather than typed — so the person whose dossier it is may not have asked for it.
 
    ```bash
-   sh "${CLAUDE_PLUGIN_ROOT}/skills/close/finalize.sh" --dry-run \
-      --plan <source plan, if any> <dossier>...
+   vibe-ops task close --dry-run --plan <source plan, if any> <dossier>...
    ```
 
    It prints every file that links to the dossiers, what it would rewrite, and both commits it would make.
@@ -180,15 +179,18 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 3. **Run it for real**, dropping `--dry-run` and adding `--summary-file`:
 
    ```bash
-   sh "${CLAUDE_PLUGIN_ROOT}/skills/close/finalize.sh" \
-      --plan <source plan> --summary-file <summary> <dossier>...
+   vibe-ops task close --plan <source plan> --summary-file <summary> <dossier>...
    ```
 
    It ticks the `## Closure` box, commits (that commit is the breadcrumb, because it is the last one that
    still contains the dossier), deletes, rewrites every link to the dossier into plain text plus a runnable
-   `git show`, appends the breadcrumbs to the plan if one was given, commits again, re-runs the link check
-   **after** the deletion, and posts the summary with the breadcrumb appended. The ordering is the whole
-   point: derive the sha yourself and you will name a commit that no longer contains the file.
+   `git show`, appends the breadcrumbs to the plan if one was given, commits again, checks **after** the
+   deletion that nothing still links to a deleted dossier, and posts the summary with the breadcrumb
+   appended. The ordering is the whole point: derive the sha yourself and you will name a commit that no
+   longer contains the file.
+
+   **It exits non-zero if any tracked file still links to a deleted dossier.** That is the one outcome
+   worth stopping for — fix those references before moving on, rather than treating the closure as done.
 
 **Plan — set terminal status, keep the file:**
 
@@ -217,7 +219,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 - [ ] Blocked promotions and demotions recorded with what unblocks them, not dropped
 - [ ] Docs the work made stale are updated, or confirmed none did, and `check-agents-md.sh` is green
       afterwards
-- [ ] `[task]` `finalize.sh` previewed with `--dry-run`, output shown and confirmed before the real run;
+- [ ] `[task]` `vibe-ops task close` previewed with `--dry-run`, output shown and confirmed before the real run;
       every dossier in the batch passed to one invocation; breadcrumb recorded in the issue; the link check
       **after** deletion is green
 - [ ] `[plan]` `Status` set to the terminal state and **the plan file still exists**; tracking issue carries

@@ -9,10 +9,15 @@ import task from "../src/index.ts";
 
 const run = promisify(execFile);
 
-test("task declares exactly one command today: resolve", () => {
+test("task declares resolve, close and guard — and only close is destructive", () => {
   assert.deepEqual(
     task.definition.commands?.map((c) => c.name),
-    ["resolve"],
+    ["resolve", "close", "guard"],
+  );
+  assert.deepEqual(
+    task.definition.commands?.filter((c) => c.destructive === true).map((c) => c.name),
+    ["close"],
+    "resolve and guard read; only close deletes files and posts to an issue",
   );
 });
 

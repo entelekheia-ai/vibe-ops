@@ -1,5 +1,5 @@
 {
-  "description": "Four guards, each silent unless its exact condition holds, plus two that are the vibe-ops command itself rather than a shipped script. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
+  "description": "Three guards, each silent unless its exact condition holds, plus three that are the vibe-ops command itself rather than a shipped script. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-guard (vibe-ops hook task-guard, no script) refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -19,10 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh",
-            "args": [
-              "${CLAUDE_PLUGIN_ROOT}/hooks/task-dossier-guard.sh"
-            ],
+            "command": "vibe-ops",
+            "args": ["hook", "task-guard"],
             "timeout": 10
           }
         ]

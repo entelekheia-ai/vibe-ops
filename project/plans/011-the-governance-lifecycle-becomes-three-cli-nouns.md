@@ -292,7 +292,7 @@ implement the same rule.
       date-partitioned log) is session bookkeeping tied to `session-touched-repos.sh`, which Scope
       already excludes. At the end `plan status` names Plan-009's unchecked `close plan` box, and
       `plan context` against a `plan@0.2` template says two living sections rather than four.
-- [ ] **Track 4 — `vibe-ops task close` and `guard`.** The `finalize.sh` port with its three ordering
+- [x] **Track 4 — `vibe-ops task close` and `guard`.** The `finalize.sh` port with its three ordering
       properties under test, and the closure-box read. `task-dossier-guard.sh` rewired and deleted. At
       the end a scratch repository with two dossiers and one referrer closes to the same commits, the
       same breadcrumbs and the same repointed link the script produces, and `--dry-run` mutates nothing.
@@ -348,6 +348,29 @@ here that was not observed in a transcript.
 ---
 
 ## Decision Log
+
+- Decision: `task close`'s step 7 asks "does any tracked file still link to a deleted dossier", in-process,
+  instead of running the whole links gate and grepping one line out of it as `finalize.sh` did. A file left
+  dangling is the one outcome that exits non-zero.
+  Rationale: the step exists for one measured failure — deleting dossiers left 13 links dangling across two
+  documents. The narrow question answers that directly, cannot be diluted by an unrelated finding from
+  another gate, and needs no subprocess. It is matched by basename inside a link target, the same way the
+  repoint matched, because a referrer writes `](../tasks/001-x.md)` and grepping the repository-relative
+  path would miss exactly the links the repoint was aiming at — and report clean. The full gate still runs
+  at the commit gate, so nothing is lost by narrowing here.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: The closure box is read from the tree, and ticked by splicing over the marker node's own three
+  characters — one reader (`closureBoxOpen`) shared by `task guard` and `task close`.
+  Rationale: the guard and the ceremony must agree about what "closed" means, and two implementations of
+  one marker is how they stop agreeing. The tree read is not cosmetic here: a task dossier is the artifact
+  most likely to quote a shell transcript or a template excerpt, so a raw-line grep for `- [ ] … close
+  task` blocks a legitimate deletion over a quoted example — and it fails in the *blocking* direction,
+  which is the expensive one. Splicing the marker node's span also drops the shell's assumption that
+  `close task` appears after the box on the same line, which the template's own wrapped line satisfies
+  only by accident of where it wraps. The matcher accepts `close task` and `close-task` both, because
+  Track 7 renames the skill and dossiers written against either form coexist.
+  Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: `vibe-ops hook <surface>` is the one namespace for every entry point that reads a hook payload
   on stdin — `ops <ops>`, `plan-context`, `new-context`, and the two Tracks 4 and 6 will add. `ops` is a

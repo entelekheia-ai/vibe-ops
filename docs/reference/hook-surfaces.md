@@ -18,6 +18,7 @@ member per hook **event**; the payload field, the guard and the reply's `hookEve
 | `ops <ops> [flags]` | `PostToolUse` | `tool_input.file_path`, `cwd` | the written file's basename is `AGENTS.md` or `CLAUDE.md` |
 | `plan-context` | `UserPromptSubmit` | `permission_mode`, `session_id`, `cwd` | `permission_mode` is `plan`, and this session has not been told yet |
 | `new-context` | `UserPromptExpansion` | `command_args`, `cwd` | the first word of `command_args` is `adr`, `rfc`, `plan` or `task` |
+| `task-guard` | `PreToolUse` | `tool_input.command`, `cwd` | the command deletes a `tasks/*.md` whose closure box is unchecked |
 
 **`ops` is a reserved first word.** That surface takes an arbitrary ops name, so the reservation is what
 keeps a third-party ops from shadowing a surface, and a surface added later from shadowing an ops.
@@ -69,6 +70,17 @@ plan template's own `LIVING SECTIONS` markers — never a list written down a se
 Emits the resolved layout for the record type named as the first word of the arguments, so the `/new`
 skill does not resolve it a second time. Registered with the matcher `^vibe-ops:new$`.
 
+### `task-guard`
+
+**The one surface that answers `permissionDecision: "deny"` rather than `additionalContext`.** It is a
+guard, not an observation: the act it stops — deleting a task dossier by hand — is not recoverable, and
+everything the dossier taught is promoted during closure, so the file going first loses it silently.
+
+It invents no convention. The task template ships the marker, and the box is read by the same function
+`vibe-ops task close` ticks through, so the guard and the ceremony cannot disagree about what closed
+means. A dossier from a repository that never adopted the convention has no such line and is not
+blocked — absence is not a refusal.
+
 ## Where a hook is registered
 
 Two shapes, and only the second is scoped to a skill's lifetime.
@@ -113,7 +125,6 @@ These are registrations, not CLI surfaces. Each is listed with what keeps it out
 
 | Script | Event | Why it is still a script |
 |---|---|---|
-| [`task-dossier-guard.sh`](../../plugin/hooks/task-dossier-guard.sh) | `PreToolUse` (`Bash`) | not yet ported |
 | [`plan-approved-copy.sh`](../../plugin/hooks/plan-approved-copy.sh) | `PostToolUse` (`ExitPlanMode`) | not yet ported |
 | [`plan-progress-nudge.sh`](../../plugin/hooks/plan-progress-nudge.sh) | `Stop` | its body is session-transcript bookkeeping, which is not governance logic and has no CLI noun; it calls `vibe-ops plan resolve` for the part that is |
 | [`session-state-cleanup.sh`](../../plugin/hooks/session-state-cleanup.sh) | `SessionEnd` | session bookkeeping, deliberately out of scope |
