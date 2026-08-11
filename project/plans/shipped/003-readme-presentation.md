@@ -39,7 +39,7 @@ nothing here changes what any skill does.
    and instead states what earns a row — the change that keeps the same duplication from being
    regenerated into every future repository.
 5. Every claim added to either skill is traceable to a linked source in
-   [`project/research/readme-presentation-practices.md`](../research/readme-presentation-practices.md), or
+   [`project/research/readme-presentation-practices.md`](../../research/readme-presentation-practices.md), or
    is unlinked there and therefore ours by construction. No borrowed advice is adopted silently, and
    nothing of our own is passed off as established practice.
 
@@ -72,7 +72,7 @@ nothing here changes what any skill does.
 ### The evidence base
 
 The published advice, the six READMEs examined, and every rule extracted from them live in
-[`project/research/readme-presentation-practices.md`](../research/readme-presentation-practices.md),
+[`project/research/readme-presentation-practices.md`](../../research/readme-presentation-practices.md),
 with external claims linked at first use and our own conclusions marked as ours. **That file is the
 source of truth for what is true about READMEs; this plan is only the record of what this repository
 decides to do about it.** Do not restate its findings here.
@@ -241,7 +241,7 @@ removes links, and a removed link is a chance to leave a dangling reference else
 
 Findings about **this workspace's own artefacts and this plan's own process**. General findings about
 READMEs — what the published advice says, what the six examined READMEs do, and every rule derived from
-them — live in [`project/research/readme-presentation-practices.md`](../research/readme-presentation-practices.md)
+them — live in [`project/research/readme-presentation-practices.md`](../../research/readme-presentation-practices.md)
 and are deliberately not repeated here.
 
 - Observation: The repository's `README.md` violates the skill this repository ships to write READMEs.
@@ -458,7 +458,7 @@ of the three would exist, because none of them is visible until you try to produ
 ## What Track 1 settled
 
 The rules themselves, with the evidence behind each, are in
-[`project/research/readme-presentation-practices.md`](../research/readme-presentation-practices.md#our-conclusions).
+[`project/research/readme-presentation-practices.md`](../../research/readme-presentation-practices.md#our-conclusions).
 What this plan commits to, in one line each:
 
 1. **A fixed six-element opening** — mark, `<h1>`, bold claim plus one clarifying sentence, badges,
@@ -486,12 +486,12 @@ What this plan commits to, in one line each:
 
 ## Related
 
-- [`project/research/readme-presentation-practices.md`](../research/readme-presentation-practices.md) —
+- [`project/research/readme-presentation-practices.md`](../../research/readme-presentation-practices.md) —
   the evidence base for this plan: the published advice, the six READMEs examined, and the rules derived
   from them. External claims are linked at first use; unlinked conclusions are ours. **All external
   sources for this plan are cited there, not here.**
 - `skills/authoring-readme/SKILL.md` — the skill being changed.
 - `skills/authoring-agents-md/SKILL.md` — Step 5, the Layout instruction.
 - `references/instruction-surfaces.md` — routes "how the repo is shaped" to `AGENTS.md`.
-- [`project/research/context-file-practices.md`](../research/context-file-practices.md) — the evidence on
+- [`project/research/context-file-practices.md`](../../research/context-file-practices.md) — the evidence on
   codebase overviews, which is why the `AGENTS.md` Layout table is being trimmed rather than kept as-is.

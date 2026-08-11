@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import type { Document, DocumentStore } from "@entelekheia/vibe-ops-core";
 import { filterByGlobs, trackedFiles } from "@entelekheia/vibe-ops-core";
 import { readFrontmatter } from "./frontmatter.ts";
-import { listMarkdownBasenames } from "./layout.ts";
+import { listMarkdownFiles } from "./layout.ts";
 
 /** Not entries: the index this command generates, and the append-only retirement ledger. */
 const NOT_AN_ENTRY = new Set(["README.md", "RETIRED.md", "AGENTS.md", "CLAUDE.md"]);
@@ -63,7 +63,7 @@ function scalarOrUndefined(value: string | undefined): string | undefined {
 /** Every entry directly under `dir`, parsed. Depth 1, matching the resolver's own DEPTH for `log`. */
 export function readLogEntries(documents: DocumentStore, repoRoot: string, dir: string): readonly LogEntry[] {
   const entries: LogEntry[] = [];
-  for (const basename of listMarkdownBasenames(path.join(repoRoot, dir), 1)) {
+  for (const basename of listMarkdownFiles(path.join(repoRoot, dir), 1)) {
     if (NOT_AN_ENTRY.has(basename)) continue;
     const file = `${dir}/${basename}`;
     const frontmatter = readFrontmatter(documents.get(file));

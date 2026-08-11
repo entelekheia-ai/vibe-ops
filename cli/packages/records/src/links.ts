@@ -27,6 +27,36 @@ export interface FoundLink {
 
 const LINK_NODE_TYPES = ["inline_link", "image"];
 
+/** Not this reader's concern: an external link, an in-page anchor, a mail link, an unexpanded variable. */
+function isExternal(target: string): boolean {
+  return target.startsWith("http") || target.startsWith("#") || target.startsWith("mailto:") || target.includes("${");
+}
+
+/** Every RELATIVE link in `document`, in document order — what a file that moved has to re-base. */
+export function relativeLinks(document: Document): readonly FoundLink[] {
+  const found: FoundLink[] = [];
+
+  for (const { layer, hostStart } of walkLayersWithHostPositions(document.layers)) {
+    if (layer.languageId !== "text.markdown_inline") continue;
+
+    for (const node of layer.tree.rootNode.descendantsOfType(LINK_NODE_TYPES)) {
+      const destination = node.children.find((child) => child.type === "link_destination");
+      if (destination === undefined) continue;
+      const target = destination.text;
+      if (isExternal(target) || target.startsWith("/")) continue;
+
+      const label = node.children.find((child) => child.type === "link_text");
+      found.push({
+        start: hostStart + node.startIndex,
+        end: hostStart + node.endIndex,
+        text: label?.text ?? "",
+        target,
+      });
+    }
+  }
+  return found.sort((a, b) => a.start - b.start);
+}
+
 /**
  * Every real link in `document` whose destination ends in one of `basenames`, in document order.
  *

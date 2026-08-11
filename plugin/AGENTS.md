@@ -102,7 +102,7 @@ The three "don't do this or it breaks" invariants are in
   [`25-hooks-registration.sh`](../cli/packages/module-check/sh/checks/25-hooks-registration.sh) validates
   every skill's `hooks:` block shape, not only `hooks/hooks.json`. See
   [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md#specification) and
-  [Plan-009](../project/plans/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md).
+  [Plan-009](../project/plans/shipped/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md).
 - **`paths:` is how a target-state skill *can* reach an edit it was not invoked for — not a guarantee
   that it will**, per the measurement above. A skill carrying one **MUST** say near its top how to scale
   down to a single edit, or it teaches people to ignore it.

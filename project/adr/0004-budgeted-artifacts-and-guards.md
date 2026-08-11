@@ -92,4 +92,4 @@ file will drift upward until the next budget failure catches it.
   that make a budget necessary.
 - [`references/authoring-style.md`](../../plugin/references/authoring-style.md) — the budget and the escape table
   as the skills apply them.
-- [Plan-001](../plans/001-knowledge-lifecycle-retrofit.md), T8 — the validator that enforces this.
+- [Plan-001](../plans/shipped/001-knowledge-lifecycle-retrofit.md), T8 — the validator that enforces this.

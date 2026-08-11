@@ -17,7 +17,7 @@ this way*, and closure deletes them. A design that lives only across a set of do
 destroyed by the ceremony that closes them successfully, leaving deleted-file history as the sole record.
 Splitting work into tasks is not the same decision as deciding where its reasoning lives, and answering
 only the first is the failure — see
-[`project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md`](../../../project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
+[`project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md`](../../../project/plans/shipped/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
 migrated back into the repository a day after its four dossiers were closed and deleted.
 
 ## Before writing — the issue

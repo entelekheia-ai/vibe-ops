@@ -15,7 +15,7 @@
 | Status | Shipped |
 | Created | 2026-08-03 |
 | Author | Danilo Borges |
-| Related | [research: positioned context and hooks](../research/positioned-context-and-hooks.md) · [ADR-0001](../adr/0001-skill-taxonomy-target-state-vs-event.md) · [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) |
+| Related | [research: positioned context and hooks](../../research/positioned-context-and-hooks.md) · [ADR-0001](../../adr/0001-skill-taxonomy-target-state-vs-event.md) · [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md) |
 
 ---
 
@@ -343,7 +343,7 @@ breadcrumb in both the issue and the plan resolves with `git show`.
       `plugin-root-resolves-to-the-released-clone` gained `--plugin-dir`), 8 rejected. Base at 31/40,
       index regenerated, `--check` green. Verification falsified the fixed 8,000-character listing budget
       and this repo's `AGENTS.md`, which carried it, was corrected in the same pass.
-- [~] Track 6 — [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) written and accepted. Installed
+- [~] Track 6 — [ADR-0009](../../adr/0009-hooks-as-a-delivery-surface.md) written and accepted. Installed
       locally from a directory marketplace and verified from the cache path: 7 skills, 3 hooks, the
       plan-mode hook resolving this repo's `006`, the closure guard denying. **The version bump and
       publish are not done**, and until a release is cut none of this reaches any
@@ -544,7 +544,7 @@ reason that will be reused on a different decision.
   the Surprises entry above. If the *reference* is wrong, that is a larger finding and worth reporting
   upstream.
 - **Does the `Stop` hook for living sections become buildable?** — **RESOLVED. Yes, and it shipped**, as
-  [Plan-006](006-plan-progress-nudge-and-state-cleanup.md), in 0.7.0. The premise of the deferral was
+  [Plan-006](./006-plan-progress-nudge-and-state-cleanup.md), in 0.7.0. The premise of the deferral was
   wrong, and in a way worth recording: the learning cited above does **not** say a reasoning hook cannot
   act. Its *How to apply* prescribes precisely what Plan-006 built — the observation returns to the main
   agent, "the only thing in the loop holding tools". The blocker was a misreading of a correct entry, so

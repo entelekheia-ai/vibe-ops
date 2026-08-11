@@ -26,9 +26,10 @@ import { runNewContextHook } from "./new-context.ts";
 import { runPlanContextHook } from "./plan-context.ts";
 import { runTaskGuardHook } from "./task-guard.ts";
 import { runPreferMcpHook } from "./prefer-mcp.ts";
+import { runPlanFileHook } from "./plan-file.ts";
 
 /** The surfaces `hook` dispatches to, in the order `--help` lists them. */
-export const HOOK_SURFACES = ["ops", "plan-context", "new-context", "task-guard", "prefer-mcp"] as const;
+export const HOOK_SURFACES = ["ops", "plan-context", "plan-file", "new-context", "task-guard", "prefer-mcp"] as const;
 
 /**
  * `vibe-ops hook <surface> [args]`. Returns 2 with a message naming the valid set when the surface is
@@ -46,6 +47,7 @@ export async function runHook(argv: readonly string[]): Promise<number> {
     return runOpsHook(opsName, opsArgv);
   }
   if (surface === "plan-context") return runPlanContextHook();
+  if (surface === "plan-file") return runPlanFileHook();
   if (surface === "new-context") return runNewContextHook();
   if (surface === "task-guard") return runTaskGuardHook();
   if (surface === "prefer-mcp") return runPreferMcpHook();

@@ -1,6 +1,6 @@
 # Research — what makes a README worth reading
 
-Feeds [Plan-003](../plans/003-readme-presentation.md).
+Feeds [Plan-003](../plans/shipped/003-readme-presentation.md).
 
 > **Attribution.** External findings are **linked inline at first use** — follow the link for the
 > original claim. Anything *not* linked is our own analysis: measurements we took, and rules derived from

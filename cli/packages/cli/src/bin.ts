@@ -7,6 +7,7 @@
 //   vibe-ops hook <surface> [args]    every surface that reads a hook payload on stdin:
 //                                       ops <ops> [flags]  PostToolUse, an ops over the written file
 //                                       plan-context       UserPromptSubmit, the plan format in plan mode
+//                                       plan-file          PostToolUse, files an approved plan-mode plan
 //                                       new-context        UserPromptExpansion, before a typed /vibe-ops:new
 //                                       task-guard         PreToolUse, refuses an unclosed dossier deletion
 //                                       prefer-mcp         PreToolUse, TEMPORARY: names the MCP equivalent

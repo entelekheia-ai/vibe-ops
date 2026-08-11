@@ -123,11 +123,11 @@ test("every noun is a tool, and each declares its verbs, its positionals, and (o
   }
 
   const task = tools.find((t) => t.name === "task");
-  const plan = tools.find((t) => t.name === "plan");
+  const log = tools.find((t) => t.name === "log");
   const taskProperties = (task?.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
-  const planProperties = (plan?.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
+  const logProperties = (log?.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
   assert.ok("confirm" in taskProperties, "task carries a destructive verb, so it must expose confirm");
-  assert.ok(!("confirm" in planProperties), "plan has no destructive verb yet — an unusable field is noise");
+  assert.ok(!("confirm" in logProperties), "log has none — an unusable field is noise");
 });
 
 test("Track 2 over MCP: <noun> resolve answers with the resolved record", async () => {
@@ -220,6 +220,25 @@ test("Track 5 over MCP: log lint, sweep and index all answer with structured dat
   const written = await call(c, "log", { repo, command: "index" });
   assert.equal(written.exitCode, 0, written.text);
   assert.equal((await call(c, "log", { repo, command: "index", check: true })).exitCode, 0, "and now it has not");
+});
+
+test("Track 6 over MCP: plan close is destructive there too, and files/moves once confirmed", async () => {
+  const c = await client();
+  const repo = await fixture();
+
+  const refused = await call(c, "plan", { repo, command: "close", args: ["project/plans/001-p.md"] });
+  assert.equal(refused.exitCode, 2);
+  assert.match(refused.text, /destructive — re-send with confirm: true/);
+  assert.equal(existsSync(path.join(repo, "project/plans/001-p.md")), true);
+
+  const done = await call(c, "plan", { repo, command: "close", args: ["project/plans/001-p.md"], confirm: true });
+  assert.equal(done.exitCode, 0, done.text);
+  assert.equal((done.data as { to: string }).to, "project/plans/shipped/001-p.md");
+  assert.equal(existsSync(path.join(repo, "project/plans/shipped/001-p.md")), true);
+
+  // And the number is still counted from its new home — the whole reason DEPTH.plan is 2.
+  const resolved = await call(c, "plan", { repo, command: "resolve" });
+  assert.equal((resolved.data as { next: string }).next, "002");
 });
 
 test("an unknown verb over MCP is refused by the module, not by the schema alone", async () => {

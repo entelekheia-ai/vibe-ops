@@ -42,6 +42,28 @@ export function parseWithGrammar(text: string, language: Parser.Language): Parse
 }
 
 /**
+ * A `Document` from text that is not (yet) on disk, named by the path it stands for — the extension is
+ * what selects the grammar, so the name matters even when nothing is read.
+ *
+ * Exists because a document can arrive from somewhere other than the filesystem: a plan approved in plan
+ * mode reaches a hook as a string in the payload, and it has to be read structurally *before* it is
+ * written anywhere. Same code path as the store's own parse, so an in-memory document and a read one are
+ * never two slightly different things.
+ */
+export function documentFromText(file: string, text: string): Document {
+  const extension = path.extname(file).slice(1);
+  const grammar = extension === "" ? undefined : grammarForExtension(extension);
+  if (grammar === undefined) {
+    const named = extension === "" ? "(no extension)" : `.${extension}`;
+    return { file, text, uncovered: `no grammar declares a file type covering ${named}`, layers: [], uncoveredLayers: [] };
+  }
+
+  const tree = parseWithGrammar(text, grammar.language);
+  const { layers, uncoveredLayers } = resolveLayers(grammar, tree, text);
+  return { file, text, languageId: grammar.scope, tree, layers, uncoveredLayers };
+}
+
+/**
  * One store per run, built once beside `pluginDir` — never per gate. Parses on first `get`, caches by
  * repository-relative path, and never parses eagerly: `trackedFiles` returns the whole repository, a
  * gate scoped to `project/**` must not pay for the rest of it, and a `--file` run must parse exactly
@@ -72,31 +94,7 @@ export function createDocumentStore(repoRoot: string): DocumentStore {
         return document;
       }
 
-      const extension = path.extname(file).slice(1);
-      const grammar = extension === "" ? undefined : grammarForExtension(extension);
-      if (grammar === undefined) {
-        const named = extension === "" ? "(no extension)" : `.${extension}`;
-        const document: Document = {
-          file,
-          text,
-          uncovered: `no grammar declares a file type covering ${named}`,
-          layers: [],
-          uncoveredLayers: [],
-        };
-        cache.set(file, document);
-        return document;
-      }
-
-      const tree = parseWithGrammar(text, grammar.language);
-      const { layers, uncoveredLayers } = resolveLayers(grammar, tree, text);
-      const document: Document = {
-        file,
-        text,
-        languageId: grammar.scope,
-        tree,
-        layers,
-        uncoveredLayers,
-      };
+      const document = documentFromText(file, text);
       cache.set(file, document);
       return document;
     },

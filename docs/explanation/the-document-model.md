@@ -108,4 +108,4 @@ instrument to measure the corpus it will migrate.
 
 - **Doing it**: [how-to/write-a-gate.md](../how-to/write-a-gate.md)
 - **The API**: [`cli/packages/core/README.md`](../../cli/packages/core/README.md#the-document-model)
-- **The design record**: [`project/plans/010-the-document-model-under-the-gates.md`](../../project/plans/010-the-document-model-under-the-gates.md)
+- **The design record**: [`project/plans/010-the-document-model-under-the-gates.md`](../../project/plans/shipped/010-the-document-model-under-the-gates.md)

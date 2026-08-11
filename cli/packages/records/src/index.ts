@@ -18,7 +18,11 @@ export {
 export { planStatusFindings, trackCheckboxes } from "./status.ts";
 export { closureBoxOpen, tickClosureBox } from "./closure.ts";
 export { closeTasks, TaskCloseError } from "./close.ts";
-export { linksToBasenames, spliceLinks } from "./links.ts";
+export { linksToBasenames, relativeLinks, spliceLinks } from "./links.ts";
+export { readPlanShape, slugFor, withoutRepositoryRow, withStatus } from "./plan-file.ts";
+export { closePlan, filePlan, PlanCloseError, SHIPPED } from "./plan-lifecycle.ts";
+export type { ClosedPlan, ClosePlanOptions, FiledPlan, FilePlanOptions } from "./plan-lifecycle.ts";
+export type { PlanShape } from "./plan-file.ts";
 export { readFrontmatter } from "./frontmatter.ts";
 export type { Frontmatter } from "./frontmatter.ts";
 export { findLogDir, groupOf, logIndex, logLint, logSweep, preambleOf, readLogEntries } from "./log.ts";

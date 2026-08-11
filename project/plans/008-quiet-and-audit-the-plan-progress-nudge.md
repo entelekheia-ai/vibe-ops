@@ -15,7 +15,7 @@
 | Status | In Progress |
 | Created | 2026-08-06 |
 | Author | Danilo Borges |
-| Related | [Plan-006](006-plan-progress-nudge-and-state-cleanup.md) (this corrects it and reverses its Goal 1) · [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) |
+| Related | [Plan-006](./shipped/006-plan-progress-nudge-and-state-cleanup.md) (this corrects it and reverses its Goal 1) · [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) |
 
 ---
 
@@ -59,7 +59,7 @@ measurement script for the one quantity the log cannot observe; and the record o
 nudge was measured. The general question — what a firing costs, for every hook on every delivery surface
 this plugin uses — belongs to a harness audit of the whole plugin, not to this plan.
 
-**Reopening [Plan-006](006-plan-progress-nudge-and-state-cleanup.md).** That plan is `Shipped` and the
+**Reopening [Plan-006](./shipped/006-plan-progress-nudge-and-state-cleanup.md).** That plan is `Shipped` and the
 lifecycle in [`.agents/rules/governance.md`](../../.agents/rules/governance.md) makes a plan permanent
 rather than editable. Its Goal 1 stays on the page as written; the reversal is recorded here and in the
 ADR this plan spawns at closure.
@@ -425,7 +425,7 @@ installed copy once a version is cut.
   where the writing lands.
   Date / Author: 2026-08-07 / Danilo Borges
 
-- Decision: reverse [Plan-006](006-plan-progress-nudge-and-state-cleanup.md)'s Goal 1 — a declined firing
+- Decision: reverse [Plan-006](./shipped/006-plan-progress-nudge-and-state-cleanup.md)'s Goal 1 — a declined firing
   produces no output to the user.
   Rationale: Goal 1 required "an explicit statement that there was nothing worth recording". That
   statement is what produced 17 noisy firings and 53,340 output tokens, and it is unverifiable prose
@@ -552,7 +552,7 @@ is the fact that a half-finished hook was briefly the real one. Neither was plan
 
 ## Related
 
-- [Plan-006](006-plan-progress-nudge-and-state-cleanup.md) — designed and shipped this hook. Its Goal 1 is
+- [Plan-006](./shipped/006-plan-progress-nudge-and-state-cleanup.md) — designed and shipped this hook. Its Goal 1 is
   reversed here; its Open questions already name the over-triggering half of this problem from a different
   angle.
 - [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) — admits hooks as a delivery surface under four

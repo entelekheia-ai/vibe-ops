@@ -15,15 +15,15 @@
 | Status | Shipped |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
-| Depends on | [Plan-001](001-knowledge-lifecycle-retrofit.md) |
+| Depends on | [Plan-001](./001-knowledge-lifecycle-retrofit.md) |
 | Tracking issue | [#3](https://github.com/entelekheia-ai/vibe-ops/issues/3) — owns status and the executive summary; this file owns the design and the working record |
-| Related | [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) |
+| Related | [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md) |
 
 ---
 
 ## Summary
 
-[Plan-001](001-knowledge-lifecycle-retrofit.md) produced `scripts/check-agents-md.sh` and left it where it
+[Plan-001](./001-knowledge-lifecycle-retrofit.md) produced `scripts/check-agents-md.sh` and left it where it
 could only ever check one repository: this one. The checks it performs are exactly the ones every skill in
 this plugin currently asks an agent to perform by hand, in every repository it touches. This plan turns the
 script from a file this repository owns into a **capability the plugin applies to whatever repository it is
@@ -420,8 +420,8 @@ prints its own list instead of carrying a manifest (T1).*
 
 ## Related
 
-- [Plan-001 — Knowledge Lifecycle Retrofit](001-knowledge-lifecycle-retrofit.md), whose open question about
+- [Plan-001 — Knowledge Lifecycle Retrofit](./001-knowledge-lifecycle-retrofit.md), whose open question about
   shipping the validator this plan answers, and whose retrospective supplies T4 and T7.
-- [ADR-0004 — Budgeted artifacts, and a guard instead of a line](../adr/0004-budgeted-artifacts-and-guards.md)
-- [`references/knowledge-lifecycle.md`](../../plugin/references/knowledge-lifecycle.md) — the promotion test, and
+- [ADR-0004 — Budgeted artifacts, and a guard instead of a line](../../adr/0004-budgeted-artifacts-and-guards.md)
+- [`references/knowledge-lifecycle.md`](../../../plugin/references/knowledge-lifecycle.md) — the promotion test, and
   the obligation to prove a guard fails.

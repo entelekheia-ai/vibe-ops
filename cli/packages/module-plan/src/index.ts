@@ -2,8 +2,13 @@
 // (Track 3) here; `file` and `close` are Track 6, on this same module — the noun is `plan`, the verbs
 // accumulate on it.
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
 import {
+  closePlan,
+  filePlan,
+  PlanCloseError,
   formatResolved,
   planModeGuidance,
   planStatusFindings,
@@ -11,6 +16,13 @@ import {
   RecordsConfigError,
 } from "@entelekheia/vibe-ops-records";
 import type { PlanStatusFinding } from "@entelekheia/vibe-ops-records";
+
+/** The approved plan arrives on stdin when `--from` is absent — the shape a hook hands it over in. */
+async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks).toString("utf8");
+}
 
 export default defineModule(
   {
@@ -27,6 +39,17 @@ export default defineModule(
         name: "context",
         summary: "the plan-mode guidance text, built from the resolved living sections",
         flags: [{ name: "project-dir", type: "string", description: "the session's nominal project root, if it may differ from repoRoot" }],
+      },
+      {
+        name: "file",
+        summary: "file an approved plan into the plans directory, dropping its Repository row",
+        flags: [{ name: "from", type: "string", description: "the plan-mode file to read; without it, stdin" }],
+      },
+      {
+        name: "close",
+        summary: "set the terminal status and move the plan into shipped/, keeping its number",
+        destructive: true,
+        flags: [{ name: "dry-run", type: "boolean", description: "say what would happen, change nothing" }],
       },
     ],
     flags: [{ name: "json", type: "boolean", description: "print the structured object instead of KEY=value lines" }],
@@ -89,6 +112,66 @@ export default defineModule(
       const text = planModeGuidance(resolved, projectDir);
       if (context.flags.json !== true && text !== "") context.log(text);
       return { code: 0, data: { text } };
+    }
+
+    if (context.command === "file") {
+      let resolved;
+      try {
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
+      if (resolved.dir === undefined) return { code: 2, summary: "no plans directory in this repository" };
+      if (typeof resolved.next !== "string") return { code: 2, summary: "the next plan number is unknown — see AUTHORITY" };
+
+      const from = typeof context.flags.from === "string" ? context.flags.from : undefined;
+      const text = from === undefined ? await readAll(process.stdin) : readFileSync(path.resolve(context.repoRoot, from), "utf8");
+
+      const filed = filePlan({ repoRoot: context.repoRoot, dir: resolved.dir, next: resolved.next, text });
+      if (filed.skipped !== undefined) {
+        if (context.flags.json !== true) context.log(`not filed: ${filed.skipped}`);
+        return { code: 0, data: filed };
+      }
+      if (context.flags.json !== true) context.log(`filed: ${filed.file}`);
+      return { code: 0, data: filed };
+    }
+
+    if (context.command === "close") {
+      let resolved;
+      try {
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
+      const [file] = context.args;
+      if (file === undefined) return { code: 2, summary: "plan close needs the plan's path" };
+      if (resolved.dir === undefined) return { code: 2, summary: "no plans directory in this repository" };
+      if (resolved.plan?.terminal === undefined) {
+        return { code: 2, summary: "the terminal status could not be resolved — check the plan template's Status lifecycle marker" };
+      }
+
+      let closed;
+      try {
+        closed = closePlan(
+          {
+            repoRoot: context.repoRoot,
+            dir: resolved.dir,
+            file,
+            terminal: resolved.plan.terminal,
+            dryRun: context.flags["dry-run"] === true,
+          },
+          documents,
+        );
+      } catch (error) {
+        if (error instanceof PlanCloseError) return { code: 2, summary: error.message };
+        throw error;
+      }
+      if (context.flags.json !== true) {
+        for (const line of closed.steps) context.log(line);
+      }
+      return { code: 0, data: closed };
     }
 
     return { code: 2, summary: `plan ${String(context.command)} is not implemented yet` };

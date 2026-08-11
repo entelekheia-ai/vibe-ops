@@ -15,10 +15,16 @@ async function scratchRepo(): Promise<string> {
   return dir;
 }
 
-test("plan declares the three read verbs; file and close are Track 6", () => {
+test("plan declares its five verbs, and only close is destructive", () => {
   assert.deepEqual(
     plan.definition.commands?.map((c) => c.name),
-    ["resolve", "status", "context"],
+    ["resolve", "status", "context", "file", "close"],
+  );
+  // `file` writes a new file and `close` moves an existing one — but only the second is irreversible in
+  // the sense that matters: filing never overwrites, and the plan-mode source is still on disk.
+  assert.deepEqual(
+    plan.definition.commands?.filter((c) => c.destructive === true).map((c) => c.name),
+    ["close"],
   );
 });
 
@@ -112,10 +118,10 @@ test("context names the living sections the template actually declares — defec
   assert.deepEqual(lines, [text]);
 });
 
-test("an unknown verb is refused by the module, naming what it was given", async () => {
+test("close without a path is refused before anything is read", async () => {
   const result = await plan.run(contextFor(await scratchRepo(), "close", {}, []));
   assert.equal(result.code, 2);
-  assert.match(result.summary ?? "", /plan close is not implemented yet/);
+  assert.match(result.summary ?? "", /needs the plan's path/);
 });
 
 test("resolve returns the resolved record as data, and logs KEY=value lines by default", async () => {

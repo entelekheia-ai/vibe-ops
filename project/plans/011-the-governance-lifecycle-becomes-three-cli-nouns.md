@@ -300,7 +300,7 @@ implement the same rule.
       hand-written `project/log/README.md` from the entries themselves; `log sweep` reports zero on this
       repository and one on a fixture whose `path:` was deleted; `log lint` fires on each of the four
       shapes `new-log`'s checklist names. `new-log` Step 5 becomes "run it".
-- [ ] **Track 6 — `project/plans/shipped/`, and `plan file`/`plan close`.** `DEPTH=2` for plan,
+- [x] **Track 6 — `project/plans/shipped/`, and `plan file`/`plan close`.** `DEPTH=2` for plan,
       `plan close` moving the file, `plan-approved-copy.sh` rewired and deleted. At the end the seven
       shipped plans have moved, `plan resolve` still reports `NEXT=012`, and every link into
       `project/plans/` still resolves under `vibe-ops governance`.
@@ -348,6 +348,33 @@ here that was not observed in a transcript.
 ---
 
 ## Decision Log
+
+- Decision: `plan close` repoints links in BOTH directions — inbound links to the plan, and the plan's own
+  outbound relative links, re-based for its new depth. This answers the plan's third Open question:
+  Track 6 rewrites them, `markdown-link` does not merely catch them.
+  Rationale: measured on this repository the day the move ran — 60 broken links, and the ones nobody
+  predicts are the *outbound* half, because they are inside the file that moved and a hand-run move has no
+  reason to open it. Doing it by hand across 60 is the class of task that goes wrong quietly. It reuses
+  `linksToBasenames`/`spliceLinks` unchanged from `task close`, so which spans are links is the tree's
+  answer in both verbs: a plan that quotes a path inside a code span is not rewritten. After the run the
+  gate reported 2 broken links, and both named a script this same track deleted, not the move.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `withStatus` carries the cell's original padding over instead of re-adding one space.
+  Rationale: caught by running it — the first version produced `| Status |  Shipped |`. A
+  `pipe_table_cell` node's span INCLUDES the padding the author wrote, so writing ` ${status} ` adds a
+  space that was already there. Carrying it over is also what keeps a table someone aligned by hand
+  aligned, and keeps the diff to the one word that changed.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `documentFromText` is added to core, so a document can be read structurally before it exists
+  on disk.
+  Rationale: an approved plan reaches `hook plan-file` as a string in the payload, and it has to be read —
+  H1, `Status` row, `| Repository |` row — *before* anything is written. The alternative was writing the
+  raw text and then rewriting it, which leaves a window where the filed record contains the absolute path
+  the row exists to remove. Same code path as the store's own parse, so an in-memory document and a read
+  one are never two slightly different things.
+  Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: `log index` regenerates everything from the index's first level-2 heading down, and copies the
   prose above it through untouched. The boundary is located as a heading NODE, not as a line count or a

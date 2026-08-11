@@ -16,7 +16,7 @@
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
 | Tracking issue | [#1](https://github.com/entelekheia-ai/vibe-ops/issues/1) — owns status and the executive summary; this file owns the design and the working record |
-| Related | [ADR-0001](../adr/0001-skill-taxonomy-target-state-vs-event.md), [ADR-0002](../adr/0002-knowledge-lifecycle.md), [ADR-0003](../adr/0003-instruction-file-architecture.md) |
+| Related | [ADR-0001](../../adr/0001-skill-taxonomy-target-state-vs-event.md), [ADR-0002](../../adr/0002-knowledge-lifecycle.md), [ADR-0003](../../adr/0003-instruction-file-architecture.md) |
 
 ---
 
@@ -65,7 +65,7 @@ precisely so that divergent-but-working conventions elsewhere are left alone.
 The architecture lives in three accepted decision records, and this plan implements them rather than
 restating them. Read them in this order:
 
-[ADR-0001](../adr/0001-skill-taxonomy-target-state-vs-event.md) splits every skill into one of two kinds. A
+[ADR-0001](../../adr/0001-skill-taxonomy-target-state-vs-event.md) splits every skill into one of two kinds. A
 **target-state** skill is convergent and idempotent — there is a correct shape and the work is making the
 disk match it, so creation and reconciliation are the same job and never become two skills. It is
 structured as declare-target, survey the disk for gaps, apply one of four **convergence verbs** per gap
@@ -74,7 +74,7 @@ and actively broken, `leave` when out of scope), then check against the target. 
 append-only: it records that something happened, running it twice correctly produces two records, and it has
 no update mode because an event is superseded, advanced, or closed rather than edited.
 
-[ADR-0002](../adr/0002-knowledge-lifecycle.md) makes the plan a living document carrying four sections
+[ADR-0002](../../adr/0002-knowledge-lifecycle.md) makes the plan a living document carrying four sections
 maintained *during* the work — `Progress`, `Surprises & Discoveries`, `Decision Log`,
 `Outcomes & Retrospective` — and adds a routing step at closure. Each entry under `Surprises & Discoveries`
 faces four questions: has it burned us more than once; would a competent agent find it in a few minutes;
@@ -82,7 +82,7 @@ does a test, type, lint rule or hook already make the mistake impossible; and wh
 answers route it to an `AGENTS.md` line, a path-scoped rule, a skill, a mechanical guard, an ADR, or nowhere
 at all. The reverse operation, **demotion**, deletes an `AGENTS.md` line once a guard supersedes it.
 
-[ADR-0003](../adr/0003-instruction-file-architecture.md) fixes where each fact lives. `.agents/` is the
+[ADR-0003](../../adr/0003-instruction-file-architecture.md) fixes where each fact lives. `.agents/` is the
 canonical home for agent configuration and `.claude/` holds relative symlinks into it, with an `@`-import
 from `CLAUDE.md` as the documented fallback where symlinks are unavailable. `AGENTS.md` carries what is
 universal across agents; `CLAUDE.md` is `@AGENTS.md` plus only what other agents would misread. A placement
@@ -99,7 +99,7 @@ the instruction file, so splitting content out of `AGENTS.md` into an always-on 
 nothing else; the only way to raise compliance is to move to a hook.
 
 Supporting research, with every external claim linked at first use and every original conclusion marked as
-such, is in [`project/research/`](../research/).
+such, is in [`project/research/`](../../research).
 
 ## Tracks
 
@@ -449,7 +449,7 @@ Run from the repository root:
   latency. `license-setup`'s pre-commit option remains a per-repository choice, not a precedent for this.
   Date / Author: 2026-07-30 / Danilo Borges
 
-  → Revisited by [ADR-0007](../adr/0007-license-enforcement-writes-no-git-config.md): the pre-commit option
+  → Revisited by [ADR-0007](../../adr/0007-license-enforcement-writes-no-git-config.md): the pre-commit option
   itself turned out to carry the same class of failure (issue #12) — it now writes no git config either.
 
 - Decision: CI runs `--self-test` *before* the real check, and a failing self-test fails the job.
@@ -505,7 +505,7 @@ Running it produced four results worth recording:
 
 1. **One promotion.** "Prove the guard fails" — a check that has stopped detecting anything is
    indistinguishable from a clean repository. It qualifies question 3 of the promotion test itself, so it
-   landed in [`references/knowledge-lifecycle.md`](../../plugin/references/knowledge-lifecycle.md), not in
+   landed in [`references/knowledge-lifecycle.md`](../../../plugin/references/knowledge-lifecycle.md), not in
    `AGENTS.md`: it is true of any repository, and a fact true anywhere is not repository knowledge.
 2. **Four demotions identified and blocked.** The `authoring-agents-md` checklist hand-checks four things
    the validator now enforces — every path resolves, no memory slug, the 150-line count, the symlink and
@@ -538,9 +538,9 @@ job to go with it. That is a product decision, not a retrofit, and it belongs to
 
 ## Related
 
-- [ADR-0001 — Two kinds of skill: target-state and event](../adr/0001-skill-taxonomy-target-state-vs-event.md)
-- [ADR-0002 — Learnings are routed by a promotion test, not authored top-down](../adr/0002-knowledge-lifecycle.md)
-- [ADR-0003 — `.agents/` is canonical, `.claude/` mirrors it, and each fact has one surface](../adr/0003-instruction-file-architecture.md)
-- [Research — what belongs in an agent context file](../research/context-file-practices.md)
-- [Research — where knowledge goes after the work is done](../research/knowledge-lifecycle.md)
-- [`ACKNOWLEDGEMENTS.md`](../../ACKNOWLEDGEMENTS.md) — external sources this work builds on
+- [ADR-0001 — Two kinds of skill: target-state and event](../../adr/0001-skill-taxonomy-target-state-vs-event.md)
+- [ADR-0002 — Learnings are routed by a promotion test, not authored top-down](../../adr/0002-knowledge-lifecycle.md)
+- [ADR-0003 — `.agents/` is canonical, `.claude/` mirrors it, and each fact has one surface](../../adr/0003-instruction-file-architecture.md)
+- [Research — what belongs in an agent context file](../../research/context-file-practices.md)
+- [Research — where knowledge goes after the work is done](../../research/knowledge-lifecycle.md)
+- [`ACKNOWLEDGEMENTS.md`](../../../ACKNOWLEDGEMENTS.md) — external sources this work builds on

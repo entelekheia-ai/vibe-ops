@@ -19,7 +19,7 @@
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
 | Depends on | RFC-0001 (Accepted) — gates and ops as the unit of composition |
-| Related | [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) (a guard, not a line), [Plan-009](009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) (the `fix` capability this builds on) |
+| Related | [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md) (a guard, not a line), [Plan-009](./009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) (the `fix` capability this builds on) |
 
 ---
 
@@ -572,16 +572,16 @@ guess.
 
 ## Related
 
-- [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the gate/ops split this
+- [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the gate/ops split this
   builds inside; its Q1 (a gate holds no opinion about scope) is what lets one detector serve two
   schemas.
-- [Plan-009](009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) — introduced the `fix` capability
+- [Plan-009](./009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) — introduced the `fix` capability
   and the mechanical-versus-judgement split this plan's reference gate reuses.
-- [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) — a guard, not a line; the frontmatter track
+- [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md) — a guard, not a line; the frontmatter track
   is that doctrine applied to the records themselves.
-- [ADR-0010](../adr/0010-supplement-injection-queries-not-a-branch-per-grammar-gap.md) — the injection
+- [ADR-0010](../../adr/0010-supplement-injection-queries-not-a-branch-per-grammar-gap.md) — the injection
   mechanism Track 3 designed, feeding the same `markdown-link` gate Track 5.5 later scoped by config.
-- [ADR-0011](../adr/0011-population-belongs-to-configuration-not-a-gate.md) — the `ignore`/`disabled`
+- [ADR-0011](../../adr/0011-population-belongs-to-configuration-not-a-gate.md) — the `ignore`/`disabled`
   population contract Track 5.5 introduced.
 
 - Task dossiers closed and removed per the task lifecycle (`Planned -> In Progress -> Done -> file removed, git history is the archive`):

@@ -15,7 +15,7 @@
 | Status | Backlog |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
-| Related | [Plan-003](003-readme-presentation.md) — produced the research file this plan generalises from · [Research — what a research document must carry](../research/research-document-format.md), which answers both Open questions below |
+| Related | [Plan-003](./shipped/003-readme-presentation.md) — produced the research file this plan generalises from · [Research — what a research document must carry](../research/research-document-format.md), which answers both Open questions below |
 
 > **This is a placeholder, deliberately thin.** It exists so the idea is not lost, not because the design
 > is settled. The tracks below are a sketch; expect them to change once the maintainer explores the shape

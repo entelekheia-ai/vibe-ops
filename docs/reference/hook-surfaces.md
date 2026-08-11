@@ -17,6 +17,7 @@ member per hook **event**; the payload field, the guard and the reply's `hookEve
 |---|---|---|---|
 | `ops <ops> [flags]` | `PostToolUse` | `tool_input.file_path`, `cwd` | the written file's basename is `AGENTS.md` or `CLAUDE.md` |
 | `plan-context` | `UserPromptSubmit` | `permission_mode`, `session_id`, `cwd` | `permission_mode` is `plan`, and this session has not been told yet |
+| `plan-file` | `PostToolUse` (`ExitPlanMode`) | `tool_response.plan`, `tool_response.filePath`, `cwd` | the approved plan has an H1 and a `Status` row |
 | `new-context` | `UserPromptExpansion` | `command_args`, `cwd` | the first word of `command_args` is `adr`, `rfc`, `plan` or `task` |
 | `task-guard` | `PreToolUse` | `tool_input.command`, `cwd` | the command deletes a `tasks/*.md` whose closure box is unchecked |
 | `prefer-mcp` **(temporary)** | `PreToolUse` | `tool_input.command`, `cwd` | the command invokes a `vibe-ops` module that is also an MCP tool |
@@ -65,6 +66,20 @@ plan template's own `LIVING SECTIONS` markers — never a list written down a se
 - **Says nothing** when the repository keeps no plans (`DIR` unresolved) or has no plan template.
 - **`$CLAUDE_PROJECT_DIR`**, when set and different from the resolved repository root, adds a request for
   the plan's own `| Repository | <path> |` row. A single-repo session never sees that sentence.
+
+### `plan-file`
+
+Files an approved plan-mode plan as `<next>-<slug>.md` and reports where it landed. **The hook firing at
+all already means approved**: `PostToolUse` fires only on success, and a manual rejection is excluded from
+`PostToolUseFailure` and `PermissionDenied` too — so for this one tool there is no outcome to branch on.
+
+Which repository is decided by the plan's own `| Repository |` row when it has one, read from the header
+table rather than by matching a line; otherwise by the payload's `cwd`, resolved to its git toplevel. That
+row is then **dropped from the filed copy** — it is routing metadata for this step and the one thing in a
+plan that is an absolute path on somebody's machine.
+
+Confirmed unusable headless: `ExitPlanMode` does not exist as a callable tool under `claude -p` at all.
+That is a headless-only fact and does not apply to the interactive sessions this runs in.
 
 ### `new-context`
 
@@ -142,7 +157,6 @@ These are registrations, not CLI surfaces. Each is listed with what keeps it out
 
 | Script | Event | Why it is still a script |
 |---|---|---|
-| [`plan-approved-copy.sh`](../../plugin/hooks/plan-approved-copy.sh) | `PostToolUse` (`ExitPlanMode`) | not yet ported |
 | [`plan-progress-nudge.sh`](../../plugin/hooks/plan-progress-nudge.sh) | `Stop` | its body is session-transcript bookkeeping, which is not governance logic and has no CLI noun; it calls `vibe-ops plan resolve` for the part that is |
 | [`session-state-cleanup.sh`](../../plugin/hooks/session-state-cleanup.sh) | `SessionEnd` | session bookkeeping, deliberately out of scope |
 

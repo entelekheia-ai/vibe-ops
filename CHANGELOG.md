@@ -51,14 +51,14 @@ a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAU
   once, so the model triaged a list rather than answering a question.
 
   The output contract is reversed with them.
-  [Plan-006](project/plans/006-plan-progress-nudge-and-state-cleanup.md)'s first goal asked a declining
+  [Plan-006](./project/plans/shipped/006-plan-progress-nudge-and-state-cleanup.md)'s first goal asked a declining
   turn for "an explicit statement that there was nothing worth recording"; measured across one
   workspace's whole session history, that statement is what 40% of firings produced. It is replaced by
   silence, plus one tab-separated line per firing in a date-partitioned log under the plugin's data
   directory, so the decision stays recoverable without being spoken. The reversal, its measurements and
   what it cost are in [Plan-008](project/plans/008-quiet-and-audit-the-plan-progress-nudge.md).
 
-- **[`hooks/plan-approved-copy.sh`](plugin/hooks/plan-approved-copy.sh) — the `| Repository |` row no longer
+- **`hooks/plan-approved-copy.sh` — the `| Repository |` row no longer
   survives into the filed plan.** The row is routing metadata: it exists so an approved plan-mode plan
   written from a workspace root can be filed into the repository it actually belongs to. The hook read it
   and then wrote the plan verbatim, so an absolute path on the author's machine landed in a permanent —
@@ -130,7 +130,7 @@ a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAU
 - **Sources credited** in [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md) for the above, including the note
   that ICD 203 was read through a secondary explainer because the primary PDF yielded no extractable text.
 - **`authoring-agents-md`'s first skill-scoped `hooks:` block, and the CLI it calls**
-  ([Plan-009](project/plans/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md), verified in a real
+  ([Plan-009](./project/plans/shipped/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md), verified in a real
   `claude --plugin-dir` session). Once the skill is active, writing an `AGENTS.md` with no sibling
   `CLAUDE.md` creates one automatically; a `CLAUDE.md` that exists but does not link back, or carries
   content beyond its import, produces one advisory line — never a block. RFC-0001's postponed step 4 and
@@ -177,7 +177,7 @@ a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAU
 
 ## [0.8.0] — 2026-08-04
 
-Designed as one unit in [Plan-007](project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
+Designed as one unit in [Plan-007](./project/plans/shipped/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
 whose four tracks are the four groups below.
 
 ### Removed — BREAKING
@@ -308,7 +308,7 @@ whose four tracks are the four groups below.
   tree elsewhere may be a sibling agent's in-flight edit, not this session's. Returns
   `additionalContext`, not `decision:block` — the latter arrives at the model framed as a denial, which is
   wrong for an observation the model must be free to correctly decline. See
-  [Plan-006](project/plans/006-plan-progress-nudge-and-state-cleanup.md).
+  [Plan-006](./project/plans/shipped/006-plan-progress-nudge-and-state-cleanup.md).
 - **`hooks/session-state-cleanup.sh`**, on `SessionEnd`, plus an opportunistic sweep in the hook above —
   nothing previously deleted the per-session marker `plan-mode-context.sh` writes; 13 stray files had
   already accumulated on the maintainer's machine before this was noticed.

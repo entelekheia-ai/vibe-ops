@@ -28,7 +28,7 @@ export const DEFAULT_PAD: Readonly<Record<RecordType, number>> = { adr: 4, rfc: 
  * subfolder and must keep owning its number — Plan-011 Track 6 gives `plan` the same depth for the
  * same reason, once `project/plans/shipped/` exists; until then this matches the shell exactly.
  */
-export const DEPTH: Readonly<Record<RecordType, number>> = { adr: 1, rfc: 2, plan: 1, task: 1 };
+export const DEPTH: Readonly<Record<RecordType, number>> = { adr: 1, rfc: 2, plan: 2, task: 1 };
 
 /** Thrown when a declared `records.dirs`/`records.templates` entry does not resolve — never silently
  *  falls back to the search order, which would trade one silent wrong answer for another. */
@@ -93,6 +93,34 @@ const EXCLUDED_BASENAMES = /^(agents|readme|index|contributing)\.md$/i;
  * -maxdepth`). Basenames only, never the full relative path — the shell strips to basename too, so a
  * same-named file at two depths is indistinguishable here exactly as it was there.
  */
+// (definition below, after its dir-relative sibling)
+
+/**
+ * Every `.md` file under `dir` as a DIR-RELATIVE path — `shipped/009-x.md`, not `009-x.md`. What a
+ * caller that must OPEN each file needs, where `listMarkdownBasenames` answers the numbering question
+ * and can flatten because a number is a number wherever the file sits.
+ */
+export function listMarkdownFiles(absDir: string, maxDepth: number): string[] {
+  const out: string[] = [];
+  function walk(dir: string, prefix: string, depth: number): void {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (depth < maxDepth) walk(path.join(dir, entry.name), `${prefix}${entry.name}/`, depth + 1);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        out.push(`${prefix}${entry.name}`);
+      }
+    }
+  }
+  walk(absDir, "", 1);
+  return out;
+}
+
 export function listMarkdownBasenames(absDir: string, maxDepth: number): string[] {
   const out: string[] = [];
   function walk(dir: string, depth: number): void {

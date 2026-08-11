@@ -20,7 +20,7 @@ export type {
 export { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
 export { allGrammars, grammarForExtension } from "./grammars.ts";
 export type { GrammarDescriptor } from "./grammars.ts";
-export { createDocumentStore } from "./document.ts";
+export { createDocumentStore, documentFromText } from "./document.ts";
 export type { Document, DocumentStore } from "./document.ts";
 export type { Layer, UncoveredLayer } from "./injections.ts";
 export { lineAt, walkLayersWithHostPositions } from "./position.ts";

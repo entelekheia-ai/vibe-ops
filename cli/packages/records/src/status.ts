@@ -9,7 +9,7 @@ import path from "node:path";
 import type { Document, DocumentStore } from "@entelekheia/vibe-ops-core";
 import type Parser from "tree-sitter";
 import { findHeaderTable, valueOf } from "./header-table.ts";
-import { listMarkdownBasenames } from "./layout.ts";
+import { DEPTH, listMarkdownFiles } from "./layout.ts";
 
 export interface PlanStatusFinding {
   readonly file: string;
@@ -61,8 +61,8 @@ export function trackCheckboxes(document: Document): { readonly total: number; r
 }
 
 /**
- * Sweeps every `.md` file directly under `dir` (the resolved plan directory, depth 1 — matching
- * `resolveRecord`'s own DEPTH for `plan`), reading each one's `Status` header value and its own track
+ * Sweeps every `.md` file under `dir` (the resolved plan directory, at the same depth as
+ * `resolveRecord`'s own DEPTH for `plan`, so `shipped/` is included), reading each one's `Status` header value and its track
  * checkboxes. A file with no header table, no `Status` row, or no track checkboxes at all is silently
  * skipped — that is `AGENTS.md`/`README.md`, or a plan predating the `## Tracks` convention, never a
  * finding by omission.
@@ -80,8 +80,11 @@ export function planStatusFindings(
   if (active === undefined || terminal === undefined || active === terminal) return [];
 
   const findings: PlanStatusFinding[] = [];
-  for (const base of listMarkdownBasenames(path.join(repoRoot, dir), 1)) {
-    const file = `${dir}/${base}`;
+  // DEPTH["plan"] rather than 1: a shipped plan moves into `shipped/` and keeps its number, so the
+  // coherence read has to still see it — a plan that vanished from this sweep on the day it shipped
+  // would look coherent by having stopped being read.
+  for (const relative of listMarkdownFiles(path.join(repoRoot, dir), DEPTH.plan)) {
+    const file = `${dir}/${relative}`;
     const document = documents.get(file);
     if (document.tree === undefined) continue;
 

@@ -93,7 +93,7 @@ a hook that merely repeats a line; the reviewer applying this ADR is the enforce
 - [ADR-0004](0004-budgeted-artifacts-and-guards.md) — the guard-versus-line rule this extends.
 - [`project/research/positioned-context-and-hooks.md`](../research/positioned-context-and-hooks.md) —
   the measurements, and what in them is still unmeasured.
-- [Plan-005](../plans/005-collapse-record-skills-and-make-closure-run.md) — the work that applied it.
-- [Plan-006](../plans/006-plan-progress-nudge-and-state-cleanup.md) — a second application, and the one
+- [Plan-005](../plans/shipped/005-collapse-record-skills-and-make-closure-run.md) — the work that applied it.
+- [Plan-006](../plans/shipped/006-plan-progress-nudge-and-state-cleanup.md) — a second application, and the one
   cleanup hook that does not meet this ADR's own admission test on the merits (recorded there as a
   deliberate exception, not a redefinition of the rule).

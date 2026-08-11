@@ -341,7 +341,7 @@ Q1 and Q2 are resolved by implementation, below. Q3 and Q4 remain open.
   as implemented, and its comparison table against the shell fragments it ports.
 - [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) — the `hooks:` frontmatter field
   and its lifecycle scoping.
-- [Plan-009](../plans/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) — executed this RFC's
+- [Plan-009](../plans/shipped/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md) — executed this RFC's
   postponed step 4 and "The skill-scoped hook"; its own Decision Log carries choices scoped to that
   implementation rather than to this RFC (the symlink fix in `toRepoRelative`, the `project/` exclusion
   from `plugin-root-paths`, the known gap where a CLAUDE.md-only edit does not re-trigger `pairing`).

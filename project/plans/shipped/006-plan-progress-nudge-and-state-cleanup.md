@@ -15,7 +15,7 @@
 | Status | Shipped |
 | Created | 2026-08-03 |
 | Author | Danilo Borges |
-| Related | [Plan-005](005-collapse-record-skills-and-make-closure-run.md) (deferred this) · [ADR-0009](../adr/0009-hooks-as-a-delivery-surface.md) · [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) · [research: positioned context and hooks](../research/positioned-context-and-hooks.md) |
+| Related | [Plan-005](./005-collapse-record-skills-and-make-closure-run.md) (deferred this) · [ADR-0009](../../adr/0009-hooks-as-a-delivery-surface.md) · [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md) · [research: positioned context and hooks](../../research/positioned-context-and-hooks.md) |
 
 ---
 
