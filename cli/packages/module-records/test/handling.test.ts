@@ -1,0 +1,121 @@
+// `--handling` is what a skill asks before it asserts a record's shape. The case that produced it is the
+// first test: a plan at `plan@0.1` must come back naming the notes that describe that shape, because
+// `/vibe-ops:close-plan` once asserted the current shape at a plan holding sixteen entries in a section
+// it had just said did not exist.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import records from "../src/index.ts";
+import type { Handling } from "../src/handling.ts";
+
+async function write(repo: string, file: string, text: string): Promise<void> {
+  await mkdir(path.join(repo, path.dirname(file)), { recursive: true });
+  await writeFile(path.join(repo, file), text, "utf8");
+}
+
+/**
+ * A repository shaped like a target one: templates under `plugin/templates/`, migration notes beside the
+ * migrate skill, and records at three different versions.
+ */
+async function fixture(): Promise<string> {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-handling-"));
+  // The manifest is what makes `resolvePluginDir` answer `plugin/` rather than the root, and the plugin
+  // dir is where the migration notes are looked for. Without it the fixture is a flat repository and the
+  // notes below are unreachable — the same failure a real flat target repo would have.
+  await write(repo, "plugin/.claude-plugin/plugin.json", '{ "name": "vibe-ops" }\n');
+  await write(repo, "project/templates/plan.md", "---\nvibe-ops-template: plan@3\n---\n\n# Plan\n");
+  await write(repo, "plugin/skills/migrate/migrations/plan-0.1-to-0.2.md", "# 0.1 -> 0.2\n");
+  await write(repo, "plugin/skills/migrate/migrations/plan-0.2-to-3.md", "# 0.2 -> 3\n");
+
+  await write(repo, "project/plans/012-current.md", "---\nvibe-ops-template: plan@3\n---\n\n# Current\n");
+  await write(repo, "project/plans/shipped/001-old.md", "<!-- vibe-ops-template plan@0.1 -->\n\n# Old\n");
+  await write(repo, "project/plans/009-bare.md", "# Bare\n\nNo declaration.\n");
+  return repo;
+}
+
+async function run(repo: string, args: readonly string[]) {
+  const lines: string[] = [];
+  const result = await records.run({
+    repoRoot: repo,
+    flags: { handling: true },
+    args: [...args],
+    config: {},
+    settings: undefined,
+    surface: "cli",
+    log: (message) => lines.push(message),
+    warn: () => {},
+  });
+  return { result, lines, data: result.data as readonly Handling[] | undefined };
+}
+
+test("a record behind the current template names the documents that describe its shape", async () => {
+  const repo = await fixture();
+  const { result, lines, data } = await run(repo, ["project/plans/shipped/001-old.md"]);
+
+  assert.equal(result.code, 0);
+  assert.equal(data?.[0]?.dispatch?.kind, "behind");
+  assert.deepEqual(data?.[0]?.handling, [
+    "plugin/skills/migrate/migrations/plan-0.1-to-0.2.md",
+    "plugin/skills/migrate/migrations/plan-0.2-to-3.md",
+  ]);
+  // Both notes, in the order they apply — a single combined jump would lose the 0.1 shape entirely.
+  assert.match(lines.join("\n"), /plan@0\.1, current is 3/);
+  assert.match(lines.join("\n"), /plan-0\.1-to-0\.2\.md[\s\S]*plan-0\.2-to-3\.md/);
+});
+
+test("a current record is told to be handled as written, and names no document to read", async () => {
+  const repo = await fixture();
+  const { lines, data } = await run(repo, ["project/plans/012-current.md"]);
+
+  assert.equal(data?.[0]?.dispatch?.kind, "current");
+  assert.deepEqual(data?.[0]?.handling, []);
+  assert.match(lines.join("\n"), /current shape, handle it as written/);
+});
+
+test("an undeclared record is unknown — never resolved to the oldest shape, even though notes exist for it", async () => {
+  const repo = await fixture();
+  const { data, lines } = await run(repo, ["project/plans/009-bare.md"]);
+
+  assert.equal(data?.[0]?.dispatch?.kind, "unknown");
+  assert.deepEqual(data?.[0]?.handling, []);
+  assert.match(lines.join("\n"), /declares no template version/);
+});
+
+// The type comes from where the file lives, not from what it declares — otherwise the mismatch branch
+// would be unreachable, because every record would be compared against the type it named.
+test("the type is resolved from the directory, so a record declaring another type's token is a mismatch", async () => {
+  const repo = await fixture();
+  await write(repo, "project/plans/013-wrong.md", "---\nvibe-ops-template: task@3\n---\n\n# Wrong\n");
+  const { data } = await run(repo, ["project/plans/013-wrong.md"]);
+
+  assert.equal(data?.[0]?.dispatch?.kind, "mismatch");
+});
+
+test("a path under no record directory says so, rather than being dispatched against a guessed type", async () => {
+  const repo = await fixture();
+  await write(repo, "docs/how-to/something.md", "# Something\n");
+  const { data, lines } = await run(repo, ["docs/how-to/something.md"]);
+
+  assert.equal(data?.[0]?.dispatch, undefined);
+  assert.match(lines.join("\n"), /not under any record directory/);
+});
+
+test("several records are answered in one call, each on its own terms", async () => {
+  const repo = await fixture();
+  const { data } = await run(repo, ["project/plans/012-current.md", "project/plans/shipped/001-old.md"]);
+
+  assert.equal(data?.length, 2);
+  assert.equal(data?.[0]?.dispatch?.kind, "current");
+  assert.equal(data?.[1]?.dispatch?.kind, "behind");
+});
+
+test("--handling with no path is an error, not an empty success", async () => {
+  const repo = await fixture();
+  const { result } = await run(repo, []);
+
+  assert.equal(result.code, 2);
+  assert.match(result.summary ?? "", /needs at least one record path/);
+});

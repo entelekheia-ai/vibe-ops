@@ -136,23 +136,59 @@ shape still produces the wrong reading of the file.
 
 ## Implementation order
 
-- [ ] P0 — Extend the record resolver to report the version, reusing Track 1's parser
-- [ ] P0 — Measure whether a skill-scoped hook forwards reliably; record the result either way
-- [ ] P0 — Settle the multi-version mechanism; write the decision into Plan-012
-- [ ] P0 — Dispatch in `plan close`; assert a current record's output mentions no version
-- [ ] P0 — Dispatch in `task close`
-- [ ] P0 — Unknown stops; newer stops naming the jump; a test for each
-- [ ] P0 — Point `/vibe-ops:migrate` Step 1 at that verb, and correct SKILL.md lines 21 and 27
-- [ ] P1 — Rewrite the shape-asserting sentences in `close-plan` and `close-task`
-- [ ] P1 — Confirm no ordinary verb gained a version flag or a prompt
+- [x] P0 — Extend the record resolver to report the version, reusing Track 1's parser
+- [x] P0 — Measure whether a skill-scoped hook forwards reliably; record the result either way
+- [x] P0 — Settle the multi-version mechanism; write the decision into Plan-012
+- [x] P0 — Dispatch in `plan close`; assert a current record's output mentions no version
+- [x] P0 — Dispatch in `task close`
+- [x] P0 — Unknown stops; newer stops naming the jump; a test for each
+- [x] P0 — Point `/vibe-ops:migrate` Step 1 at that verb, and correct SKILL.md lines 21 and 27
+- [x] P1 — Rewrite the shape-asserting sentences in `close-plan` and `close-task`
+- [x] P1 — Confirm no ordinary verb gained a version flag or a prompt
 
 ## Surprises & Discoveries
 
 <!-- Fill WHILE the work happens. Routed at closure: beyond this repository → project/learnings/;
      nameable file/folder/package → project/log/ with that as its path:; neither → dropped. -->
 
-- Observation: …
-  Evidence: …
+- Observation: the forwarding-sibling mechanism this task was told to explore cannot work, and the reason
+  is not the one the task predicted. It predicted the skill-listing budget; the listing was never the
+  problem.
+  Evidence: `disable-model-invocation: true` does remove a skill's description from context, so a hidden
+  sibling is affordable — `plugin/AGENTS.md` was right and the measurement that said otherwise was wrong.
+  What kills it is that **nothing can perform the forward**: a hook returns text (`additionalContext`)
+  and cannot invoke a skill, and skill→skill invocation is explicitly non-deterministic. The
+  documentation's own advice, when determinism is wanted, is to use a hook — the one mechanism that
+  cannot do this.
+
+- Observation: the handling document for an older version already existed, and writing a second one would
+  have been the duplication this plan exists to remove.
+  Evidence: `plan-0.1-to-0.2.md` states that `Surprises & Discoveries` was living at `0.1`, that it is
+  never deleted in place, and carries the four routing questions per entry — the whole of what
+  `close-plan` Step 3 needed and never asked for. So `--handling` points at the migration note rather
+  than at a new per-version file: one artifact, one ritual (`/new-migration`), two readers.
+
+- Observation: putting the dispatch before every mutation also put it before every validation, and the
+  error path got worse in a way the happy path could not show.
+  Evidence: `task close project/tasks/999-nope.md` answered *"declares no template version — declare
+  `task@<version>` in its frontmatter"* about a file that does not exist. Fixed by letting the library's
+  own existence check run first; two regression tests, one of them a batch, since a single mistyped path
+  must not be reported as a version problem across the whole set.
+
+- Observation: `--json` printed nothing and exited 0 on the terminal, for every module that declares it.
+  Evidence: `result.data` was consumed only by `mcp.ts` and `hook.ts`; `bin.ts` never rendered it. An
+  empty success is the worst shape a query can have — it reads as "there is nothing", a real answer,
+  rather than as "this surface did not render it". Unit tests on the modules passed throughout, because
+  the module was never the broken half.
+
+- Observation: a closure can report zero dangling references and still leave dead ones, and the check
+  that says so is not wrong about links.
+  Evidence: Plan-012's five `Task:` lines are code spans, which `linksToBasenames` does not match by
+  design. The dangling check asked only about links, so it went green over five dead paths. The fix is
+  exactness rather than a wider net: a code span counts as a citation only when its whole content is a
+  whitespace-free path ending in the basename — which admits `` `project/tasks/001-x.md` `` and excludes
+  both `` `[name](../tasks/001-x.md)` `` (a syntax example, correct forever) and
+  `` `git show <sha>:…` `` (the repaired form, which would otherwise make the fix look like the defect).
 
 ## Closure
 

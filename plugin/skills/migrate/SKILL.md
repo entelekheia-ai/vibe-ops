@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: Bring governance artifacts written against an older template up to the current one — finds the `vibe-ops-template <type>@<version>` stamp, applies the recorded migration for each version jump, and reports what needs a human decision instead of guessing. Use when a repo's plans, tasks, ADRs or RFCs predate a template change, after updating vibe-ops, when a plan still carries sections the current template dropped, or "/migrate [path]".
+description: Bring governance artifacts written against an older template up to the current one — finds the `vibe-ops-template` stamp each one declares, applies the recorded migration for each version jump, and reports what needs a human decision instead of guessing. Use when a repo's plans, tasks, ADRs or RFCs predate a template change, after updating vibe-ops, when a plan still carries sections the current template dropped, or "/migrate [path]".
 argument-hint: "[path | audit]"
 ---
 
@@ -18,27 +18,44 @@ only, writes nothing).
 
 ## The version stamp
 
-Every template writes one HTML comment above the H1, and it survives into the produced artifact:
+**Two forms carry it, and both are real.** Every template now declares it in frontmatter, and that is what
+a newly produced artifact carries:
+
+```yaml
+---
+vibe-ops-template: plan@3
+---
+```
+
+Artifacts written before that move carry an HTML comment above the H1 instead, and target repos are still
+full of them:
 
 ```html
 <!-- vibe-ops-template plan@0.2 — KEEP THIS LINE. ... -->
 ```
 
-**An artifact with no stamp is `0.1`.** Versioning started at `0.2`, so the absence of a stamp is not an
-error and **MUST NOT** be treated as one — `0.1` is the retroactive name for every shape that existed
-before stamping.
+Reading only one form is the same wrong answer as guessing, just in the other direction. Frontmatter wins
+when a file carries both — it is what the migration wrote.
+
+**An artifact with no stamp is `(unknown)`, and stays unknown.** It **MUST NOT** be resolved to `0.1` or to
+any other version: that guess is wrong in both directions — an artifact already in the current shape would
+be handed a migration that does not apply, and a genuinely old one would look handled when it was guessed
+at. Undeclared is a finding, reported per artifact, and the fix is to declare a version before migrating
+anything.
 
 ## Step 1 — Detect
 
 ```sh
-rg -o 'vibe-ops-template (\S+)@([0-9.]+)' -r '$1 $2' <target>/project/ | sort | uniq -c
+cd <target> && vibe-ops records --census
 ```
 
-Then list the artifacts carrying **no** stamp, which are the `0.1` population:
+One line per artifact — path, the `<type>@<version>` it declares, or `(unknown)` — grouped by type, with a
+tail counting the population by version and the unknowns. `--json` for the structured array. It reads both
+stamp forms through the same reader the `template-version` gate uses, and it covers `project/log/` too, so
+its numbers and the gate's agree by construction.
 
-```sh
-rg -L --files-without-match 'vibe-ops-template' <target>/project/{plans,tasks,adr,rfc}/ 2>/dev/null
-```
+**Do not hand-roll this with `rg`.** A regex over the token misses one of the two forms and counts any
+artifact that merely *discusses* versioning as declared; both failures report a plausible number.
 
 Compare each against the current template version in
 `${CLAUDE_PLUGIN_ROOT}/templates/<type>.md`. Report the counts before touching anything.

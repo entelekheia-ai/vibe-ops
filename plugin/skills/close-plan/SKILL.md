@@ -87,7 +87,19 @@ into it, so there is nothing here to empty. What a plan does carry is a `Decisio
 
 So this step is usually empty, and saying so is the point. Where it is not empty is the case the plan
 above named: **a plan that never spawned a task dossier**, whose learnings therefore never passed through
-task closure. For those, apply the promotion test in
+task closure.
+
+**This describes the current template. For a plan written against an older one, read that version's own
+description instead:**
+
+```sh
+vibe-ops records --handling <plan>
+```
+
+It names the version the plan declares and, when that is not the current one, the documents describing
+that shape. Those documents govern; nothing on this page does.
+
+For whatever this step turns out to hold, apply the promotion test in
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test)
 — filter first, then place:
 

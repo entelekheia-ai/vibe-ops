@@ -231,3 +231,37 @@ test("an empty batch is refused rather than committing nothing", async () => {
   const repo = await fixture();
   assert.throws(() => closeTasks({ repoRoot: repo, dossiers: [], dryRun: false }, createDocumentStore(repo)), TaskCloseError);
 });
+
+// The Plan-012 case: a track list writes `Task: `project/tasks/001-alpha.md`` — a code span, not a link.
+// The repoint leaves it alone by design, and until 2026-08-11 the dangling check asked only about links,
+// so the closure reported no dangling reference while five citations were left naming deleted paths.
+test("a code span that IS a path to a deleted dossier is dangling; a syntax example and the repaired form are not", async () => {
+  const repo = await fixture();
+  await writeFile(
+    path.join(repo, "project", "plans", "README.md"),
+    [
+      "# Plans",
+      "",
+      "- Track 1 — something.",
+      "      Task: `project/tasks/001-alpha.md`",
+      "",
+      "We write them as `[name](../tasks/001-alpha.md)` — a code span, not a link.",
+      "",
+      "An already-repaired one: `git show abc123:project/tasks/001-alpha.md`",
+      "",
+    ].join("\n"),
+  );
+  git(repo, ["add", "."]);
+  git(repo, ["commit", "-q", "-m", "a referrer citing a dossier in a code span"]);
+
+  const result = closeTasks(
+    { repoRoot: repo, dossiers: ["project/tasks/001-alpha.md"], dryRun: false },
+    createDocumentStore(repo),
+  );
+
+  assert.deepEqual(result.dangling, ["project/plans/README.md"]);
+  assert.match(result.steps.join("\n"), /still names a deleted dossier in a code span/);
+  // The citation is reported, never rewritten — the right replacement is a judgement.
+  const readme = await readFile(path.join(repo, "project", "plans", "README.md"), "utf8");
+  assert.match(readme, /Task: `project\/tasks\/001-alpha\.md`/);
+});

@@ -189,17 +189,23 @@ memory is the failure this plan exists to prevent.
 - **Tracks 1–5 landed.** Their dossiers stay open on purpose (see the Decision Log): closure is a
   ceremony deferred to the end of the plan, so a ticked track with an open dossier is the intended state
   here, not an oversight.
-- **Track 6 is next and is the largest remaining**, and it absorbed `/vibe-ops:migrate`'s Step 1 — its
-  dossier carries the measurement of what Step 1 reports today and why it needs the verb Track 6 builds.
-- **Track 7 is independent** and can move at any point.
+- **Track 6 landed**, every work item including the two P1s. The dispatch runs inside `plan close` and
+  `task close` before any mutation; `vibe-ops records --census` replaced `/vibe-ops:migrate`'s regex
+  (8 records reported against 32 that exist); `vibe-ops records --handling <record>` answers, for one
+  record, which version it declares and which document describes that shape. The multi-version mechanism
+  is settled and recorded in the Decision Log.
+- **Track 7 is next**, and is independent of everything above.
 - **Two P1 items from Track 4 are still open**, and are recorded here because the dossier that held them
   has been closed and deleted: a version declaration on each of the seventeen shell fragments under
   `cli/packages/module-check/sh/checks/`, replacing the single hand-written instance; and
   `fragment-parity` recording both versions it compared, without which a parity result is not evidence
   the next time either side moves.
-- **The dossiers for Tracks 1–5 are gone**, closed on 2026-08-11. `git log -- project/tasks/` finds the
-  commit that still contains each one, and every reference to them was rewritten into a runnable
-  `git show` at closure.
+- **The dossiers for Tracks 1–5 are gone**, closed on 2026-08-11, and every reference to them in this
+  file now carries the runnable `git show` against
+  `55e568956ea95c9e0a4a982cc3a63e49a828e31a` — the last commit that still contains them. Closure rewrote
+  only the markdown **links**: the five `Task:` lines in the track list are code spans, which
+  `linksToBasenames` does not match by design, so they were left naming a deleted path and were repaired
+  by hand afterwards.
 
 **Read no further than you need.** Each dossier is self-contained for its own track; reading all seven is
 how a recovery spends its context on the six tracks it is not doing.
@@ -218,7 +224,7 @@ has actually bought so far.
       prose. First, because a sensor built against the old position would be invalidated by this move.
       Acceptance: every template declares its version in frontmatter; every jump has a note; no note was
       invented for a jump that did not happen.
-      Task: `project/tasks/001-the-version-moves-to-the-frontmatter.md`
+      Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/001-the-version-moves-to-the-frontmatter.md`
 
 - [x] **Track 2 — The sensor, and the health reading it produces.** A check fragment that reads the
       frontmatter version and reports a record without one as `UNKNOWN`, naming the file. Its real output
@@ -226,7 +232,7 @@ has actually bought so far.
       upgrade or a fix is owed. At the end the unversioned and out-of-date populations are reported by the
       gate rather than discovered by hand, and neither can grow silently. Acceptance: the fragment
       reports unknown, open-and-behind, and behind separately; its fixture proves each fires.
-      Task: `project/tasks/002-the-sensor-and-the-health-reading.md`
+      Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/002-the-sensor-and-the-health-reading.md`
 
 - [x] **Track 3 — The emitted record reaches eita.** `cli/packages/core/src/emit.ts` writes the
       header-plus-findings shape the receiving side accepts, carrying its own schema version, the
@@ -234,7 +240,7 @@ has actually bought so far.
       converted. At the end an artifact produced by an ops is ingested the way the shell path already is.
       Acceptance: an emission from `ops-governance` is accepted end to end; the previous flat shape appears
       nowhere.
-      Task: `project/tasks/003-the-emitted-record-reaches-eita.md`
+      Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/003-the-emitted-record-reaches-eita.md`
 
 - [x] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
       that moves only on a break, and it travels into the emitted record's instrument field. The seventeen
@@ -242,7 +248,7 @@ has actually bought so far.
       ten gates in `cli/packages/gates/`. At the end two observations recorded under one id at different
       times can be told apart when the detector between them changed. Acceptance: every gate and every
       fragment declares a version; an emission carries it; `defineGate` rejects a definition without one.
-      Task: `project/tasks/004-the-detector-says-which-detector-it-is.md`
+      Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/004-the-detector-says-which-detector-it-is.md`
 
 - [x] **Track 5 — Backfill the declarations.** Every governance record under `project/` except research
       declares the template version it was written against. Mechanical for the types whose template has
@@ -250,9 +256,9 @@ has actually bought so far.
       because the declaration is an assertion about the file and not a default. At the end Track 2's
       fragment reports no unknowns. Acceptance: zero unknown records, and no declaration written without
       the file being read.
-      Task: `project/tasks/005-backfill-the-version-declarations.md`
+      Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/005-backfill-the-version-declarations.md`
 
-- [ ] **Track 6 — Verbs dispatch on the version they were handed.** The creating and closing skills, and
+- [x] **Track 6 — Verbs dispatch on the version they were handed.** The creating and closing skills, and
       the CLI verbs behind them, resolve a record's version and route to the handling that matches it,
       reporting the format in one line when it is not current and stopping when no handling exists. No flag
       and no prompt. The mechanism for keeping several versions' behaviour alive is open and is explored
@@ -299,6 +305,27 @@ Run from the repository root:
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
 ## Decision Log
+
+- Decision: a skill's body always describes the **current** version, plainly and without history; for any
+  older version it routes to that version's own document via `vibe-ops records --handling <record>`, and
+  that document is the **migration note that already exists**, never a second per-version file.
+  Rationale: the forwarding-sibling candidate this plan recorded does not survive — nothing can perform
+  the forward. A hook returns text (`additionalContext`) and cannot invoke a skill, and skill→skill
+  invocation is explicitly non-deterministic; the documentation's own advice is to use a hook when
+  determinism is wanted, which is the mechanism that cannot do this. Measured against
+  `plan-0.1-to-0.2.md` on 2026-08-11: the note already states that `Surprises & Discoveries` was living
+  at `0.1`, that it is never deleted in place, and it carries the four routing questions per entry — the
+  whole of what closure needed and never asked for. So one artifact per version, written by one ritual
+  (`/new-migration`) and read by both the migration and the closure; a second document written by a
+  second ritual would drift silently and telling which had drifted would mean reading both.
+  Date / Author: 2026-08-11 / Danilo Borges
+
+- Decision: the listing-budget argument against a versioned sibling skill is **not** a reason, and the
+  claim in `plugin/AGENTS.md` that `disable-model-invocation` costs zero context stands.
+  Rationale: recorded because the measurement asserted the opposite and it is the kind of correction that
+  gets re-litigated. The documentation lists that field as *"Description not in context"*, so the file is
+  right. The sibling mechanism dies on the forwarding question alone, which is independent of budget.
+  Date / Author: 2026-08-11 / Danilo Borges
 
 - Decision: version handling is the CLI's and the MCP server's, and it is transparent. An ordinary verb
   resolves the version and acts; version reaches the operator only as an alert, as a health reading, or

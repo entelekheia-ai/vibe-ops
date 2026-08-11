@@ -2,15 +2,28 @@
 // `close` deletes files and posts to an issue, which is why it is a command on an action noun and never a
 // gate: a gate is a pure detector that never mutates and never resolves a destination (RFC-0001).
 
-import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
 import {
+  blocks,
   closeTasks,
   closureBoxOpen,
+  describe,
+  dispatchRecord,
   formatResolved,
   resolveRecord,
   RecordsConfigError,
   TaskCloseError,
 } from "@entelekheia/vibe-ops-records";
+
+/**
+ * Where `/vibe-ops:migrate` keeps its notes. The dispatch reads the same evidence the migrate skill
+ * does, so "there is handling for this version" has one answer and one place to look when it is wrong.
+ */
+function migrationsDir(repoRoot: string): string {
+  return path.join(resolvePluginDir(repoRoot), "skills", "migrate", "migrations");
+}
 
 export default defineModule(
   {
@@ -70,6 +83,38 @@ export default defineModule(
       const dryRun = context.flags["dry-run"] === true;
       const plan = typeof context.flags.plan === "string" ? context.flags.plan : undefined;
       const summaryFile = typeof context.flags["summary-file"] === "string" ? context.flags["summary-file"] : undefined;
+
+      let resolved;
+      try {
+        resolved = resolveRecord("task", context.repoRoot, context.config, documents);
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
+
+      // EVERY dossier is dispatched before ANY of them is touched. `closeTasks` collects referrers
+      // across the whole batch and only then deletes, so closing half a batch loses the information the
+      // other half's repair needs — a batch with one blocked dossier stops as a batch, naming each one.
+      // A path that does not exist is not a version question, and answering it as one tells the operator
+      // to declare frontmatter in a file that is not there. `closeTasks` already owns that message, so
+      // the dispatch stands aside and lets it be thrown rather than growing a second copy of it.
+      const dir = migrationsDir(context.repoRoot);
+      const present = context.args.filter((file) => existsSync(path.join(context.repoRoot, file)));
+      const dispatched = (present.length === context.args.length ? context.args : []).map((file) => {
+        const dispatch = dispatchRecord({
+          record: documents.get(file),
+          current: resolved.templateVersion,
+          migrationsDir: dir,
+        });
+        return { file, line: describe(dispatch, file), blocked: blocks(dispatch) };
+      });
+      const blocked = dispatched.filter((entry) => entry.blocked);
+      if (blocked.length > 0) {
+        return { code: 2, summary: blocked.map((entry) => entry.line).join("\n") };
+      }
+      if (context.flags.json !== true) {
+        for (const entry of dispatched) if (entry.line !== undefined) context.log(entry.line);
+      }
 
       let result;
       try {

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
@@ -28,12 +29,16 @@ test("plan declares its five verbs, and only close is destructive", () => {
   );
 });
 
-/** A plan template declaring the plan@0.2 chain and its two living sections, written into `repo`. */
-async function withTemplate(repo: string): Promise<void> {
+/**
+ * A plan template declaring the plan@0.2 chain and its two living sections, written into `repo`.
+ * `version` declares what a plan written today is written against — the dispatch's `current`.
+ */
+async function withTemplate(repo: string, version?: string): Promise<void> {
   await mkdir(path.join(repo, "project", "templates"), { recursive: true });
   await writeFile(
     path.join(repo, "project", "templates", "plan.md"),
     [
+      ...(version === undefined ? [] : ["---", `vibe-ops-template: plan@${version}`, "---", ""]),
       "<!-- Status lifecycle: Backlog → In Progress → Shipped. The file is never deleted. -->",
       "",
       "# Plan-NNN: Title",
@@ -50,11 +55,17 @@ async function withTemplate(repo: string): Promise<void> {
   );
 }
 
-function contextFor(repo: string, command: string, flags: Record<string, string | boolean>, lines: string[]) {
+function contextFor(
+  repo: string,
+  command: string,
+  flags: Record<string, string | boolean>,
+  lines: string[],
+  args: readonly string[] = [],
+) {
   return {
     repoRoot: repo,
     flags,
-    args: [],
+    args,
     command,
     config: {},
     settings: undefined,
@@ -124,6 +135,100 @@ test("close without a path is refused before anything is read", async () => {
   assert.match(result.summary ?? "", /needs the plan's path/);
 });
 
+// ---------------------------------------------------------------- Plan-012 Track 6: the dispatch
+//
+// `close` sets a Status row, moves the file and repoints its referrers. Every assertion below is about
+// the dispatch happening BEFORE any of that, which is why the blocked cases run without --dry-run: a
+// stop that lands after the first write is not a stop, and the file on disk is what proves it.
+
+/** A plan under `project/plans`, declaring `plan@<version>` unless `version` is absent. */
+async function withPlanFile(repo: string, name: string, version?: string): Promise<string> {
+  await mkdir(path.join(repo, "project", "plans"), { recursive: true });
+  const text = [
+    ...(version === undefined ? [] : ["---", `vibe-ops-template: plan@${version}`, "---", ""]),
+    `# Plan-00X: ${name}`,
+    "",
+    "| Field | Value |",
+    "|---|---|",
+    "| Status | In Progress |",
+    "",
+  ].join("\n");
+  await writeFile(path.join(repo, "project", "plans", name), text);
+  return text;
+}
+
+/** One migration note, named the way `/vibe-ops:migrate` names its own. */
+async function withMigrationNote(repo: string, note: string): Promise<void> {
+  const dir = path.join(repo, "skills", "migrate", "migrations");
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, note), "# A migration note\n");
+}
+
+test("close on a current plan says nothing about versions anywhere in its output", async () => {
+  const repo = await scratchRepo();
+  await withTemplate(repo, "3");
+  await withPlanFile(repo, "009-current.md", "3");
+
+  const lines: string[] = [];
+  const result = await plan.run(contextFor(repo, "close", { "dry-run": true }, lines, ["project/plans/009-current.md"]));
+  assert.equal(result.code, 0);
+  const output = [...lines, result.summary ?? ""].join("\n");
+  assert.doesNotMatch(output, /version|plan@|template/i, "a current record is handled with no version vocabulary at all");
+});
+
+test("close refuses a plan that declares no template version, and moves nothing", async () => {
+  const repo = await scratchRepo();
+  await withTemplate(repo, "3");
+  const before = await withPlanFile(repo, "009-undeclared.md");
+
+  const lines: string[] = [];
+  const result = await plan.run(contextFor(repo, "close", {}, lines, ["project/plans/009-undeclared.md"]));
+  assert.equal(result.code, 2);
+  assert.match(result.summary ?? "", /declares no template version/);
+  assert.deepEqual(lines, [], "nothing is narrated, because nothing ran");
+  assert.equal(await readFile(path.join(repo, "project", "plans", "009-undeclared.md"), "utf8"), before);
+  assert.equal(existsSync(path.join(repo, "project", "plans", "shipped")), false);
+});
+
+test("close refuses a plan ahead of the template — the tooling is what is behind", async () => {
+  const repo = await scratchRepo();
+  await withTemplate(repo, "3");
+  const before = await withPlanFile(repo, "009-ahead.md", "4");
+
+  const result = await plan.run(contextFor(repo, "close", {}, [], ["project/plans/009-ahead.md"]));
+  assert.equal(result.code, 2);
+  assert.match(result.summary ?? "", /ahead of the template's 3/);
+  assert.equal(await readFile(path.join(repo, "project", "plans", "009-ahead.md"), "utf8"), before);
+});
+
+test("close refuses a plan whose migration chain breaks, naming the jump nobody wrote down", async () => {
+  const repo = await scratchRepo();
+  await withTemplate(repo, "3");
+  await withPlanFile(repo, "009-stuck.md", "0.1");
+  await withMigrationNote(repo, "plan-0.1-to-0.2.md"); // …and nothing from 0.2 onward.
+
+  const result = await plan.run(contextFor(repo, "close", {}, [], ["project/plans/009-stuck.md"]));
+  assert.equal(result.code, 2);
+  assert.match(result.summary ?? "", /no migration note leaves plan@0\.2 toward 3/);
+});
+
+test("close proceeds on a plan behind the template, logging exactly one line before the steps", async () => {
+  const repo = await scratchRepo();
+  await withTemplate(repo, "3");
+  await withPlanFile(repo, "009-behind.md", "0.1");
+  await withMigrationNote(repo, "plan-0.1-to-0.2.md");
+  await withMigrationNote(repo, "plan-0.2-to-3.md");
+
+  const lines: string[] = [];
+  const result = await plan.run(contextFor(repo, "close", { "dry-run": true }, lines, ["project/plans/009-behind.md"]));
+  assert.equal(result.code, 0);
+  assert.equal(
+    lines[0],
+    "project/plans/009-behind.md: written against plan@0.1, current is 3 (0.1→0.2, 0.2→3)",
+  );
+  assert.ok(lines.length > 1 && lines.slice(1).every((line) => !line.includes("written against")));
+});
+
 test("resolve returns the resolved record as data, and logs KEY=value lines by default", async () => {
   const repo = await scratchRepo();
   await mkdir(path.join(repo, "project", "plans"), { recursive: true });
@@ -177,4 +282,19 @@ test("a declared records config error is reported as a summary, not thrown out o
   });
   assert.equal(result.code, 2);
   assert.match(result.summary ?? "", /records\.templates\.plan/);
+});
+
+// A path that does not exist is not a version question. Answering it as one told the operator to declare
+// frontmatter in a file that is not there — measured on 2026-08-11, before the existence check was moved
+// ahead of the dispatch.
+test("close on a path that does not exist says so, rather than reporting it as undeclared", async () => {
+  const repo = await scratchRepo();
+  await withTemplate(repo, "3");
+  await withPlanFile(repo, "009-real.md", "3");
+
+  const lines: string[] = [];
+  const result = await plan.run(contextFor(repo, "close", {}, lines, ["project/plans/999-nope.md"]));
+  assert.equal(result.code, 2);
+  assert.match(result.summary ?? "", /no such plan: project\/plans\/999-nope\.md/);
+  assert.doesNotMatch(result.summary ?? "", /version|frontmatter/i);
 });

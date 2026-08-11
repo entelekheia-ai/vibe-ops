@@ -21,7 +21,7 @@ import path from "node:path";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import type { DocumentStore } from "@entelekheia/vibe-ops-core";
 import { tickClosureBox } from "./closure.ts";
-import { linksToBasenames, spliceLinks } from "./links.ts";
+import { citationsToBasenames, linksToBasenames, spliceLinks } from "./links.ts";
 
 export interface TaskCloseOptions {
   readonly repoRoot: string;
@@ -227,12 +227,26 @@ export function closeTasks(options: TaskCloseOptions, documents: DocumentStore):
     const after = createDocumentStore(repoRoot);
     for (const hit of dossiers.flatMap((dossier) => gitGrepFiles(repoRoot, path.basename(dossier)))) {
       if (dangling.includes(hit)) continue;
-      const links = linksToBasenames(after.get(hit), basenames);
-      if (links.length === 0) continue;
+      const document = after.get(hit);
+
+      const links = linksToBasenames(document, basenames);
+      if (links.length > 0) {
+        dangling.push(hit);
+        say(`  still links to a deleted dossier: ${hit} (${links.map((l) => l.target).join(", ")})`);
+        continue;
+      }
+
+      // A citation in a code span is the other way a file names a dossier, and it is the one the repoint
+      // step deliberately leaves alone. Reported here rather than rewritten: what the right replacement
+      // is depends on what the span was for, which is a judgement — going green while the reference is
+      // dead is not. Measured on Plan-012, whose five `Task:` lines survived a closure that reported no
+      // dangling reference at all.
+      const citations = citationsToBasenames(document, basenames);
+      if (citations.length === 0) continue;
       dangling.push(hit);
-      say(`  still links to a deleted dossier: ${hit} (${links.map((l) => l.target).join(", ")})`);
+      say(`  still names a deleted dossier in a code span: ${hit} (${citations.map((c) => c.text).join(", ")})`);
     }
-    if (dangling.length === 0) say("  no tracked file still links to a deleted dossier");
+    if (dangling.length === 0) say("  no tracked file still names a deleted dossier");
   }
 
   // -------------------------------------------------------------------- step 8

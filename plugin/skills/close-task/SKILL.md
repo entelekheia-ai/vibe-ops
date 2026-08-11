@@ -71,11 +71,21 @@ rich context an ADR is too terse to carry, write a paired `project/log/<slug>.md
 This step captures a *learning* — the non-obvious fact discovered while doing the work, which has no home
 in any other artifact and evaporates when the record closes.
 
-**Input:** every entry under `Surprises & Discoveries` **in the dossier**. From `task@0.2` that is the only
-place they live — a plan carries no such section, because a permanent file cannot discharge what is written
-into it. Closing a **plan** therefore routes nothing: its `Decision Log` is design and stays with the plan.
-If there are no entries and the work genuinely surprised no one, say so and move on; an empty routing step
+**Input:** every entry under `Surprises & Discoveries` **in the dossier**. That is the only place they
+live — a plan carries no such section, because a permanent file cannot discharge what is written into it.
+Closing a **plan** therefore routes nothing: its `Decision Log` is design and stays with the plan. If
+there are no entries and the work genuinely surprised no one, say so and move on; an empty routing step
 is a legitimate outcome, a skipped one is not.
+
+**This describes the current templates. For a record written against an older one, read that version's
+own description instead:**
+
+```sh
+vibe-ops records --handling <dossier>...
+```
+
+It names the version each record declares and, when that is not the current one, the documents describing
+that shape. Those documents govern; nothing on this page does.
 
 Routing runs in two passes: **filter, then place.** They answer different questions and neither replaces
 the other.

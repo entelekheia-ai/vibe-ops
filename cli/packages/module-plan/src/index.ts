@@ -2,11 +2,14 @@
 // (Track 3) here; `file` and `close` are Track 6, on this same module — the noun is `plan`, the verbs
 // accumulate on it.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
+import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
 import {
+  blocks,
   closePlan,
+  describe,
+  dispatchRecord,
   filePlan,
   PlanCloseError,
   formatResolved,
@@ -22,6 +25,14 @@ async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString("utf8");
+}
+
+/**
+ * Where `/vibe-ops:migrate` keeps its notes. The dispatch reads the same evidence the migrate skill
+ * does, so "there is handling for this version" has one answer and one place to look when it is wrong.
+ */
+function migrationsDir(repoRoot: string): string {
+  return path.join(resolvePluginDir(repoRoot), "skills", "migrate", "migrations");
 }
 
 export default defineModule(
@@ -150,6 +161,24 @@ export default defineModule(
       if (resolved.dir === undefined) return { code: 2, summary: "no plans directory in this repository" };
       if (resolved.plan?.terminal === undefined) {
         return { code: 2, summary: "the terminal status could not be resolved — check the plan template's Status lifecycle marker" };
+      }
+
+      // BEFORE closePlan, which rewrites the Status row, moves the file and commits: a stop that lands
+      // after the first mutation is not a stop. `describe` returns undefined for a current plan, so the
+      // common path says nothing about versions at all.
+      //
+      // A path that does not exist is not a version question, and answering it as one tells the operator
+      // to declare frontmatter in a file that is not there. `closePlan` already owns that message, so the
+      // dispatch stands aside and lets it be thrown rather than growing a second copy of it.
+      if (existsSync(path.join(context.repoRoot, file))) {
+        const dispatch = dispatchRecord({
+          record: documents.get(file),
+          current: resolved.templateVersion,
+          migrationsDir: migrationsDir(context.repoRoot),
+        });
+        const line = describe(dispatch, file);
+        if (blocks(dispatch)) return { code: 2, summary: line };
+        if (line !== undefined && context.flags.json !== true) context.log(line);
       }
 
       let closed;

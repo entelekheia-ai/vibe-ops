@@ -92,6 +92,57 @@ export function linksToBasenames(document: Document, basenames: readonly string[
   return found.sort((a, b) => a.start - b.start);
 }
 
+/** A code span naming a file, in HOST document offsets. */
+export interface FoundCitation {
+  readonly start: number;
+  readonly end: number;
+  /** The span's contents, without its backticks. */
+  readonly text: string;
+}
+
+/**
+ * Every CODE SPAN in `document` that IS a bare path to one of `basenames`.
+ *
+ * A link is not the only way to name a file, and this is the other one that matters: a plan's track list
+ * writes ``Task: `project/tasks/001-x.md` `` rather than a link. `linksToBasenames` does not match it —
+ * rewriting a code span would corrupt a document explaining its own syntax — so after a deletion the
+ * citation points at a path that no longer exists, while the check that runs afterwards asks only about
+ * links and reports clean. Measured on Plan-012: five dead citations, zero dangling reported.
+ *
+ * THE SPAN'S WHOLE CONTENT MUST BE THE PATH, and that is what separates a citation from a demonstration
+ * rather than any guess about intent. Two spans in the same document are not the same thing:
+ *
+ *   `project/tasks/001-x.md`                    a citation — dead once the file is gone
+ *   `[name](../tasks/001-x.md)`                 an example of link syntax, and correct forever
+ *   `git show <sha>:project/tasks/001-x.md`     the repaired form, which resolves and must not be flagged
+ *
+ * Requiring the trimmed content to be a whitespace-free path ending in the basename admits the first and
+ * excludes the other two by construction — the second ends in `)`, the third carries spaces. A substring
+ * match would flag all three, and flagging the repaired form would make the fix look like the defect.
+ *
+ * REPORTED, NEVER REWRITTEN. What the right replacement is depends on what the span was for, which is a
+ * judgement; going green while the reference is dead is not.
+ *
+ * Prose without backticks is out of scope on purpose: a sentence mentioning a filename is not a
+ * reference, and separating the two is a detector's job, not a closing verb's.
+ */
+export function citationsToBasenames(document: Document, basenames: readonly string[]): readonly FoundCitation[] {
+  const found: FoundCitation[] = [];
+
+  for (const { layer, hostStart } of walkLayersWithHostPositions(document.layers)) {
+    if (layer.languageId !== "text.markdown_inline") continue;
+
+    for (const node of layer.tree.rootNode.descendantsOfType(["code_span"])) {
+      const text = node.text.replaceAll("`", "").trim();
+      if (/\s/.test(text)) continue;
+      if (!basenames.some((base) => text.endsWith(`/${base}`) || text === base)) continue;
+      found.push({ start: hostStart + node.startIndex, end: hostStart + node.endIndex, text });
+    }
+  }
+
+  return found.sort((a, b) => a.start - b.start);
+}
+
 /**
  * `document.text` with each of `links` replaced by `replace(link)`. Applied back to front so an earlier
  * splice never invalidates a later offset — the same reason `tickClosureBox` splices a single span rather

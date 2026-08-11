@@ -27,13 +27,17 @@
 // a template bump is picked up with no edit to any of this. Hardcoding it would put the number in a
 // second place and guarantee the two drift — which is the entire subject of Plan-012.
 //
+// THE COMPARATOR IS SHARED, not reimplemented. `compareVersions` comes from records, where the dispatch
+// the closing verbs run through also reads it. Two version orderings would drift, and a drift here is
+// invisible from either side: both answers look like a version ordering.
+//
 // NO GRADE, NO AGGREGATE. Per eita's doctrine and RFC-0001, the gate says what it saw, one finding per
 // record; the composition decides what is recorded and a consuming reader decides what any of it is
 // worth. A "health score" computed here would be this repository judging itself.
 
 import { defineGate, expandPluginToken } from "@entelekheia/vibe-ops-core";
 import type { Document, GateFinding } from "@entelekheia/vibe-ops-core";
-import { findHeaderTable, readTemplateVersion, valueOf } from "@entelekheia/vibe-ops-records";
+import { compareVersions, findHeaderTable, readTemplateVersion, valueOf } from "@entelekheia/vibe-ops-records";
 
 interface TemplateVersionOptions {
   /**
@@ -43,20 +47,6 @@ interface TemplateVersionOptions {
    * in the other, which is the failure `$PLUGIN_DIR` already exists to prevent on the shell side.
    */
   readonly template?: string;
-}
-
-/**
- * Component-wise, so the `0.x` labels that predate the integers order correctly against them: `0.2`
- * reads as [0, 2] and sorts below `3`. Returns <0 when `a` is behind `b`.
- */
-function compare(a: string, b: string): number {
-  const left = a.split(".").map(Number);
-  const right = b.split(".").map(Number);
-  for (let i = 0; i < Math.max(left.length, right.length); i++) {
-    const difference = (left[i] ?? 0) - (right[i] ?? 0);
-    if (difference !== 0) return difference;
-  }
-  return 0;
 }
 
 /**
@@ -136,7 +126,7 @@ export default defineGate(
         continue;
       }
 
-      const order = compare(declared.version, current.version);
+      const order = compareVersions(declared.version, current.version);
       if (order < 0) {
         findings.push({
           rule: "template-version-behind",

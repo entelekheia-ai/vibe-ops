@@ -96,6 +96,13 @@ const EXCLUDED_BASENAMES = /^(agents|readme|index|contributing)\.md$/i;
 // (definition below, after its dir-relative sibling)
 
 /**
+ * Markdown that sits in a record directory without being a record: the generated index, the append-only
+ * retirement ledger, and the two instruction files. One set, because a second copy of it is how a reader
+ * starts counting a README as an undeclared record while its neighbour does not.
+ */
+export const NOT_A_RECORD = new Set(["README.md", "RETIRED.md", "AGENTS.md", "CLAUDE.md"]);
+
+/**
  * Every `.md` file under `dir` as a DIR-RELATIVE path — `shipped/009-x.md`, not `009-x.md`. What a
  * caller that must OPEN each file needs, where `listMarkdownBasenames` answers the numbering question
  * and can flatten because a number is a number wherever the file sits.

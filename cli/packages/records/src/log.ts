@@ -14,10 +14,10 @@ import { existsSync } from "node:fs";
 import type { Document, DocumentStore } from "@entelekheia/vibe-ops-core";
 import { filterByGlobs, trackedFiles } from "@entelekheia/vibe-ops-core";
 import { readFrontmatter } from "./frontmatter.ts";
-import { listMarkdownFiles } from "./layout.ts";
+import { listMarkdownFiles, NOT_A_RECORD } from "./layout.ts";
 
 /** Not entries: the index this command generates, and the append-only retirement ledger. */
-const NOT_AN_ENTRY = new Set(["README.md", "RETIRED.md", "AGENTS.md", "CLAUDE.md"]);
+const NOT_AN_ENTRY = NOT_A_RECORD;
 
 const CANDIDATE_LOG_DIRS = ["project/log", "log"] as const;
 
