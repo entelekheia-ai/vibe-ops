@@ -308,7 +308,7 @@ implement the same rule.
       block and its half of the ceremony; `close/` removed. At the end `claude plugin validate . --strict`
       passes, `25-hooks-registration.sh` accepts both blocks, and neither skill's description exceeds the
       per-skill character cap.
-- [ ] **Track 8 — Docs, in the same act.** `cli/AGENTS.md` (the `commands` contract, the three nouns, the
+- [x] **Track 8 — Docs, in the same act.** `cli/AGENTS.md` (the `commands` contract, the three nouns, the
       action/detection line), `plugin/AGENTS.md` (the skill table, the hook list going from six scripts to
       one), `README.md`, and `70-plugin-root-paths.sh` losing the paths of seven deleted scripts.
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking

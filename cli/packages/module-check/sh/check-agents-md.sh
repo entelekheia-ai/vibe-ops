@@ -370,7 +370,7 @@ self_test() {
   mkdir -p "$tmp/skills/setup/templates/root"
   printf '# Governance\n\nThe real one.\n' > "$tmp/GOVERNANCE.md"
   printf '# Governance\n\nA stale copy.\n' > "$tmp/skills/setup/templates/root/GOVERNANCE.md"
-  # a references/records/ that is missing two of the four types resolve-governance.sh reads
+  # a references/records/ that is missing two of the four types /new reads
   mkdir -p "$tmp/references/records"
   printf 'adr rules\n' > "$tmp/references/records/adr.md"
   printf 'plan rules\n' > "$tmp/references/records/plan.md"

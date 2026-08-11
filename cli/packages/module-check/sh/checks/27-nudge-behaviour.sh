@@ -41,7 +41,7 @@ _nudge_fixture() { # $1 = fixture root, $2 = repo root under $ROOT's scripts
   git -C "$repo" init -q 2>/dev/null
   {
     printf '# Plan-NNN: Title\n\n| Field | Value |\n|---|---|\n| Status | Backlog |\n\n'
-    # The arrow is U+2192, not "->": resolve-governance.sh derives the active status word by splitting
+    # The arrow is U+2192, not "->": the resolver derives the active status word by splitting
     # the lifecycle comment on it, and an ASCII fixture yields the whole line as PLAN_ACTIVE, which
     # then matches no status row at all. The failure looks exactly like the hook staying silent.
     printf '<!-- Status lifecycle: Backlog \342\206\222 In Progress \342\206\222 Shipped. -->\n\n## Summary\n\n'

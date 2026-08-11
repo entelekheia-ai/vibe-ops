@@ -28,20 +28,33 @@ mode. An existing record is advanced through its own lifecycle, never re-scaffol
 ## Step 0 — Resolve the repo, in one call
 
 ```bash
-sh "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-governance.sh" <type>
+vibe-ops records --type <adr|rfc|plan|task>
 ```
 
 It prints where records of that type live, which template governs them, which file is the numbering
-authority, how many exist, what number comes next — and then **the rules for that record type**, which are
-the second half of this skill. Read them; they are not repeated here.
+authority, how many exist, and what number comes next. `plan` and `task` also have their own nouns —
+`vibe-ops plan resolve`, `vibe-ops task resolve` — which answer the same block plus what is specific to
+them; either is correct here.
 
-Add `--with-template` to get the template's contents in the same call when you are about to write
-immediately.
+**Then read two files it named**, in this order:
+
+1. [`${CLAUDE_PLUGIN_ROOT}/references/records/<type>.md`](../../references/records/) — **the rules for
+   that record type, which are the second half of this skill.** They are not repeated here, and only the
+   matching one is ever read: four record types' rules delivered at once is four times the context for one
+   record.
+2. The path in `TPL=`, when you are about to write immediately.
+
+**A typed `/vibe-ops:new <type> …` has already resolved this**, before this skill started: `vibe-ops hook
+new-context` runs on the command's expansion and puts the block in context. When it is there, do not run
+the command again — it says so in its own first line.
 
 What the output means:
 
 - `DIR=(none)` — this repo keeps no records of that type. Ask whether to create the directory; do not
   create it silently. The default is the `project/<kind>/` layout `/vibe-ops:setup repo` scaffolds.
+- `TPL=<path> (config|search)` — the provenance says whether the repository declared it in
+  `vibeops.config.ts` or the search order found it. A declared path that does not exist is an error, not a
+  fallback.
 - `TPL=(none)` — **stop and ask.** Never invent a structure. Offer to copy the matching template from
   `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/project/templates/`.
 - `AUTHORITY=` — the file that overrides this skill on numbering and lifecycle. When it is a path (rather

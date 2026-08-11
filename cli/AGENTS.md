@@ -12,7 +12,8 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 |---|---|
 | [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract, the config cascade, the eita seam, and the tree-sitter document model behind `GateRunContext.documents`. **How to read a document is [its own README](packages/core/README.md)**, not restated here: the block-vs-inline split, `lineAt` over `startPosition.row`, and what `uncovered` obliges. Depends on nothing else **in this workspace**, so it builds first — but its runtime dependencies are **native**: `tree-sitter` ships prebuilt binaries for `darwin-arm64`, `darwin-x64`, `linux-x64` and `win32-x64`, **not** `linux-arm64`, which compiles from source, so `npm install` can fail there where it previously could not. **Two grammar-manifest conventions coexist** and `grammars.ts` reads both — markdown declares grammars in a `"tree-sitter"` array in its own `package.json`; yaml has no such key and ships a standalone `tree-sitter.json` with the same fields under `"grammars"`. Check a third grammar against both before assuming either is universal. |
 | [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, the **stateless** MCP server, and the `hook` surface (`src/hook.ts`) a skill-scoped `hooks:` block calls by name. Also the programmatic API a third-party module builds against. |
-| [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. |
+| [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. `module-plan`, `module-task` and `module-log` are the three governance **nouns** (Plan-011); `module-records` answers for `adr`/`rfc`, the two record types with no noun of their own. |
+| [`packages/records/`](packages/records/) | `@entelekheia/vibe-ops-records` — the governance record library the nouns share: where records live, the next number, a plan's status chain and living sections, the closure box, filing and closing. **Action, never detection** — it mutates and resolves destinations, which is exactly what a gate may not do. It is also a second foundation package: it sorts after every `module-*` that depends on it, so `npm run build` builds it explicitly, like `core`. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. |
 | [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate; ten of them. Six read the document model rather than the file, and how to do that is [core's README](packages/core/README.md). Four have shell precedent under `module-check/sh/checks/`; `pairing`, `claude-md-content`, `breadcrumb`, `record-header` and `fragment-parity` have none. Two are worth knowing before composing them: **`record-header`** demands `options.schema` (`adr`/`plan`/`rfc`/`task`) and throws without it, so one entry per record type — its header-table reader is shared with `packages/records/`, not duplicated; **`fragment-parity`** holds no repository knowledge at all, taking `{runner, fragment, against}` and reporting only what a shell fragment caught that its port missed (`port-regression`) — the comparison RFC-0001 requires before a fragment is removed. The remaining eleven fragments stay shell until an ops composes them. |
 | [`packages/ops-agents-md/`](packages/ops-agents-md/) | `@entelekheia/vibe-ops-agents-md` — the first ops: composes seven `packages/gates/` entries over the instruction surface, five of them ports. Runs **beside** the shell fragments it ports, not instead of them, until the two are shown to agree. |
@@ -24,6 +25,17 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 A module is a package that default-exports `defineModule(definition, run)`. The `definition` is read by
 every surface — `--help`, flag parsing, and the MCP tool schema — so a module that describes itself
 wrongly is wrong everywhere at once rather than in one surface nobody checks.
+
+**A module may declare `commands`, which makes it a noun with verbs** (`vibe-ops plan status`). The verb
+is `argv[0]` from a terminal and the `command` field over MCP, and it is validated **in `runModule`** —
+not in `bin.ts` — because that is the one place both surfaces pass through. The same is true of
+`destructive`: the terminal confirms with a TTY prompt, MCP requires an explicit `confirm: true`, and
+neither may skip the gate by being the surface it is. A verb's own `flags` are merged with the module's
+and are only valid for that verb.
+
+**Positional arguments reach every surface.** `vibe-ops task close <dossier>…` is `args` in the MCP input
+schema too; a verb reachable from a terminal and from nowhere else is a bug, and there is a test per track
+asserting it is not (`packages/cli/test/mcp-nouns.test.ts`).
 
 ```ts
 import { defineModule } from "@entelekheia/vibe-ops-core";

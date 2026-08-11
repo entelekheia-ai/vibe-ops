@@ -45,6 +45,22 @@ vibe-ops governance              # the second ops — adr/plan/rfc/task header t
 vibe-ops governance --list       # the gates composed, and the paths each runs over
 vibe-ops governance --verbose    # the full run, not only what failed
 
+# The governance nouns. These ACT on one record's lifecycle; the ops above only detect.
+vibe-ops plan resolve            # where plans live, the next number, the status chain, the living sections
+vibe-ops plan status             # every plan whose Status disagrees with its own track boxes
+vibe-ops plan context            # the plan-mode guidance, built from the template's own markers
+vibe-ops plan close <plan>       # terminal status, then move to shipped/ keeping the number
+
+vibe-ops task resolve            # the same block, plus the GitHub remote and auth
+vibe-ops task guard <dossier>…   # which of these still have an unchecked closure box
+vibe-ops task close <dossier>…   # the ordering-sensitive tail of closure; --dry-run previews it
+
+vibe-ops log lint                # name matches filename, kind is trap|debt, no status, a real date
+vibe-ops log sweep               # entries whose path: no longer resolves — candidates, never deletions
+vibe-ops log index               # regenerate the index from the entries; --check reports drift instead
+
+vibe-ops records --type adr      # the layout block for a record type with no noun of its own
+
 vibe-ops @scope/pkg --flag      # a third-party module, by package name
 vibe-ops ./path/to/module       # a module you are developing
 
