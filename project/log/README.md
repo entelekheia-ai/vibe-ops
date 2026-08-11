@@ -7,6 +7,7 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 
 ## `cli/packages/core/`
 
-- [`adding-a-second-tree-sitter-grammar-to-core.md`](adding-a-second-tree-sitter-grammar-to-core.md) —
-  two tree-sitter grammar packages declare peer ranges that do not intersect; measure the ABI before
-  trusting an override.
+- [`adding-a-second-tree-sitter-grammar-to-core.md`](adding-a-second-tree-sitter-grammar-to-core.md) — Two
+  tree-sitter grammar packages in cli/packages/core/ declare peer ranges for the tree-sitter runtime that do
+  not intersect; npm install ERESOLVEs until the runtime is pinned exactly and the grammar's peer is
+  overridden — measure the ABI before trusting that.

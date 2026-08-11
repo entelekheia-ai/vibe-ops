@@ -65,16 +65,23 @@ Three things the template asks for that are usually got wrong:
 
 Write it in English, whatever language the conversation is in — a product guarantee of this plugin.
 
-## Step 5 — The index row
+## Step 5 — Regenerate the index, and lint what you wrote
 
-Add the entry to `project/log/README.md`, grouped under its `path:` prefix. The grouping is derived from
-the path, not chosen: entries sharing a prefix are one group, and when a prefix stops existing the whole
-group collapses to a single breadcrumb.
+```bash
+vibe-ops log lint      # the mechanical half of the checklist below
+vibe-ops log index     # rewrites project/log/README.md from the entries themselves
+```
+
+**Do not write the index row by hand.** The row *is* the entry's `description:`, and the grouping is
+derived from its `path:` — entries sharing a prefix are one group, and when a prefix stops existing the
+whole group collapses. Writing it by hand is what produced the drift this command removed: measured
+2026-08-10, the one row in this repository's own index was a shortened paraphrase of the `description:`
+it was supposed to be, and nothing had noticed.
+
+Everything above the first level-2 heading in that file is prose you own, and the generator copies it
+through untouched. Everything from that heading down is generated; edit an entry, not the index.
 
 Do not touch `project/log/RETIRED.md` — it is append-only and belongs to retirement, not creation.
-
-<!-- When the index generator exists this step becomes "run it". Until then the row is written here, and
-     that is the drift surface: an index maintained by hand disagrees with the directory eventually. -->
 
 ## Before finishing
 
@@ -85,7 +92,7 @@ Do not touch `project/log/RETIRED.md` — it is append-only and belongs to retir
 - [ ] `attempted:` is a real date from `date +%Y-%m-%d`, never guessed
 - [ ] The "not current truth" banner is intact
 - [ ] The template's guidance comments are deleted; the version stamp is not
-- [ ] The index row exists, under the right prefix group
+- [ ] `vibe-ops log lint` is clean, and `vibe-ops log index` has been run
 
 ## ⟳ After every use: review this skill
 

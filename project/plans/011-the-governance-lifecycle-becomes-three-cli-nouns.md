@@ -296,7 +296,7 @@ implement the same rule.
       properties under test, and the closure-box read. `task-dossier-guard.sh` rewired and deleted. At
       the end a scratch repository with two dossiers and one referrer closes to the same commits, the
       same breadcrumbs and the same repointed link the script produces, and `--dry-run` mutates nothing.
-- [ ] **Track 5 — `vibe-ops log index`, `sweep`, `lint`.** At the end `log index` reproduces the current
+- [x] **Track 5 — `vibe-ops log index`, `sweep`, `lint`.** At the end `log index` reproduces the current
       hand-written `project/log/README.md` from the entries themselves; `log sweep` reports zero on this
       repository and one on a fixture whose `path:` was deleted; `log lint` fires on each of the four
       shapes `new-log`'s checklist names. `new-log` Step 5 becomes "run it".
@@ -348,6 +348,35 @@ here that was not observed in a transcript.
 ---
 
 ## Decision Log
+
+- Decision: `log index` regenerates everything from the index's first level-2 heading down, and copies the
+  prose above it through untouched. The boundary is located as a heading NODE, not as a line count or a
+  marker comment.
+  Rationale: a managed region needs a boundary somebody cannot accidentally delete, and a marker comment
+  is exactly that kind of thing — the plan template already carries three of them and each is a line the
+  next author is told not to remove. A heading is structure the document has anyway. The generated half
+  being *derived* is what the whole verb is for: measured 2026-08-10, the single row in this repository's
+  own hand-written index was a shortened paraphrase of the `description:` it was supposed to be, and
+  nothing had noticed — which is precisely the drift `new-log`'s own Step 5 comment predicted in writing
+  and then waited for this command to remove.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: A record's frontmatter is read from its parsed `source.yaml` layer, never from the lines above
+  the second `---`.
+  Rationale: markdown's own injection query hands frontmatter to the yaml grammar, so the tree is already
+  there. Two real entries in this repository break a line reader, and both break it silently: a folded
+  `description:` spanning three lines returns as its first line — a truncated sentence still reads like a
+  sentence, and it becomes the index row and the text a hook injects — and `path:` is a sequence, which a
+  line reader either truncates to its first item or concatenates.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `log sweep` never changes the exit code, and `log lint` does.
+  Rationale: they are different kinds of answer. A lint finding is a defect in an entry, fixable by
+  editing it. A sweep candidate is a *judgement to make* — an entry whose path merely moved is not one
+  whose trap is gone — and the retirement it might lead to is a deletion plus a tombstone in `RETIRED.md`,
+  both of which Scope already reserves for the skill. A non-zero exit would make a candidate feel like a
+  failure and press whoever saw it toward deleting to clear it.
+  Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: MCP carries positional arguments (`args`), and a `destructive` command over MCP is refused
   without an explicit `confirm: true`. Both gates live in `runModule`, never in `bin.ts`.

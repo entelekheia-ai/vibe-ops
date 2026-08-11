@@ -5,10 +5,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import log from "../src/index.ts";
 
-test("log declares exactly one command today: resolve", () => {
+test("log declares its four verbs, and none of them is destructive", () => {
   assert.deepEqual(
     log.definition.commands?.map((c) => c.name),
-    ["resolve"],
+    ["resolve", "index", "sweep", "lint"],
+  );
+  // `index` rewrites a generated file and `sweep` only reports: retirement is deletion plus a tombstone,
+  // and both are the skill's judgement, never this module's.
+  assert.deepEqual(
+    log.definition.commands?.filter((c) => c.destructive === true),
+    [],
   );
 });
 

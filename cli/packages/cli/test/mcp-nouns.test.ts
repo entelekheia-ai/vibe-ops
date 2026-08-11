@@ -83,6 +83,28 @@ async function fixture(): Promise<string> {
     path.join(repo, "project", "tasks", "001-alpha.md"),
     ["# Task-001", "", "## Closure", "", "- [ ] Run `/vibe-ops:close task` — do not just delete.", ""].join("\n"),
   );
+
+  // One log entry, deliberately wrong in three of the four ways lint names, and pointing at a path that
+  // no longer exists — so `lint`, `sweep` and `index --check` all have something to say.
+  await mkdir(path.join(repo, "project", "log"), { recursive: true });
+  await writeFile(path.join(repo, "project", "log", "README.md"), "# project/log/\n\nOne entry per trap.\n");
+  await writeFile(
+    path.join(repo, "project", "log", "a-thing.md"),
+    [
+      "---",
+      "name: the-old-slug",
+      "description: It was tried and it did not work.",
+      "kind: note",
+      "path:",
+      '  - "deleted/thing/*.ts"',
+      "attempted: soon",
+      "---",
+      "",
+      "# The trap",
+      "",
+    ].join("\n"),
+  );
+
   git(repo, ["add", "."]);
   git(repo, ["commit", "-q", "-m", "seed"]);
   return repo;
@@ -174,6 +196,30 @@ test("Track 4 over MCP: a destructive verb is refused without confirm, and runs 
   assert.equal(done.exitCode, 0, done.text);
   assert.equal(existsSync(path.join(repo, "project/tasks/001-alpha.md")), false);
   assert.match((done.data as { dossierSha: string }).dossierSha, /^[0-9a-f]{40}$/);
+});
+
+test("Track 5 over MCP: log lint, sweep and index all answer with structured data", async () => {
+  const c = await client();
+  const repo = await fixture();
+
+  const lint = await call(c, "log", { repo, command: "lint" });
+  assert.equal(lint.exitCode, 1, lint.text);
+  const { findings } = lint.data as { findings: readonly { rule: string }[] };
+  assert.deepEqual(
+    findings.map((f) => f.rule).sort(),
+    ["attempted-invalid", "kind-invalid", "name-mismatch"],
+    "the seeded entry is deliberately wrong in three of the four ways",
+  );
+
+  const sweep = await call(c, "log", { repo, command: "sweep" });
+  assert.equal(sweep.exitCode, 0, sweep.text);
+  assert.equal((sweep.data as { retirable: readonly unknown[] }).retirable.length, 1);
+
+  const check = await call(c, "log", { repo, command: "index", check: true });
+  assert.equal(check.exitCode, 1, "the hand-written index has drifted");
+  const written = await call(c, "log", { repo, command: "index" });
+  assert.equal(written.exitCode, 0, written.text);
+  assert.equal((await call(c, "log", { repo, command: "index", check: true })).exitCode, 0, "and now it has not");
 });
 
 test("an unknown verb over MCP is refused by the module, not by the schema alone", async () => {
