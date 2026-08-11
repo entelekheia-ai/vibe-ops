@@ -126,7 +126,10 @@ test("emitting an id the module does not declare throws instead of being recorde
     declared: ["known"],
     now: () => "2026-01-01T00:00:00.000Z",
   });
-  await assert.rejects(() => emit({ id: "unknown", value: 1 }), /does not declare/);
+  await assert.rejects(
+    () => emit({ id: "unknown", tool: "g@1", examined: 1, unit: "file", counts: {}, moment: "sweep" }),
+    /does not declare/,
+  );
 });
 
 test("an observation records what was seen and carries no verdict field", async () => {
@@ -139,12 +142,46 @@ test("an observation records what was seen and carries no verdict field", async 
     declared: ["count"],
     now: () => "2026-01-01T00:00:00.000Z",
   });
-  await emit({ id: "count", value: 3, subject: "AGENTS.md" });
-  const written = JSON.parse((await readFile(path.join(dir, "m.jsonl"), "utf8")).trim());
-  assert.equal(written.id, "count");
-  assert.equal(written.value, 3);
-  assert.equal(written.producer, "m@1");
-  for (const forbidden of ["severity", "score", "pass", "verdict"]) {
-    assert.ok(!(forbidden in written), `a producer must not record a ${forbidden}`);
+  await emit({
+    id: "count",
+    tool: "budget@1",
+    examined: 3,
+    unit: "file",
+    counts: { "over-budget": 2 },
+    moment: "sweep",
+  });
+  const lines = (await readFile(path.join(dir, "m.count.jsonl"), "utf8")).trim().split("\n");
+  const header = JSON.parse(lines[0]!);
+  assert.equal(header.kind, "gate", "the receiving side refuses an artifact that does not open with one");
+  assert.equal(header.producer, "count");
+  assert.equal(header.tool, "budget@1", "the instrument is the gate, with its own version");
+  assert.equal(header.composition, "m@1");
+  assert.equal(header.population.examined, 3);
+  assert.deepEqual(JSON.parse(lines[1]!), { kind: "finding", rule: "over-budget", count: 2 });
+  for (const forbidden of ["severity", "score", "pass", "verdict", "level"]) {
+    assert.ok(!(forbidden in header), `a producer must not record a ${forbidden}`);
   }
+});
+
+test("a rule that found nothing has no line at all — absence is how zero is written", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-emit3-"));
+  const emit = createEmitter({
+    artifactDir: dir,
+    moduleId: "m",
+    moduleVersion: "1",
+    repoRoot: "/tmp/repo",
+    declared: ["count"],
+    now: () => "2026-01-01T00:00:00.000Z",
+  });
+  await emit({
+    id: "count",
+    tool: "budget@1",
+    examined: 9,
+    unit: "file",
+    counts: { "over-budget": 0 },
+    moment: "sweep",
+  });
+  const lines = (await readFile(path.join(dir, "m.count.jsonl"), "utf8")).trim().split("\n");
+  assert.equal(lines.length, 1, "a clean reading is a header and nothing else");
+  assert.equal(JSON.parse(lines[0]!).population.examined, 9, "and examined is what says it looked");
 });

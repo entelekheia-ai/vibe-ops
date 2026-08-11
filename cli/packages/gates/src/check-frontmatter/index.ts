@@ -33,6 +33,7 @@ function frontmatterBlock(content: string): string[] | undefined {
 export default defineGate(
   {
     id: "check-frontmatter",
+    version: 1,
     summary: "The declared type's frontmatter parses and declares a description",
   },
   async ({ repoRoot, files, options }) => {

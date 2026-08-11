@@ -106,15 +106,18 @@ test("only memory-slug is recorded, and only for the entries declaring emits: tr
   const { context } = contextFor(repoRoot, { artifactDir });
   await ops.run(context);
 
+  // One file per emitting entry, named for it. An entry that does not declare emits leaves no file at
+  // all, which is what this asserts: the directory holds exactly one name.
   const files = await import("node:fs/promises").then((fs) => fs.readdir(artifactDir).catch(() => []));
-  assert.deepEqual(files, ["agents-md.jsonl"]);
+  assert.deepEqual(files, ["agents-md.memory-slug.jsonl"]);
 
-  const lines = (await readFile(path.join(artifactDir, "agents-md.jsonl"), "utf8")).trim().split("\n");
-  for (const line of lines) {
-    const record = JSON.parse(line);
-    assert.equal(record.id, "memory-slug");
-    for (const forbidden of ["severity", "score", "pass", "verdict", "level"]) {
-      assert.ok(!(forbidden in record), `a recorded observation must not carry a ${forbidden}`);
+  const lines = (await readFile(path.join(artifactDir, files[0]!), "utf8")).trim().split("\n");
+  const header = JSON.parse(lines[0]!);
+  assert.equal(header.producer, "memory-slug");
+  for (const forbidden of ["severity", "score", "pass", "verdict", "level"]) {
+    assert.ok(!(forbidden in header), `a recorded observation must not carry a ${forbidden}`);
+    for (const line of lines.slice(1)) {
+      assert.ok(!(forbidden in JSON.parse(line)), `a finding line must not carry a ${forbidden}`);
     }
   }
 });
@@ -132,8 +135,15 @@ test("memory-slug catches a real slug on AGENTS.md and records exactly one findi
   assert.equal(result.code, 1);
   assert.ok(logs.some((line) => line.includes("FAIL  [memory-slug]") && line.includes("project_something")));
 
-  const record = JSON.parse((await readFile(path.join(artifactDir, "agents-md.jsonl"), "utf8")).trim());
-  assert.equal(record.value.findings, 1);
+  // One artifact per signal, named for the emitting entry: the header carries one producer over one
+  // population, so two entries in one file would describe neither.
+  const lines = (await readFile(path.join(artifactDir, "agents-md.memory-slug.jsonl"), "utf8"))
+    .trim()
+    .split("\n");
+  const header = JSON.parse(lines[0]!);
+  assert.equal(header.kind, "gate");
+  assert.equal(header.tool, "memory-slug@1", "the instrument is the gate and its own version");
+  assert.deepEqual(JSON.parse(lines[1]!), { kind: "finding", rule: "memory-slug", count: 1 });
 });
 
 test("settings.agents-md.ignore excludes a shipped template's memory-slug link; without it, the link is a finding", async () => {

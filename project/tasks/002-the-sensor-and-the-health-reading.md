@@ -106,8 +106,9 @@ plan is about.
       rather than being absent from the composition
 - [x] (2026-08-11) P0 — `level` became configuration (`settings.<ops>.level`), so `behind` warning is a
       default this repository can override rather than a verdict baked into the gate
-- [ ] P1 — Fix the same substring defect in `/vibe-ops:migrate`'s Step 1 detection command. Inherited
-      from Track 1 and **still open**: the reader exists, the skill still greps
+- [→] **Moved to Track 6.** `/vibe-ops:migrate`'s Step 1 needs a verb that reports each record's version,
+      and no such verb exists — that is Track 6's subject, and answering it here would make a third
+      surface for one question
 
 ## Surprises & Discoveries
 

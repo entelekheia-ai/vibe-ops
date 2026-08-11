@@ -14,7 +14,7 @@ interface BudgetOptions {
 }
 
 export default defineGate(
-  { id: "budget", summary: "AGENTS.md stays under a line budget", defaultPaths: ["AGENTS.md"] },
+  { id: "budget", version: 1, summary: "AGENTS.md stays under a line budget", defaultPaths: ["AGENTS.md"] },
   async ({ repoRoot, files, options }) => {
     const max = (options as BudgetOptions).max ?? 150;
     if (!files.includes("AGENTS.md")) {

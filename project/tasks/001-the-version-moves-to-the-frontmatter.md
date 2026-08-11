@@ -103,10 +103,10 @@ edit one needs to know which of the two is authoritative.
 - [x] (2026-08-11) P0 — `frontmatter.ts`'s doc comment corrected
 - [x] (2026-08-11) P0 — Header table documented as presentation only, in `.agents/rules/governance.md`
       **and its shipped twin** — a dogfooded pair, so the drift gate would have caught a one-sided edit
-- [ ] P0 — `/vibe-ops:migrate`'s own Step 1 detection is **still the substring form** and still counts a
-      prose mention as a declaration. The correct reader now exists and is exported; pointing the skill at
-      it is listed under Track 2, which owns the same defect for the sensor. Not closed here, and not
-      silently left either
+- [→] **Moved to Track 6** (`project/tasks/006-verbs-dispatch-on-the-version.md`): `/vibe-ops:migrate`'s
+      Step 1, and the two statements above it that this track made false. It needs a verb that answers
+      "what version is each record", which does not exist yet and is Track 6's own subject — fixing it
+      here would be a third answer to that question rather than a fix
 
 ## Surprises & Discoveries
 
@@ -120,6 +120,12 @@ edit one needs to know which of the two is authoritative.
   for all of them is positional and absolute — *at offset 0, before whatever is currently first* — which
   is only visible by looking at the artifacts, never at the template. This is what `/new-migration`
   Step 4 exists to catch, caught on its first use.
+
+  *Correction (2026-08-11): an earlier version of this entry also claimed `/vibe-ops:migrate`'s Step 1
+  command shares the prose false positive. It does not — its regex requires the full
+  `vibe-ops-template <type>@<version>` form, while the command that produced the wrong measurement
+  matched only `plan@<n>`. The unanchored shape is a real hazard in both; the demonstrated failure was
+  mine alone. What Step 1 does have is measured in Track 6's dossier.*
 
 - Observation: frontmatter position is a parser contract here, not a formatting preference, and getting it
   wrong fails silently.

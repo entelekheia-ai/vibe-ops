@@ -29,6 +29,7 @@ const NO_IMPORT = "claude-md-no-import";
 export default defineGate(
   {
     id: "pairing",
+    version: 1,
     summary: "Every AGENTS.md has a sibling CLAUDE.md containing @AGENTS.md",
     defaultPaths: ["**/AGENTS.md"],
     fixable: true,

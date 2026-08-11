@@ -12,7 +12,7 @@ async function writeFakeGate(dir: string, id: string, body: string): Promise<str
   const file = path.join(dir, `${id}.mjs`);
   await writeFile(
     file,
-    `export default { definition: { id: "${id}", summary: "fake" }, run: async (ctx) => (${body}) };\n`,
+    `export default { definition: { id: "${id}", version: 1, summary: "fake" }, run: async (ctx) => (${body}) };\n`,
   );
   return file;
 }
@@ -29,7 +29,7 @@ async function writeMarkerGate(dir: string, id: string, marker: string): Promise
     `import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 export default {
-  definition: { id: "${id}", summary: "fake", fixable: true },
+  definition: { id: "${id}", version: 1, summary: "fake", fixable: true },
   run: async (ctx) => {
     const at = path.join(ctx.repoRoot, "${marker}");
     return { findings: existsSync(at) ? [] : [{ rule: "${id}", evidence: "needs fixing" }] };
@@ -161,7 +161,7 @@ test("emission is doubly opt-in: no artifactDir means no file is written even wh
   const artifactDir = path.join(dir, "artifacts");
   const { context } = contextFor(dir, {} /* no artifactDir */);
   await plugin.run(context);
-  await assert.rejects(() => readFile(path.join(artifactDir, "demo.jsonl")));
+  await assert.rejects(() => readFile(path.join(artifactDir, "demo.watcher.jsonl")));
 });
 
 test("zero examined writes nothing — a population of zero is not a reading", async () => {
@@ -176,7 +176,7 @@ test("zero examined writes nothing — a population of zero is not a reading", a
   const artifactDir = path.join(dir, "artifacts");
   const { context } = contextFor(dir, { artifactDir });
   await plugin.run(context);
-  await assert.rejects(() => readFile(path.join(artifactDir, "demo.jsonl")));
+  await assert.rejects(() => readFile(path.join(artifactDir, "demo.watcher.jsonl")));
 });
 
 test("a non-zero population is recorded, and the record carries no verdict field", async () => {
@@ -195,12 +195,15 @@ test("a non-zero population is recorded, and the record carries no verdict field
   const artifactDir = path.join(dir, "artifacts");
   const { context } = contextFor(dir, { artifactDir });
   await plugin.run(context);
-  const written = JSON.parse((await readFile(path.join(artifactDir, "demo.jsonl"), "utf8")).trim());
-  assert.equal(written.id, "watcher");
-  assert.equal(written.tags[0], "ops:demo");
+  const lines = (await readFile(path.join(artifactDir, "demo.watcher.jsonl"), "utf8")).trim().split("\n");
+  const header = JSON.parse(lines[0]!);
+  assert.equal(header.kind, "gate", "the receiving side refuses anything that does not open with one");
+  assert.equal(header.producer, "watcher");
+  assert.equal(header.tool, "watcher@1", "the instrument is the gate and its own version");
+  assert.equal(header.tags[0], "ops:demo");
+  assert.deepEqual(JSON.parse(lines[1]!), { kind: "finding", rule: "watcher", count: 1 });
   for (const forbidden of ["severity", "score", "pass", "verdict", "level"]) {
-    assert.ok(!(forbidden in written.value), `an emitted observation must not carry a ${forbidden}`);
-    assert.ok(!(forbidden in written), `an emitted observation must not carry a ${forbidden}`);
+    assert.ok(!(forbidden in header), `an emitted observation must not carry a ${forbidden}`);
   }
 });
 
@@ -434,7 +437,10 @@ test("an overridden level still never reaches the emitted observation", async ()
   const artifactDir = path.join(dir, "artifacts");
   const { context } = contextFor(dir, { artifactDir }, {}, { level: { soft: "fail" } });
   await plugin.run(context);
-  const written = JSON.parse((await readFile(path.join(artifactDir, "demo.jsonl"), "utf8")).trim());
-  assert.ok(!("level" in written), "a verdict must not travel with an observation");
-  assert.ok(!("level" in (written.value as object)), "a verdict must not travel with an observation");
+  const lines = (await readFile(path.join(artifactDir, "demo.entry.jsonl"), "utf8")).trim().split("\n");
+  for (const line of lines) {
+    assert.ok(!("level" in JSON.parse(line)), "a verdict must not travel with an observation");
+  }
+  // Both rules are recorded, and the override changed neither of them — it is a reporting tier only.
+  assert.deepEqual(lines.slice(1).map((l) => JSON.parse(l).rule).sort(), ["hard", "soft"]);
 });

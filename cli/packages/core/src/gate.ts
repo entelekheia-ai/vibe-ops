@@ -75,6 +75,18 @@ export interface GateOutcome {
 export interface GateDefinition {
   /** Lowercase, hyphenated. Also the default `rule` on this gate's findings. */
   readonly id: string;
+  /**
+   * The DETECTOR's version: a whole number, starting at 1, and a different number from the package's
+   * semver, which answers a different question. It moves **only on a break** — a change a consumer of
+   * this gate's findings cannot absorb silently. Detection made stricter within the same vocabulary does
+   * not move it; a gate that starts reporting a category nobody was handling does.
+   *
+   * It exists because a finding recorded under one `rule` at two different times is not comparable when
+   * the detector between them changed, and nothing said so. It travels onto every observation as the
+   * instrument that produced it, which is why it is required rather than optional: an absent version is
+   * absent exactly where the comparison needs it.
+   */
+  readonly version: number;
   /** One line, shown by `--list`. */
   readonly summary: string;
   /**
@@ -95,17 +107,39 @@ export interface GatePlugin {
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
+/**
+ * Every rule a gate definition must satisfy, in one place, because it is enforced at TWO boundaries and
+ * a second copy would drift. `defineGate` is the first — the author's own build. `loadGate` is the
+ * second, and it is the one that matters for a gate this repository did not write: nothing obliges a
+ * third-party gate to have called `defineGate` at all, and one that exports a bare object reaches the
+ * emitter with whatever it happens to carry. That produced `tool: "<id>@undefined"` in a real artifact,
+ * which every consumer accepts as a non-empty string — an absent version becoming a plausible record,
+ * which is the exact failure this whole seam exists to remove.
+ */
+export function assertGateDefinition(definition: GateDefinition, where: string): void {
+  if (!ID_PATTERN.test(definition.id)) {
+    throw new Error(`${where}: gate id "${definition.id}" must be lowercase, starting with a letter`);
+  }
+  if (typeof definition.summary !== "string" || definition.summary.trim() === "") {
+    throw new Error(`${where}: gate "${definition.id}" declares no summary — it would be invisible in --list`);
+  }
+  // A version that can be absent is absent in exactly the artifact that needed it, and by then the
+  // reading it would have qualified is already recorded. A float would also make two versions orderable
+  // in ways nobody intended.
+  if (!Number.isInteger(definition.version) || definition.version < 1) {
+    throw new Error(
+      `${where}: gate "${definition.id}" must declare version as a whole number from 1 — ` +
+        `got ${String(definition.version)}`,
+    );
+  }
+}
+
 export function defineGate(
   definition: GateDefinition,
   run: (context: GateRunContext) => Promise<GateOutcome>,
   fix?: (context: GateRunContext, findings: readonly GateFinding[]) => Promise<readonly GateFix[]>,
 ): GatePlugin {
-  if (!ID_PATTERN.test(definition.id)) {
-    throw new Error(`gate id "${definition.id}" must be lowercase, starting with a letter`);
-  }
-  if (definition.summary.trim() === "") {
-    throw new Error(`gate "${definition.id}" declares no summary — it would be invisible in --list`);
-  }
+  assertGateDefinition(definition, "defineGate");
   // The declaration and the code cannot silently disagree — the same rule the emitter applies to
   // `emits`. A gate that forgets to declare `fixable: true` would have its fix silently never called;
   // one that declares it and forgets `fix` would report a repair capability nothing backs.
@@ -153,5 +187,8 @@ export async function loadGate(name: string): Promise<GatePlugin> {
   if (gate?.definition === undefined || typeof gate.run !== "function") {
     throw new Error(`${specifier} does not default-export a gate — expected the result of defineGate()`);
   }
+  // The definition is re-checked here, not only where it was authored: a gate that never called
+  // defineGate reaches this line intact, and `emits` would then record it with whatever it carries.
+  assertGateDefinition(gate.definition, specifier);
   return gate;
 }

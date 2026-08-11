@@ -393,9 +393,23 @@ async function run(
     // record of nothing wrong, and only the second is a reading. Zero findings over a non-empty
     // population is a perfectly good reading and is written.
     if (emit && entry.emits === true && examined > 0) {
+      // Counts per RULE, not one entry per finding: the receiving side aggregates by rule and refuses a
+      // zero, so "this rule found nothing" is written by the line's ABSENCE. A gate reporting several
+      // rules under one label — template-version does — therefore records each separately, which is the
+      // whole reason those rules are distinct in the first place.
+      const counts: Record<string, number> = {};
+      for (const finding of outcome.findings) {
+        counts[finding.rule] = (counts[finding.rule] ?? 0) + 1;
+      }
       await emit({
         id: emitIdFor(entry),
-        value: { findings: outcome.findings.length, examined },
+        // The GATE and its own version — the detector that produced these findings, never the
+        // composition that ran it. See the header comment on emit.ts.
+        tool: `${gate.definition.id}@${gate.definition.version}`,
+        examined,
+        unit: "file",
+        counts,
+        moment: "sweep",
         tags: [`ops:${definition.id}`, ...patterns],
       });
     }

@@ -74,6 +74,7 @@ function statusOf(document: Document): string {
 export default defineGate(
   {
     id: "template-version",
+    version: 1,
     summary: "Every governance record declares which template version it was written against",
   },
   async ({ files, documents, options, repoRoot, pluginDir }) => {

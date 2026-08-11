@@ -33,6 +33,7 @@ function stripCodeSpanDelimiters(text: string): string {
 export default defineGate(
   {
     id: "breadcrumb",
+    version: 1,
     summary: "Every `git show <sha>:<path>` reference resolves against this repository's own history",
     defaultPaths: ["**/*.md"],
   },

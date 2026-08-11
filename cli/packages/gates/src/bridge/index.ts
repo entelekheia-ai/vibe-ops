@@ -20,7 +20,7 @@ function isBridged(rel: string): boolean {
 }
 
 export default defineGate(
-  { id: "bridge", summary: "Every .claude/ rule and skill is a resolving relative symlink into .agents/" },
+  { id: "bridge", version: 1, summary: "Every .claude/ rule and skill is a resolving relative symlink into .agents/" },
   async ({ repoRoot }) => {
     if (!existsSync(path.join(repoRoot, ".claude"))) {
       return { findings: [], skipped: "no .claude/ directory — nothing to bridge" };

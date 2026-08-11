@@ -38,6 +38,7 @@ const SCHEMAS = new Set<Schema>(["adr", "plan", "rfc", "task"]);
 export default defineGate(
   {
     id: "record-header",
+    version: 1,
     summary: "A governance record's header table declares its type's required fields",
   },
   async ({ files, documents, options }) => {

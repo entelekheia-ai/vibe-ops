@@ -54,6 +54,7 @@ function normalizeRelative(dirRel: string, target: string): string | "OUTSIDE" {
 export default defineGate(
   {
     id: "markdown-link",
+    version: 1,
     summary: "Every relative link in tracked markdown resolves inside the repository",
     defaultPaths: ["**/*.md"],
   },

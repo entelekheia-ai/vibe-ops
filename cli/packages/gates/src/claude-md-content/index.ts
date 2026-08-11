@@ -25,6 +25,7 @@ function residualContent(raw: string): string {
 export default defineGate(
   {
     id: "claude-md-content",
+    version: 1,
     summary: "A CLAUDE.md carries only its @AGENTS.md import, or the rest looks like a deliberate choice",
     defaultPaths: ["**/CLAUDE.md"],
   },

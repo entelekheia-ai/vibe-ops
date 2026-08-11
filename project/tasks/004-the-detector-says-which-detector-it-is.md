@@ -94,12 +94,22 @@ changes — and RFC-0001 makes that comparison the precondition for removing a f
 
 ## Implementation order
 
-- [ ] P0 — Add the integer field to `GateDefinition`; make `defineGate` reject its absence; add the test
-- [ ] P0 — Declare a version on each of the ten gates (parallelisable, one contract per gate)
-- [ ] P0 — Carry it through `defineOps` into the emitted header; confirm it appears in an artifact
-- [ ] P1 — Declare a version on each of the seventeen fragments; retire the hand-written instance
-- [ ] P1 — `fragment-parity` records both versions
-- [ ] P1 — Write down what counts as a break for a detector, where a gate author will read it
+**Ran before Track 3, not after it** — the emitted header's `tool` is the gate with its version, so this
+track is what unblocks that one. The dossier's dependency arrow was backwards.
+
+- [x] (2026-08-11) P0 — `GateDefinition.version`, a required whole number from 1; `defineGate` rejects an
+      absent, zero or fractional one. Six tests in `core/test/gate.test.ts`
+- [x] (2026-08-11) P0 — All eleven gates declare `version: 1`. Verified by the **compiler**, not a grep:
+      a required field makes a missing one a type error
+- [x] (2026-08-11) P0 — Carried through `defineOps` into the header's `tool`, and confirmed in a real
+      artifact: `"tool":"template-version@1"`
+- [x] (2026-08-11) P0 — **`loadGate` validates too**, which was not in this dossier: `defineGate`'s rules
+      only ever protected gates that call it, and a hand-rolled one produced `tool: "<id>@undefined"`.
+      Extracted to `assertGateDefinition` and enforced at both boundaries
+- [x] (2026-08-11) P1 — What counts as a break is written on the field itself, where a gate author
+      reads it: detection made stricter within one vocabulary does not move it; a new category does
+- [ ] P1 — Declare a version on each of the seventeen shell fragments; retire the hand-written instance
+- [ ] P1 — `fragment-parity` records both versions it compared
 
 ## Surprises & Discoveries
 

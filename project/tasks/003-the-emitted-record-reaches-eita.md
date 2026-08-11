@@ -96,20 +96,58 @@ them. The AGENTS.md line is a false statement about the tree.
 
 ## Implementation order
 
-- [ ] P0 — Read `gate-emit.sh` and eita's translator; write down the exact required fields
-- [ ] P0 — Thread `examined` and moment through `EmitterOptions` from `defineOps`
-- [ ] P0 — Rewrite the record shape; add `schemaVersion`
-- [ ] P0 — Run an ops and put the artifact through the translator; confirm it lands in the registry
-- [ ] P1 — Delete the old artifacts; correct `cli/AGENTS.md`
-- [ ] P1 — A test asserting the header shape, so the two producers cannot silently diverge again
+**Track 4 had to come first.** The header's `tool` is the instrument with its version, and the instrument
+that produced a finding is the **gate**, not the composition. Recording the ops's version there would give
+every gate in a composition the same instrument — the conflation this seam exists to remove. The dossier's
+dependency arrow pointed the wrong way.
+
+- [x] (2026-08-11) P0 — Read `gate-emit.sh` and eita's translator; the required shape is a header line
+      plus one finding line **per rule with a count**, never one line per finding, and never a zero
+- [x] (2026-08-11) P0 — `defineOps` aggregates findings by rule and passes population, unit, moment and
+      the gate's own `id@version` into the emitter
+- [x] (2026-08-11) P0 — Record rewritten; `schemaVersion` added; **one artifact per signal**
+      (`<ops>.<entry>.jsonl`), because the header describes one producer over one population
+- [x] (2026-08-11) P0 — **Proved end to end against eita's own translator**, in three directions: the old
+      flat shape fails at line 1 (the silent failure this repository shipped with); a zero count is
+      refused at line 2, so the parser is genuinely running over the new shape; and a known producer
+      yields a full report carrying `"client": "…:template-version@1"` — the gate version reaching eita
+- [x] (2026-08-11) P1 — Old artifacts deleted and regenerated; `cli/AGENTS.md`'s claim corrected
+- [x] (2026-08-11) P1 — Header shape asserted in `core`, `ops-agents-md` and `ops-governance` tests
+
+**Where this legitimately stops.** Our producers still do not route: eita answers
+`producer "template-version-plan" has no observation this translator can route it to — add it to
+PRODUCER_OBSERVATION rather than guessing at the nearest existing one`. That is the receiving side
+refusing to guess, working as designed, and Plan-012's scope says in as many words that what the
+framework does with an observation is not this plan's to redefine. Choosing which trait each producer
+feeds is a decision in that repository, not here.
 
 ## Surprises & Discoveries
 
 <!-- Fill WHILE the work happens. Routed at closure: beyond this repository → project/learnings/;
      nameable file/folder/package → project/log/ with that as its path:; neither → dropped. -->
 
-- Observation: …
-  Evidence: …
+- Observation: the emitter had never produced anything ingestible, and nothing anywhere said so — the
+  failure was at line 1 of every file it ever wrote.
+  Evidence: feeding eita's translator the old flat record returns `line 1 must open with
+  {"kind":"gate",…}`. Meanwhile the shell path's observations are in eita's registry. Two producers wrote
+  into one directory for as long as both existed, one of them readable and one not, and `cli/AGENTS.md`
+  asserted they shared a shape. Nothing failed, nothing warned: emission succeeded, the file appeared,
+  and the only thing missing was a reader — which is the shape of every defect in this plan.
+
+- Observation: `defineGate`'s validation only ever protected gates that called `defineGate`.
+  Evidence: `loadGate` checked that `definition` exists and `run` is a function, and nothing else. A gate
+  exporting a bare object — which nothing forbids, and which every test fixture in this repository does —
+  reached the emitter intact and produced `tool: "<id>@undefined"`. eita accepts that: it is a non-empty
+  string. So an absent version would have become a plausible record in the registry, silently, which is
+  the failure the version was added to prevent. The rules now live in `assertGateDefinition` and are
+  enforced at both boundaries, because the one that matters is the one a foreign gate crosses.
+
+- Observation: a rule that found nothing writes no line, and the population is what separates that from
+  not having looked.
+  Evidence: eita refuses `count: 0` outright — *"a rule that found nothing has no finding line to write,
+  not one that says so"*. A clean reading is therefore a header alone, and `population.examined` is the
+  only thing distinguishing it from a run that examined nothing. That is the same rule as
+  `harness-pair.md`'s "zero examined is not a reading", enforced from the receiving side.
 
 ## Closure
 

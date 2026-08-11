@@ -44,6 +44,32 @@ ordinary verb, no prompt, no version vocabulary on the common path.
 Depends on Track 5 (`project/tasks/005-backfill-the-version-declarations.md`): dispatch needs honest
 declarations to dispatch on.
 
+## Inherited from Track 1: `/vibe-ops:migrate` is the third caller of the same question
+
+Moved here on 2026-08-11 because it needs a verb that answers *what version is each record*, which does
+not exist and is this track's subject. Fixing it in Track 1 or 2 would have made a third surface for one
+question, which is the state Plan-012 exists to leave.
+
+Measured against the tree on 2026-08-11, after Tracks 1 and 5 landed. Three separate defects, and the
+command is the least of them:
+
+- **`migrate/SKILL.md:21` is false.** *"Every template writes one HTML comment above the H1"* — none of
+  the five does any more.
+- **`migrate/SKILL.md:27` contradicts the shipped gate.** *"An artifact with no stamp is `0.1` … MUST NOT
+  be treated as an error"* against `template-version-undeclared`, which fails. Two surfaces answering the
+  same question differently is the exact condition this plan removes.
+- **`migrate/SKILL.md:34`, the version census, is blind to the current form.** Its regex demands
+  `vibe-ops-template ` with a **space**; frontmatter writes a **colon**. Run against this repository it
+  reports **8 records, all `plan@0.1`** — the only ones still on the comment form — where there are **33
+  records across five types, 25 of them current**. Wrong by 21 files and by four of the five types.
+- **`migrate/SKILL.md:40`, the unstamped population, returns empty for the wrong reason.** Plain substring
+  matching, so every migrated record is excluded (correct) and so are the eight comment-form plans, which
+  also contain the string. It would report the same emptiness for a file that merely mentions the string
+  in prose, and it never looks at `project/log/` at all.
+
+The fix is not a better regex — it is Step 1 calling whatever this track builds. Whichever verb answers
+the dispatch question answers this one, and the two statements above it are corrected in the same edit.
+
 ## Open within this task — decide it here, with the code in front of you
 
 **How several versions of a skill's behaviour stay alive at once.** Branching inside one `SKILL.md` body
@@ -116,6 +142,7 @@ shape still produces the wrong reading of the file.
 - [ ] P0 — Dispatch in `plan close`; assert a current record's output mentions no version
 - [ ] P0 — Dispatch in `task close`
 - [ ] P0 — Unknown stops; newer stops naming the jump; a test for each
+- [ ] P0 — Point `/vibe-ops:migrate` Step 1 at that verb, and correct SKILL.md lines 21 and 27
 - [ ] P1 — Rewrite the shape-asserting sentences in `close-plan` and `close-task`
 - [ ] P1 — Confirm no ordinary verb gained a version flag or a prompt
 

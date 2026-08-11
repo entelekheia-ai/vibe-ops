@@ -338,6 +338,16 @@ Run from the repository root:
   which is what "an indicator of where an upgrade is owed" has to mean to survive.
   Date / Author: 2026-08-11 / Danilo Borges
 
+- Decision: task closure is **deferred to the end of the plan**, not run as each dossier finishes.
+  Rationale: `/vibe-ops:close-task` is a ceremony — write-back, routing every entry through the promotion
+  test, the demotion check, propagation — and running it seven times interleaved with the building spends
+  the session's context on ritual rather than on the tracks. The dossiers stay open and keep accumulating
+  their working record, which is what they are for; nothing is lost, because closure reads them at the
+  end rather than being reconstructed. **The risk this accepts is named**: a dossier closed long after the
+  work has the same memory problem the living-sections rule exists to prevent, so entries must go in
+  *while* each track runs, not at closure.
+  Date / Author: 2026-08-11 / Danilo Borges
+
 - Decision: a finding's **level is configuration**, not the detector's verdict. `settings.<ops>.level`
   overrides it, keyed by a finding's `rule`, an entry's `label`, or `"*"` — most specific wins — with the
   gate's own declared level as the default underneath.

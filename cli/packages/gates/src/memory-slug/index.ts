@@ -20,7 +20,7 @@ const CODE_SPAN = /`[^`]*`/g;
 const SLUG = /\[\[[a-z0-9][a-z0-9_-]*\]\]/;
 
 export default defineGate(
-  { id: "memory-slug", summary: "No committed file links to a personal-memory slug" },
+  { id: "memory-slug", version: 1, summary: "No committed file links to a personal-memory slug" },
   async ({ repoRoot, files }) => {
     const findings: GateFinding[] = [];
     let examined = 0;

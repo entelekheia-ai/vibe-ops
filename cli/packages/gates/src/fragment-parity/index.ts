@@ -41,6 +41,7 @@ function failedFilesFor(output: string, fragment: string): Set<string> {
 export default defineGate(
   {
     id: "fragment-parity",
+    version: 1,
     summary: "A shell fragment and the gate that ported it agree on every file the fragment flags",
   },
   async ({ repoRoot, pluginDir, files, options, documents }) => {
