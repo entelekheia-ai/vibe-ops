@@ -91,7 +91,22 @@ export async function buildServer(moduleNames: readonly string[]): Promise<McpSe
           content: [{ type: "text" as const, text: text === "" ? `${id} exited ${result.code}` : text }],
           // A non-zero exit is a finding, not a transport failure — the caller gets the output either
           // way and decides what it means. Marking it isError would hide the report behind an error.
-          structuredContent: { exitCode: result.code, data: result.data ?? null },
+          //
+          // `summary` AND `output` travel here, not only in `content[0].text`. Measured against Claude
+          // Code 2.1.226 (recorded in cli/AGENTS.md): a client renders `structuredContent` and DISCARDS
+          // the text — which is how `agents-md` came back as `{failures: 0}` with its findings gone, and
+          // how a refused verb came back as `exitCode: 2, data: null` with no reason attached to it.
+          // That shape is worse than an error: it says the run happened and produced nothing.
+          //
+          // This is every module's refusal, not the destructive gate's. A module returning `{code, summary}`
+          // and no `data` is the ordinary way to report anything a run stopped for, and all of them were
+          // silent through this channel.
+          structuredContent: {
+            exitCode: result.code,
+            data: result.data ?? null,
+            summary: result.summary ?? null,
+            output: lines,
+          },
         };
       },
     );

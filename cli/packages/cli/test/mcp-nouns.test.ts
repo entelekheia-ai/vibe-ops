@@ -29,17 +29,22 @@ interface CallResult {
   readonly exitCode: number;
   readonly data: unknown;
   readonly text: string;
+  /** The refusal or report line, read from the STRUCTURED channel — see the assertion at Track 4. */
+  readonly summary: unknown;
+  readonly output: unknown;
 }
 
 async function call(c: Client, name: string, args: Record<string, unknown>): Promise<CallResult> {
   const result = (await c.callTool({ name, arguments: args })) as {
-    structuredContent?: { exitCode: number; data: unknown };
+    structuredContent?: { exitCode: number; data: unknown; summary?: unknown; output?: unknown };
     content?: { type: string; text?: string }[];
   };
   return {
     exitCode: result.structuredContent?.exitCode ?? -1,
     data: result.structuredContent?.data ?? null,
     text: (result.content ?? []).map((part) => part.text ?? "").join("\n"),
+    summary: result.structuredContent?.summary ?? null,
+    output: result.structuredContent?.output ?? null,
   };
 }
 
@@ -61,6 +66,13 @@ async function fixture(): Promise<string> {
   await writeFile(
     path.join(repo, "project", "templates", "plan.md"),
     [
+      // Both templates declare a version: since Plan-012 Track 6, `close` dispatches on the version of
+      // the record it was handed, and a template declaring none makes every record under it
+      // uncomparable — correctly refused, which has nothing to do with what this file measures.
+      "---",
+      "vibe-ops-template: plan@3",
+      "---",
+      "",
       "<!-- Status lifecycle: Backlog → In Progress → Shipped. -->",
       "",
       "# Plan-NNN",
@@ -76,12 +88,42 @@ async function fixture(): Promise<string> {
     ].join("\n"),
   );
   await writeFile(
+    path.join(repo, "project", "templates", "task.md"),
+    ["---", "vibe-ops-template: task@3", "---", "", "# Task-NNN", ""].join("\n"),
+  );
+  await writeFile(
     path.join(repo, "project", "plans", "001-p.md"),
-    ["# Plan-001", "", "| Field | Value |", "|---|---|", "| Status | Shipped |", "", "## Tracks", "", "- [ ] open", ""].join("\n"),
+    [
+      "---",
+      "vibe-ops-template: plan@3",
+      "---",
+      "",
+      "# Plan-001",
+      "",
+      "| Field | Value |",
+      "|---|---|",
+      "| Status | Shipped |",
+      "",
+      "## Tracks",
+      "",
+      "- [ ] open",
+      "",
+    ].join("\n"),
   );
   await writeFile(
     path.join(repo, "project", "tasks", "001-alpha.md"),
-    ["# Task-001", "", "## Closure", "", "- [ ] Run `/vibe-ops:close task` — do not just delete.", ""].join("\n"),
+    [
+      "---",
+      "vibe-ops-template: task@3",
+      "---",
+      "",
+      "# Task-001",
+      "",
+      "## Closure",
+      "",
+      "- [ ] Run `/vibe-ops:close task` — do not just delete.",
+      "",
+    ].join("\n"),
   );
 
   // One log entry, deliberately wrong in three of the four ways lint names, and pointing at a path that
@@ -179,6 +221,10 @@ test("Track 4 over MCP: a destructive verb is refused without confirm, and runs 
   const refused = await call(c, "task", { repo, command: "close", args: ["project/tasks/001-alpha.md"] });
   assert.equal(refused.exitCode, 2);
   assert.match(refused.text, /destructive — re-send with confirm: true/);
+  // AND through the structured channel. A client that renders `structuredContent` and discards the text
+  // — measured behaviour, recorded in cli/AGENTS.md — otherwise sees `exitCode: 2, data: null` and no
+  // reason at all, which reads as a run that happened and produced nothing.
+  assert.match(String(refused.summary), /destructive — re-send with confirm: true/);
   assert.equal(git(repo, ["rev-parse", "HEAD"]), head, "and nothing happened");
   assert.equal(existsSync(path.join(repo, "project/tasks/001-alpha.md")), true);
 

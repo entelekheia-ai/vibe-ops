@@ -134,6 +134,17 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     sink: (message) => process.stdout.write(`${message}\n`),
   });
 
+  // A module that declares `--json` stops writing lines and returns `data` instead, and until now only
+  // MCP ever rendered that field — so on a terminal `--json` printed NOTHING and exited 0, for every
+  // module that has the flag. An empty success is the worst shape a query can have: it reads as "there
+  // is nothing", which is a real answer, rather than as "this surface did not render it".
+  //
+  // Raw stdout, not `p.log`: the whole point of the flag is to be piped into `jq`, and the prompt
+  // library's framing characters would corrupt it.
+  if (parsed.values.json === true && result.data !== undefined) {
+    process.stdout.write(`${JSON.stringify(result.data, null, 2)}\n`);
+  }
+
   if (result.summary !== undefined) {
     if (result.code === 0) p.log.success(result.summary);
     else p.log.error(result.summary);
