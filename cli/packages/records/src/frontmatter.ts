@@ -38,8 +38,12 @@ function unquote(text: string): string {
 }
 
 /**
- * `document`'s frontmatter, or `undefined` when it has none. A file with no frontmatter is the ordinary
- * case for three of the four record types, so absence is never an error here.
+ * `document`'s frontmatter, or `undefined` when it has none.
+ *
+ * Every record type's template carries frontmatter from Plan-012 onward, so a *newly written* record
+ * always has it. Absence is still never an error here: a record written against an older template has
+ * none, and a target repository may be entirely on the previous shape — see `template-version.ts`, which
+ * reads both forms rather than reporting every older artifact as undeclared.
  */
 export function readFrontmatter(document: Document): Frontmatter | undefined {
   const layer = walkLayersWithHostPositions(document.layers).find(

@@ -23,6 +23,7 @@ import {
   planTerminalFromAuthority,
   planTerminalFromTemplate,
 } from "./plan-fields.ts";
+import { readTemplateVersion, type DeclaredVersion } from "./template-version.ts";
 
 export interface ResolvedRecord {
   readonly type: RecordType;
@@ -31,6 +32,12 @@ export interface ResolvedRecord {
   readonly template?: string;
   /** Where `template` came from — absent only when `template` itself is absent. */
   readonly templateSource?: "config" | "search";
+  /**
+   * The version the template itself declares — what a record written today is written against, and what
+   * a dispatch compares an older record with. Absent when the template declares none, which is reported
+   * as unknown and never resolved to the oldest known version.
+   */
+  readonly templateVersion?: DeclaredVersion;
   readonly authority?: string;
   readonly pad: number;
   readonly existing: number;
@@ -106,7 +113,22 @@ export function resolveRecord(
     next = numbering.next;
   }
 
-  const base: ResolvedRecord = { type, root: repoRoot, dir, template, templateSource, authority, pad, existing, next };
+  // Read through the same store the plan fields use, so the template is parsed once for the whole call.
+  const templateVersion =
+    template === undefined ? undefined : readTemplateVersion(documents.get(template));
+
+  const base: ResolvedRecord = {
+    type,
+    root: repoRoot,
+    dir,
+    template,
+    templateSource,
+    templateVersion,
+    authority,
+    pad,
+    existing,
+    next,
+  };
 
   if (type === "plan") {
     return { ...base, plan: resolvePlanFields(documents, template, authority) };

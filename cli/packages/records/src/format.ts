@@ -12,6 +12,17 @@ export function formatResolved(record: ResolvedRecord): string[] {
   const templateSuffix = record.templateSource !== undefined ? ` (${record.templateSource})` : "";
   lines.push(`TPL=${record.template !== undefined ? `${record.template}${templateSuffix}` : "(none)"}`);
 
+  // `(unknown)`, never a version this did not read. The distinction is the point: an absent declaration
+  // is a file nobody has classified, and printing a plausible number here would end that question.
+  const declared = record.templateVersion;
+  lines.push(
+    `TPL_VERSION=${
+      declared === undefined
+        ? "(unknown)"
+        : `${declared.type}@${declared.version}${declared.source === "comment" ? " (pre-frontmatter)" : ""}`
+    }`,
+  );
+
   lines.push(`AUTHORITY=${record.authority ?? "(default)"}`);
   lines.push(`PAD=${record.pad}`);
   lines.push(`EXISTING=${record.existing}`);

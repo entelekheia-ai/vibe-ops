@@ -15,6 +15,14 @@ normal and costs nothing, because a cross-repo reference is a full URL and a loc
 number freed by moving a document to another repository is free again here. **Never skip a number to
 avoid the appearance of a collision**: it leaves a permanent gap explained by nothing.
 
+**The version lives in the frontmatter; the header table is presentation.** Every record opens with
+`vibe-ops-template: <type>@<integer>` at offset 0, and that is what `/vibe-ops:migrate` and every
+version-aware verb read. The integer moves only when an artifact written against it would now be shaped
+differently — a different number from any package's semver, which answers a different question. The
+`| Field | Value |` table below it renders for a human and for a markdown preview; **never move the
+version into it, and never keep a second copy anywhere.** A record declaring no version is reported as
+*unknown*, never resolved to the oldest known shape.
+
 ### ADR (`project/adr/`)
 
 ```

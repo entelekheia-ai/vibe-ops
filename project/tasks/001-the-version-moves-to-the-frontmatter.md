@@ -95,11 +95,17 @@ edit one needs to know which of the two is authoritative.
       leading frontmatter; `vibe-ops check` green and `--self-test` confirms the check still fires
 - [x] (2026-08-11) P0 — `/vibe-ops:new-migration` Step 2 corrected: it instructed stamping in a comment
       above the H1, which this track made wrong for all five types
-- [ ] P0 — Extend the record resolver to parse frontmatter; keep the comment reader for unmigrated
-      records. **Smaller than estimated** — `readFrontmatter` already exists and is untyped by key
-- [ ] P0 — Confirm `/vibe-ops:migrate` still detects and refuses correctly against both forms
-- [ ] P1 — Fix `frontmatter.ts`'s doc comment, which now describes the previous world
-- [ ] P1 — Document the header table as presentation only, in one place
+- [x] (2026-08-11) P0 — `template-version.ts` reads both forms through the document model, anchoring the
+      comment form to the text before the first heading found in the parsed tree. Wired into
+      `resolveRecord` off the same `DocumentStore`, so the template is still parsed once per call, and
+      surfaced as `TPL_VERSION`. Eight tests, the first of which is the prose false positive
+- [x] (2026-08-11) P0 — `frontmatter.ts`'s doc comment corrected
+- [x] (2026-08-11) P0 — Header table documented as presentation only, in `.agents/rules/governance.md`
+      **and its shipped twin** — a dogfooded pair, so the drift gate would have caught a one-sided edit
+- [ ] P0 — `/vibe-ops:migrate`'s own Step 1 detection is **still the substring form** and still counts a
+      prose mention as a declaration. The correct reader now exists and is exported; pointing the skill at
+      it is listed under Track 2, which owns the same defect for the sensor. Not closed here, and not
+      silently left either
 
 ## Surprises & Discoveries
 
@@ -145,6 +151,21 @@ edit one needs to know which of the two is authoritative.
   number was ten. Nothing in the plan or the dossier would have revealed it; the gate did, immediately.
   The shipped copies also carry **no** copyright block at all, which is why the offset-0 instruction in
   every migration note had to be positional rather than "above the licence block".
+
+- Observation: verifying a CLI change through the MCP tool can show you the previous build and look like
+  the change did not land.
+  Evidence: after `npm run build`, `records --type plan` over MCP returned a payload with no
+  `templateVersion`, while the same command run as a fresh process printed `TPL_VERSION=plan@3`. The MCP
+  server is a long-lived process that imported `dist/` when the session began; "stateless" describes what
+  it keeps between calls, not when it loads its code. Verify a CLI change with a new process, and treat an
+  MCP reading of your own just-built code as the old version until proven otherwise.
+
+- Observation: `records --json` writes nothing at all to a terminal. Pre-existing, not introduced here.
+  Evidence: `node cli/packages/cli/dist/bin.js records --type plan --json` exits 0 with empty stdout while
+  the bare form prints the full block. It follows from the module contract — the report goes in `data` and
+  a module logs only under `surface === "cli"` — so the flag is answered by the MCP surface and silently
+  by the terminal one. Left alone as out of scope for this track, recorded so the next person does not
+  read the silence as their own bug.
 
 - Observation: `frontmatter.ts`'s own doc comment goes stale as a result of this track.
   Evidence: it states "a file with no frontmatter is the ordinary case for three of the four record

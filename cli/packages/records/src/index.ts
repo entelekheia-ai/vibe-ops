@@ -25,6 +25,8 @@ export type { ClosedPlan, ClosePlanOptions, FiledPlan, FilePlanOptions } from ".
 export type { PlanShape } from "./plan-file.ts";
 export { readFrontmatter } from "./frontmatter.ts";
 export type { Frontmatter } from "./frontmatter.ts";
+export { readTemplateVersion, VERSION_KEY } from "./template-version.ts";
+export type { DeclaredVersion } from "./template-version.ts";
 export { findLogDir, groupOf, logIndex, logLint, logSweep, preambleOf, readLogEntries } from "./log.ts";
 export type { LogEntry, LogFinding, LogRetirable } from "./log.ts";
 export type { FoundLink } from "./links.ts";
