@@ -27,6 +27,14 @@ unit of work, once. Routing what the work *taught* is governed by
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
 promotion test lives there, not in this file.
 
+
+> **Prefer the MCP tool over the terminal.** This plugin ships its own `vibe-ops` MCP server
+> (`.claude-plugin/plugin.json`), so the verbs below are tools, and a tool returns its report as
+> structured data instead of terminal text to read back. The tool's full name depends on how the server
+> was registered — `mcp__vibe-ops__<noun>` from a project `.mcp.json`, `mcp__plugin_vibe-ops_vibe-ops__<noun>`
+> when it comes from the plugin. **If neither is listed, the CLI is correct**: the shell forms shown below
+> are the same command, and the server may simply not be running in this session.
+
 **The dossier cannot be deleted by hand while its `## Closure` box is unchecked** — `vibe-ops hook
 task-guard` refuses it, in every session, whether or not this skill is loaded. Step 6 is what ticks that
 box, so the ceremony passes through and only a shortcut is stopped.
@@ -35,7 +43,8 @@ box, so the ceremony passes through and only a shortcut is stopped.
 
 ## Step 0 — Find the record
 
-`vibe-ops task resolve` reports where dossiers live in this repository. Locate
+The `task` tool with `{ command: "resolve" }` — `vibe-ops task resolve` from a terminal — reports where
+dossiers live in this repository. Locate
 `project/tasks/<NNN>-<slug>.md` (or `<slug>.md`) and **read it in full** — the `Context` section names why
 the work exists; if it was spawned from an RFC, plan brief, or another doc, that is the **source doc**. If
 the dossier itself *is* the source doc, it is still the target of Step 1: the write-back and the dossier
@@ -152,6 +161,9 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 2. **Preview, and confirm.** This is the only irreversible action in the skill, and the skill can be
    invoked by the model rather than typed — so the person whose dossier it is may not have asked for it.
 
+   The `task` tool, `{ command: "close", "dry-run": true, plan: "<source plan, if any>",
+   args: ["<dossier>", ...] }` — or from a terminal:
+
    ```bash
    vibe-ops task close --dry-run --plan <source plan, if any> <dossier>...
    ```
@@ -161,9 +173,17 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    batches, and referrers have to be collected across the whole set before anything is removed.
 3. **Run it for real**, dropping `--dry-run` and adding `--summary-file`:
 
+   The `task` tool, `{ command: "close", confirm: true, plan: "<source plan>",
+   "summary-file": "<summary>", args: ["<dossier>", ...] }` — or from a terminal:
+
    ```bash
    vibe-ops task close --plan <source plan> --summary-file <summary> <dossier>...
    ```
+
+   **`confirm: true` is the mechanism, never the consent.** A tool call has no prompt, so the tool refuses
+   a destructive verb without it — and the thing that makes the run legitimate is step 2 above, the
+   preview shown to a person who then said go. Setting the flag without having done that is the same act
+   as deleting the dossier by hand, with an extra step.
 
    It ticks the `## Closure` box, commits (that commit is the breadcrumb, because it is the last one that
    still contains the dossier), deletes, rewrites every link to the dossier into plain text plus a runnable

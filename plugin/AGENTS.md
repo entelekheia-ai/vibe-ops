@@ -38,6 +38,12 @@ The three "don't do this or it breaks" invariants are in
 
 - **Adding a skill = adding a folder.** `plugin.json` points at the directory, no per-skill manifest
   entry; the only other place to update is the skill table above.
+- **The plugin ships its own MCP server**, declared as `mcpServers` in `plugin.json` and started as
+  `vibe-ops mcp` — resolved from `PATH`, because `cli/` is not inside an install (`source: "./plugin"`).
+  So installing the plugin is what puts the `plan`/`task`/`log`/`check` tools in a session, and the
+  co-dependency the hooks already create is the same one: no `vibe-ops` on `PATH`, no tools. A machine
+  that also registers the server in a project `.mcp.json` gets **both**, under different tool prefixes —
+  which is why no skill here hardcodes a prefix.
 - **Skills delegate instead of duplicating** — `setup repo` orchestrates `license-setup` →
   `authoring-agents-md` → `authoring-readme` by name. A rule governing more than one skill lives in
   [`references/`](references/README.md) and is *pointed at*, never copied into a `SKILL.md`.

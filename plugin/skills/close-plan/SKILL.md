@@ -27,13 +27,21 @@ The failure this half prevents: a plan runs every track, closes its issue, and r
 the routing step used to live only in task closure and a plan that never spawned a task dossier never
 reached it. **A plan that ships without a task is exactly the case with no other exit.**
 
-**Usage:** `/close-plan <id>` — e.g. `/close-plan 002`. `vibe-ops plan resolve` reports where plans live
-in this repository; if `<id>` matches nothing there, say so rather than guessing at a task.
+**Usage:** `/close-plan <id>` — e.g. `/close-plan 002`. The `plan` tool with `{ command: "resolve" }`
+reports where plans live in this repository; if `<id>` matches nothing there, say so rather than guessing at a task.
 
 **This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one
 unit of work, once. Routing what the work *taught* is governed by
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
 promotion test lives there, not in this file.
+
+
+> **Prefer the MCP tool over the terminal.** This plugin ships its own `vibe-ops` MCP server
+> (`.claude-plugin/plugin.json`), so the verbs below are tools, and a tool returns its report as
+> structured data instead of terminal text to read back. The tool's full name depends on how the server
+> was registered — `mcp__vibe-ops__<noun>` from a project `.mcp.json`, `mcp__plugin_vibe-ops_vibe-ops__<noun>`
+> when it comes from the plugin. **If neither is listed, the CLI is correct**: the shell forms shown below
+> are the same command, and the server may simply not be running in this session.
 
 **This skill installs its own hook while it runs.** Every write to a plan is checked by
 `vibe-ops hook plan-status`, which says so if that plan's `Status` and its own track boxes disagree — the
@@ -45,9 +53,7 @@ exact mistake Step 0 exists to catch, reported at the moment it is made rather t
 
 Read the plan in full, then check it against what it promised:
 
-```bash
-vibe-ops plan status
-```
+The `plan` tool with `{ command: "status" }` — or `vibe-ops plan status` from a terminal.
 
 - **Every track is checked, or the unchecked ones are explicitly cut — not silently dropped.**
 - **Every `Success criteria` item was actually run.** Run it now if the output is not recorded. A
@@ -141,10 +147,16 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    work.
 2. **Set the terminal status and file it:**
 
+   The `plan` tool: `{ command: "close", "dry-run": true, args: ["project/plans/<NNN>-<slug>.md"] }` to
+   preview, then the same call with `confirm: true` instead of `dry-run`. From a terminal:
+
    ```bash
    vibe-ops plan close --dry-run project/plans/<NNN>-<slug>.md   # preview
    vibe-ops plan close project/plans/<NNN>-<slug>.md
    ```
+
+   **Show the preview and wait before the second call.** `confirm: true` exists because a tool call has no
+   prompt to run; it is the mechanism, not the consent.
 
    It sets `Status` to whatever this repository's own governance calls terminal — read from the plan
    template's `Status lifecycle` marker, never assumed to be `Shipped` — then `git mv`s the file into

@@ -18,5 +18,13 @@
     "repo-ops",
     "license"
   ],
+  "mcpServers": {
+    "vibe-ops": {
+      "command": "vibe-ops",
+      "args": [
+        "mcp"
+      ]
+    }
+  },
   "skills": "./skills/"
 }

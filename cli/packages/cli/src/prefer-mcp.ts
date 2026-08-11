@@ -14,10 +14,13 @@
 //   - `hook`, `mcp`, `--help` and friends are NOT modules. They have no MCP tool, by design: a hook
 //     surface is invoked by Claude Code itself, and `mcp` is the server. Recommending a tool for them
 //     would be recommending something that does not exist.
-//   - A DESTRUCTIVE verb is never recommended. Over MCP its consent is a `confirm: true` the caller sets
-//     itself; from a terminal a skill previews with `--dry-run`, shows the output, and waits for a
-//     person. Nudging `task close` toward the weaker of the two would trade a real confirmation for a
-//     boolean, which is not a migration, it is a downgrade.
+//   - A DESTRUCTIVE verb is never recommended HERE, and the reason narrowed once the closing skills
+//     started naming the tools themselves. It is no longer "MCP is the weaker consent" — a skill that
+//     previews with `--dry-run`, shows the output and waits carries the same consent to either surface,
+//     and `confirm: true` is the mechanism that surface needs, not a replacement for it. What is left is
+//     narrower and still true: a BARE `vibe-ops task close` typed outside that ceremony has had no
+//     preview, and answering it with "do this as a tool call instead" would be advice about the wrong
+//     thing. The skills route themselves; this nudge is for everything else.
 //   - A command already carrying `--json` is left alone: whoever wrote it is reading structured output
 //     on purpose and has made the trade this hook exists to point at.
 

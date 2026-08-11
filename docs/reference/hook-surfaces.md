@@ -113,6 +113,14 @@ any module the config does not expose.
 `prefer-mcp.ts`, its entry in `HOOK_SURFACES`, and its registration. A migration nudge that outlives its
 migration is a tax on every Bash call.
 
+## A hook is never an MCP tool
+
+`type: command` is a process invocation: a hook cannot call a tool, and nothing here can be "moved to
+MCP". The two surfaces answer different questions — a hook fires on an *event* nobody asked about, a tool
+is called *because* someone asked. What did move is the **skills**: `close-task` and `close-plan` name the
+`task`/`plan` tools first and the shell form as the fallback, and the plugin ships the server that
+provides them (`mcpServers` in `plugin.json`, started as `vibe-ops mcp` off `PATH`).
+
 ## Where a hook is registered
 
 Two shapes, and only the second is scoped to a skill's lifetime.
