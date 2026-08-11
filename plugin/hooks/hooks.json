@@ -1,5 +1,5 @@
 {
-  "description": "Three guards, each silent unless its exact condition holds, plus three that are the vibe-ops command itself rather than a shipped script. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-guard (vibe-ops hook task-guard, no script) refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
+  "description": "Three guards, each silent unless its exact condition holds, plus four that are the vibe-ops command itself rather than a shipped script. prefer-mcp (vibe-ops hook prefer-mcp, no script) is TEMPORARY and never decides anything: it names the MCP tool equivalent to a vibe-ops command just run through Bash, and is deleted once the migration it exists for is done. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-guard (vibe-ops hook task-guard, no script) refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -21,6 +21,17 @@
             "type": "command",
             "command": "vibe-ops",
             "args": ["hook", "task-guard"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vibe-ops",
+            "args": ["hook", "prefer-mcp"],
             "timeout": 10
           }
         ]

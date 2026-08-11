@@ -19,6 +19,7 @@ member per hook **event**; the payload field, the guard and the reply's `hookEve
 | `plan-context` | `UserPromptSubmit` | `permission_mode`, `session_id`, `cwd` | `permission_mode` is `plan`, and this session has not been told yet |
 | `new-context` | `UserPromptExpansion` | `command_args`, `cwd` | the first word of `command_args` is `adr`, `rfc`, `plan` or `task` |
 | `task-guard` | `PreToolUse` | `tool_input.command`, `cwd` | the command deletes a `tasks/*.md` whose closure box is unchecked |
+| `prefer-mcp` **(temporary)** | `PreToolUse` | `tool_input.command`, `cwd` | the command invokes a `vibe-ops` module that is also an MCP tool |
 
 **`ops` is a reserved first word.** That surface takes an arbitrary ops name, so the reservation is what
 keeps a third-party ops from shadowing a surface, and a surface added later from shadowing an ops.
@@ -80,6 +81,22 @@ It invents no convention. The task template ships the marker, and the box is rea
 `vibe-ops task close` ticks through, so the guard and the ceremony cannot disagree about what closed
 means. A dossier from a repository that never adopted the convention has no such line and is not
 blocked — absence is not a refusal.
+
+### `prefer-mcp` — temporary
+
+Names the MCP tool equivalent to a `vibe-ops` command just issued through Bash. **It never returns a
+`permissionDecision`**, in any branch: `task-guard` is the hook that refuses things on `Bash`, and the two
+share an event without competing because their conditions are disjoint by construction — one fires on a
+deletion, the other on an invocation of `vibe-ops <module>`, and no single command is both.
+
+Silent for: a hook surface or `mcp` (not modules, so no tool exists), a **destructive** verb (over MCP its
+consent is a `confirm: true` the caller sets itself, weaker than a skill's `--dry-run` preview shown to a
+person — nudging toward it would be a downgrade, not a migration), a command already passing `--json`, and
+any module the config does not expose.
+
+**Its success condition is its own deletion.** When the CLI form stops appearing in transcripts, remove
+`prefer-mcp.ts`, its entry in `HOOK_SURFACES`, and its registration. A migration nudge that outlives its
+migration is a tax on every Bash call.
 
 ## Where a hook is registered
 

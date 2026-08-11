@@ -9,6 +9,7 @@
 //                                       plan-context       UserPromptSubmit, the plan format in plan mode
 //                                       new-context        UserPromptExpansion, before a typed /vibe-ops:new
 //                                       task-guard         PreToolUse, refuses an unclosed dossier deletion
+//                                       prefer-mcp         PreToolUse, TEMPORARY: names the MCP equivalent
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";
@@ -20,8 +21,7 @@ import { runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook, HOOK_SURFACES } from "./hook.ts";
-
-const BUILTINS = ["check", "agents-md", "governance", "plan", "task", "log", "records"] as const;
+import { BUILTINS, exposedModules } from "./builtins.ts";
 
 /**
  * A built-in declaring `commands` gets its verbs listed under it in `--help` — otherwise a noun module
@@ -154,7 +154,7 @@ async function main(argv: readonly string[]): Promise<number> {
       strict: true,
     });
     const { config } = await loadConfig(repoRootFrom(process.cwd()));
-    const modules = config.modules ?? BUILTINS;
+    const modules = exposedModules(config.modules);
     if (values.http === true) await serveHttp(modules, Number(values.port));
     else await serveStdio(modules);
     // Never returns. Both transports are event-driven, so returning an exit code here would let the
