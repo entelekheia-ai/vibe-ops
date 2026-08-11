@@ -16,7 +16,7 @@ check_references_completeness() {
   fi
   for t in adr rfc plan task; do
     if [ ! -f "$dir/$t.md" ]; then
-      fail "$id" "references/records/\$t.md is missing — /new has no rules to read for this record type"
+      fail "$id" "references/records/$t.md is missing — /new has no rules to read for this record type"
       problems=$((problems + 1))
     fi
   done
