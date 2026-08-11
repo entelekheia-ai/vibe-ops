@@ -32,3 +32,84 @@ Appends JSONL observations. **A producer records what was observed and never sco
 there is no `severity`, `pass` or `score` field, deliberately, because thresholds belong to the consuming
 product. Emitting an id the module does not declare throws, so the definition and the code cannot
 disagree in silence.
+
+## `defineGate(definition, run, fix?)` and `defineOps(definition)`
+
+A **gate** is one detector and nothing else — it does not know which repository it is in, which paths it
+was handed, or whether anything downstream records what it finds. An **ops** is a named composition of
+gates over declared paths that decides which of them emit, and it *is* a module, so dispatch, MCP and the
+config cascade learn no second concept. The split is [RFC-0001](../../../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md);
+what each one owns is in [`cli/AGENTS.md`](../../AGENTS.md#gates-and-ops) and is not repeated here.
+
+Two agreements are enforced at definition time rather than discovered at runtime: `fixable: true` and a
+`fix()` argument must both be present or both absent, and an ops entry declaring `emits` on a gate whose
+id is not knowable before it loads must carry a `label`.
+
+**Population is configuration, never gate code** ([ADR-0011](../../../project/adr/0011-population-belongs-to-configuration-not-a-gate.md)).
+`defineOps` reads `ignore` and `disabled` from the ops's own `settings` slice and applies them itself, so
+a gate must never filter its own files by a repository-specific rule.
+
+## The document model
+
+`GateRunContext.documents` is a lazy, per-run store: three gates over the same file parse it once, and a
+run that never calls `.get()` (`--list`, `--help`) parses nothing. A gate reads structure from it instead
+of opening the file and writing its own regular expression.
+
+```ts
+const document = documents.get(file);
+if (document.tree === undefined) continue;   // no grammar, or unreadable — see below
+examined++;
+```
+
+**`tree === undefined` is not an error and must not be counted.** It means no grammar covers the
+extension, or the file could not be read; `document.uncovered` names which. A file that was never parsed
+must stay out of `examined`, because "nothing examined" and "nothing wrong" are indistinguishable in a
+record and only the second is a reading.
+
+### Two places to look, and they are not interchangeable
+
+A markdown document is parsed by two grammars, and which one holds what a gate wants decides how it is
+reached:
+
+| What you want | Where it is | How to reach it |
+|---|---|---|
+| A heading, a table, a fenced block | the **block** tree | `document.tree.rootNode` |
+| A link, an image, a code span, emphasis | an **inline** layer | `walkLayersWithHostPositions(document.layers)`, filtered to `layer.languageId === "text.markdown_inline"` |
+
+Inline content is reached through layers rather than the block tree because markdown's block-to-inline
+hand-off **is itself an injection** — the same mechanism that delivers a YAML frontmatter block or a
+fenced block in another language. A gate that walks only `document.tree.rootNode` looking for an
+`inline_link` finds nothing and reports clean.
+
+**Some layers come from a supplementary query, not from the grammar.** Markdown's own `injections.scm`
+hands over a paragraph's content but never a table cell's, so `queries/injections/text.markdown.scm`
+supplements it — without that, anything written inside a table cell reaches no inline layer at all.
+`Layer.origin` distinguishes `"declared"` from `"supplemental"`; usually it does not matter and both
+should be walked. Why it is a separate query rather than a patched grammar:
+[ADR-0010](../../../project/adr/0010-supplement-injection-queries-not-a-branch-per-grammar-gap.md).
+
+### Positions: always `lineAt`, never `startPosition.row`
+
+```ts
+const line = lineAt(document.text, hostStart + node.startIndex);
+```
+
+**A node's `startPosition.row` inside an injected layer is relative to that layer, not to the file.**
+Measured against `cli/AGENTS.md`'s first link: `startPosition.row + 1` gives **1**, the true line is
+**7**. The wrong answer is a plausible line number rather than a crash, so it fails silently and a reader
+is sent to the wrong place.
+
+`hostStart` comes from `walkLayersWithHostPositions`, which accumulates each ancestor's offset on the way
+down. Offsets compose by **plain addition** because `startIndex` is a JavaScript string index — the same
+unit `text.slice` uses — not a UTF-8 byte offset. Verified against a fixture carrying an em-dash and an
+emoji: `startIndex` 39, `text.indexOf` 39, byte offset 43. Reading a node from the block tree needs no
+`hostStart` (it is already host-absolute), but `lineAt(document.text, node.startIndex)` is still the
+correct call, and keeping one idiom for both is why every gate uses it.
+
+### A named language with no grammar is uncovered, never clean
+
+`document.uncoveredLayers` (and `Layer.uncoveredLayers`, one level in) carries every region whose language
+was named but had no installed grammar, or that hit the recursion depth bound. Markdown's inline grammar
+injects `html` and `latex`, neither installed here, so this is populated on ordinary documents. A gate
+whose correctness depends on having read a region must consult it rather than treating absence as
+absence-of-problems.
