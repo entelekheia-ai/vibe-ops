@@ -18,3 +18,11 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   tree-sitter grammar packages in cli/packages/core/ declare peer ranges for the tree-sitter runtime that do
   not intersect; npm install ERESOLVEs until the runtime is pinned exactly and the grammar's peer is
   overridden — measure the ABI before trusting that.
+
+## `plugin/skills/setup/templates/harness/checks/`
+
+- [`scaffolding-a-repo-gate-after-the-scripts-split.md`](scaffolding-a-repo-gate-after-the-scripts-split.md) —
+  The harness runner this repository ships still resolves a sibling vibe-ops checkout at
+  ../vibe-ops/scripts/check-agents-md.sh, which moved to cli/packages/module-check/sh/ — so a repo
+  scaffolded today gets a gate that refuses every commit, and the third fallback via CLAUDE_PLUGIN_ROOT can
+  no longer reach the runner at all.
