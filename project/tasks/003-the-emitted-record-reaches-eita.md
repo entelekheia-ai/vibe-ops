@@ -121,6 +121,13 @@ refusing to guess, working as designed, and Plan-012's scope says in as many wor
 framework does with an observation is not this plan's to redefine. Choosing which trait each producer
 feeds is a decision in that repository, not here.
 
+**Written up on the receiving side as `RFC-0002: Routing a repository gate's artifacts into traits`**
+(Draft, 2026-08-11), which records the survey rather than leaving it in this dossier to be deleted:
+three producers map one-for-one onto an existing observation — `memory-slug` onto
+`prohibition-adherence`, `markdown-link` and `breadcrumb` onto `citation-fidelity` — and the five
+`template-version-*` producers map onto nothing there, needing a trait for declared provenance. Nothing
+on this side changes either way; the artifacts already parse.
+
 ## Surprises & Discoveries
 
 <!-- Fill WHILE the work happens. Routed at closure: beyond this repository → project/learnings/;
