@@ -5,7 +5,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | Shipped |
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
 | Depends on | Plan-009 (Shipped), Plan-010 (Shipped) |
