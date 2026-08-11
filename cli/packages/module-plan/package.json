@@ -1,10 +1,9 @@
 {
-  "name": "@entelekheia/vibe-ops-cli",
+  "name": "@entelekheia/vibe-ops-module-plan",
   "version": "0.0.1",
-  "description": "Run vibe-ops modules from a terminal or expose them as stateless MCP tools",
+  "description": "vibe-ops plan — the permanent design record's lifecycle: resolve, status, context, file, close",
   "type": "module",
   "license": "Apache-2.0",
-  "bin": { "vibe-ops": "./dist/bin.js" },
   "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
   "files": ["dist"],
   "scripts": {
@@ -13,13 +12,8 @@
   },
   "engines": { "node": ">=22.18" },
   "dependencies": {
-    "@clack/prompts": "^1.7.0",
-    "@entelekheia/vibe-ops-agents-md": "^0.0.1",
     "@entelekheia/vibe-ops-core": "^0.0.1",
-    "@entelekheia/vibe-ops-module-check": "^0.0.1",
-    "@entelekheia/vibe-ops-records": "^0.0.1",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^3.25.0"
+    "@entelekheia/vibe-ops-records": "^0.0.1"
   },
   "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
 }

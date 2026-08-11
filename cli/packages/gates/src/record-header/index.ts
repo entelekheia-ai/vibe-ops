@@ -5,20 +5,20 @@
 // and agents, and no breakage ever forced a guard for it — sensor placement followed tool failure
 // rather than the load-bearing-ness of the field.
 //
-// THE HEADER TABLE IS THE FIRST `pipe_table` REACHED BEFORE THE FIRST LEVEL-2 HEADING, never simply
-// "the first `pipe_table`" — measured exact over this repository's own 28 tracked records (21 hits, 7
-// correct misses, 0 misfires; see project/tasks/004-the-governance-ops.md, item 3). The naive reading
-// instead grabs a CONTENT table in four research documents, one of them with `Field` as its own first
-// column. Research carries no schema here for the same reason: nothing declares its shape, and
-// inventing one is a decision Plan-004 owns, not this gate.
+// THE HEADER TABLE IS THE FIRST `pipe_table` REACHED BEFORE THE FIRST LEVEL-2 HEADING — `findHeaderTable`
+// and `keysOf` live in @entelekheia/vibe-ops-records (Plan-011 Track 2), the one definition of where a
+// record's header is, shared with the action side that reads the same table's VALUES. Measured exact
+// over this repository's own 28 tracked records (21 hits, 7 correct misses, 0 misfires; see
+// project/tasks/004-the-governance-ops.md, item 3) — the naive reading instead grabs a CONTENT table in
+// four research documents, one of them with `Field` as its own first column.
 //
 // PRESENCE ONLY — the value in each row is never validated. A status vocabulary exists, but it lives
 // in prose in .agents/rules/governance.md, and reading it mechanically is a different act with its own
-// scope than this one.
+// scope than this one — see `vibe-ops plan status` (Plan-011 Track 3), which reads the value.
 
 import { defineGate, lineAt } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import type Parser from "tree-sitter";
+import { findHeaderTable, keysOf } from "@entelekheia/vibe-ops-records";
 
 type Schema = "adr" | "plan" | "rfc" | "task";
 
@@ -34,30 +34,6 @@ const REQUIRED: Readonly<Record<Schema, readonly string[]>> = {
 };
 
 const SCHEMAS = new Set<Schema>(["adr", "plan", "rfc", "task"]);
-
-/**
- * The first `pipe_table` in document order, but only when it appears before the first level-2 heading
- * — a level-2 heading with no `pipe_table` ahead of it means there is no header table at all, not that
- * the search should keep going into the body.
- */
-function findHeaderTable(root: Parser.SyntaxNode): Parser.SyntaxNode | undefined {
-  for (const node of root.descendantsOfType(["pipe_table", "atx_heading"])) {
-    if (node.type === "pipe_table") return node;
-    if (node.children.some((child) => child.type === "atx_h2_marker")) return undefined;
-  }
-  return undefined;
-}
-
-/** Each data row's (never the header row's, never the delimiter row's) first cell, trimmed. */
-function keysOf(table: Parser.SyntaxNode): Set<string> {
-  const keys = new Set<string>();
-  for (const row of table.children) {
-    if (row.type !== "pipe_table_row") continue;
-    const firstCell = row.children.find((child) => child.type === "pipe_table_cell");
-    if (firstCell !== undefined) keys.add(firstCell.text.trim());
-  }
-  return keys;
-}
 
 export default defineGate(
   {

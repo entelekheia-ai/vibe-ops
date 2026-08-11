@@ -59,5 +59,5 @@ test("a module with no commands declared never runs the command guard — today'
   }));
   const result = await runModule({ ...baseOptions({ plugin: flat }), command: undefined });
   assert.equal(result.code, 0);
-  assert.equal(result.data.command, undefined);
+  assert.deepEqual(result.data, { command: undefined });
 });

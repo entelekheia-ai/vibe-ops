@@ -69,10 +69,13 @@ that is already there.
 
 - `ModuleDefinition.commands`, and the three surfaces that read a definition: `--help`, flag parsing,
   the MCP input schema.
-- `cli/packages/governance/` — the resolver in TypeScript, over `DocumentModel`.
-- A `governance` key on `VibeOpsConfig` declaring record directories and templates, and this
+- `cli/packages/records/` — the resolver in TypeScript, over `DocumentModel`.
+- A `records` key on `VibeOpsConfig` declaring record directories and templates, and this
   repository's own `vibeops.config.ts` pointing at `plugin/templates/`.
-- `cli/packages/module-plan/`, `module-task/`, `module-log/`.
+- `cli/packages/module-plan/`, `module-task/`, `module-log/`, and `module-records/` — the last is the
+  generic `vibe-ops records --type <adr|rfc|plan|task>`, for the two types with no noun module of their
+  own (see Decision Log).
+- `vibe-ops new-context`, the `UserPromptExpansion` hook surface `new-command-context.sh` needed.
 - The five governance hooks, rewired to name `vibe-ops` directly (Plan-009's established pattern).
 - `resolve-governance.sh`, `finalize.sh` and the five hook scripts **deleted**, not left beside their
   replacements.
@@ -136,12 +139,12 @@ flowchart LR
     A["vibe-ops plan status"] --> D
     B["MCP tool plan<br/>{command: status}"] --> D
     C["hook: vibe-ops plan context"] --> D
-    D["module-plan"] --> E["packages/governance/"]
+    D["module-plan"] --> E["packages/records/"]
     E --> F["DocumentModel<br/>(Plan-010)"]
     E --> G["layout: DIR, TPL,<br/>NEXT, AUTHORITY"]
 ```
 
-### `packages/governance/` — the resolver, once
+### `packages/records/` — the resolver, once
 
 Everything `resolve-governance.sh` computes, in TypeScript, as functions the three modules import:
 directory search order per type, template search order, `AUTHORITY`, `PAD`/`EXISTING`/`NEXT`, the GitHub
@@ -158,7 +161,7 @@ Two things change in the port rather than being carried over:
   `NEXT` must still see it.
 
 Reading a record goes through `DocumentModel` and reuses `record-header`'s table location — extracted to
-`packages/governance/` and imported by the gate, so there is one definition of *where a record's header
+`packages/records/` and imported by the gate, so there is one definition of *where a record's header
 is*.
 
 ### The layout is declarable, and this repository is the first exception
@@ -170,7 +173,7 @@ same answer:
 
 ```ts
 // on VibeOpsConfig
-readonly governance?: {
+readonly records?: {
   readonly dirs?: Partial<Record<RecordType, string>>;
   readonly templates?: Partial<Record<RecordType, string>>;
 };
@@ -179,7 +182,7 @@ readonly governance?: {
 This repository's own `vibeops.config.ts` gains the exception that defect 2 is:
 
 ```ts
-governance: {
+records: {
   // There is no project/templates/ here: the canonical templates ARE the distributable. Pointing the
   // resolver at them is what makes this repo's own records get written from the very file it ships to
   // every other repository — the drift 35-dogfooding-drift.sh exists to catch, closed at the source.
@@ -270,11 +273,11 @@ implement the same rule.
 
 ## Tracks
 
-- [ ] **Track 1 — `commands` on the contract.** `ModuleCommand`, the `bin.ts` dispatch, the MCP enum
+- [x] **Track 1 — `commands` on the contract.** `ModuleCommand`, the `bin.ts` dispatch, the MCP enum
       field, `--help`. At the end a throwaway module declaring two verbs runs both from a terminal and
       answers both over MCP, and an unknown verb fails naming the valid set.
-- [ ] **Track 2 — `packages/governance/`, and `<noun> resolve`.** The resolver in TypeScript, the header
-      table located once and imported by `record-header`, the `governance` config key with its
+- [x] **Track 2 — `packages/records/`, and `<noun> resolve`.** The resolver in TypeScript, the header
+      table located once and imported by `record-header`, the `records` config key with its
       fail-loud and its provenance, and the three modules with their `resolve` verb.
       `new-command-context.sh` rewired and deleted. At the end `vibe-ops plan resolve` matches
       `resolve-governance.sh plan` field for field on the workspace root with `LIVING` a list; in **this**
@@ -342,6 +345,23 @@ here that was not observed in a transcript.
 
 ## Decision Log
 
+- Decision: The new resolver package is `@entelekheia/vibe-ops-records` (`cli/packages/records/`), not
+  `packages/governance/` as originally drafted; the config key is `records`, not `governance`.
+  Rationale: `@entelekheia/vibe-ops-governance` already exists — it is `ops-governance`'s own npm package
+  name. The draft would have collided with a real, shipping package. Caught before any code was written,
+  by checking `cli/packages/ops-governance/package.json` at the start of Track 2.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `module-records` (`vibe-ops records --type <adr|rfc|plan|task>`) and the `new-context` verb
+  exist, though neither is named in Scope.
+  Rationale: `new-command-context.sh` resolves all four record types, not only the three with a noun
+  module here — `adr` and `rfc` have no lifecycle actions in this plan (Out of scope) but still need
+  their layout resolved for `/new`. Goal 5 ("no shell file implements governance logic that a CLI
+  command implements") has no exception for these two types, so the hook needs one command that answers
+  for all four. `module-records` is that command; `new-context` is the `UserPromptExpansion`-shaped
+  hook surface it did not have (`hook.ts`'s `runHook` is specific to `PostToolUse` + `tool_input.file_path`).
+  Date / Author: 2026-08-10 / Danilo Borges
+
 - Decision: Three nouns with declared subcommands, rather than nine flat module ids.
   Rationale: the grouping is the artifact type, and nine ids lose it. The cost is one field on
   `ModuleDefinition`, which is where every surface already reads — so the verb reaches `--help`, flag
@@ -373,7 +393,7 @@ here that was not observed in a transcript.
   Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: Record directories and templates are declarable in `vibeops.config.ts`, under a top-level
-  `governance` key, and this repository declares `plugin/templates/`.
+  `records` key, and this repository declares `plugin/templates/`.
   Rationale: the shell's search order has no exception mechanism, which is why the plugin's own repository
   is the one place its plan hooks do nothing. The key is top-level rather than a `settings` slice because
   three nouns read one resolver and a per-module slice would be three copies of the same answer. A
@@ -394,7 +414,7 @@ here that was not observed in a transcript.
 
 ## Open questions
 
-- Does the header-table locator move to `packages/governance/` and get imported by `record-header`, or
+- Does the header-table locator move to `packages/records/` and get imported by `record-header`, or
   the reverse — the gate keeps it and `governance` imports from `gates/`? The first keeps detection
   depending on the shared reader; the second makes an action package depend on a detector. Track 2
   answers it by writing the import that does not create a cycle.

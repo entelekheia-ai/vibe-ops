@@ -5,6 +5,7 @@
 //   vibe-ops @scope/pkg --command     a third-party module, by package name
 //   vibe-ops mcp [--http --port N]    every module, as MCP tools
 //   vibe-ops hook <ops> [flags]       a skill-scoped PostToolUse hook, reading its payload on stdin
+//   vibe-ops new-context              the UserPromptExpansion surface for a typed /vibe-ops:new
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";
@@ -16,8 +17,9 @@ import { runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook } from "./hook.ts";
+import { runNewContextHook } from "./new-context.ts";
 
-const BUILTINS = ["check", "agents-md", "governance"] as const;
+const BUILTINS = ["check", "agents-md", "governance", "plan", "task", "log", "records"] as const;
 
 /**
  * A built-in declaring `commands` gets its verbs listed under it in `--help` — otherwise a noun module
@@ -160,6 +162,10 @@ async function main(argv: readonly string[]): Promise<number> {
       return 2;
     }
     return runHook(opsName, hookArgv);
+  }
+
+  if (command === "new-context") {
+    return runNewContextHook();
   }
 
   return runNamed(command, rest);

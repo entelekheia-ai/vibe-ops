@@ -15,6 +15,24 @@ import path from "node:path";
 
 const FILENAMES = ["vibeops.config.ts", "vibeops.config.mjs", "vibeops.config.js"] as const;
 
+/** The four governance record types `@entelekheia/vibe-ops-records` resolves. */
+export type RecordType = "adr" | "rfc" | "plan" | "task";
+
+/**
+ * Overrides the built-in search order `@entelekheia/vibe-ops-records` uses to find a record type's
+ * directory and template. Top-level rather than a `settings` slice: `plan`, `task` and `log` all read
+ * through the one resolver, and a per-module slice would be three copies of the same answer.
+ *
+ * The built-in order is unchanged and matches every ordinary repository, so declaring this at all is
+ * the exception, not the rule — this repository's own `vibeops.config.ts` is the first one to need it,
+ * because its canonical templates ARE the distributable at `plugin/templates/` rather than living under
+ * a `project/templates/` this repository does not have.
+ */
+export interface RecordsConfig {
+  readonly dirs?: Partial<Record<RecordType, string>>;
+  readonly templates?: Partial<Record<RecordType, string>>;
+}
+
 export interface VibeOpsConfig {
   /** Module ids to treat as enabled without an explicit flag. */
   readonly modules?: readonly string[];
@@ -22,6 +40,8 @@ export interface VibeOpsConfig {
   readonly settings?: Readonly<Record<string, unknown>>;
   /** Where observations go when a module declares `emits`. Absent disables emission entirely. */
   readonly artifactDir?: string;
+  /** See `RecordsConfig`. Absent means every record type resolves by search, as it always has. */
+  readonly records?: RecordsConfig;
 }
 
 export interface LoadedConfig {
@@ -71,10 +91,18 @@ async function loadOne(dir: string): Promise<{ file: string; config: VibeOpsConf
  * module's settings does not silently discard the home file's settings for every other module.
  */
 function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
+  const records =
+    nearer.records === undefined && further.records === undefined
+      ? undefined
+      : {
+          dirs: { ...further.records?.dirs, ...nearer.records?.dirs },
+          templates: { ...further.records?.templates, ...nearer.records?.templates },
+        };
   return {
     modules: nearer.modules ?? further.modules,
     artifactDir: nearer.artifactDir ?? further.artifactDir,
     settings: { ...further.settings, ...nearer.settings },
+    records,
   };
 }
 

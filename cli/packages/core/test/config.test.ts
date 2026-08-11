@@ -41,6 +41,34 @@ test("the nearer file wins per key, and settings merge one level deep", async ()
   assert.equal(sources.length, 2);
 });
 
+test("records merges one level deep per sub-key, same as settings", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "vibeops-home-"));
+  const repo = path.join(home, "nested", "repo");
+  await mkdir(repo, { recursive: true });
+
+  await writeFile(
+    path.join(home, "vibeops.config.mjs"),
+    `export default { records: { dirs: { adr: "home-adr" }, templates: { adr: "home-adr.md" } } };`,
+  );
+  await writeFile(
+    path.join(repo, "vibeops.config.mjs"),
+    `export default { records: { dirs: { plan: "repo-plan" } } };`,
+  );
+
+  const { config } = await loadConfig(repo, home);
+  assert.deepEqual(config.records, {
+    dirs: { adr: "home-adr", plan: "repo-plan" },
+    templates: { adr: "home-adr.md" },
+  });
+});
+
+test("records is undefined when neither file declares it — no empty object appears from nowhere", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-norecords-"));
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { artifactDir: "x" };`);
+  const { config } = await loadConfig(dir, dir);
+  assert.equal(config.records, undefined);
+});
+
 test("a config file without a default export is rejected rather than silently ignored", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "vibeops-bad-"));
   await writeFile(path.join(dir, "vibeops.config.mjs"), `export const config = {};`);
