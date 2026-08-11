@@ -8,7 +8,7 @@ Status starts at `Backlog`.
 
 A `| Repository | <absolute path> |` row is optional and situational: only when the plan is being written
 from a workspace root that is not the repository it belongs to (an umbrella over several independent
-repos). `vibe-ops plan-context-hook` (the UserPromptSubmit hook) requests it in exactly that case. It exists so an approved plan-mode plan
+repos). `vibe-ops hook plan-context` (the UserPromptSubmit hook) requests it in exactly that case. It exists so an approved plan-mode plan
 can be filed into its real repository's `project/plans/` automatically, rather than by a workspace's own
 git toplevel — which, from an umbrella root, names the umbrella instead.
 

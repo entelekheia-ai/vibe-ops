@@ -4,9 +4,10 @@
 //   vibe-ops check [--verbose]        a built-in module
 //   vibe-ops @scope/pkg --command     a third-party module, by package name
 //   vibe-ops mcp [--http --port N]    every module, as MCP tools
-//   vibe-ops hook <ops> [flags]       a skill-scoped PostToolUse hook, reading its payload on stdin
-//   vibe-ops new-context              the UserPromptExpansion surface for a typed /vibe-ops:new
-//   vibe-ops plan-context-hook       the UserPromptSubmit surface that places the plan format in plan mode
+//   vibe-ops hook <surface> [args]    every surface that reads a hook payload on stdin:
+//                                       ops <ops> [flags]  PostToolUse, an ops over the written file
+//                                       plan-context       UserPromptSubmit, the plan format in plan mode
+//                                       new-context        UserPromptExpansion, before a typed /vibe-ops:new
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";
@@ -17,9 +18,7 @@ import { loadModule } from "./resolve.ts";
 import { runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
-import { runHook } from "./hook.ts";
-import { runNewContextHook } from "./new-context.ts";
-import { runPlanContextHook } from "./plan-context-hook.ts";
+import { runHook, HOOK_SURFACES } from "./hook.ts";
 
 const BUILTINS = ["check", "agents-md", "governance", "plan", "task", "log", "records"] as const;
 
@@ -51,7 +50,7 @@ async function usage(): Promise<void> {
       "vibe-ops @scope/pkg [flags]   run a third-party module by package name",
       "vibe-ops ./path [flags]       run a module from a local path",
       "vibe-ops mcp [--http] [--port N]",
-      "vibe-ops hook <ops> [flags]   reads a PostToolUse payload on stdin, answers in its protocol",
+      "vibe-ops hook <surface>       reads a hook payload on stdin (" + HOOK_SURFACES.join(", ") + ")",
       "",
       "Configuration cascades from vibeops.config.ts in the repository up to your home directory.",
     ].join("\n"),
@@ -158,20 +157,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "hook") {
-    const [opsName, ...hookArgv] = rest;
-    if (opsName === undefined) {
-      p.log.error("vibe-ops hook needs an ops name: vibe-ops hook <ops> [flags]");
-      return 2;
-    }
-    return runHook(opsName, hookArgv);
-  }
-
-  if (command === "plan-context-hook") {
-    return runPlanContextHook();
-  }
-
-  if (command === "new-context") {
-    return runNewContextHook();
+    return runHook(rest);
   }
 
   return runNamed(command, rest);

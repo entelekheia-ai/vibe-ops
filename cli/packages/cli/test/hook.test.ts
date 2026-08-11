@@ -19,7 +19,7 @@ async function gitRepo(): Promise<string> {
 }
 
 function runHookBin(repoRoot: string, payload: unknown, argv: readonly string[]): { stdout: string; status: number } {
-  const result = spawnSync("node", [BIN, "hook", "agents-md", ...argv], {
+  const result = spawnSync("node", [BIN, "hook", "ops", "agents-md", ...argv], {
     cwd: repoRoot,
     input: JSON.stringify(payload),
     encoding: "utf8",

@@ -51,7 +51,7 @@ vibe-ops ./path/to/module       # a module you are developing
 vibe-ops mcp                    # every module as MCP tools, over stdio
 vibe-ops mcp --http --port 7337 # the same, over stateless streamable HTTP
 
-vibe-ops hook agents-md --fix pairing       # a PostToolUse hook's own command — reads its payload on
+vibe-ops hook ops agents-md --fix pairing       # a PostToolUse hook's own command — reads its payload on
                                              # stdin, answers on stdout, silent unless there's something
                                              # to say. What a skill's `hooks:` block names directly.
 ```

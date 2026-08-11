@@ -1,4 +1,4 @@
-// vibe-ops plan-context-hook — the UserPromptSubmit surface that places this repository's plan format
+// vibe-ops hook plan-context — the UserPromptSubmit surface that places this repository's plan format
 // at the moment a plan is written. Replaces plugin/hooks/plan-mode-context.sh (Plan-011 Track 3), whose
 // body is now `planModeGuidance` in @entelekheia/vibe-ops-records.
 //

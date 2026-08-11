@@ -33,7 +33,7 @@ recurrent, which is what makes it worth a reading.
 
 Of the seven, only `pairing` is `fixable`. `--fix` repairs it — and only it, unless named otherwise —
 because a caller that just reacted to one edit (the skill-scoped `hooks:` block calling
-`vibe-ops hook agents-md --fix pairing`, see [RFC-0001](../../../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md))
+`vibe-ops hook ops agents-md --fix pairing`, see [RFC-0001](../../../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md))
 has no business rewriting a file the edit never touched.
 
 ## Runs beside the shell gate, not instead of it

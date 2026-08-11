@@ -1,18 +1,56 @@
-// vibe-ops hook — the PostToolUse surface, and the whole reason no skill ships a shell script for it.
-// A script would exist only to pull tool_input.file_path out of the JSON on stdin and wrap the result
-// back into the hook's response envelope, and this does both — which also deletes three hazards every
+// vibe-ops hook <surface> — every entry point that reads a Claude Code hook payload off stdin, under
+// one namespace. A shipped shell script would exist only to pull a field out of the JSON and wrap the
+// answer back into the hook's response envelope; these do both, which also deletes three hazards every
 // hand-written hook in this plugin's hooks/ carries a copy of: a jq-or-nothing dependency, hand-rolled
 // JSON escaping, and a second parse of the payload shape. See project/plans/009-*.
 //
-// Silence is the default outcome, deliberately, and matches every other hook in this plugin: most
-// writes touch neither an AGENTS.md nor a CLAUDE.md, and most of the rest are already correct. A line
-// of JSON only reaches stdout when there is something to report.
+// One namespace rather than one top-level verb each, because these are not variations on one hook —
+// they answer different EVENTS, and the payload field, the guard and the `hookEventName` in the reply
+// are different in each. What they share is the envelope, and that is what the namespace names. The
+// alternative had `hook` (the narrowest of them) holding the generic word while four siblings sat
+// beside it at the top level (Plan-011 Decision Log).
+//
+// `ops` is a reserved first word, not an ops named "ops": the PostToolUse surface takes an arbitrary
+// ops name, so without the reserved word a third-party ops could shadow a surface — or, worse, a new
+// surface added here could silently shadow someone's ops.
+//
+// Silence is the default outcome in every one of them, deliberately, and matches every other hook this
+// plugin ships. A line of JSON reaches stdout only when there is something to report.
 
 import { parseArgs } from "node:util";
 import path from "node:path";
 import { loadModule } from "./resolve.ts";
 import { runModule } from "./run.ts";
 import { applyImplicitFlags } from "./flags.ts";
+import { runNewContextHook } from "./new-context.ts";
+import { runPlanContextHook } from "./plan-context.ts";
+
+/** The surfaces `hook` dispatches to, in the order `--help` lists them. */
+export const HOOK_SURFACES = ["ops", "plan-context", "new-context"] as const;
+
+/**
+ * `vibe-ops hook <surface> [args]`. Returns 2 with a message naming the valid set when the surface is
+ * missing or unknown — a typo in a `hooks:` block must not read as the hook having nothing to say.
+ */
+export async function runHook(argv: readonly string[]): Promise<number> {
+  const [surface, ...rest] = argv;
+
+  if (surface === "ops") {
+    const [opsName, ...opsArgv] = rest;
+    if (opsName === undefined) {
+      process.stderr.write("vibe-ops hook ops needs an ops name: vibe-ops hook ops <ops> [flags]\n");
+      return 2;
+    }
+    return runOpsHook(opsName, opsArgv);
+  }
+  if (surface === "plan-context") return runPlanContextHook();
+  if (surface === "new-context") return runNewContextHook();
+
+  process.stderr.write(
+    `vibe-ops hook needs a surface: ${HOOK_SURFACES.join(", ")} (got ${surface === undefined ? "nothing" : surface})\n`,
+  );
+  return 2;
+}
 
 interface HookPayload {
   readonly tool_input?: { readonly file_path?: string };
@@ -41,7 +79,7 @@ async function readStdin(): Promise<string> {
  * Always returns 0: this is an advisory surface, never a blocking one (RFC-0001, "The skill-scoped
  * hook"), so a finding this cannot fix is reported, not enforced.
  */
-export async function runHook(opsName: string, argv: readonly string[]): Promise<number> {
+async function runOpsHook(opsName: string, argv: readonly string[]): Promise<number> {
   let payload: HookPayload;
   try {
     payload = JSON.parse(await readStdin()) as HookPayload;

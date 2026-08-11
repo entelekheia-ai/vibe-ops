@@ -1,5 +1,5 @@
 {
-  "description": "Four guards, each silent unless its exact condition holds, plus two that are the vibe-ops command itself rather than a shipped script. plan-context-hook (vibe-ops plan-context-hook, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
+  "description": "Four guards, each silent unless its exact condition holds, plus two that are the vibe-ops command itself rather than a shipped script. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-approved-copy copies an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-dossier-guard refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": "vibe-ops",
-            "args": ["plan-context-hook"],
+            "args": ["hook", "plan-context"],
             "timeout": 10
           }
         ]
@@ -50,7 +50,7 @@
           {
             "type": "command",
             "command": "vibe-ops",
-            "args": ["new-context"],
+            "args": ["hook", "new-context"],
             "timeout": 10
           }
         ]

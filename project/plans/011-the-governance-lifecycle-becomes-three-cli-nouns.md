@@ -286,7 +286,7 @@ implement the same rule.
       config file rather than searching past it.
 - [x] **Track 3 — `vibe-ops plan status` and `context`.** The coherence read, and the plan-time payload
       built from the resolved `LIVING`. `plan-mode-context.sh` rewired and deleted, replaced by
-      `vibe-ops plan-context-hook`. `plan-progress-nudge.sh` is **not** deleted — see Decision Log; only
+      `vibe-ops hook plan-context`. `plan-progress-nudge.sh` is **not** deleted — see Decision Log; only
       its internal `sh "$RESOLVER" plan` call is rewired to `vibe-ops plan resolve`, since the
       rest of that hook (session-transcript offset tracking, the cross-turn `NUDGED` set, the
       date-partitioned log) is session bookkeeping tied to `session-touched-repos.sh`, which Scope
@@ -348,6 +348,19 @@ here that was not observed in a transcript.
 ---
 
 ## Decision Log
+
+- Decision: `vibe-ops hook <surface>` is the one namespace for every entry point that reads a hook payload
+  on stdin — `ops <ops>`, `plan-context`, `new-context`, and the two Tracks 4 and 6 will add. `ops` is a
+  reserved first word.
+  Rationale: Track 3 shipped `vibe-ops plan-context-hook` as a top-level verb, which left the *narrowest*
+  of the surfaces holding the generic word `hook` while its siblings sat beside it — and by Track 6 there
+  would have been five names in three shapes. `hook <ops>` could not simply host the new one: it reads
+  `tool_input.file_path` (a Pre/PostToolUse-only field), filters on an `AGENTS.md`/`CLAUDE.md` basename,
+  passes `--file` (an ops flag), and answers with a hardcoded `hookEventName: "PostToolUse"`. So the
+  namespace names the thing they actually share — the envelope — and each surface keeps its own event.
+  The reserved `ops` exists because that surface takes an *arbitrary* ops name: without it a third-party
+  ops could shadow a surface, or a surface added later could silently shadow someone's ops.
+  Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: Every reader in `packages/records/` takes a `Document` from the caller's `DocumentStore`, and
   each command builds exactly one store for its whole invocation. No reader opens a file, and none takes a

@@ -96,7 +96,13 @@ second concept.
 
 ## The hook surface
 
-`vibe-ops hook <ops> [--fix <gates>]` ([`packages/cli/src/hook.ts`](packages/cli/src/hook.ts)) is what a
+`vibe-ops hook <surface>` ([`packages/cli/src/hook.ts`](packages/cli/src/hook.ts)) is the **one namespace
+for every entry point that reads a hook payload on stdin** — `ops <ops> [--fix <gates>]` (PostToolUse, an
+ops over the file just written), `plan-context` (UserPromptSubmit), `new-context` (UserPromptExpansion).
+They are not variations on one hook: the payload field, the guard and the `hookEventName` in the reply
+differ in each; what they share is the envelope, and that is what the namespace names. **`ops` is a
+reserved first word**, so an arbitrary ops name can never shadow a surface, nor a new surface someone's
+ops. The rest of this section is about the `ops` surface specifically, and it is what a
 skill-scoped `PostToolUse` `hooks:` block names as its `command` — no shipped script, because the CLI
 reads the payload and answers in the hook's own protocol itself. `Surface` (`packages/core/src/context.ts`)
 has a third value, `"hook"`, alongside `"cli"` and `"mcp"`; a module prints only under `"cli"`, so under

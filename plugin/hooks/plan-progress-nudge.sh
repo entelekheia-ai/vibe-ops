@@ -27,7 +27,7 @@
 # arrives at the model framed as a denial ("Stop hook feedback: …"), which is
 # wrong for an observation the model must be free to correctly decline.
 # additionalContext reaches the model with no such framing, the same way
-# `vibe-ops plan-context-hook` already injects context, just on Stop instead of
+# `vibe-ops hook plan-context` already injects context, just on Stop instead of
 # UserPromptSubmit.
 #
 # A firing is not free, and 0.8.0 priced it at nothing. additionalContext

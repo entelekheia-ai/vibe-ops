@@ -14,7 +14,7 @@ hooks:
       hooks:
         - type: command
           command: vibe-ops
-          args: ["hook", "agents-md", "--fix", "pairing"]
+          args: ["hook", "ops", "agents-md", "--fix", "pairing"]
           timeout: 10
 ---
 
