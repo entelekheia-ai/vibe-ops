@@ -517,3 +517,10 @@ deciding it without the code in front of you.
 - [ADR-0006 — A task is an issue plus an ephemeral dossier](../adr/0006-task-as-issue-plus-ephemeral-dossier.md)
 - [Plan-010 — The document model under the gates](shipped/010-the-document-model-under-the-gates.md)
 - [Plan-011 — The governance lifecycle becomes three CLI nouns](shipped/011-the-governance-lifecycle-becomes-three-cli-nouns.md)
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/001-the-version-moves-to-the-frontmatter.md`
+  - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/002-the-sensor-and-the-health-reading.md`
+  - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/003-the-emitted-record-reaches-eita.md`
+  - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/004-the-detector-says-which-detector-it-is.md`
+  - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/005-backfill-the-version-declarations.md`
