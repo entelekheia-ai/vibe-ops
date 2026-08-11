@@ -1,13 +1,31 @@
-// PLAN_ACTIVE and LIVING — read from a plan template's own markers rather than assumed, so a repository
-// whose plan template has a different status chain or a different living-section list still gets a
-// real answer. Port of resolve-governance.sh's `extract_mid_arrow`, the `Status lifecycle:` line scan,
-// the AUTHORITY fallback, and the `LIVING SECTIONS` marker scan — line-based, matching the shell,
-// because the markers are plain text (an HTML comment), not markdown structure a tree-sitter parse
-// would help with.
+// PLAN_ACTIVE, PLAN_TERMINAL and LIVING — read from a plan template's own markers rather than assumed,
+// so a repository whose plan template declares a different status chain or a different living-section
+// list still gets a real answer.
+//
+// Every function here takes a `Document` and reads its BLOCK tree, per
+// cli/packages/core/README.md#two-places-to-look-and-they-are-not-interchangeable: an HTML comment, a
+// heading and a fenced block are all block-level nodes, so none of them needs a layer walk. Reading the
+// tree rather than the raw text is what makes two of these exact instead of approximate — see
+// `chainFromAuthority`, where the chain lives inside a fenced block, and the marker lookups, where a
+// marker string quoted elsewhere in the file is not an `html_block` at all and cannot be mistaken for
+// the real one.
+
+import type { Document } from "@entelekheia/vibe-ops-core";
+import type Parser from "tree-sitter";
 
 const STATUS_LIFECYCLE_MARKER = "Status lifecycle:";
 const LIVING_START = "===== LIVING SECTIONS";
 const LIVING_END = "===== END LIVING SECTIONS";
+
+/**
+ * A chain term with a trailing parenthetical gloss removed — the authority writes
+ * `Backlog → In Progress → Shipped   (the file is never deleted)`, and the last term of that chain is
+ * `Shipped`, not the sentence explaining it. The template cuts its own chain at the first `.` instead
+ * and never reaches this, but a term is normalized the same way whichever source it came from.
+ */
+function term(raw: string): string {
+  return raw.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
 
 /**
  * The middle term of an arrow chain — "Backlog → In Progress → Shipped" returns "In Progress" — via
@@ -15,62 +33,116 @@ const LIVING_END = "===== END LIVING SECTIONS";
  * or shorter than three states still gets a plausible answer instead of a hardcoded assumption of three.
  */
 export function extractMidArrow(line: string): string {
-  const terms = line.split("→").map((term) => term.trim());
+  const terms = line.split("→");
   const mid = Math.max(1, Math.floor((terms.length + 1) / 2));
-  return terms[mid - 1] ?? "";
+  return term(terms[mid - 1] ?? "");
 }
 
-/** The first `Status lifecycle:` line in the template, cut at its first `.`, then its middle term. */
-export function planActiveFromTemplate(text: string): string | undefined {
-  const line = text.split("\n").find((candidate) => candidate.includes(STATUS_LIFECYCLE_MARKER));
-  if (line === undefined) return undefined;
-  const afterMarker = line.slice(line.indexOf(STATUS_LIFECYCLE_MARKER) + STATUS_LIFECYCLE_MARKER.length);
-  const chain = (afterMarker.split(".")[0] ?? "").trim();
-  return chain === "" ? undefined : extractMidArrow(chain);
+/** The last term of an arrow chain — "Backlog → In Progress → Shipped" returns "Shipped". */
+export function extractLastArrow(line: string): string {
+  const terms = line.split("→");
+  return term(terms[terms.length - 1] ?? "");
+}
+
+function blockRoot(document: Document): Parser.SyntaxNode | undefined {
+  return document.tree?.rootNode;
+}
+
+function htmlBlockContaining(root: Parser.SyntaxNode, needle: string): Parser.SyntaxNode | undefined {
+  return root.descendantsOfType("html_block").find((node) => node.text.includes(needle));
+}
+
+/** The `Status lifecycle:` comment's own text, cut at its first `.` after the marker — the raw chain,
+ *  before either `extractMidArrow` or `extractLastArrow` reduces it to one term. */
+function chainFromTemplate(document: Document): string | undefined {
+  const root = blockRoot(document);
+  if (root === undefined) return undefined;
+
+  const block = htmlBlockContaining(root, STATUS_LIFECYCLE_MARKER);
+  if (block === undefined) return undefined;
+
+  const after = block.text.slice(block.text.indexOf(STATUS_LIFECYCLE_MARKER) + STATUS_LIFECYCLE_MARKER.length);
+  const chain = (after.split(".")[0] ?? "").trim();
+  return chain === "" ? undefined : chain;
 }
 
 /**
- * Fallback for a repository with no template but a governance rule: the first bare arrow-chain line
- * within 8 lines of a heading naming "Plan"/"plan". Mirrors the shell's awk state machine exactly,
- * including that the heading line itself is never checked for an arrow.
+ * Fallback for a repository with no template but a governance rule: the arrow chain under the first
+ * heading naming "Plan".
+ *
+ * The shell searched the eight lines after such a heading. This searches the heading's own `section`
+ * node — the grammar groups a heading with everything up to the next same-or-higher heading — and
+ * prefers a `fenced_code_block` inside it, which is where the chain actually is in this repository's own
+ * `.agents/rules/governance.md` (measured 2026-08-10: one fenced block in the `### Plan` section,
+ * holding exactly the chain). A fixed line count is right only by luck; the section boundary is the
+ * thing the document actually declares.
  */
-export function planActiveFromAuthority(text: string): string | undefined {
-  let near = 0;
-  for (const line of text.split("\n")) {
-    if (/^#+.*[Pp]lan/.test(line)) {
-      near = 8;
-      continue;
+function chainFromAuthority(document: Document): string | undefined {
+  const root = blockRoot(document);
+  if (root === undefined) return undefined;
+
+  for (const heading of root.descendantsOfType("atx_heading")) {
+    const inline = heading.children.find((child) => child.type === "inline");
+    if (inline === undefined || !/plan/i.test(inline.text)) continue;
+
+    const section = heading.parent;
+    if (section?.type !== "section") continue;
+
+    for (const fence of section.descendantsOfType("fenced_code_block")) {
+      const line = fence.text.split("\n").find((candidate) => candidate.includes("→"));
+      if (line !== undefined) return line;
     }
-    if (near > 0) {
-      near--;
-      if (line.includes("→")) return extractMidArrow(line);
-    }
+
+    // No fenced block: the chain is written as prose in the section body. The heading is always the
+    // section's first child, so slicing its text off is what keeps a heading that itself contains an
+    // arrow from being mistaken for the answer.
+    const body = section.text.slice(heading.text.length);
+    const line = body.split("\n").find((candidate) => candidate.includes("→"));
+    if (line !== undefined) return line;
   }
   return undefined;
 }
 
+export function planActiveFromTemplate(document: Document): string | undefined {
+  const chain = chainFromTemplate(document);
+  return chain === undefined ? undefined : extractMidArrow(chain);
+}
+
+export function planTerminalFromTemplate(document: Document): string | undefined {
+  const chain = chainFromTemplate(document);
+  return chain === undefined ? undefined : extractLastArrow(chain);
+}
+
+export function planActiveFromAuthority(document: Document): string | undefined {
+  const chain = chainFromAuthority(document);
+  return chain === undefined ? undefined : extractMidArrow(chain);
+}
+
+export function planTerminalFromAuthority(document: Document): string | undefined {
+  const chain = chainFromAuthority(document);
+  return chain === undefined ? undefined : extractLastArrow(chain);
+}
+
 /**
- * Every `## ` heading strictly between the two `LIVING SECTIONS` markers, in document order. `undefined`
- * when either marker is absent or the region between them names no heading — one marker without the
- * other is treated the same as neither, since a consumer must not guess where the list stops.
+ * Every level-2 heading's own text, for every heading starting strictly between the two
+ * `LIVING SECTIONS` marker comments, in document order. `undefined` when either marker is absent or the
+ * region between them names no such heading — one marker without the other is treated the same as
+ * neither, since a consumer must not guess where the list stops.
  */
-export function livingSectionsFromTemplate(text: string): readonly string[] | undefined {
-  if (!text.includes(LIVING_START) || !text.includes(LIVING_END)) return undefined;
+export function livingSectionsFromTemplate(document: Document): readonly string[] | undefined {
+  const root = blockRoot(document);
+  if (root === undefined) return undefined;
+
+  const start = htmlBlockContaining(root, LIVING_START);
+  const end = htmlBlockContaining(root, LIVING_END);
+  if (start === undefined || end === undefined) return undefined;
 
   const sections: string[] = [];
-  let inside = false;
-  for (const line of text.split("\n")) {
-    if (line.includes(LIVING_START)) {
-      inside = true;
-      continue;
-    }
-    if (line.includes(LIVING_END)) {
-      inside = false;
-      continue;
-    }
-    if (!inside) continue;
-    const match = /^## (.+)$/.exec(line);
-    if (match) sections.push(match[1]!);
+  for (const heading of root.descendantsOfType("atx_heading")) {
+    if (!heading.children.some((child) => child.type === "atx_h2_marker")) continue;
+    if (heading.startIndex <= start.startIndex || heading.startIndex >= end.startIndex) continue;
+    const inline = heading.children.find((child) => child.type === "inline");
+    if (inline !== undefined) sections.push(inline.text.trim());
   }
   return sections.length > 0 ? sections : undefined;
 }

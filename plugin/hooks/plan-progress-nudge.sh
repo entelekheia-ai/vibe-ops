@@ -15,7 +15,7 @@
 # not this session's. See project/plans/006-*.md Decision Log.
 #
 # The active-status word and the living section names are NEVER hardcoded
-# here — they are read per repository from resolve-governance.sh's
+# here — they are read per repository from `vibe-ops plan resolve`'s
 # PLAN_ACTIVE / LIVING outputs (project/tasks/001-*.md). 0.7.0 shipped this
 # hook assuming every installed repo uses vibe-ops's own vocabulary
 # ("In Progress", the same four section names); a repo whose plan template
@@ -27,7 +27,7 @@
 # arrives at the model framed as a denial ("Stop hook feedback: …"), which is
 # wrong for an observation the model must be free to correctly decline.
 # additionalContext reaches the model with no such framing, the same way
-# plan-mode-context.sh already injects context, just on Stop instead of
+# `vibe-ops plan-context-hook` already injects context, just on Stop instead of
 # UserPromptSubmit.
 #
 # A firing is not free, and 0.8.0 priced it at nothing. additionalContext
@@ -61,9 +61,14 @@ else
   ROOT=$(dirname "$(dirname "$SELF")")
 fi
 HELPER="$ROOT/scripts/session-touched-repos.sh"
-RESOLVER="$ROOT/scripts/resolve-governance.sh"
 [ -f "$HELPER" ] || exit 0
-[ -f "$RESOLVER" ] || exit 0
+
+# The taxonomy comes from `vibe-ops plan resolve`, not from a shipped resolver script
+# (Plan-011 Track 3). The CLI is named directly, with no `command -v` guard, per ADR-0009: an install
+# missing it must fail loudly rather than turn this hook into a silent no-op that looks like a repository
+# with nothing to nudge about. Only the resolver call moved — this script's transcript reading and its
+# per-session state stay shell, having no noun in that plan's three.
+RESOLVE_PLAN="vibe-ops plan resolve"
 
 STATE_DIR="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}"
 STATE="$STATE_DIR/vibe-ops-progress-$SID"
@@ -105,7 +110,7 @@ REPOS=$(printf '%s\n' "$RESULT" | sed -n 's/^REPO=//p')
 # turns that exit above never pay for it. Deterministic deletion of THIS
 # session's own state happens at SessionEnd; this sweep is only for what that
 # misses — a crashed or killed session. Same STATE_DIR, same vibe-ops-* glob,
-# so it also catches plan-mode-context.sh's marker, which nothing has ever
+# so it also catches the plan-mode marker, which nothing had ever
 # deleted (see Surprises).
 #
 # -type f is load-bearing, not tidiness: CLAUDE_PLUGIN_DATA is itself named
@@ -138,9 +143,12 @@ MSG_BLOCKS=""
 NUDGED_PLAN=""
 STILL_NUDGED=$NUDGED
 for REPO in $REPOS; do
-  RESOLVED=$(cd "$REPO" 2>/dev/null && sh "$RESOLVER" plan 2>/dev/null) || continue
+  RESOLVED=$(cd "$REPO" 2>/dev/null && $RESOLVE_PLAN 2>/dev/null) || continue
   DIR=$(printf '%s\n' "$RESOLVED" | sed -n 's/^DIR=//p')
-  TPL=$(printf '%s\n' "$RESOLVED" | sed -n 's/^TPL=//p')
+  # `vibe-ops plan resolve` appends the provenance of the answer — "TPL=<path> (config)" vs "(search)"
+  # — which the shell resolver never printed. Stripped here because TPL is used below as a path a reader
+  # is told to open, and a path with a parenthetical glued to it does not exist.
+  TPL=$(printf '%s\n' "$RESOLVED" | sed -n 's/^TPL=//p' | sed 's/ (config)$//; s/ (search)$//')
   AUTHORITY=$(printf '%s\n' "$RESOLVED" | sed -n 's/^AUTHORITY=//p')
   ACTIVE=$(printf '%s\n' "$RESOLVED" | sed -n 's/^PLAN_ACTIVE=//p')
   LIVING=$(printf '%s\n' "$RESOLVED" | sed -n 's/^LIVING=//p')
@@ -185,7 +193,10 @@ for REPO in $REPOS; do
     [ -z "$MSG_BLOCKS" ] || continue
 
     if [ -n "$LIVING" ] && [ "$LIVING" != "(unknown)" ]; then
-      SECTIONS=$(printf '%s' "$LIVING" | tr '|' ',' | sed 's/,/, /g')
+      # `vibe-ops plan resolve` already joins the sections with ", ". The `tr` is kept for a LIVING that
+      # still arrives `|`-joined, and the collapse after it is what keeps either form from rendering a
+      # double space.
+      SECTIONS=$(printf '%s' "$LIVING" | tr '|' ',' | sed 's/,/, /g; s/,  */, /g')
       BODY="Those sections ($SECTIONS) are maintained while the work happens, not reconstructed afterwards — that reconstruction is worthless per this repository's own governance rule."
     else
       # Tier 2: the repo's template has no end marker (or none at all), so

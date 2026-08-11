@@ -6,4 +6,15 @@ export { RecordsConfigError, DEFAULT_PAD, DEPTH, CANDIDATE_DIRS, CANDIDATE_TEMPL
 export type { NextNumber, Numbering } from "./layout.ts";
 export { githubAuth, githubRemote } from "./github.ts";
 export type { GithubAuth } from "./github.ts";
-export { extractMidArrow, livingSectionsFromTemplate, planActiveFromAuthority, planActiveFromTemplate } from "./plan-fields.ts";
+export {
+  extractLastArrow,
+  extractMidArrow,
+  livingSectionsFromTemplate,
+  planActiveFromAuthority,
+  planActiveFromTemplate,
+  planTerminalFromAuthority,
+  planTerminalFromTemplate,
+} from "./plan-fields.ts";
+export { planStatusFindings, trackCheckboxes } from "./status.ts";
+export type { PlanStatusFinding } from "./status.ts";
+export { planModeGuidance } from "./context-text.ts";

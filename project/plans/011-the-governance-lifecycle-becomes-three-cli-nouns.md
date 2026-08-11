@@ -284,10 +284,14 @@ implement the same rule.
       repository it reports `TPL=plugin/templates/plan.md (config)` and a real `LIVING` where the shell
       reported `(none)`/`(unknown)`; and a config naming a template that does not exist fails naming the
       config file rather than searching past it.
-- [ ] **Track 3 — `vibe-ops plan status` and `context`.** The coherence read, and the plan-time payload
-      built from the resolved `LIVING`. `plan-mode-context.sh` and `plan-progress-nudge.sh` rewired and
-      deleted. At the end `plan status` names Plan-009's unchecked `close plan` box, and `plan context`
-      against a `plan@0.2` template says two living sections rather than four.
+- [x] **Track 3 — `vibe-ops plan status` and `context`.** The coherence read, and the plan-time payload
+      built from the resolved `LIVING`. `plan-mode-context.sh` rewired and deleted, replaced by
+      `vibe-ops plan-context-hook`. `plan-progress-nudge.sh` is **not** deleted — see Decision Log; only
+      its internal `sh "$RESOLVER" plan` call is rewired to `vibe-ops plan resolve`, since the
+      rest of that hook (session-transcript offset tracking, the cross-turn `NUDGED` set, the
+      date-partitioned log) is session bookkeeping tied to `session-touched-repos.sh`, which Scope
+      already excludes. At the end `plan status` names Plan-009's unchecked `close plan` box, and
+      `plan context` against a `plan@0.2` template says two living sections rather than four.
 - [ ] **Track 4 — `vibe-ops task close` and `guard`.** The `finalize.sh` port with its three ordering
       properties under test, and the closure-box read. `task-dossier-guard.sh` rewired and deleted. At
       the end a scratch repository with two dossiers and one referrer closes to the same commits, the
@@ -344,6 +348,61 @@ here that was not observed in a transcript.
 ---
 
 ## Decision Log
+
+- Decision: Every reader in `packages/records/` takes a `Document` from the caller's `DocumentStore`, and
+  each command builds exactly one store for its whole invocation. No reader opens a file, and none takes a
+  bare `Parser.SyntaxNode`.
+  Rationale: the first implementation of Track 3 read the template and the authority with `readFileSync`
+  and scanned lines, then was half-corrected to take a root node — which still bypassed the store. Three
+  things follow from taking the `Document` instead, and none of them are stylistic. The store is the
+  per-run parse cache, so `plan status` (which resolves and then sweeps) stops parsing the same template
+  twice, the way `defineOps` already builds one store for a whole gate composition. `tree === undefined`
+  becomes the one way a file says it could not be read, instead of a `try/catch` inventing a second.
+  And a `Document` carries `layers`, so an inline question — a link inside a table cell — stays reachable
+  from here; a root node closes that door for every future verb. The idiom is
+  `cli/packages/core/README.md#the-document-model`, and `gates/markdown-link` is the shape to copy.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: The authority's status chain is read as the `fenced_code_block` inside the section of the
+  heading naming "Plan", and a trailing parenthetical is stripped from every chain term.
+  Rationale: measured against `.agents/rules/governance.md` — the chain is written
+  `Backlog → In Progress → Shipped   (the file is never deleted)` inside a fenced block. The shell
+  searched the eight lines after the heading, which is right only by luck; the `section` node is the
+  boundary the document itself declares, so a chain belonging to the *next* record type can no longer be
+  attributed to `plan`. The gloss matters because it is new load: the shell only ever took the middle
+  term, where the parenthetical is invisible, and `plan status` needs the last one — unstripped it
+  compares a plan's `Status` against `"Shipped   (the file is never deleted)"` and matches nothing, ever,
+  in silence.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `records` joins `core` in `build:foundation`, and `cli`'s build ends in `chmod +x dist/bin.js`.
+  Rationale: both are the same defect this repository already documented once — `npm run build --workspaces`
+  runs in *directory* order, so `records` (sorting last) was built after every `module-*` that depends on
+  it, and they typechecked against its stale `dist/`. That is the false green `cli/AGENTS.md` says cost
+  eita three passes, and it reappeared the moment a second foundation package existed. The `chmod` is the
+  same class: `npm link` sets the executable bit once, and any `rm -rf dist` silently removes it, leaving
+  a linked `vibe-ops` that answers "permission denied" — which now reads as the CLI being absent, since
+  hooks name it directly.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `27-nudge-behaviour.sh` SKIPs, naming the cause, when `vibe-ops` is not on PATH.
+  Rationale: the nudge now resolves through the CLI, so without it every fixture repository is skipped
+  *inside the hook* and three assertions fail at once, each describing a silence whose cause appears in
+  none of their messages. A SKIP naming the missing binary is the honest report: this is a reading that
+  did not happen, not a nudge that misbehaved. The fragment's dependency on `resolve-governance.sh` is
+  dropped in the same edit, because the hook no longer calls it.
+  Date / Author: 2026-08-10 / Danilo Borges
+
+- Decision: `plan-progress-nudge.sh` is not deleted. Only the `sh "$RESOLVER" plan` call inside it
+  (line 141) is rewired to `vibe-ops plan resolve`.
+  Rationale: the draft's "rewired and deleted" for this file did not survive reading it in full. 245 of
+  its lines are session-transcript offset tracking, a cross-turn `NUDGED` set (Plan-008's own fix for a
+  measured regression), at-most-one-plan-per-firing, and a date-partitioned log — all of it inseparable
+  from `session-touched-repos.sh`, which Scope already excludes as "session bookkeeping... no noun
+  here." That carve-out and "delete this whole file" cannot both be true. Only the ~15 lines that
+  literally re-derive what Track 2's resolver now computes move; the rest has no noun in this plan to
+  move to.
+  Date / Author: 2026-08-10 / Danilo Borges
 
 - Decision: The new resolver package is `@entelekheia/vibe-ops-records` (`cli/packages/records/`), not
   `packages/governance/` as originally drafted; the config key is `records`, not `governance`.

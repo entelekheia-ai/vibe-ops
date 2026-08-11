@@ -3,9 +3,8 @@
 // in format.ts renders the same textual keys back out, for a terminal and for diffing against the shell
 // during the port.
 
-import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { RecordsConfig, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
+import type { DocumentStore, RecordsConfig, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import {
   computeNumbering,
   DEFAULT_PAD,
@@ -17,7 +16,13 @@ import {
   type NextNumber,
 } from "./layout.ts";
 import { githubAuth, githubRemote, type GithubAuth } from "./github.ts";
-import { livingSectionsFromTemplate, planActiveFromAuthority, planActiveFromTemplate } from "./plan-fields.ts";
+import {
+  livingSectionsFromTemplate,
+  planActiveFromAuthority,
+  planActiveFromTemplate,
+  planTerminalFromAuthority,
+  planTerminalFromTemplate,
+} from "./plan-fields.ts";
 
 export interface ResolvedRecord {
   readonly type: RecordType;
@@ -33,6 +38,8 @@ export interface ResolvedRecord {
   /** Present only for `type: "plan"`. */
   readonly plan?: {
     readonly active?: string;
+    /** The last term of the status chain — "Shipped" — for `plan status`'s coherence read. */
+    readonly terminal?: string;
     readonly living?: readonly string[];
   };
   /** Present only for `type: "task"`. */
@@ -42,26 +49,28 @@ export interface ResolvedRecord {
   };
 }
 
-function readTextIfPresent(repoRoot: string, relative: string | undefined): string | undefined {
-  if (relative === undefined) return undefined;
-  try {
-    return readFileSync(path.join(repoRoot, relative), "utf8");
-  } catch {
-    return undefined;
-  }
-}
-
-function resolvePlanFields(repoRoot: string, template: string | undefined, authority: string | undefined) {
-  const templateText = readTextIfPresent(repoRoot, template);
-  let active = templateText === undefined ? undefined : planActiveFromTemplate(templateText);
-  const living = templateText === undefined ? undefined : livingSectionsFromTemplate(templateText);
+// Both the template and the authority are markdown, so both are read the way every other reader in this
+// workspace reads markdown: through the caller's `DocumentStore`, which parses each file once per run
+// and hands back a `Document` whose injected layers are already resolved. Neither file is opened here.
+// A file that does not exist, or that no grammar covers, comes back with `tree === undefined` — the
+// store's own way of saying so — and every reader below treats that as "no answer", never as an error.
+function resolvePlanFields(
+  documents: DocumentStore,
+  template: string | undefined,
+  authority: string | undefined,
+) {
+  const templateDocument = template === undefined ? undefined : documents.get(template);
+  let active = templateDocument === undefined ? undefined : planActiveFromTemplate(templateDocument);
+  let terminal = templateDocument === undefined ? undefined : planTerminalFromTemplate(templateDocument);
+  const living = templateDocument === undefined ? undefined : livingSectionsFromTemplate(templateDocument);
 
   if (active === undefined && authority !== undefined) {
-    const authorityText = readTextIfPresent(repoRoot, authority);
-    if (authorityText !== undefined) active = planActiveFromAuthority(authorityText);
+    const authorityDocument = documents.get(authority);
+    active = planActiveFromAuthority(authorityDocument);
+    terminal = planTerminalFromAuthority(authorityDocument);
   }
 
-  return { active, living };
+  return { active, terminal, living };
 }
 
 /**
@@ -69,8 +78,17 @@ function resolvePlanFields(repoRoot: string, template: string | undefined, autho
  * provenance), numbering authority, next number, and (per type) the plan or task fields. Throws
  * `RecordsConfigError` (from `./layout.ts`) when a declared `records.dirs`/`records.templates` entry
  * does not exist, rather than silently falling back to the search order.
+ *
+ * `documents` is the caller's per-run parse cache, built once and passed down the same way `defineOps`
+ * builds one store for a whole gate composition. A command that resolves and then reads records —
+ * `plan status` does both — hands the same store to both halves, so the template is parsed once.
  */
-export function resolveRecord(type: RecordType, repoRoot: string, config: VibeOpsConfig | undefined): ResolvedRecord {
+export function resolveRecord(
+  type: RecordType,
+  repoRoot: string,
+  config: VibeOpsConfig | undefined,
+  documents: DocumentStore,
+): ResolvedRecord {
   const recordsConfig: RecordsConfig | undefined = config?.records;
   const { dir } = findDir(repoRoot, type, recordsConfig);
   const { template, source: templateSource } = findTemplate(repoRoot, type, recordsConfig);
@@ -91,7 +109,7 @@ export function resolveRecord(type: RecordType, repoRoot: string, config: VibeOp
   const base: ResolvedRecord = { type, root: repoRoot, dir, template, templateSource, authority, pad, existing, next };
 
   if (type === "plan") {
-    return { ...base, plan: resolvePlanFields(repoRoot, template, authority) };
+    return { ...base, plan: resolvePlanFields(documents, template, authority) };
   }
   if (type === "task") {
     return { ...base, task: { ghRemote: githubRemote(repoRoot), ghAuth: githubAuth() } };

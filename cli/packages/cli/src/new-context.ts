@@ -8,7 +8,7 @@
 // payload, an unrecognized type, or a declared records.* path that does not resolve all produce no
 // output at all, never a hook failure that reads as this repository being broken.
 
-import { loadConfig } from "@entelekheia/vibe-ops-core";
+import { createDocumentStore, loadConfig } from "@entelekheia/vibe-ops-core";
 import type { RecordType } from "@entelekheia/vibe-ops-core";
 import { formatResolved, RecordsConfigError, resolveRecord } from "@entelekheia/vibe-ops-records";
 import { repoRootFrom } from "./run.ts";
@@ -46,7 +46,7 @@ export async function runNewContextHook(): Promise<number> {
 
   let resolved;
   try {
-    resolved = resolveRecord(type, repoRoot, config);
+    resolved = resolveRecord(type, repoRoot, config, createDocumentStore(repoRoot));
   } catch (error) {
     if (error instanceof RecordsConfigError) return 0;
     throw error;

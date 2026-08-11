@@ -2,7 +2,7 @@
 # vibe-ops — delete this session's own state files at SessionEnd.
 #
 # The deterministic half of state cleanup. Two hooks write per-session state
-# under vibe-ops-<kind>-<session_id> (plan-mode-context.sh's marker,
+# under vibe-ops-<kind>-<session_id> (`vibe-ops plan-context-hook`'s marker,
 # plan-progress-nudge.sh's offset/nudge file) and nothing removed either
 # before this — counted on 2026-08-03: 13 stray markers already on disk, the
 # oldest from the same day. See project/plans/006-*.md Surprises.

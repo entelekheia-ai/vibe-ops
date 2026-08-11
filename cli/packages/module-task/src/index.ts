@@ -1,7 +1,7 @@
 // vibe-ops task — the ephemeral dossier's lifecycle. Plan-011 Track 2 delivers `resolve` only; `close`
 // (the finalize.sh port) and `guard` (the closure-box read) are Track 4, on this same module.
 
-import { defineModule } from "@entelekheia/vibe-ops-core";
+import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
 import { formatResolved, resolveRecord, RecordsConfigError } from "@entelekheia/vibe-ops-records";
 
 export default defineModule(
@@ -16,7 +16,7 @@ export default defineModule(
     if (context.command === "resolve") {
       let resolved;
       try {
-        resolved = resolveRecord("task", context.repoRoot, context.config);
+        resolved = resolveRecord("task", context.repoRoot, context.config, createDocumentStore(context.repoRoot));
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;

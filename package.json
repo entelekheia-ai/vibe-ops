@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "_comment_build": "core first, explicitly. `--workspaces` runs in directory order, not dependency order, so `cli` sorts before `core` and would typecheck against its stale dist and report success.",
-    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core",
+    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core && npm run build -w @entelekheia/vibe-ops-records",
     "build": "npm run build:foundation && npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "pretest": "npm run build",

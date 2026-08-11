@@ -5,7 +5,7 @@
 // this module exists for the two types that have no noun of their own, not as a detour for the three
 // that do.
 
-import { defineModule } from "@entelekheia/vibe-ops-core";
+import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
 import { formatResolved, resolveRecord, RecordsConfigError } from "@entelekheia/vibe-ops-records";
 import type { RecordType } from "@entelekheia/vibe-ops-core";
 
@@ -29,7 +29,7 @@ export default defineModule(
 
     let resolved;
     try {
-      resolved = resolveRecord(type as RecordType, context.repoRoot, context.config);
+      resolved = resolveRecord(type as RecordType, context.repoRoot, context.config, createDocumentStore(context.repoRoot));
     } catch (error) {
       if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
       throw error;

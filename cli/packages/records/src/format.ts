@@ -25,6 +25,7 @@ export function formatResolved(record: ResolvedRecord): string[] {
 
   if (record.plan !== undefined) {
     lines.push(`PLAN_ACTIVE=${record.plan.active ?? "(unknown)"}`);
+    lines.push(`PLAN_TERMINAL=${record.plan.terminal ?? "(unknown)"}`);
     lines.push(`LIVING=${record.plan.living !== undefined ? record.plan.living.join(", ") : "(unknown)"}`);
   }
   if (record.task !== undefined) {

@@ -88,8 +88,16 @@ check_nudge_behaviour() {
     skip "$id" "no hooks/plan-progress-nudge.sh — this repository does not ship the plan-progress nudge"
     return
   fi
-  if [ ! -f "$PLUGIN_DIR/scripts/resolve-governance.sh" ] || [ ! -f "$PLUGIN_DIR/scripts/session-touched-repos.sh" ]; then
+  if [ ! -f "$PLUGIN_DIR/scripts/session-touched-repos.sh" ]; then
     skip "$id" "the hook's runtime scripts are absent from this tree — there is nothing to exercise it against"
+    return
+  fi
+  # The hook resolves each repository's taxonomy through `vibe-ops plan resolve` (Plan-011 Track 3), so
+  # without the CLI on PATH every fixture repository is skipped inside the hook and three assertions fail
+  # at once — each describing a silence whose cause is not in its message. Named here instead: this is a
+  # reading that did not happen, not a nudge that misbehaved.
+  if ! command -v vibe-ops >/dev/null 2>&1; then
+    skip "$id" "vibe-ops is not on PATH — the hook resolves through it, so its behaviour cannot be read (npm link -w @entelekheia/vibe-ops-cli)"
     return
   fi
   if ! command -v git >/dev/null 2>&1; then

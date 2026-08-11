@@ -6,6 +6,7 @@
 //   vibe-ops mcp [--http --port N]    every module, as MCP tools
 //   vibe-ops hook <ops> [flags]       a skill-scoped PostToolUse hook, reading its payload on stdin
 //   vibe-ops new-context              the UserPromptExpansion surface for a typed /vibe-ops:new
+//   vibe-ops plan-context-hook       the UserPromptSubmit surface that places the plan format in plan mode
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";
@@ -18,6 +19,7 @@ import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook } from "./hook.ts";
 import { runNewContextHook } from "./new-context.ts";
+import { runPlanContextHook } from "./plan-context-hook.ts";
 
 const BUILTINS = ["check", "agents-md", "governance", "plan", "task", "log", "records"] as const;
 
@@ -162,6 +164,10 @@ async function main(argv: readonly string[]): Promise<number> {
       return 2;
     }
     return runHook(opsName, hookArgv);
+  }
+
+  if (command === "plan-context-hook") {
+    return runPlanContextHook();
   }
 
   if (command === "new-context") {

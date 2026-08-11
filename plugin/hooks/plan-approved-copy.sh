@@ -38,13 +38,13 @@ CWD=$(printf '%s' "$IN" | jq -r '.cwd // empty' 2>/dev/null)
 # Cheap-exit gate (ADR-0009 obligation 1, applied to content rather than the
 # payload envelope — the matcher already narrowed the event to ExitPlanMode
 # successes, which are rare on their own): an H1 and a metadata table with a
-# Status row is what plan-mode-context.sh asks for only when the turn intends a
+# Status row is what `vibe-ops plan-context-hook` asks for only when the turn intends a
 # durable design record. A throwaway plan has neither and is never copied.
 printf '%s\n' "$PLAN_TEXT" | grep -qE '^# ' || exit 0
 printf '%s\n' "$PLAN_TEXT" | grep -qE '^\|[[:space:]]*Status[[:space:]]*\|' || exit 0
 
 # Which repository. An explicit | Repository | <path> | row wins — written only
-# when plan-mode-context.sh detected the session's project root was not the
+# when `vibe-ops plan-context-hook` detected the session's project root was not the
 # target repo (see that hook). Otherwise the tool's own cwd, resolved to its git
 # toplevel: correct for the overwhelmingly common single-repo case.
 REPO=$(printf '%s\n' "$PLAN_TEXT" \
