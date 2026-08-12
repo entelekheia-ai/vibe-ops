@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: knowledge-lifecycle@1
+---
+
 # Knowledge lifecycle — where a learning goes when the work is done
 
 Decision record: [ADR-0002](../../project/adr/0002-knowledge-lifecycle.md). Placement targets:
@@ -9,18 +13,24 @@ discovered while doing the work. This file is the pipeline that gives it one.
 
 ## Learnings are captured where they happen
 
-A plan carries four living sections, kept current **while** the work happens. The section set and formats
-are adopted from [OpenAI's ExecPlan contract](https://developers.openai.com/cookbook/articles/codex_exec_plans):
+Living sections are kept current **while** the work happens, and they are split across the two record
+types by what happens to the file. The formats are adopted from
+[OpenAI's ExecPlan contract](https://developers.openai.com/cookbook/articles/codex_exec_plans):
 
-| Section | Format | Holds |
-|---|---|---|
-| `Progress` | dated checkboxes | every stopping point; a partial is split into what is done and what remains |
-| `Surprises & Discoveries` | `Observation:` / `Evidence:` | the non-obvious fact and what proves it |
-| `Decision Log` | `Decision:` / `Rationale:` / `Date / Author:` | a choice made mid-flight that no ADR covers |
-| `Outcomes & Retrospective` | prose | the result measured against the original purpose |
+| Section | Lives in | Format | Holds |
+|---|---|---|---|
+| `Implementation order` | the task dossier | checkboxes | every stopping point; a partial is split into what is done and what remains |
+| `Surprises & Discoveries` | the task dossier | `Observation:` / `Evidence:` | the non-obvious fact and what proves it |
+| `Decision Log` | the plan | `Decision:` / `Rationale:` / `Date / Author:` | a choice made mid-flight that no ADR covers |
+| `Outcomes & Retrospective` | the plan | prose | the result measured against the original purpose |
+
+**The split is not arbitrary and it is the reason a plan carries no `Surprises & Discoveries`.** A dossier
+is deleted at closure, so a note written there is discharged by construction; a plan is permanent, so a
+note written there stays pending forever. What a plan holds is design, which is why its `Decision Log` is
+never routed anywhere.
 
 `Surprises & Discoveries` is the load-bearing one: it is the named home whose absence is what makes
-learnings evaporate. Filled in retrospectively from memory at the end of the work, all four are worthless —
+learnings evaporate. Filled in retrospectively from memory at the end of the work, every one of them is worthless —
 the value is entirely in writing the entry when the surprise happens.
 
 ## The promotion test
@@ -66,9 +76,15 @@ rule or hook that now makes an existing written instruction unnecessary?*
 ## `project/log/` has two reasons to exist
 
 Not only as the narrative companion to an ADR, but as **the rich context of one unit of work** — dead ends,
-surprises with their evidence, lessons — whether or not a decision came out of it. A learning that fails
-question 1 or question 2 still belongs somewhere; the log is that somewhere, and it is where a future
+surprises with their evidence, lessons — whether or not a decision came out of it. It is where a future
 reader looks when the one-line version in `AGENTS.md` is not enough.
+
+**It is never the overflow bucket for what the promotion test rejected.** An entry that fails question 1
+or question 2 is dropped, deliberately and out loud; it does not fall one tier down. The log is a
+destination reached on its **own** merits — question 2 of the placement pass, *can you name the file,
+folder or package where someone meets this again* — and filing rejects downward is exactly what carried
+`project/learnings/` past its budget in the first place. This paragraph said the opposite until
+2026-08-12, and the closing skills said this; the skills were right.
 
 ## Honest limits
 

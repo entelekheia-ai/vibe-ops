@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: convergence-policy@1
+---
+
 # Convergence policy — two kinds of skill, four verbs
 
 Decision record: [ADR-0001](../../project/adr/0001-skill-taxonomy-target-state-vs-event.md).

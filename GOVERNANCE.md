@@ -49,7 +49,7 @@ executive summary; the file owns the design and the working record.** What diffe
 | | Issue owns | File owns | At the end |
 |---|---|---|---|
 | **Task** | status, assignment, the summary distilled at closure | the detailed working log | issue closes, **dossier is deleted** — git history is the archive |
-| **Plan** | status, the track checklist as a progress signal, the executive summary | tracks, design, and the four living sections | issue closes, **the plan file stays** as the permanent record |
+| **Plan** | status, the track checklist as a progress signal, the executive summary | tracks, design, the `Decision Log` and the retrospective | issue closes, **the plan file stays** as the permanent record |
 
 A plan's issue closing does not mean the plan is done being read. Nothing else here is both permanent and
 issue-tracked, which is why it is stated rather than left to be inferred from the task rule.

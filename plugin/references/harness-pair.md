@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: harness-pair@1
+---
+
 # The harness pair — a rule, the guard that enforces it, and the reading that says whether it worked
 
 A repository that works with coding agents has two halves. **Guides** feed forward — instruction files,

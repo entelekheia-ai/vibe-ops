@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: README@1
+---
+
 # references/
 
 Shared policy the skills point at instead of restating. Each file here is the **single copy** of a rule

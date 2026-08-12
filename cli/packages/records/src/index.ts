@@ -34,6 +34,7 @@ export type { PlanShape } from "./plan-file.ts";
 export { readFrontmatter } from "./frontmatter.ts";
 export type { Frontmatter } from "./frontmatter.ts";
 export { readTemplateVersion, VERSION_KEY } from "./template-version.ts";
+export { readReferenceVersion, REFERENCE_KEY, routingPolicy } from "./reference-version.ts";
 export type { DeclaredVersion } from "./template-version.ts";
 export { blocks, compareVersions, describe, dispatchRecord, readMigrationNotes } from "./dispatch.ts";
 export type { Dispatch, DispatchOptions, MigrationNote } from "./dispatch.ts";

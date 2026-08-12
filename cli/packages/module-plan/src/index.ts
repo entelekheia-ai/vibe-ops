@@ -17,6 +17,7 @@ import {
   planStatusFindings,
   resolveRecord,
   RecordsConfigError,
+  routingPolicy,
 } from "@entelekheia/vibe-ops-records";
 import type { Dispatch, PlanStatusFinding } from "@entelekheia/vibe-ops-records";
 
@@ -208,7 +209,11 @@ export default defineModule(
       if (context.flags.json !== true) {
         for (const line of closed.steps) context.log(line);
       }
-      return { code: 0, data: { ...closed, version } };
+      // Which routing policy this closure ran under. Recorded on every closure, not only when something
+      // is owed: the question it answers — "which closures used the old rule" — is asked about the runs
+      // that looked ordinary at the time.
+      const policy = routingPolicy(resolvePluginDir(context.repoRoot), context.repoRoot, documents);
+      return { code: 0, data: { ...closed, version, policy } };
     }
 
     return { code: 2, summary: `plan ${String(context.command)} is not implemented yet` };

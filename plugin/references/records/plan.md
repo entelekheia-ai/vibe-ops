@@ -1,8 +1,13 @@
+---
+vibe-ops-reference: records/plan@1
+---
+
 # Plan — what only a plan needs
 
 A plan answers *how do we build X?* and is **permanent**: it stays as the design record after the work
-ships. The template's own comments specify each section, including the four living sections and why they
-are maintained during the work rather than written at the end. This file covers only what they cannot.
+ships. The template's own comments specify each section, including the two living sections — `Decision
+Log` and `Outcomes & Retrospective` — and why they are maintained during the work rather than written at
+the end. This file covers only what they cannot.
 
 Status starts at `Backlog`.
 
@@ -28,8 +33,8 @@ things make a plan the worst offender among the four types:
   for. Whatever names the author had in front of them at that moment are the names that end up in `Context`.
 - **It is permanent.** A task dossier is deleted at closure; a plan is kept precisely so someone can read it
   in a year. Anything that crosses, stays.
-- **Its living sections are written under time pressure.** `Surprises & Discoveries` and `Decision Log` are
-  filled mid-work with the evidence at hand, which is exactly when a sibling repository gets named because
+- **Its living sections are written under time pressure.** `Decision Log` and `Outcomes & Retrospective`
+  are filled mid-work with the evidence at hand, which is exactly when a sibling repository gets named because
   naming it is the fastest way to finish the sentence. Write the constraint, drop the owner: "the consumer
   of this parser pins the current output shape" says everything the reader needs and refers to nobody.
 
@@ -87,11 +92,11 @@ becomes a document rather than an instrument:
 ## Checklist additions
 
 - [ ] Heading is `# Plan-<id>: <Title>`; `Status: Backlog`
-- [ ] All four living sections present, with their format examples intact so the shape is obvious when the
-      first real entry is added
-- [ ] If migrating: all source content preserved as-is; decisions landed in `Decision Log`, surprises in
-      `Surprises & Discoveries`; sections without source material left as honest stubs; any
-      incompleteness caveat preserved; external refs are full URLs
+- [ ] Both living sections present — `Decision Log` and `Outcomes & Retrospective` — with their format
+      examples intact so the shape is obvious when the first real entry is added
+- [ ] If migrating: all source content preserved as-is; decisions landed in `Decision Log`; a surprise has
+      no home here and belongs to the task dossier the track spawns; sections without source material left
+      as honest stubs; any incompleteness caveat preserved; external refs are full URLs
 - [ ] Exposure contract applied to `Context`, `Decision Log` and `Surprises & Discoveries`: nothing outside
       this repository is named, and no command pasted into `Success criteria` carries a machine path
 - [ ] The `| Repository |` row is either genuinely needed *right now* by the filing step, or absent —

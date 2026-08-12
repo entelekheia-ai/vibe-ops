@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: records/adr@1
+---
+
 # ADR — what only an ADR needs
 
 An ADR records *what we decided and why*. **One decision per record.** The template's own comments specify

@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: records/rfc@1
+---
+
 # RFC — what only an RFC needs
 
 An RFC asks *should we do X, and how?* — a proposal under discussion, not a decision (that is an ADR) and

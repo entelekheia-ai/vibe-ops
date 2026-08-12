@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: authoring-style@1
+---
+
 # Authoring style — how a generated document is written
 
 Applies to everything this plugin writes into a target repository. The rules below are the ones that

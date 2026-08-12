@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: exposure-contract@1
+---
+
 # Exposure contract — what a record may carry into a repository
 
 Applies to everything this plugin writes into a target repository — ADRs, RFCs, plans, task dossiers,

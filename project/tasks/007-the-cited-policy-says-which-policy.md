@@ -104,21 +104,46 @@ thing that can go missing.
 
 ## Implementation order
 
-- [ ] P0 — Try frontmatter on one reference; record whether it works
-- [ ] P0 — Settle the form; write the decision into Plan-012's Decision Log
-- [ ] P0 — Version every file under `plugin/references/` and `references/records/`
-- [ ] P0 — Reconcile the overflow-bucket contradiction; record which statement won
-- [ ] P0 — Reconcile the four-living-sections description in both files
-- [ ] P0 — Closing verbs report the policy version applied
-- [ ] P1 — Extend `55-references-completeness.sh` to check the version
+- [x] P0 — Try frontmatter on one reference; record whether it works
+- [x] P0 — Settle the form; write the decision into Plan-012's Decision Log
+- [x] P0 — Version every file under `plugin/references/` and `references/records/`
+- [x] P0 — Reconcile the overflow-bucket contradiction; record which statement won
+- [x] P0 — Reconcile the four-living-sections description in both files
+- [x] P0 — Closing verbs report the policy version applied
+- [x] P1 — Extend `55-references-completeness.sh` to check the version
 
 ## Surprises & Discoveries
 
 <!-- Fill WHILE the work happens. Routed at closure: beyond this repository → project/learnings/;
      nameable file/folder/package → project/log/ with that as its path:; neither → dropped. -->
 
-- Observation: …
-  Evidence: …
+- Observation: frontmatter on a prose reference costs nothing, and the fallback this task reserved half
+  its design for was never needed.
+  Evidence: added to `knowledge-lifecycle.md` first and measured — `vibe-ops check .` and
+  `vibe-ops governance` both stayed exactly where they were, and every citation still resolves because a
+  leading block changes no anchor. Nothing loads these files as skills, so the plugin loader never sees
+  the `---`. The versioned-filename fallback, and the `references/<name>/<version>.md` layout it left room
+  for, are unnecessary. Trying it took one command; reasoning about it had already taken a paragraph in
+  this dossier.
+
+- Observation: the reconciliation was the point, not the version number, and one of the two divergences
+  was larger than recorded.
+  Evidence: the overflow-bucket contradiction was where the task said it was, and the skills won — the
+  reference now states that a rejected entry is dropped rather than filed one tier down, with the reason
+  (`project/learnings/` went over budget precisely by filing rejects downward). The four-living-sections
+  claim was in **four** places, not two: `knowledge-lifecycle.md`, `references/records/plan.md`,
+  `GOVERNANCE.md` and its dogfooding twin under `skills/setup/templates/root/`. The plan lost `Progress`
+  and `Surprises & Discoveries` when its template moved and every prose description of it stayed behind.
+  Declaring `@1` over an unreconciled text would have frozen the contradiction and made the number mean
+  "this is the contradiction we shipped".
+
+- Observation: a reference's declaration is checked against the file's own name, and that turned out to
+  be the part worth writing.
+  Evidence: `vibe-ops-reference: <name>@<integer>` where `<name>` must equal the path under
+  `references/`. Presence alone would pass a reference copied from another one that kept its source's
+  token — a version belonging to a different document, which is worse than no answer because it reads as
+  one. The four files under `records/` therefore declare `records/<type>@1`, not `<type>@1`, which also
+  keeps them from being read as the template version of the same name.
 
 ## Closure
 

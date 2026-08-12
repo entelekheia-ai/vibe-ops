@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: records/task@1
+---
+
 # Task — what only a task needs
 
 A task lives in **two artifacts that own different content** — never two copies of the same thing:

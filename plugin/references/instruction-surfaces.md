@@ -1,3 +1,7 @@
+---
+vibe-ops-reference: instruction-surfaces@1
+---
+
 # Instruction surfaces — which file gets a fact, and how it reaches the agent
 
 Decision record: [ADR-0003](../../project/adr/0003-instruction-file-architecture.md).

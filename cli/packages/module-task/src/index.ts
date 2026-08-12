@@ -14,6 +14,7 @@ import {
   formatResolved,
   resolveRecord,
   RecordsConfigError,
+  routingPolicy,
   TaskCloseError,
 } from "@entelekheia/vibe-ops-records";
 
@@ -142,7 +143,13 @@ export default defineModule(
         code: result.dangling.length > 0 ? 1 : 0,
         summary:
           result.dangling.length > 0 ? `${result.dangling.length} file(s) still link to a deleted dossier` : undefined,
-        data: { ...result, version: version.length > 0 ? version : undefined },
+        // Which routing policy this closure ran under — the promotion test the dossier's Surprises
+        // entries were routed through. Recorded on every closure, not only when something is owed.
+        data: {
+          ...result,
+          version: version.length > 0 ? version : undefined,
+          policy: routingPolicy(resolvePluginDir(context.repoRoot), context.repoRoot, documents),
+        },
       };
     }
 

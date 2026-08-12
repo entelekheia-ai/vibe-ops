@@ -204,7 +204,12 @@ memory is the failure this plan exists to prevent.
   the line named the version jumps without naming a document to read, and the alert was suppressed under
   `--json` rather than carried in `data`. Both were in the piece agreed as not delegable and delegated
   anyway; see the delegation contract above.
-- **Track 7 is next**, and is independent of everything above.
+- **Track 7 landed** on 2026-08-12. Eleven files under `plugin/references/` declare
+  `vibe-ops-reference: <name>@1`, the two known divergences are reconciled — the four-living-sections
+  claim turned out to be in four places, not two — and both closing verbs report
+  `policy: { "knowledge-lifecycle": <n> }`.
+- **Every track is checked.** What remains is `/vibe-ops:close-plan` itself, and closing the two
+  dossiers still open (006 and 007).
 - **The dossiers for Tracks 1–5 are gone**, closed on 2026-08-11, and every reference to them in this
   file now carries the runnable `git show` against
   `55e568956ea95c9e0a4a982cc3a63e49a828e31a` — the last commit that still contains them. Closure rewrote
@@ -301,7 +306,7 @@ has actually bought so far.
       format it used; closing a current one mentions no version at all.
       Task: `project/tasks/006-verbs-dispatch-on-the-version.md`
 
-- [ ] **Track 7 — The cited policy says which policy.** The files under `plugin/references/` are cited by
+- [x] **Track 7 — The cited policy says which policy.** The files under `plugin/references/` are cited by
       name as the authority by more than one skill, and they change. Each declares a version — in
       frontmatter if a prose file can carry it, otherwise by a versioned filename with each citation
       pointing at one — and a closure records which version of the policy it applied. At the end it is
@@ -338,6 +343,31 @@ Run from the repository root:
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
 ## Decision Log
+
+- Decision: a prose reference declares `vibe-ops-reference: <name>@<integer>` in **frontmatter**, where
+  `<name>` is its own path under `references/`, and a closure reports only the **routing** policy it
+  applied.
+  Rationale: settled by trying it rather than by reasoning, as the track required — frontmatter on
+  `knowledge-lifecycle.md` left `vibe-ops check` and `vibe-ops governance` exactly where they were and
+  broke no citation, because a leading block changes no anchor and nothing loads these files as skills.
+  So the versioned-filename fallback and the `references/<name>/<version>.md` layout it left room for are
+  unnecessary. The key is separate from `vibe-ops-template` because a reference is not a record and a
+  shared key would make it look like one to the gate that sweeps for undeclared records. The name must
+  match the file: presence alone would pass a reference copied from another that kept its source's token,
+  reporting a version belonging to a different document. And only `knowledge-lifecycle` is reported by a
+  closure — it is the one reference that decides what a closure *does*; a verb naming policies it never
+  read would be a record that looks like evidence and is not.
+  Date / Author: 2026-08-12 / Danilo Borges
+
+- Decision: `project/log/` is **never** the overflow bucket for what the promotion test rejected — the
+  closing skills were right and `knowledge-lifecycle.md` was wrong.
+  Rationale: the reference said an entry failing question 1 or 2 *"still belongs somewhere; the log is
+  that somewhere"*, and both closing skills said the opposite. The skills carry the reason and the
+  reference did not: filing rejects one tier down is precisely what carried `project/learnings/` past its
+  budget, and a tier that receives rejects is the tier that rots. The log is reached on its own merits —
+  *can you name the file, folder or package where someone meets this again* — which is a different
+  question from *did this fail the filter*.
+  Date / Author: 2026-08-12 / Danilo Borges
 
 - Decision: the CLI holds **one** handling per verb and never branches on the record's version. Box G of
   the dispatch flowchart is discharged by naming the documents that describe the shape, and the behaviour
