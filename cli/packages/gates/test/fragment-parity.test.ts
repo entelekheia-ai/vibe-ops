@@ -61,6 +61,45 @@ test("a clean repository — no shell failures, no port findings, no port-regres
   assert.deepEqual(outcome.findings, []);
 });
 
+test("the CLEAN run names both versions it compared — the one with no finding to carry them", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-fragment-parity-instrument-"));
+  spawnSync("git", ["-C", repoRoot, "init", "-q"]);
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
+  spawnSync("git", ["-C", repoRoot, "add", "-A"]);
+  const outcome = await fragmentParity.run(
+    ctx(repoRoot, ["AGENTS.md"], { runner: RUNNER, fragment: "links", against: "markdown-link" }),
+  );
+  assert.deepEqual(outcome.findings, []);
+  assert.match(outcome.instrument ?? "", /^links@[0-9]+ vs markdown-link@[0-9]+$/);
+});
+
+test("a finding names both versions too, so a diverged pair is attributable from the finding alone", async () => {
+  const repoRoot = await gitRepoWithBrokenLink();
+  const outcome = await fragmentParity.run(
+    ctx(repoRoot, ["AGENTS.md", "bad.md"], { runner: RUNNER, fragment: "links", against: "breadcrumb" }),
+  );
+  assert.match(outcome.findings[0]!.evidence, /links@[0-9]+ \(shell\)/);
+  assert.match(outcome.findings[0]!.evidence, /breadcrumb@[0-9]+ \(the port\)/);
+});
+
+test("a fragment whose version cannot be read refuses, rather than reporting agreement between two unnamed things", async () => {
+  const repoRoot = await gitRepoWithBrokenLink();
+  await assert.rejects(
+    () => fragmentParity.run(ctx(repoRoot, ["AGENTS.md"], { runner: RUNNER, fragment: "no-such-fragment", against: "markdown-link" })),
+    /cannot read a version/,
+  );
+});
+
+test("a repository with no runner SKIPS, naming why — it used to report parity over a hole", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-fragment-parity-no-runner-"));
+  spawnSync("git", ["-C", repoRoot, "init", "-q"]);
+  const outcome = await fragmentParity.run(
+    ctx(repoRoot, [], { runner: "sh/does-not-exist.sh", fragment: "links", against: "markdown-link" }),
+  );
+  assert.match(outcome.skipped ?? "", /no runner/);
+  assert.deepEqual(outcome.findings, []);
+});
+
 test("missing options throws before spawning anything", async () => {
   const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-fragment-parity-bad-opts-"));
   await assert.rejects(() => fragmentParity.run(ctx(repoRoot, [], { fragment: "links" })));

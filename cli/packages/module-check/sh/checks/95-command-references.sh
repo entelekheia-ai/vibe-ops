@@ -16,6 +16,8 @@
 # Deliberately does not check the reverse (every skill mentioned somewhere) — an unreferenced skill is
 # not a bug, a reference to a nonexistent one is.
 
+CHECK_VERSION=1
+
 check_command_references() {
   head_
   local id="command-references" problems=0 file name

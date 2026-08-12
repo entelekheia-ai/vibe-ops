@@ -15,6 +15,8 @@
 # project/templates/ belongs to that repository and its author's name there is correct; only what is
 # copied elsewhere is the plugin author's to keep out.
 
+CHECK_VERSION=1
+
 check_template_attribution() {
   head_
   local id="template-attribution" problems=0 hit

@@ -31,6 +31,8 @@
 # this exact ../cli/ form when it was written) without that being live instruction an agent executes
 # today. Discovered live: Plan-009's own climb guard flagged Plan-002's history the moment it existed.
 
+CHECK_VERSION=1
+
 check_plugin_root_paths() {
   head_
   local id="plugin-root-paths" problems=0 checked=0 file ref path seen=""

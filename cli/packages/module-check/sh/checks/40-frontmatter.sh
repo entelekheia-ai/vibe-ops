@@ -6,6 +6,8 @@
 # A rule with no description: is never surfaced to the agent — it is a file that exists and does
 # nothing, which is worse than an absent one because it reads as covered.
 
+CHECK_VERSION=1
+
 check_frontmatter() {
   head_
   local id="frontmatter" problems=0 rule

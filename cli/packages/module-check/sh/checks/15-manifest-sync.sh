@@ -12,6 +12,8 @@
 # fragile 40-frontmatter.sh-style code for a shape this regular. A repo without jq skips loudly instead
 # of parsing wrong silently.
 
+CHECK_VERSION=1
+
 check_manifest_sync() {
   head_
   local id="manifest-sync" plugin="$PLUGIN_DIR/.claude-plugin/plugin.json" market="$ROOT/.claude-plugin/marketplace.json"

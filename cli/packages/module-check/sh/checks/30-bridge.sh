@@ -7,6 +7,8 @@
 # symlink that git checked out as text (core.symlinks=false) — which looks like a working rule file
 # containing one line of nonsense.
 
+CHECK_VERSION=1
+
 check_bridge() {
   head_
   local id="bridge" problems=0 mode path

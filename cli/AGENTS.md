@@ -212,6 +212,12 @@ node cli/packages/cli/dist/bin.js check
 - **The checks are shell and stay shell.** Porting seventeen fragments to TypeScript is a separate act;
   doing it as part of packaging would have shipped seventeen freshly-written checks with no history of
   having caught anything. `packages/module-check/src/index.ts` is their front door, not a rewrite.
+- **A fragment declares `CHECK_VERSION`, an integer, and the runner refuses one that does not** — the
+  same axis and the same rule as `version` on a `GateDefinition`, moving only when a consumer of the
+  check's output must handle it differently. It surfaces as `<id>@<version>` in `--list`, in the emitted
+  record's instrument field, and in what `fragment-parity` reports having compared. The variable is
+  cleared before each fragment is sourced: a fragment that forgot would otherwise inherit its
+  predecessor's number, which is worse than the omission because it looks like an answer.
 - **A fragment gets `$ROOT` and `$PLUGIN_DIR`, and they are not the same.** `$ROOT` is the repository
   being checked; `$PLUGIN_DIR` is where its plugin surface lives — `plugin/` here, the root in a repo
   laid out flat. Hardcoding one for the other made every dogfooding pair unreachable in a flat repo,

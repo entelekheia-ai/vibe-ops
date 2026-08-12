@@ -52,6 +52,8 @@ strip_leading_copyright_comment() {
   ' "$1"
 }
 
+CHECK_VERSION=1
+
 check_dogfooding_drift() {
   head_
   local id="dogfooding-drift" problems=0

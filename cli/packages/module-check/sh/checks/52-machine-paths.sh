@@ -17,6 +17,8 @@
 # failure — an ADR, a plan's Decision Log, this contract itself — writes the elided form, and a guard
 # that fires on the description of the rule is a guard people switch off.
 
+CHECK_VERSION=1
+
 check_machine_paths() {
   head_
   local id="machine-paths" hits=0 line examined
@@ -91,7 +93,7 @@ emit_machine_paths_artifact() {
   local tmp
   tmp="$GATE_ARTIFACT_DIR/.machine-paths.jsonl.tmp.$$"
   if printf '%s' "$diagnostics" | sh "$emitter" \
-      --producer machine-paths --tool "vibe-ops-machine-paths@1" \
+      --producer machine-paths --tool "vibe-ops-machine-paths@$CHECK_VERSION" \
       --unit file --examined "$examined" --moment attempt >"$tmp" 2>/dev/null; then
     if [ -s "$tmp" ]; then
       mv "$tmp" "$GATE_ARTIFACT_DIR/machine-paths-$(artifact_stamp_ "$tmp")-$$.jsonl"

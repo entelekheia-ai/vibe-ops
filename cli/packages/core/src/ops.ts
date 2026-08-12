@@ -386,7 +386,8 @@ async function run(
     }
     if (cli && outcome.findings.length === 0 && verbose) {
       const ignoredSuffix = ignoredCount > 0 ? `, ${ignoredCount} ignored` : "";
-      context.log(`ok    [${label}] ${examined} examined${ignoredSuffix}`);
+      const compared = outcome.instrument === undefined ? "" : ` (compared ${outcome.instrument})`;
+      context.log(`ok    [${label}] ${examined} examined${ignoredSuffix}${compared}`);
     }
 
     // Zero examined writes nothing at all: a record of nothing examined is indistinguishable from a
@@ -410,7 +411,14 @@ async function run(
         unit: "file",
         counts,
         moment: "sweep",
-        tags: [`ops:${definition.id}`, ...patterns],
+        // `compared:` rather than a second `tool`: the observation's instrument stays the detector that
+        // produced it, or fragment-parity's own series would re-identify itself every time either side
+        // it compares moves. What it compared is a property of the reading, which is what a tag is.
+        tags: [
+          `ops:${definition.id}`,
+          ...(outcome.instrument === undefined ? [] : [`compared:${outcome.instrument}`]),
+          ...patterns,
+        ],
       });
     }
   }

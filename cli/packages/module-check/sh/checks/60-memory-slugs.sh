@@ -12,6 +12,8 @@
 # with fenced blocks and inline code spans removed first: syntax quoted as code is being *shown*, not
 # used. A check that cries wolf gets ignored, and this one guards something real.
 
+CHECK_VERSION=1
+
 check_memory_slugs() {
   head_
   local id="memory-slugs" hits file

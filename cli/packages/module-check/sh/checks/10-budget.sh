@@ -6,6 +6,8 @@
 # AGENTS.md stays under a line budget. Over budget the instruction is to relocate content and leave a
 # pointer, not to compress prose — a shorter file that says the same things is not the goal.
 
+CHECK_VERSION=1
+
 check_budget() {
   head_
   local id="budget" max="${AGENTS_MD_MAX_LINES:-150}" n

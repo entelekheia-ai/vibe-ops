@@ -14,6 +14,8 @@
 # templating the license body itself, which is how the substitution turns into an edit turns into a
 # rewrite. The year and holder are substituted on the *copy*, in the target repo, never here.
 
+CHECK_VERSION=1
+
 check_license_texts() {
   head_
   local id="license-texts" problems=0 tool="$PLUGIN_DIR/skills/license-setup/get-license.sh"

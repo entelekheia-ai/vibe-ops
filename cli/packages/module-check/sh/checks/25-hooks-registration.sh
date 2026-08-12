@@ -57,6 +57,8 @@ _skill_hooks_block() {
   '
 }
 
+CHECK_VERSION=1
+
 check_hooks_registration() {
   head_
   local id="hooks-registration" hj="$PLUGIN_DIR/hooks/hooks.json" hd="$PLUGIN_DIR/hooks" problems=0 examined=0

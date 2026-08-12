@@ -7,6 +7,8 @@
 # one is missing — silent from inside the repo unless something actually asks the resolver for that
 # type. This makes the absence visible without waiting for that call.
 
+CHECK_VERSION=1
+
 check_references_completeness() {
   head_
   local id="references-completeness" dir="$PLUGIN_DIR/references/records" problems=0 t

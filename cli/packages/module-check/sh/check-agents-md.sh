@@ -94,6 +94,14 @@ tracked_md() {
 #
 # A fragment named NN-<id>.sh must define check_<id>, with '-' as '_'. It may use fail/pass/skip,
 # head_, norm_rel, tracked_md, $ROOT and $PLUGIN_DIR; it must not write anything into $ROOT.
+#
+# It must also set CHECK_VERSION, an integer that moves only when a consumer of this check's output has
+# to handle it differently — the same rule and the same axis as `version` on a GateDefinition, which
+# `defineGate` likewise refuses to construct without. Two readings recorded under one check id are only
+# comparable while that number has not moved, so a fragment that declares nothing makes every reading it
+# ever produced unattributable. The variable is reset before each source and demanded after: a fragment
+# that forgot would otherwise silently inherit the previous fragment's number, which is worse than the
+# omission because it looks like an answer.
 
 # Everything composed for a single run lives here and nowhere else: mode 700, created on first use,
 # removed on exit however the run ends. A signal handler as well as an EXIT trap, because the artifact
@@ -117,6 +125,7 @@ make_workdir() {
 
 COMPOSED_IDS=()
 COMPOSED_SRC=()
+COMPOSED_VER=()
 
 compose_checks() {
   local dirs="$HOME_ROOT/sh/checks${VIBE_OPS_CHECK_DIRS:+:$VIBE_OPS_CHECK_DIRS}"
@@ -132,14 +141,24 @@ compose_checks() {
       base=$(basename "$frag" .sh)
       id="${base#*-}"
       fn="check_${id//-/_}"
+      # Cleared before the source, demanded after: a sourced fragment leaves its globals behind, so an
+      # undeclared one would inherit its predecessor's number and report a version nobody wrote.
+      CHECK_VERSION=""
       # shellcheck disable=SC1090
       . "$frag" || { echo "cannot source fragment: $frag" >&2; exit 2; }
       if ! command -v "$fn" >/dev/null 2>&1; then
         echo "fragment $frag defines no $fn()" >&2
         exit 2
       fi
+      case "$CHECK_VERSION" in
+        ''|*[!0-9]*)
+          echo "fragment $frag declares no integer CHECK_VERSION" >&2
+          exit 2
+          ;;
+      esac
       COMPOSED_IDS+=("$id")
       COMPOSED_SRC+=("$frag")
+      COMPOSED_VER+=("$CHECK_VERSION")
     done
   done
   if [ "${#COMPOSED_IDS[@]}" -eq 0 ]; then
@@ -153,7 +172,9 @@ report_composition() {
   printf 'composed %d checks:\n' "${#COMPOSED_IDS[@]}"
   for i in "${!COMPOSED_IDS[@]}"; do
     src="${COMPOSED_SRC[$i]}"
-    printf '  %-14s %s\n' "${COMPOSED_IDS[$i]}" "${src#"$HOME_ROOT"/}"
+    # `<id>@<version>`, the same token the emitted record's instrument field carries and the same one
+    # `fragment-parity` reads back to say which two things a parity result compared.
+    printf '  %-18s %s\n' "${COMPOSED_IDS[$i]}@${COMPOSED_VER[$i]}" "${src#"$HOME_ROOT"/}"
   done
   printf '\n'
 }

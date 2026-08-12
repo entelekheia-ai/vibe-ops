@@ -79,6 +79,8 @@ _nudge_named() { # reads a firing's output on stdin, prints one line per plan it
   grep -o '/repo2*/project/plans/[0-9][0-9][0-9]-thing\.md' || true
 }
 
+CHECK_VERSION=1
+
 check_nudge_behaviour() {
   head_
   local id="nudge-behaviour" hook="$PLUGIN_DIR/hooks/plan-progress-nudge.sh"

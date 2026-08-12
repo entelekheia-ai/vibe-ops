@@ -194,9 +194,8 @@ memory is the failure this plan exists to prevent.
 
 **Where the work actually is**, as of 2026-08-11:
 
-- **Tracks 1, 2, 3 and 5 landed. Track 4 is half done and is unticked** — the ten gates declare a
-  version, the seventeen shell fragments declare nothing, and `fragment-parity` records neither version
-  it compared. Its dossier is already deleted, so the remaining work is described on the track itself.
+- **Tracks 1 through 6 landed.** Track 4 was completed on 2026-08-12, after being found ticked with its
+  fragment half undone; the description on the track itself is the record, since its dossier is deleted.
 - **Track 6 landed**, every work item including the two P1s. The dispatch runs inside `plan close` and
   `task close` before any mutation; `vibe-ops records --census` replaced `/vibe-ops:migrate`'s regex
   (8 records reported against 32 that exist); `vibe-ops records --handling <record>` answers, for one
@@ -270,18 +269,18 @@ has actually bought so far.
       nowhere.
       Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/003-the-emitted-record-reaches-eita.md`
 
-- [ ] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
+- [x] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
       that moves only on a break, and it travels into the emitted record's instrument field. The seventeen
       shell fragments gain the same declaration, replacing the one hand-written instance. Breaking for the
       ten gates in `cli/packages/gates/`. At the end two observations recorded under one id at different
       times can be told apart when the detector between them changed. Acceptance: every gate and every
       fragment declares a version; an emission carries it; `defineGate` rejects a definition without one.
-      **Half done, and unticked on 2026-08-12 after being found ticked against an unmet acceptance.** The
-      ten gates declare a version, `defineGate` rejects a definition without one and an emission carries
-      it. **Zero of the seventeen shell fragments declare anything**, and `fragment-parity` still records
-      neither version it compared — so a parity result is not evidence the next time either side moves.
-      The dossier that held this work was closed and deleted on 2026-08-11; the remainder became a prose
-      note below while this box stayed checked, which is the failure mode `/close-plan` Step 0 names.
+      **Unticked on 2026-08-12 after being found checked against an unmet acceptance, and completed the
+      same day.** The seventeen fragments each declare `CHECK_VERSION`, the runner refuses one that does
+      not and clears the variable between sources so a forgotten declaration cannot inherit its
+      neighbour's, `--list` and the emitted instrument both read `<id>@<version>`, and `fragment-parity`
+      names both versions it compared — in the finding and, through `GateOutcome.instrument`, on the
+      clean run that has no finding to carry them.
       Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/004-the-detector-says-which-detector-it-is.md`
 
 - [x] **Track 5 — Backfill the declarations.** Every governance record under `project/` except research

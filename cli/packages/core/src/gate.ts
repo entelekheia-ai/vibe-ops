@@ -70,6 +70,14 @@ export interface GateOutcome {
    * are indistinguishable in a record, and only one of them is a reading.
    */
   readonly skipped?: string;
+  /**
+   * What this gate actually compared, when that is not deducible from its own id and version — the
+   * comparison gates, where `fragment-parity@1` names the comparator and says nothing about the two
+   * things on either side of it. Recorded as a `compared:` tag on the emitted observation and printed
+   * beside the clean line, because the run that most needs to be attributable is the one that found
+   * nothing: "the port agrees" is only evidence while both sides are the versions it agreed with.
+   */
+  readonly instrument?: string;
 }
 
 export interface GateDefinition {

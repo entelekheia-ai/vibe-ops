@@ -6,6 +6,8 @@
 # Unresolvable links, and links that climb out of the repository. Both in one pass over the same
 # extraction, because they differ only in what the normalizer returns.
 
+CHECK_VERSION=1
+
 check_links() {
   head_
   local id="links" bad=0 escaped=0 file dir link target norm

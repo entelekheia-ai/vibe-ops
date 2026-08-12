@@ -11,6 +11,8 @@
 # With nothing supplied the check reports itself skipped rather than passing silently: "no private
 # name found" and "I was not given any to look for" are different answers.
 
+CHECK_VERSION=1
+
 check_private_names() {
   head_
   local id="private-names" list="${VIBE_OPS_DENYLIST:-}" hits=0 label pattern

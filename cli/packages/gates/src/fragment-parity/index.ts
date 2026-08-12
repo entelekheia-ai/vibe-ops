@@ -16,6 +16,7 @@
 import { defineGate, loadGate } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 interface FragmentParityOptions {
@@ -25,6 +26,20 @@ interface FragmentParityOptions {
   readonly fragment?: string;
   /** The gate id the fragment was ported to. Resolved and run fresh, over this entry's own population. */
   readonly against?: string;
+}
+
+/**
+ * The fragment's declared version, from the runner's own `--list` — `  <id>@<version>  <path>`.
+ *
+ * Read from the runner rather than from the fragment file, deliberately: this gate is handed an id and a
+ * runner and holds no knowledge of where fragments live, which is what lets it leave the repository the
+ * day its `fragment` does. `--list` composes and prints without running a single check, so the second
+ * spawn costs almost nothing.
+ */
+function fragmentVersion(runner: string, fragment: string): string | undefined {
+  const listed = spawnSync(runner, ["--list"], { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 });
+  const pattern = new RegExp(`^\\s+${fragment}@([0-9]+)\\s`, "m");
+  return pattern.exec(listed.stdout ?? "")?.[1];
 }
 
 /** `FAIL  [<fragment>] <file>: message` — the runner's own `fail()` format; the file is everything up to the first `:`. */
@@ -50,8 +65,26 @@ export default defineGate(
       throw new Error("fragment-parity requires options.runner, options.fragment and options.against");
     }
 
-    const spawned = spawnSync(path.resolve(repoRoot, runner), [repoRoot], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+    const runnerPath = path.resolve(repoRoot, runner);
+    // A repository without the runner cannot be compared, and that is a legitimate state rather than a
+    // finding — but it was silent until 2026-08-12: spawning a path that does not exist returned no
+    // output, which read as "the fragment flagged nothing", which read as parity. Apparent agreement
+    // over a hole, in the gate whose own header warns about exactly that.
+    if (!existsSync(runnerPath)) {
+      return { findings: [], examined: 0, skipped: `no runner at ${runner} — nothing to compare against` };
+    }
+
+    const spawned = spawnSync(runnerPath, [repoRoot], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
     const shellFailures = failedFilesFor(spawned.stdout ?? "", fragment);
+
+    // BEFORE the comparison, because a parity result whose sides cannot be named is not evidence — and
+    // the run that most needs naming is the clean one, which has no finding to carry it. Refusing is the
+    // only honest outcome: reporting agreement between two unidentified things is the shape of answer
+    // this whole plan exists to remove.
+    const fragmentAt = fragmentVersion(runnerPath, fragment);
+    if (fragmentAt === undefined) {
+      throw new Error(`fragment-parity cannot read a version for "${fragment}" from ${runner} --list`);
+    }
 
     const gate = await loadGate(against);
     const outcome = await gate.run({ repoRoot, pluginDir, files, options: {}, documents });
@@ -63,11 +96,17 @@ export default defineGate(
         findings.push({
           rule: "port-regression",
           file,
-          evidence: `${fragment} (shell) flagged this file; ${against} (the port) did not — the two have diverged`,
+          evidence:
+            `${fragment}@${fragmentAt} (shell) flagged this file; ` +
+            `${against}@${gate.definition.version} (the port) did not — the two have diverged`,
         });
       }
     }
 
-    return { findings, examined: files.length };
+    return {
+      findings,
+      examined: files.length,
+      instrument: `${fragment}@${fragmentAt} vs ${against}@${gate.definition.version}`,
+    };
   },
 );

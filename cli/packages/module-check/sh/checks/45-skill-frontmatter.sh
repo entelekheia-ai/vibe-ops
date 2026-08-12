@@ -18,6 +18,8 @@
 # Deliberately not a full YAML parser. It catches the one fault that has actually
 # occurred and is invisible on inspection: an unquoted scalar containing ": ".
 
+CHECK_VERSION=1
+
 check_skill_frontmatter() {
   head_
   local id="skill-frontmatter" problems=0 skill
