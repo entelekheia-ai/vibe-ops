@@ -317,7 +317,7 @@ has actually bought so far.
       version; a closure's record names the one it applied.
       Task: `git show ca20c345ca3396092db0bf9938a5994d118ccee8:project/tasks/007-the-cited-policy-says-which-policy.md`
 
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check. The plan file
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check. The plan file
       itself is kept. Stays unchecked until the plan is actually closed; a track list that is otherwise
       complete but has this box open is not finished.
 

@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { documentFromText } from "@entelekheia/vibe-ops-core";
+import { tickPlanClosureBox } from "./closure.ts";
 import { linksToBasenames, relativeLinks, spliceLinks } from "./links.ts";
 import type { DocumentStore } from "@entelekheia/vibe-ops-core";
 import { readPlanShape, slugFor, withoutRepositoryRow, withStatus } from "./plan-file.ts";
@@ -145,6 +146,7 @@ export function closePlan(options: ClosePlanOptions, documents: DocumentStore): 
 
   if (dryRun) {
     steps.push(`  would set Status to ${terminal} in ${from}`);
+    if (tickPlanClosureBox(documents.get(from)) !== undefined) steps.push(`  would tick the close-plan box`);
     steps.push(`  would run: git mv ${from} ${to}`);
     for (const { file, links } of referrers) steps.push(`  would repoint ${links.length} link(s) in ${file}`);
     steps.push(`  would re-base ${outbound.length} relative link(s) inside the plan itself`);
@@ -161,8 +163,13 @@ export function closePlan(options: ClosePlanOptions, documents: DocumentStore): 
   });
   const withBoth = withStatus(documentFromText(from, rebased), terminal) ?? next;
 
-  writeFileSync(path.join(repoRoot, from), withBoth);
+  // The plan's own closure box, in the SAME write as the status — the two disagreeing is exactly what
+  // `plan status` reports, and a plan that ships with the box open carries that complaint forever.
+  const ticked = tickPlanClosureBox(documentFromText(from, withBoth));
+
+  writeFileSync(path.join(repoRoot, from), ticked ?? withBoth);
   steps.push(`  Status set to ${terminal} in ${from}`);
+  if (ticked !== undefined) steps.push(`  ticked the close-plan box`);
   if (outbound.length > 0) steps.push(`  ${outbound.length} relative link(s) re-based for the new depth`);
 
   mkdirSync(path.join(repoRoot, dir, SHIPPED), { recursive: true });

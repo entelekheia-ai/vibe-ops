@@ -22,12 +22,21 @@ import type Parser from "tree-sitter";
  */
 const CLOSURE_LINE = /close[-\s]task/i;
 
-function closureItems(document: Document, marker: string): readonly Parser.SyntaxNode[] {
+/**
+ * The plan's equivalent line, which lives in its `## Tracks` list rather than in a `## Closure` section:
+ * "- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals … Stays unchecked until the plan is
+ * actually closed". Ticked by `plan close` for the same reason `task close` ticks its own — left open, the
+ * plan reports as incoherent to `plan status` forever, which is where it was found: every plan shipped
+ * before 2026-08-12 carries the complaint.
+ */
+const PLAN_CLOSURE_LINE = /close[-\s]plan/i;
+
+function closureItems(document: Document, marker: string, line = CLOSURE_LINE): readonly Parser.SyntaxNode[] {
   const root = document.tree?.rootNode;
   if (root === undefined) return [];
   return root
     .descendantsOfType(marker)
-    .filter((node) => node.parent?.type === "list_item" && CLOSURE_LINE.test(node.parent.text));
+    .filter((node) => node.parent?.type === "list_item" && line.test(node.parent.text));
 }
 
 /**
@@ -50,6 +59,19 @@ export function closureBoxOpen(document: Document): boolean {
  */
 export function tickClosureBox(document: Document): string | undefined {
   const [marker] = closureItems(document, "task_list_marker_unchecked");
+  if (marker === undefined) return undefined;
+  return `${document.text.slice(0, marker.startIndex)}[x]${document.text.slice(marker.endIndex)}`;
+}
+
+/**
+ * The plan's text with its own closure box ticked, or `undefined` when there is none open.
+ *
+ * Same splice, different line. A plan whose box stays open after the file has moved into `shipped/`
+ * makes `plan status` report it as terminal-with-an-unchecked-track for the rest of its life, and the
+ * only way anyone notices is by reading a complaint about a plan nobody is working on.
+ */
+export function tickPlanClosureBox(document: Document): string | undefined {
+  const [marker] = closureItems(document, "task_list_marker_unchecked", PLAN_CLOSURE_LINE);
   if (marker === undefined) return undefined;
   return `${document.text.slice(0, marker.startIndex)}[x]${document.text.slice(marker.endIndex)}`;
 }

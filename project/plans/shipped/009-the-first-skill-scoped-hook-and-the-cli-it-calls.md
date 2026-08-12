@@ -312,7 +312,7 @@ six that *execute* the runner become `vibe-ops check <target>`, which the newly 
       it**, since a plugin that now needs a command on PATH has changed shape. `cli/AGENTS.md` (fix on the
       gate contract, `--file`, selective `--fix`, the `hook` surface, the no-emit decision),
       `cli/README.md`, and RFC-0001 step 4 moving from Postponed to done with its Decision Log entry.
-- [ ] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria

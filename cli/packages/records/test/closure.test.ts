@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import type { Document } from "@entelekheia/vibe-ops-core";
-import { closureBoxOpen, tickClosureBox } from "../src/closure.ts";
+import { closureBoxOpen, tickClosureBox, tickPlanClosureBox } from "../src/closure.ts";
 
 async function documentOf(text: string): Promise<Document> {
   const dir = await mkdtemp(path.join(tmpdir(), "vibeops-closure-"));
@@ -53,4 +53,28 @@ test("tickClosureBox leaves another bracketed pair on the same line alone", asyn
 test("tickClosureBox is undefined when there is nothing to tick, rather than returning the text unchanged", async () => {
   assert.equal(tickClosureBox(await documentOf(OPEN.replace("[ ]", "[x]"))), undefined);
   assert.equal(tickClosureBox(await documentOf("# Task\n")), undefined);
+});
+
+test("a plan's own close-plan box is ticked, in both the current and the pre-split wording", async () => {
+  // The plan's box lives in its `## Tracks` list, not in a `## Closure` section — the same splice with a
+  // different anchor. Left open, `plan status` reports the plan as terminal-with-an-unchecked-track for
+  // the rest of its life, which is how it was found: every plan shipped before 2026-08-12 carried it.
+  for (const wording of ["/vibe-ops:close-plan", "/vibe-ops:close plan"]) {
+    const document = await documentOf(
+      `# Plan-001\n\n## Tracks\n\n- [x] **Track 1 — done.**\n- [ ] Run \`${wording}\` — retrospective against the goals.\n`,
+    );
+    const ticked = tickPlanClosureBox(document);
+    assert.match(ticked ?? "", /- \[x\] Run/);
+    assert.match(ticked ?? "", /- \[x\] \*\*Track 1/);
+  }
+});
+
+test("a plan whose box is already ticked yields undefined rather than a second write", async () => {
+  const document = await documentOf("# Plan-001\n\n## Tracks\n\n- [x] Run `/vibe-ops:close-plan` — done.\n");
+  assert.equal(tickPlanClosureBox(document), undefined);
+});
+
+test("a task's closure box is not mistaken for a plan's", async () => {
+  const document = await documentOf("# Task\n\n## Closure\n\n- [ ] Run `/vibe-ops:close-task` — do not just delete this file.\n");
+  assert.equal(tickPlanClosureBox(document), undefined);
 });
