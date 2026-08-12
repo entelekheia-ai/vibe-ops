@@ -406,7 +406,10 @@ Run from the repository root:
   that document is the **migration note that already exists**, never a second per-version file.
   Rationale: the forwarding-sibling candidate this plan recorded does not survive — nothing can perform
   the forward. A hook returns text (`additionalContext`) and cannot invoke a skill, and skill→skill
-  invocation is explicitly non-deterministic; the documentation's own advice is to use a hook when
+  invocation is undocumented — silent rather than forbidden, and a model decision either way. Corrected
+  on 2026-08-12 from "explicitly non-deterministic", which claimed more than the source says; the
+  conclusion is unchanged and the evidence for it is weaker than first recorded. The documentation's own
+  advice is to use a hook when
   determinism is wanted, which is the mechanism that cannot do this. Measured against
   `plan-0.1-to-0.2.md` on 2026-08-11: the note already states that `Surprises & Discoveries` was living
   at `0.1`, that it is never deleted in place, and it carries the four routing questions per entry — the
