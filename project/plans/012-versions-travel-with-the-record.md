@@ -210,12 +210,15 @@ memory is the failure this plan exists to prevent.
   `policy: { "knowledge-lifecycle": <n> }`.
 - **Every track is checked.** What remains is `/vibe-ops:close-plan` itself, and closing the two
   dossiers still open (006 and 007).
-- **The dossiers for Tracks 1–5 are gone**, closed on 2026-08-11, and every reference to them in this
-  file now carries the runnable `git show` against
-  `55e568956ea95c9e0a4a982cc3a63e49a828e31a` — the last commit that still contains them. Closure rewrote
-  only the markdown **links**: the five `Task:` lines in the track list are code spans, which
-  `linksToBasenames` does not match by design, so they were left naming a deleted path and were repaired
-  by hand afterwards.
+- **Every dossier is gone.** Tracks 1–5 closed on 2026-08-11 against
+  `55e568956ea95c9e0a4a982cc3a63e49a828e31a`; Tracks 6 and 7 on 2026-08-12 against
+  `ca20c345ca3396092db0bf9938a5994d118ccee8`. Every reference in this file carries the runnable
+  `git show` against the right one of the two.
+  **Closure rewrites markdown links and never code spans**, by design — rewriting a span would corrupt a
+  document explaining its own link syntax — so the seven `Task:` lines in the track list are repaired by
+  hand each time. The difference between the two closures is the whole point of the fix between them: in
+  August 11 the dangling check reported clean over five dead paths, and on August 12 it named both,
+  exited non-zero, and the repair happened because the tool asked for it.
 
 **What may be delegated to a subagent, and what may not.** Agreed before Track 1 and written here on
 2026-08-12, after it was broken:
@@ -304,7 +307,7 @@ has actually bought so far.
       At the end a closing verb can no longer assert the current shape about a record that does not have
       it. Acceptance: closing a record written against a previous version routes correctly and says which
       format it used; closing a current one mentions no version at all.
-      Task: `project/tasks/006-verbs-dispatch-on-the-version.md`
+      Task: `git show ca20c345ca3396092db0bf9938a5994d118ccee8:project/tasks/006-verbs-dispatch-on-the-version.md`
 
 - [x] **Track 7 — The cited policy says which policy.** The files under `plugin/references/` are cited by
       name as the authority by more than one skill, and they change. Each declares a version — in
@@ -312,7 +315,7 @@ has actually bought so far.
       pointing at one — and a closure records which version of the policy it applied. At the end it is
       answerable which closures ran under which routing rule. Acceptance: every reference declares a
       version; a closure's record names the one it applied.
-      Task: `project/tasks/007-the-cited-policy-says-which-policy.md`
+      Task: `git show ca20c345ca3396092db0bf9938a5994d118ccee8:project/tasks/007-the-cited-policy-says-which-policy.md`
 
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check. The plan file
       itself is kept. Stays unchecked until the plan is actually closed; a track list that is otherwise
