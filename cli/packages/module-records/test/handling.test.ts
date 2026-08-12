@@ -1,4 +1,4 @@
-// `--handling` is what a skill asks before it asserts a record's shape. The case that produced it is the
+// `handling` is what a skill asks before it asserts a record's shape. The case that produced it is the
 // first test: a plan at `plan@0.1` must come back naming the notes that describe that shape, because
 // `/vibe-ops:close-plan` once asserted the current shape at a plan holding sixteen entries in a section
 // it had just said did not exist.
@@ -40,7 +40,8 @@ async function run(repo: string, args: readonly string[]) {
   const lines: string[] = [];
   const result = await records.run({
     repoRoot: repo,
-    flags: { handling: true },
+    flags: {},
+    command: "handling",
     args: [...args],
     config: {},
     settings: undefined,
@@ -112,7 +113,7 @@ test("several records are answered in one call, each on its own terms", async ()
   assert.equal(data?.[1]?.dispatch?.kind, "behind");
 });
 
-test("--handling with no path is an error, not an empty success", async () => {
+test("handling with no path is an error, not an empty success", async () => {
   const repo = await fixture();
   const { result } = await run(repo, []);
 

@@ -4,6 +4,16 @@
 // answers for all four types. `plan`/`task`/`log` also resolve through this same library directly —
 // this module exists for the two types that have no noun of their own, not as a detour for the three
 // that do.
+//
+// VERBS, NOT FLAGS, and it was the other way round for a day. `census` and `handling` shipped as booleans
+// on the grounds that declaring `commands` makes the verb mandatory and would break `vibe-ops records
+// --type adr`. The break was four lines in four SKILL.md files in this repository, which is a rename
+// rather than a break — and the flags were three booleans of which exactly one may be true, an exclusivity
+// that lived in the ORDER the `if`s were written rather than in any type: `--census --handling` together
+// resolved silently to census. That is a union encoded as booleans, in the same package whose dispatch
+// uses a discriminated union for exactly this reason. As verbs it cannot be constructed, `log`/`plan`/
+// `task` already name their own resolver `resolve`, and the MCP schema becomes an enum with a summary per
+// verb instead of three flags that read as independent.
 
 import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
 import { formatResolved, resolveRecord, RecordsConfigError } from "@entelekheia/vibe-ops-records";
@@ -13,33 +23,40 @@ import { formatHandling, handlingFor } from "./handling.ts";
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
 
+/** Declared once: every verb here can render structured output instead of lines. */
+const JSON_FLAG = {
+  name: "json",
+  type: "boolean",
+  description: "print the structured object instead of KEY=value lines",
+} as const;
+
 export default defineModule(
   {
     id: "records",
     version: "0.0.1",
-    summary:
-      "Resolve a governance record type's layout — directory, template, next number — or, with --census, list every record and the template version it declares",
-    flags: [
-      { name: "type", type: "string", description: "adr | rfc | plan | task" },
+    summary: "The record types with no noun of their own: resolve a layout, census the repository, or ask which handling a record needs",
+    commands: [
+      {
+        name: "resolve",
+        summary: "directory, template and next number for one record type",
+        flags: [{ name: "type", type: "string", description: "adr | rfc | plan | task" }, JSON_FLAG],
+      },
       {
         name: "census",
-        type: "boolean",
-        description: "list every record in this repository with the template version it declares",
+        summary: "every record in this repository with the template version it declares",
+        flags: [JSON_FLAG],
       },
       {
         name: "handling",
-        type: "boolean",
-        description: "for the given record paths, the version each declares and the document that describes it",
+        summary: "for the given record paths, the version each declares and the documents describing that shape",
+        flags: [JSON_FLAG],
       },
-      { name: "json", type: "boolean", description: "print the structured object instead of KEY=value lines" },
     ],
   },
   async (context) => {
-    // A flag rather than a verb: this module deliberately declares no `commands`, so `vibe-ops records
-    // --type <t>` stays its whole surface and adding one here would turn every existing call into an
-    // error. Census answers before `--type` is looked at — it spans every type at once, so requiring one
-    // would be asking which type the whole-repository question is about.
-    if (context.flags.census === true) {
+    // No `--type` here, and that is the point of it being its own verb: the census spans every type at
+    // once, so requiring one would be asking which type the whole-repository question is about.
+    if (context.command === "census") {
       let entries;
       try {
         entries = census(context.repoRoot, context.config, createDocumentStore(context.repoRoot));
@@ -51,11 +68,11 @@ export default defineModule(
       return { code: 0, data: entries };
     }
 
-    // Also before `--type`, and for the same reason: the type is resolved from where each file lives,
+    // Also no `--type`, for the same class of reason: the type is resolved from where each file lives,
     // so asking for one would be asking the caller to assert what this verb exists to answer.
-    if (context.flags.handling === true) {
+    if (context.command === "handling") {
       if (context.args.length === 0) {
-        return { code: 2, summary: "records --handling needs at least one record path" };
+        return { code: 2, summary: "records handling needs at least one record path" };
       }
       const documents = createDocumentStore(context.repoRoot);
       const pluginDir = resolvePluginDir(context.repoRoot);
@@ -74,23 +91,24 @@ export default defineModule(
       return { code: 0, data: answers };
     }
 
-    const type = context.flags.type;
-    if (typeof type !== "string" || !TYPES.includes(type as RecordType)) {
-      return { code: 2, summary: `--type must be one of ${TYPES.join(", ")}, got ${String(type)}` };
-    }
+    if (context.command === "resolve") {
+      const type = context.flags.type;
+      if (typeof type !== "string" || !TYPES.includes(type as RecordType)) {
+        return { code: 2, summary: `--type must be one of ${TYPES.join(", ")}, got ${String(type)}` };
+      }
 
-    let resolved;
-    try {
-      resolved = resolveRecord(type as RecordType, context.repoRoot, context.config, createDocumentStore(context.repoRoot));
-    } catch (error) {
-      if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
-      throw error;
-    }
+      let resolved;
+      try {
+        resolved = resolveRecord(type as RecordType, context.repoRoot, context.config, createDocumentStore(context.repoRoot));
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
 
-    if (context.flags.json === true) {
+      if (context.flags.json !== true) for (const line of formatResolved(resolved)) context.log(line);
       return { code: 0, data: resolved };
     }
-    for (const line of formatResolved(resolved)) context.log(line);
-    return { code: 0, data: resolved };
+
+    return { code: 2, summary: `records ${String(context.command)} is not implemented yet` };
   },
 );

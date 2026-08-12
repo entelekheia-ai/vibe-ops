@@ -142,7 +142,7 @@ test("close proceeds on a dossier behind the template, logging exactly one line 
   assert.equal(
     lines[0],
     "project/tasks/001-behind.md: written against task@0.1, current is 3 — that shape is described by " +
-      "task-0.1-to-0.2.md, task-0.2-to-3.md (vibe-ops records --handling project/tasks/001-behind.md)",
+      "task-0.1-to-0.2.md, task-0.2-to-3.md (vibe-ops records handling project/tasks/001-behind.md)",
   );
   assert.equal(lines[1], "== referrers (collected before any deletion)");
   // The alert has to survive the surface that suppresses lines, or `--json` closes a 0.1 dossier silently.

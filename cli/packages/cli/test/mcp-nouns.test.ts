@@ -180,7 +180,10 @@ test("Track 2 over MCP: <noun> resolve answers with the resolved record", async 
     assert.equal(result.exitCode, 0, `${noun} resolve: ${result.text}`);
     assert.equal((result.data as { type: string }).type, noun === "log" ? "log" : noun);
   }
-  const records = await call(c, "records", { repo, type: "adr" });
+  // `records` is a noun with verbs like the other three — it was the one module whose surface was a bare
+  // call plus flags, which made `census` and `handling` reachable over MCP as booleans that read as
+  // independent while exactly one may be true.
+  const records = await call(c, "records", { repo, command: "resolve", type: "adr" });
   assert.equal(records.exitCode, 0, records.text);
 });
 

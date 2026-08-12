@@ -206,7 +206,7 @@ export function describe(dispatch: Dispatch, file: string): string | undefined {
       const documents = notes.map((note) => path.basename(note.file)).join(", ");
       return (
         `${file}: written against ${declared.type}@${declared.version}, current is ${current.version} — ` +
-        `that shape is described by ${documents} (vibe-ops records --handling ${file})`
+        `that shape is described by ${documents} (vibe-ops records handling ${file})`
       );
     }
     case "unhandled": {

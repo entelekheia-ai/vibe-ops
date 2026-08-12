@@ -46,7 +46,7 @@ anything.
 ## Step 1 — Detect
 
 ```sh
-cd <target> && vibe-ops records --census
+cd <target> && vibe-ops records census
 ```
 
 One line per artifact — path, the `<type>@<version>` it declares, or `(unknown)` — grouped by type, with a

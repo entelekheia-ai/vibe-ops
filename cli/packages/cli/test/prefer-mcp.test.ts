@@ -53,7 +53,7 @@ test("a module with no verb is answered too", async () => {
 
 test("it reads through a compound command, which is the ordinary shape", async () => {
   const text = context(await repo(), "cd /somewhere && vibe-ops governance --verbose");
-  assert.match(text, /`vibe-ops governance` → the `governance` MCP tool/);
+  assert.match(text, /`vibe-ops governance --verbose` → the `governance` MCP tool/);
 });
 
 test("a destructive verb is never nudged — MCP's confirm is weaker consent than the skill's preview", async () => {
@@ -83,4 +83,37 @@ test("a malformed payload is silent and exits 0, never a hook failure", async ()
   const result = spawnSync("node", [BIN, "hook", "prefer-mcp"], { input: "not json", encoding: "utf8" });
   assert.equal(result.status, 0);
   assert.equal((result.stdout ?? "").trim(), "");
+});
+
+// A verb reached by FLAGS was the case that made the nudge wrong rather than incomplete: `records
+// --handling x.md` has no verb token, so it was answered with `{}` — a different call that succeeds.
+// `records` is a noun with verbs now, and the note carries the whole invocation either way.
+
+test("positionals reach the suggestion — a batch verb answered without them is a different call", async () => {
+  const text = context(await repo(), "vibe-ops records handling a.md b.md");
+  assert.match(text, /command: "handling", args: \["a\.md", "b\.md"\]/);
+});
+
+test("a valued flag consumes its value and a boolean one does not — arity comes from the definition", async () => {
+  assert.match(context(await repo(), "vibe-ops records resolve --type adr"), /command: "resolve", type: "adr"/);
+  assert.match(context(await repo(), "vibe-ops governance --verbose"), /\{ verbose: true \}/);
+});
+
+test("a flag needing quotes as an object key gets them", async () => {
+  // `self-test` is not an identifier, and a suggestion that does not parse is worse than none.
+  assert.match(context(await repo(), "vibe-ops check --self-test"), /"self-test": true/);
+});
+
+/** Only the suggested CALL. The line also echoes what was typed, so asserting over the whole note would
+ *  be asserting about the echo — which is deliberate, and is not what these two are about. */
+function call(text: string): string {
+  return text.split("\n").filter((line) => line.includes("→")).join("\n").replace(/^.*MCP tool with /, "");
+}
+
+test("an unknown flag is dropped rather than invented into a field the tool would reject", async () => {
+  assert.doesNotMatch(call(context(await repo(), "vibe-ops records census --not-a-real-flag")), /not-a-real-flag/);
+});
+
+test("the walk stops at a shell break, so the next command's words are not swallowed as args", async () => {
+  assert.equal(call(context(await repo(), "vibe-ops records census && rm -rf /tmp/x")), '{ command: "census" }');
 });

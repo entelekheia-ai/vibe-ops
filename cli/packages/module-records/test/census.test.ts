@@ -28,11 +28,12 @@ async function fixture(): Promise<string> {
   return repo;
 }
 
-async function run(repo: string, flags: Record<string, string | boolean>) {
+async function run(repo: string, command: string, flags: Record<string, string | boolean> = {}) {
   const lines: string[] = [];
   const result = await records.run({
     repoRoot: repo,
     flags,
+    command,
     args: [],
     config: {},
     settings: undefined,
@@ -43,8 +44,8 @@ async function run(repo: string, flags: Record<string, string | boolean>) {
   return { result, lines };
 }
 
-test("--census walks all five record surfaces, including project/log/ and plans/shipped/", async () => {
-  const { result } = await run(await fixture(), { census: true, json: true });
+test("census walks all five record surfaces, including project/log/ and plans/shipped/", async () => {
+  const { result } = await run(await fixture(), "census", { json: true });
   assert.equal(result.code, 0);
   const entries = result.data as readonly CensusEntry[];
   assert.deepEqual(
@@ -62,7 +63,7 @@ test("--census walks all five record surfaces, including project/log/ and plans/
 });
 
 test("both declaration forms are read, and which form carried it is reported", async () => {
-  const { result } = await run(await fixture(), { census: true, json: true });
+  const { result } = await run(await fixture(), "census", { json: true });
   const entries = result.data as readonly CensusEntry[];
   const comment = entries.find((entry) => entry.file === "project/plans/004-old.md");
   const frontmatter = entries.find((entry) => entry.file === "project/plans/shipped/001-done.md");
@@ -72,7 +73,7 @@ test("both declaration forms are read, and which form carried it is reported", a
 });
 
 test("a record declaring nothing is unknown — never resolved to the oldest known version", async () => {
-  const { result, lines } = await run(await fixture(), { census: true });
+  const { result, lines } = await run(await fixture(), "census");
   const entries = result.data as readonly CensusEntry[];
   const bare = entries.find((entry) => entry.file === "project/plans/009-bare.md");
   assert.equal(bare?.declared, undefined);
@@ -81,7 +82,7 @@ test("a record declaring nothing is unknown — never resolved to the oldest kno
 });
 
 test("a README mentioning the token in prose is not counted as a record", async () => {
-  const { result } = await run(await fixture(), { census: true, json: true });
+  const { result } = await run(await fixture(), "census", { json: true });
   const entries = result.data as readonly CensusEntry[];
   assert.equal(entries.filter((entry) => entry.file.endsWith("README.md")).length, 0);
 });
@@ -101,23 +102,23 @@ test("the tail counts the population by declaration, with unknown printed even a
 
 test("the census output is byte-identical run to run", async () => {
   const repo = await fixture();
-  const first = await run(repo, { census: true });
-  const second = await run(repo, { census: true });
+  const first = await run(repo, "census");
+  const second = await run(repo, "census");
   assert.deepEqual(first.lines, second.lines);
 });
 
-test("--census does not require --type, and --type still works without --census", async () => {
+test("census does not require --type, and --type still works without census", async () => {
   const repo = await fixture();
-  const censused = await run(repo, { census: true, json: true });
+  const censused = await run(repo, "census", { json: true });
   assert.equal(censused.result.code, 0);
-  const resolved = await run(repo, { type: "adr" });
+  const resolved = await run(repo, "resolve", { type: "adr" });
   assert.equal(resolved.result.code, 0);
   assert.equal((resolved.result.data as { type: string }).type, "adr");
 });
 
 test("a repository with no record directories reports zero rather than failing", async () => {
   const repo = await mkdtemp(path.join(tmpdir(), "vibeops-census-empty-"));
-  const { result, lines } = await run(repo, { census: true });
+  const { result, lines } = await run(repo, "census");
   assert.equal(result.code, 0);
   assert.deepEqual(result.data, []);
   assert.match(lines.join("\n"), /no record directories/);

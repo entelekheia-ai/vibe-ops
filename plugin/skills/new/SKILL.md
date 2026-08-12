@@ -28,7 +28,7 @@ mode. An existing record is advanced through its own lifecycle, never re-scaffol
 ## Step 0 — Resolve the repo, in one call
 
 ```bash
-vibe-ops records --type <adr|rfc|plan|task>
+vibe-ops records resolve --type <adr|rfc|plan|task>
 ```
 
 It prints where records of that type live, which template governs them, which file is the numbering

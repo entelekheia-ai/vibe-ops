@@ -72,7 +72,7 @@ test("an older record with a contiguous chain of notes is handled, and the line 
   // The documents, not the arrows: naming `0.1→0.2` said the record was old and left the reader to work
   // out what that meant about it. Naming the notes is the routing the dispatch exists to perform.
   assert.match(line ?? "", /plan-0\.1-to-0\.2\.md, plan-0\.2-to-3\.md/);
-  assert.match(line ?? "", /records --handling project\/plans\/009-x\.md/);
+  assert.match(line ?? "", /records handling project\/plans\/009-x\.md/);
 });
 
 test("an older record whose chain breaks stops, naming the jump nobody wrote down", async () => {

@@ -227,7 +227,7 @@ test("close proceeds on a plan behind the template, logging exactly one line bef
   assert.equal(
     lines[0],
     "project/plans/009-behind.md: written against plan@0.1, current is 3 — that shape is described by " +
-      "plan-0.1-to-0.2.md, plan-0.2-to-3.md (vibe-ops records --handling project/plans/009-behind.md)",
+      "plan-0.1-to-0.2.md, plan-0.2-to-3.md (vibe-ops records handling project/plans/009-behind.md)",
   );
   assert.ok(lines.length > 1 && lines.slice(1).every((line) => !line.includes("written against")));
   // The alert has to survive the surface that suppresses lines, or `--json` closes a 0.1 plan silently.

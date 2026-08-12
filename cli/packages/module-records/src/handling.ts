@@ -1,4 +1,4 @@
-// `vibe-ops records --handling <file>` — for ONE record: which template version it declares, and which
+// `vibe-ops records handling <file>` — for ONE record: which template version it declares, and which
 // document describes the difference between that version and the current one.
 //
 // WHY THIS EXISTS AT ALL. A skill's body is instructions the agent follows, and until now those bodies

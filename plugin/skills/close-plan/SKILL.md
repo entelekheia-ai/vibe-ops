@@ -93,7 +93,7 @@ task closure.
 description instead:**
 
 ```sh
-vibe-ops records --handling <plan>
+vibe-ops records handling <plan>
 ```
 
 It names the version the plan declares and, when that is not the current one, the documents describing

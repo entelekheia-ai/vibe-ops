@@ -14,6 +14,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.9.0] — 2026-08-12
+
 Six pieces of work. One changes a hook's behaviour in every repository this plugin is installed in; one
 closes a leak the record-writing skills had no rule against; the third is design groundwork that reaches
 a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAUDE.md` pairing on write. The
@@ -32,8 +36,10 @@ it, which is what turns a stamp into routing.
   any mutation. A record on an older version is closed with one line naming the documents that describe
   its shape; an undeclared, newer or mismatched one stops with the reason. **A current record produces no
   mention of a version anywhere** — the common path acquires no version vocabulary.
-- **`vibe-ops records --census`** reports every record and the version it declares; **`--handling <file>`**
-  answers, for one record, which version it is and which documents describe that shape.
+- **`records` becomes a noun with verbs**, like `plan`/`task`/`log`: `records resolve --type <t>` replaces
+  the bare `records --type <t>`, and two verbs are new. **`records census`** reports every record and the
+  version it declares; **`records handling <paths…>`** answers, per record, which version it is and which
+  documents describe that shape.
 - **Every gate, shell fragment, ops and module declares a version**, and it travels into the emitted
   observation's instrument field, so two readings under one id can be told apart when the detector
   between them changed. `defineGate` and the shell runner both refuse a definition without one.
@@ -52,6 +58,13 @@ it, which is what turns a stamp into routing.
 - **`fragment-parity` reported agreement when the runner did not exist** — a missing path returns no
   output, which read as "the fragment flagged nothing". It now skips, naming why, and records which two
   versions it compared even on a clean run.
+- **`vibe-ops plan close` never ticked the plan's own closure box**, so every plan this repository has
+  shipped reported itself as terminal-with-an-unchecked-track forever. `task close` had the equivalent
+  from the start.
+- **The `prefer-mcp` hook suggested a call that was wrong, not merely incomplete.** It reported module and
+  verb only, so a verb reached through flags — the two new `records` ones — was answered as an empty call
+  that runs something else and succeeds. The suggestion now carries the whole invocation: flags with their
+  arity resolved from the module's own definition, and positionals as `args`.
 
 ### Changed — the governance lifecycle is three CLI nouns (Plan-011)
 
@@ -64,7 +77,8 @@ it, which is what turns a stamp into routing.
   plan is the record someone reads in a year.
 - **`vibe-ops` gains three governance nouns with verbs**, reachable identically from a terminal, over MCP
   and from a hook: `plan resolve|status|context|file|close`, `task resolve|close|guard`,
-  `log resolve|index|sweep|lint`, plus `records --type` for the two record types with no noun of their own.
+  `log resolve|index|sweep|lint`, plus `records resolve|census|handling` for the two record types with no
+  noun of their own.
   `plan status` is new detection — it reads a plan's `Status` against its own track checkboxes, which no
   guard did before.
 - **`log index` generates `project/log/README.md` from the entries themselves**, and `new-log`'s Step 5
@@ -77,10 +91,6 @@ it, which is what turns a stamp into routing.
 - **Record structure is read from a parse tree, not from lines.** A checkbox quoted in a fenced example is
   not a track; a closure marker quoted in a transcript does not block a deletion; a link written inside a
   code span is not rewritten when a dossier closes. Each of those was measured, not assumed.
-
-> **Nothing here is scheduled for a release.** The version is frozen deliberately while the plugin is
-> installed from a directory source and exercised in place, so this section keeps growing and no
-> `plugin.json` bump follows it. See the release policy in [`AGENTS.md`](AGENTS.md).
 
 ### Fixed
 
@@ -125,6 +135,7 @@ it, which is what turns a stamp into routing.
   and possibly public — governance record, in exactly the case the row exists for. It is now stripped as
   the file is written, and the model is told it was, so it does not put it back. The placeholder form the
   template ships is dropped too.
+
 - **[`scripts/checks/15-manifest-sync.sh`](cli/packages/module-check/sh/checks/15-manifest-sync.sh)** compares `plugin.json`
   against the newest **released** changelog heading, skipping `[Unreleased]`. Comparing against
   `[Unreleased]` made the check fail on every run of a repository accumulating changes between releases —

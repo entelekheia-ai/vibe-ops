@@ -43,22 +43,75 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+/** Where one invocation ends inside a compound command. `cd x && vibe-ops plan status` is the ordinary shape. */
+const SHELL_BREAK = new Set(["&&", "||", ";", "|", "&", ">", ">>", "<", "2>", "2>&1"]);
+
+function isVibeOps(token: string): boolean {
+  return token === "vibe-ops" || token.endsWith("/vibe-ops");
+}
+
 /**
- * Every `vibe-ops <word> [<word>]` in a command line, including inside a compound — `cd x && vibe-ops
- * plan status` is the ordinary shape, not an unusual one. Returns the module and, when the next token is
- * not a flag, the verb.
+ * Every `vibe-ops <module> [verb] [flags] [positionals]` in a command line.
+ *
+ * THE WHOLE INVOCATION, not just the head. Reporting only module and verb produced advice that was
+ * wrong rather than merely incomplete: `vibe-ops records --handling x.md` has no verb token — the third
+ * token is a flag — so it was answered with "the `records` tool with `{}`", which runs a different verb
+ * and reports success. A nudge that renames the call has to carry what the call said.
  */
-function invocations(command: string): readonly { module: string; verb?: string }[] {
+function invocations(command: string): readonly { module: string; verb?: string; rest: readonly string[] }[] {
   const tokens = command.split(/\s+/).filter((token) => token !== "");
-  const found: { module: string; verb?: string }[] = [];
+  const found: { module: string; verb?: string; rest: string[] }[] = [];
   for (const [index, token] of tokens.entries()) {
-    if (token !== "vibe-ops" && !token.endsWith("/vibe-ops")) continue;
+    if (!isVibeOps(token)) continue;
     const module = tokens[index + 1];
     if (module === undefined || module.startsWith("-") || NOT_A_MODULE.has(module)) continue;
+
     const next = tokens[index + 2];
-    found.push({ module, verb: next === undefined || next.startsWith("-") ? undefined : next });
+    const verb = next === undefined || next.startsWith("-") ? undefined : next;
+
+    const rest: string[] = [];
+    for (let at = index + (verb === undefined ? 2 : 3); at < tokens.length; at++) {
+      const word = tokens[at]!;
+      if (SHELL_BREAK.has(word) || isVibeOps(word)) break;
+      rest.push(word);
+    }
+    found.push({ module, verb, rest });
   }
   return found;
+}
+
+/** A JS object literal key, quoted only when it has to be — `dry-run` is not an identifier. */
+function key(name: string): string {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : `"${name}"`;
+}
+
+/**
+ * The rest of the invocation as tool-call fields, resolving each flag's arity from the definition rather
+ * than guessing: `--type adr` consumes its value, `--dry-run` does not, and whatever is left is `args`.
+ * An unknown flag is skipped — the module would reject it anyway, and inventing a field for it would put
+ * a key in the suggestion that the tool does not accept.
+ */
+function fieldsFor(rest: readonly string[], flagTypes: ReadonlyMap<string, string>): string[] {
+  const fields: string[] = [];
+  const args: string[] = [];
+  for (let at = 0; at < rest.length; at++) {
+    const word = rest[at]!;
+    if (!word.startsWith("--")) {
+      args.push(word);
+      continue;
+    }
+    const [name, inline] = word.slice(2).split("=", 2);
+    const type = flagTypes.get(name ?? "");
+    if (type === undefined) continue;
+    if (type === "boolean") {
+      fields.push(`${key(name!)}: true`);
+      continue;
+    }
+    const value = inline ?? rest[++at];
+    if (value !== undefined) fields.push(`${key(name!)}: "${value}"`);
+  }
+  if (args.length > 0) fields.push(`args: [${args.map((a) => `"${a}"`).join(", ")}]`);
+  return fields;
 }
 
 export async function runPreferMcpHook(): Promise<number> {
@@ -84,7 +137,7 @@ export async function runPreferMcpHook(): Promise<number> {
   const exposed = exposedModules(config.modules);
 
   const notes: string[] = [];
-  for (const { module, verb } of candidates) {
+  for (const { module, verb, rest } of candidates) {
     if (!exposed.includes(module)) continue;
 
     let definition;
@@ -98,8 +151,19 @@ export async function runPreferMcpHook(): Promise<number> {
     const commandDef = definition.commands?.find((c) => c.name === verb);
     if ((commandDef?.destructive ?? definition.destructive) === true) continue;
 
-    const call = verb === undefined ? `{}` : `{ command: "${verb}" }`;
-    notes.push(`  \`vibe-ops ${module}${verb === undefined ? "" : ` ${verb}`}\` → the \`${module}\` MCP tool with ${call}`);
+    // The same union `shapeFor` builds for the tool schema, so a flag valid for another verb still
+    // resolves its arity here — the module rejects it either way, and the alternative is guessing whether
+    // the next token is a value or a positional.
+    const flagTypes = new Map(
+      [...(definition.flags ?? []), ...(definition.commands ?? []).flatMap((c) => c.flags ?? [])].map(
+        (flag) => [flag.name, flag.type] as const,
+      ),
+    );
+
+    const fields = [...(verb === undefined ? [] : [`command: "${verb}"`]), ...fieldsFor(rest, flagTypes)];
+    const call = fields.length === 0 ? "{}" : `{ ${fields.join(", ")} }`;
+    const typed = `vibe-ops ${module}${verb === undefined ? "" : ` ${verb}`}${rest.length === 0 ? "" : ` ${rest.join(" ")}`}`;
+    notes.push(`  \`${typed}\` → the \`${module}\` MCP tool with ${call}`);
   }
 
   if (notes.length === 0) return 0;

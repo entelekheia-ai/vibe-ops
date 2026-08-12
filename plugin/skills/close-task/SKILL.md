@@ -81,7 +81,7 @@ is a legitimate outcome, a skipped one is not.
 own description instead:**
 
 ```sh
-vibe-ops records --handling <dossier>...
+vibe-ops records handling <dossier>...
 ```
 
 It names the version each record declares and, when that is not the current one, the documents describing
