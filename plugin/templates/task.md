@@ -64,7 +64,14 @@ vibe-ops-template: task@3
      belongs. Record EVERY stopping point, splitting a partially finished item into what is done and what
      remains rather than leaving it ambiguous. This must always reflect the actual current state.
 
-     A plan's track list has one box for this whole dossier; the detail lives here and dies here. -->
+     A plan's track list has one box for this whole dossier; the detail lives here and dies here.
+
+     MARK A STEP DELEGABLE ONLY WITH ITS CONTRACT BESIDE IT — what the subagent may touch, what it must
+     not, and what it returns. A step whose contract does not fit in a paragraph is not delegable, and
+     saying so here is worth as much as saying which are: an unmarked step reads as "nobody decided",
+     which is how a judgement gets handed out under time pressure. The split itself is agreed once, with
+     the plan, and recorded in its Decision Log — not renegotiated per track and not left in a chat
+     message, which is summarised away while the plan file is not. -->
 
 - [ ] P0 — …
 - [ ] P0 — … (done: X; remaining: Y)

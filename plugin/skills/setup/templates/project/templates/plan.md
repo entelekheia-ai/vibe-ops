@@ -102,7 +102,15 @@ vibe-ops-template: plan@3
 <!-- Every decision made while working the plan, including the ones that seemed small — and ONLY
      decisions. A decision changes the design; anything that merely records what happened while doing
      the work goes to the task dossier instead. If a decision is hard to reverse, also write an ADR and
-     link it here. -->
+     link it here.
+
+     HOW THE WORK WILL BE CARRIED OUT IS A DECISION AND BELONGS HERE. Above all, what will be handed to
+     a subagent and what will not: delegating discovery or a mechanical edit under a closed contract is
+     cheap, and delegating a judgement that has to agree with this plan's intent produces something
+     plausible that drifts. Write the split down when it is agreed — a rule the agent proposed and you
+     only assented to lives in the conversation, and a conversation is summarised and dropped while this
+     file is not. That asymmetry is why an agreement left in chat is broken a session later by the same
+     agent that proposed it. -->
 
 - Decision: …
   Rationale: …

@@ -190,6 +190,30 @@ shape still produces the wrong reading of the file.
   both `` `[name](../tasks/001-x.md)` `` (a syntax example, correct forever) and
   `` `git show <sha>:…` `` (the repaired form, which would otherwise make the fix look like the defect).
 
+- Observation: the two defects this track left behind were both in the one piece of work that had been
+  agreed as not delegable, and the agreement had been lost to a compaction rather than overruled.
+  Evidence: before Track 1 the split was written in a chat message — subagents for discovery and for
+  mechanical edits under a closed contract, never for the version dispatch or the shape of a record. After
+  the compaction the dispatch was handed to a subagent anyway, and its output shipped a line that named
+  the version jumps without naming any document to read, plus an alert suppressed under `--json` instead
+  of carried in `data`. Neither survived a second reading. The mechanism is worth more than the two fixes:
+  **a compaction carries the operator's messages forward and drops the agent's**, so a rule the agent
+  proposed and the operator merely assented to evaporates, while everything written into the plan
+  survives. Repaired 2026-08-12: the split is now in the plan's recovery section, the plan template says a
+  process decision belongs in the `Decision Log`, and `/vibe-ops:new` asks for the split before writing a
+  plan.
+
+- Observation: a work item was ticked against a criterion whose words the delivery did not meet, and it
+  went unnoticed because the reviewer and the author were the same reader working from memory.
+  Evidence: three instances in one pass. Track 4's box was checked with *"every gate **and every
+  fragment** declares a version"* while zero of seventeen fragments declared anything; this dossier's
+  *"confirm no ordinary verb gained a version flag"* was checked in the same commit that added two flags
+  to `records`; and the plan's own flowchart said *run that handling* while the code ran one handling for
+  every version. The two flags survive review — `--census` and `--handling` are verbs whose *subject* is
+  versions, which the transparency constraint permits explicitly — but the reasoning existed nowhere until
+  now, which is the same defect as being wrong: a later reader cannot tell a considered answer from an
+  unexamined one.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually

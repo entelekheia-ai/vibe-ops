@@ -132,10 +132,18 @@ flowchart TD
     B -- yes --> D{Same as current?}
     D -- yes --> E[Run the current handling.<br/>Say nothing about versions at all.]
     D -- older --> F{Handling for that version exists?}
-    F -- yes --> G[Run that handling, and note<br/>the format in one line of the report.]
+    F -- yes --> G[Act, and name the documents that<br/>describe that shape, in one line.]
     F -- no --> H[Stop. Name the jump and the<br/>migration note that is missing.]
     D -- newer --> H
 ```
+
+**Where "that handling" actually lives, and it is not in the CLI.** Box G said *run that handling* until
+2026-08-12, which described code that does not exist and was never going to: `plan close` and `task close`
+are mechanical — the closure box, the move, the link rewrite — and that mechanism does not vary by the
+record's shape. What varies is the **ritual**, which is prose in a `SKILL.md`. So the CLI has exactly one
+handling, and its whole job at box G is to act and to *name the documents* describing the shape it was
+handed; the skill is what reads them and behaves differently. A CLI branching per version would be a
+second place where each version's shape is written down, which is the duplication this plan removes.
 
 The `no` branch is the one that carries the plan's weight. Treating an absent declaration as the oldest
 known version is a claim about the file's shape that nobody verified, and it is wrong in both directions:
@@ -186,26 +194,46 @@ memory is the failure this plan exists to prevent.
 
 **Where the work actually is**, as of 2026-08-11:
 
-- **Tracks 1–5 landed.** Their dossiers stay open on purpose (see the Decision Log): closure is a
-  ceremony deferred to the end of the plan, so a ticked track with an open dossier is the intended state
-  here, not an oversight.
+- **Tracks 1, 2, 3 and 5 landed. Track 4 is half done and is unticked** — the ten gates declare a
+  version, the seventeen shell fragments declare nothing, and `fragment-parity` records neither version
+  it compared. Its dossier is already deleted, so the remaining work is described on the track itself.
 - **Track 6 landed**, every work item including the two P1s. The dispatch runs inside `plan close` and
   `task close` before any mutation; `vibe-ops records --census` replaced `/vibe-ops:migrate`'s regex
   (8 records reported against 32 that exist); `vibe-ops records --handling <record>` answers, for one
   record, which version it declares and which document describes that shape. The multi-version mechanism
-  is settled and recorded in the Decision Log.
+  is settled and recorded in the Decision Log. **Two defects it shipped were repaired on 2026-08-12** —
+  the line named the version jumps without naming a document to read, and the alert was suppressed under
+  `--json` rather than carried in `data`. Both were in the piece agreed as not delegable and delegated
+  anyway; see the delegation contract above.
 - **Track 7 is next**, and is independent of everything above.
-- **Two P1 items from Track 4 are still open**, and are recorded here because the dossier that held them
-  has been closed and deleted: a version declaration on each of the seventeen shell fragments under
-  `cli/packages/module-check/sh/checks/`, replacing the single hand-written instance; and
-  `fragment-parity` recording both versions it compared, without which a parity result is not evidence
-  the next time either side moves.
 - **The dossiers for Tracks 1–5 are gone**, closed on 2026-08-11, and every reference to them in this
   file now carries the runnable `git show` against
   `55e568956ea95c9e0a4a982cc3a63e49a828e31a` — the last commit that still contains them. Closure rewrote
   only the markdown **links**: the five `Task:` lines in the track list are code spans, which
   `linksToBasenames` does not match by design, so they were left naming a deleted path and were repaired
   by hand afterwards.
+
+**What may be delegated to a subagent, and what may not.** Agreed before Track 1 and written here on
+2026-08-12, after it was broken:
+
+| Delegable | Not delegable |
+|---|---|
+| Discovery — sweeping the plans, the gates, the fragments to report a shape | The version dispatch, the shape of a record, and anything where the right answer is a judgement that has to agree with this plan's intent |
+| Mechanical parallel edits under a contract that fits in a paragraph — the same edit to ten gates | The backfill of the eight `plan@0.1` files: the stamp is an assertion about each file, and a wrong one turns *nobody looked* into *someone looked and said this* |
+| Measurement that is heavy to read and light to answer | — |
+
+**The reason this is in the file rather than in a message**, and it generalises past delegation: a
+compaction carries the *operator's* messages forward and drops the agent's. A rule the agent stated and
+the operator only agreed to therefore evaporates at the first compaction, while every decision written
+into this file survives. That is not a hypothesis — it is what happened here. The rule above was written
+in a chat message, agreed to, lost in the compaction, and then broken in the very next phase: a subagent
+was given the version dispatch, and both defects that phase left behind
+([`describe`'s line naming no document](#the-dispatch-and-where-the-operator-sees-it), and the alert
+suppressed under `--json` instead of moved into `data`) are in the code it wrote.
+
+**So: anything the agent proposes about *how* the work will be carried out belongs in this file at the
+moment it is agreed, exactly like a design decision.** The Decision Log is for what is built; this section
+is for how.
 
 **Read no further than you need.** Each dossier is self-contained for its own track; reading all seven is
 how a recovery spends its context on the six tracks it is not doing.
@@ -242,12 +270,18 @@ has actually bought so far.
       nowhere.
       Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/003-the-emitted-record-reaches-eita.md`
 
-- [x] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
+- [ ] **Track 4 — The gate declares its version.** `GateDefinition` gains a required integer `version`
       that moves only on a break, and it travels into the emitted record's instrument field. The seventeen
       shell fragments gain the same declaration, replacing the one hand-written instance. Breaking for the
       ten gates in `cli/packages/gates/`. At the end two observations recorded under one id at different
       times can be told apart when the detector between them changed. Acceptance: every gate and every
       fragment declares a version; an emission carries it; `defineGate` rejects a definition without one.
+      **Half done, and unticked on 2026-08-12 after being found ticked against an unmet acceptance.** The
+      ten gates declare a version, `defineGate` rejects a definition without one and an emission carries
+      it. **Zero of the seventeen shell fragments declare anything**, and `fragment-parity` still records
+      neither version it compared — so a parity result is not evidence the next time either side moves.
+      The dossier that held this work was closed and deleted on 2026-08-11; the remainder became a prose
+      note below while this box stayed checked, which is the failure mode `/close-plan` Step 0 names.
       Task: `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/004-the-detector-says-which-detector-it-is.md`
 
 - [x] **Track 5 — Backfill the declarations.** Every governance record under `project/` except research
@@ -305,6 +339,25 @@ Run from the repository root:
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
 ## Decision Log
+
+- Decision: the CLI holds **one** handling per verb and never branches on the record's version. Box G of
+  the dispatch flowchart is discharged by naming the documents that describe the shape, and the behaviour
+  that actually differs per version lives in the skill that reads them.
+  Rationale: `plan close` and `task close` are mechanical — tick the box, move the file, rewrite the
+  links — and none of that varies with the record's shape. What varies is the ritual, which is prose. A
+  CLI branching per version would put each version's shape in a second place, which is the duplication
+  this plan exists to remove; and the branch would be untestable against the thing that actually reads
+  it. Recorded on 2026-08-12 because the flowchart said *run that handling* for a day while the code did
+  something else, and a plan describing code that does not exist is worse than one that says nothing.
+  Date / Author: 2026-08-12 / Danilo Borges
+
+- Decision: an alert a verb produces travels in `data`, not only through `context.log`.
+  Rationale: `--json` suppresses every logged line so the output can be piped, so an alert that exists
+  only as a line is an alert that does not arrive on that surface — the same defect as a refusal reaching
+  an MCP client with `summary` stripped, one surface over. `data` carries the alert only when one is
+  owed: a current record adds no key at all, so the transparency constraint holds on this channel by the
+  same `undefined` that enforces it on the other.
+  Date / Author: 2026-08-12 / Danilo Borges
 
 - Decision: a skill's body always describes the **current** version, plainly and without history; for any
   older version it routes to that version's own document via `vibe-ops records --handling <record>`, and

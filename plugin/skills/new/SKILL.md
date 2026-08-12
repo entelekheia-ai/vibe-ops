@@ -110,6 +110,18 @@ conversation's language** — that is a product guarantee of this plugin, not a 
   in [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md).
   This is the one thing in the skill that a later edit cannot repair.
 
+### For a plan: settle the delegation split before writing, and write it down
+
+A plan is where the work gets carried out, so **how** it gets carried out is agreed here, once, and lands
+in the `Decision Log` as a decision like any other: which parts may go to a subagent, and which may not.
+The usable line is that discovery and mechanical edits under a contract that fits in a paragraph are cheap
+to delegate, while a judgement that has to agree with this plan's intent is not — a subagent does not hold
+the plan and returns something plausible that drifts.
+
+**Ask, do not assume it.** Whatever is settled goes into the file in the same breath: an agreement that
+lives only in the conversation is summarised away at the first compaction, and the agent that proposed it
+then breaks it — which is a measured outcome, not a caution.
+
 ## Step 5 — Write, then do the type's follow-ups
 
 Write the file. Then whatever the type's rules require afterwards — updating a superseded record, adding
@@ -135,6 +147,8 @@ agreement before writing.**
 - [ ] Metadata complete: status, date from `date`, author; unpopulated rows deleted; no invented issue
 - [ ] Every section from the template present
 - [ ] Sections with no source material left as honest stubs, not invented
+- [ ] For a plan: the delegation split was asked about and written into the `Decision Log`, not left in
+      the conversation
 - [ ] Exposure contract applied while writing: no machine path, no repository named but this one, no
       pointer to a private companion, nothing about this repository's security posture
 - [ ] Content written in English
