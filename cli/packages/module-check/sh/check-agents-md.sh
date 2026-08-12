@@ -150,10 +150,20 @@ compose_checks() {
         echo "fragment $frag defines no $fn()" >&2
         exit 2
       fi
+      # MINE MUST DECLARE; YOURS IS REPORTED. A fragment shipped with this runner is refused without a
+      # version — it is authored here and there is no reason for it to be missing. A fragment CONTRIBUTED
+      # by the repository being checked (VIBE_OPS_CHECK_DIRS) reads `unknown` and still runs: this runner
+      # is resolved live by every repository under one checkout, so refusing would take eight commit gates
+      # red at once for a declaration none of them agreed to make, which is how a gate gets switched off
+      # within the week. Unknown is never silently a number — it is printed as `<id>@unknown` in --list and
+      # travels as such — which is the same rule the record side follows: report it, never default it.
       case "$CHECK_VERSION" in
         ''|*[!0-9]*)
-          echo "fragment $frag declares no integer CHECK_VERSION" >&2
-          exit 2
+          if [ "$dir" = "$HOME_ROOT/sh/checks" ]; then
+            echo "fragment $frag declares no integer CHECK_VERSION" >&2
+            exit 2
+          fi
+          CHECK_VERSION="unknown"
           ;;
       esac
       COMPOSED_IDS+=("$id")
