@@ -693,3 +693,7 @@ deciding it without the code in front of you.
   - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/003-the-emitted-record-reaches-eita.md`
   - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/004-the-detector-says-which-detector-it-is.md`
   - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/005-backfill-the-version-declarations.md`
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show ca20c345ca3396092db0bf9938a5994d118ccee8:project/tasks/006-verbs-dispatch-on-the-version.md`
+  - `git show ca20c345ca3396092db0bf9938a5994d118ccee8:project/tasks/007-the-cited-policy-says-which-policy.md`
