@@ -19,7 +19,7 @@ vibe-ops-template: adr@2
 | Status | Proposed |
 | Date | 2026-08-11 |
 | Deciders | Danilo Borges |
-| Related | [ADR-0011](0011-population-belongs-to-configuration-not-a-gate.md), [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-012](../plans/012-versions-travel-with-the-record.md) |
+| Related | [ADR-0011](0011-population-belongs-to-configuration-not-a-gate.md), [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-012](../plans/shipped/012-versions-travel-with-the-record.md) |
 
 ---
 
@@ -110,6 +110,6 @@ rules here and only one of them is a distance rather than a defect.
 ## References
 
 - Implemented in `cli/packages/core/src/ops.ts` (`GovernedSettings`, and the resolution at the finding
-  loop), under [Plan-012](../plans/012-versions-travel-with-the-record.md), Track 2.
+  loop), under [Plan-012](../plans/shipped/012-versions-travel-with-the-record.md), Track 2.
 - Eight tests in `cli/packages/core/test/ops.test.ts` cover the three keys, the precedence, and that an
   override never reaches an emitted observation.

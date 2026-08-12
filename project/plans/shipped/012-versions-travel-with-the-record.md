@@ -16,10 +16,10 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-11 |
 | Author | Danilo Borges |
-| Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-011](shipped/011-the-governance-lifecycle-becomes-three-cli-nouns.md) |
+| Related | [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-011](./011-the-governance-lifecycle-becomes-three-cli-nouns.md) |
 
 ---
 
@@ -502,7 +502,7 @@ Run from the repository root:
   grounds that a producer recording a verdict has done the consuming product's job for it. If that is
   true of the artifact it is true of the gate: whether a rule *blocks* is the repository's call, and it
   belongs beside `ignore` ("these files do not count") and `disabled` ("this rule does not apply here")
-  rather than inside the detector. This extends [ADR-0011](../adr/0011-population-belongs-to-configuration-not-a-gate.md)
+  rather than inside the detector. This extends [ADR-0011](../../adr/0011-population-belongs-to-configuration-not-a-gate.md)
   from population to verdict; it may deserve an ADR of its own. The concrete need: `template-version-behind`
   warns because a template bump leaves every record behind at once, which is right while a migration is
   in flight and wrong for a repository that has finished one and wants the gate to hold the line —
@@ -653,7 +653,7 @@ which is the shape of every defect this plan is about.
 **What Tracks 1–5 routed at closure**, so the plan records it once the dossiers are gone: two traps to
 `project/log/` — that moving a declaration to offset 0 disables every parser anchored there, and that a
 producer writing successfully into a registry is no evidence anything can read it. One decision to
-[ADR-0012](../adr/0012-a-findings-level-belongs-to-configuration.md), a finding's level belonging to
+[ADR-0012](../../adr/0012-a-findings-level-belongs-to-configuration.md), a finding's level belonging to
 configuration. Two prescriptions to where they execute rather than to prose: `/new-migration` now says to
 state a destination positionally, and `cli/AGENTS.md` now says a path inside a gate's free-form `options`
 needs the `<plugin>/` token and gets no help finding out. Everything else was dropped deliberately —
@@ -707,11 +707,11 @@ deciding it without the code in front of you.
 
 ## Related
 
-- [RFC-0001 — Gates and ops as the CLI's unit of composition](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md)
-- [ADR-0004 — Budgeted artifacts, and a guard instead of a line](../adr/0004-budgeted-artifacts-and-guards.md)
-- [ADR-0006 — A task is an issue plus an ephemeral dossier](../adr/0006-task-as-issue-plus-ephemeral-dossier.md)
-- [Plan-010 — The document model under the gates](shipped/010-the-document-model-under-the-gates.md)
-- [Plan-011 — The governance lifecycle becomes three CLI nouns](shipped/011-the-governance-lifecycle-becomes-three-cli-nouns.md)
+- [RFC-0001 — Gates and ops as the CLI's unit of composition](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md)
+- [ADR-0004 — Budgeted artifacts, and a guard instead of a line](../../adr/0004-budgeted-artifacts-and-guards.md)
+- [ADR-0006 — A task is an issue plus an ephemeral dossier](../../adr/0006-task-as-issue-plus-ephemeral-dossier.md)
+- [Plan-010 — The document model under the gates](./010-the-document-model-under-the-gates.md)
+- [Plan-011 — The governance lifecycle becomes three CLI nouns](./011-the-governance-lifecycle-becomes-three-cli-nouns.md)
 
 - Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
   - `git show 55e568956ea95c9e0a4a982cc3a63e49a828e31a:project/tasks/001-the-version-moves-to-the-frontmatter.md`
