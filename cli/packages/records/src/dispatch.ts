@@ -189,6 +189,10 @@ export function blocks(dispatch: Dispatch): boolean {
  * The one line an operator sees, or `undefined` when the record is current — in which case the verb says
  * nothing about versions at all. `file` is named in every line, because a batch verb reports on several
  * records and a bare version is not actionable without knowing which file carried it.
+ *
+ * A line that is produced must reach `data` as well as the log: `--json` suppresses every logged line, so
+ * an alert living only in the log does not arrive on that surface. The `undefined` above is what keeps
+ * the transparency constraint on both channels at once — no line, no key.
  */
 export function describe(dispatch: Dispatch, file: string): string | undefined {
   switch (dispatch.kind) {
@@ -196,8 +200,14 @@ export function describe(dispatch: Dispatch, file: string): string | undefined {
       return undefined;
     case "behind": {
       const { declared, current, notes } = dispatch;
-      const path = notes.map((note) => `${note.from}→${note.to}`).join(", ");
-      return `${file}: written against ${declared.type}@${declared.version}, current is ${current.version} (${path})`;
+      // THE LINE ROUTES, it does not merely warn. Naming the jumps (`0.1→0.2, 0.2→3`) told a reader the
+      // record was old and left them to find out what that meant; naming the documents is the routing
+      // the dispatch exists for, and `--handling` is the same answer for a record nobody is closing.
+      const documents = notes.map((note) => path.basename(note.file)).join(", ");
+      return (
+        `${file}: written against ${declared.type}@${declared.version}, current is ${current.version} — ` +
+        `that shape is described by ${documents} (vibe-ops records --handling ${file})`
+      );
     }
     case "unhandled": {
       const { declared, current, stuckAt } = dispatch;

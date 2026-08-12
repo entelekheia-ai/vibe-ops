@@ -174,6 +174,8 @@ test("close on a current plan says nothing about versions anywhere in its output
   assert.equal(result.code, 0);
   const output = [...lines, result.summary ?? ""].join("\n");
   assert.doesNotMatch(output, /version|plan@|template/i, "a current record is handled with no version vocabulary at all");
+  // On BOTH channels, or the constraint holds where it is easy to see and not where `--json` reads.
+  assert.equal((result.data as { version?: unknown }).version, undefined);
 });
 
 test("close refuses a plan that declares no template version, and moves nothing", async () => {
@@ -224,9 +226,12 @@ test("close proceeds on a plan behind the template, logging exactly one line bef
   assert.equal(result.code, 0);
   assert.equal(
     lines[0],
-    "project/plans/009-behind.md: written against plan@0.1, current is 3 (0.1→0.2, 0.2→3)",
+    "project/plans/009-behind.md: written against plan@0.1, current is 3 — that shape is described by " +
+      "plan-0.1-to-0.2.md, plan-0.2-to-3.md (vibe-ops records --handling project/plans/009-behind.md)",
   );
   assert.ok(lines.length > 1 && lines.slice(1).every((line) => !line.includes("written against")));
+  // The alert has to survive the surface that suppresses lines, or `--json` closes a 0.1 plan silently.
+  assert.equal((result.data as { version?: { line: string } }).version?.line, lines[0]);
 });
 
 test("resolve returns the resolved record as data, and logs KEY=value lines by default", async () => {

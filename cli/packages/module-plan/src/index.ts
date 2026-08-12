@@ -18,7 +18,7 @@ import {
   resolveRecord,
   RecordsConfigError,
 } from "@entelekheia/vibe-ops-records";
-import type { PlanStatusFinding } from "@entelekheia/vibe-ops-records";
+import type { Dispatch, PlanStatusFinding } from "@entelekheia/vibe-ops-records";
 
 /** The approved plan arrives on stdin when `--from` is absent — the shape a hook hands it over in. */
 async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
@@ -170,6 +170,11 @@ export default defineModule(
       // A path that does not exist is not a version question, and answering it as one tells the operator
       // to declare frontmatter in a file that is not there. `closePlan` already owns that message, so the
       // dispatch stands aside and lets it be thrown rather than growing a second copy of it.
+      //
+      // The alert travels in `data` as well, because `--json` suppresses every logged line and an alert
+      // that only exists as a line does not arrive there. A current plan sets nothing, so `JSON.stringify`
+      // emits no key for it and the common path stays silent about versions on this channel too.
+      let version: { readonly line: string; readonly dispatch: Dispatch } | undefined;
       if (existsSync(path.join(context.repoRoot, file))) {
         const dispatch = dispatchRecord({
           record: documents.get(file),
@@ -178,7 +183,10 @@ export default defineModule(
         });
         const line = describe(dispatch, file);
         if (blocks(dispatch)) return { code: 2, summary: line };
-        if (line !== undefined && context.flags.json !== true) context.log(line);
+        if (line !== undefined) {
+          version = { line, dispatch };
+          if (context.flags.json !== true) context.log(line);
+        }
       }
 
       let closed;
@@ -200,7 +208,7 @@ export default defineModule(
       if (context.flags.json !== true) {
         for (const line of closed.steps) context.log(line);
       }
-      return { code: 0, data: closed };
+      return { code: 0, data: { ...closed, version } };
     }
 
     return { code: 2, summary: `plan ${String(context.command)} is not implemented yet` };

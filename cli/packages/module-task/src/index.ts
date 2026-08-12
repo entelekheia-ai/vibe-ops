@@ -106,14 +106,20 @@ export default defineModule(
           current: resolved.templateVersion,
           migrationsDir: dir,
         });
-        return { file, line: describe(dispatch, file), blocked: blocks(dispatch) };
+        return { file, dispatch, line: describe(dispatch, file), blocked: blocks(dispatch) };
       });
       const blocked = dispatched.filter((entry) => entry.blocked);
       if (blocked.length > 0) {
         return { code: 2, summary: blocked.map((entry) => entry.line).join("\n") };
       }
+      // Also into `data` below: `--json` suppresses every logged line, so an alert that exists only as a
+      // line does not arrive on that surface. Only the dossiers that owe one appear, so a batch of
+      // current dossiers adds no key at all.
+      const version = dispatched
+        .filter((entry): entry is typeof entry & { line: string } => entry.line !== undefined)
+        .map((entry) => ({ file: entry.file, line: entry.line, dispatch: entry.dispatch }));
       if (context.flags.json !== true) {
-        for (const entry of dispatched) if (entry.line !== undefined) context.log(entry.line);
+        for (const entry of version) context.log(entry.line);
       }
 
       let result;
@@ -136,7 +142,7 @@ export default defineModule(
         code: result.dangling.length > 0 ? 1 : 0,
         summary:
           result.dangling.length > 0 ? `${result.dangling.length} file(s) still link to a deleted dossier` : undefined,
-        data: result,
+        data: { ...result, version: version.length > 0 ? version : undefined },
       };
     }
 

@@ -101,6 +101,8 @@ test("close on a current dossier says nothing about versions anywhere in its out
   assert.equal(result.code, 0);
   const output = [...lines, result.summary ?? ""].join("\n");
   assert.doesNotMatch(output, /version|task@|template/i, "a current record is handled with no version vocabulary at all");
+  // On BOTH channels, or the constraint holds where it is easy to see and not where `--json` reads.
+  assert.equal((result.data as { version?: unknown }).version, undefined);
 });
 
 test("close refuses a dossier that declares no template version, and mutates nothing", async () => {
@@ -137,8 +139,17 @@ test("close proceeds on a dossier behind the template, logging exactly one line 
   const lines: string[] = [];
   const result = await task.run(contextFor(repo, "close", { "dry-run": true }, lines, ["project/tasks/001-behind.md"]));
   assert.equal(result.code, 0);
-  assert.equal(lines[0], "project/tasks/001-behind.md: written against task@0.1, current is 3 (0.1→0.2, 0.2→3)");
+  assert.equal(
+    lines[0],
+    "project/tasks/001-behind.md: written against task@0.1, current is 3 — that shape is described by " +
+      "task-0.1-to-0.2.md, task-0.2-to-3.md (vibe-ops records --handling project/tasks/001-behind.md)",
+  );
   assert.equal(lines[1], "== referrers (collected before any deletion)");
+  // The alert has to survive the surface that suppresses lines, or `--json` closes a 0.1 dossier silently.
+  assert.deepEqual(
+    (result.data as { version?: readonly { file: string; line: string }[] }).version?.map((entry) => entry.file),
+    ["project/tasks/001-behind.md"],
+  );
 });
 
 test("one blocked dossier stops the whole batch, and the current one is left untouched", async () => {

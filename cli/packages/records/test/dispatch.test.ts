@@ -59,7 +59,7 @@ test("a record written against the current template is current, and describes no
   assert.equal(describe(dispatch, "project/plans/012-x.md"), undefined);
 });
 
-test("an older record with a contiguous chain of notes is handled, and names the path in one line", async () => {
+test("an older record with a contiguous chain of notes is handled, and the line routes somewhere", async () => {
   const migrationsDir = await migrations(["plan-0.1-to-0.2.md", "plan-0.2-to-3.md"]);
   const dispatch = dispatchRecord({ record: declaring("0.1"), current: CURRENT, migrationsDir });
   assert.equal(dispatch.kind, "behind");
@@ -69,7 +69,10 @@ test("an older record with a contiguous chain of notes is handled, and names the
   const line = describe(dispatch, "project/plans/009-x.md");
   assert.match(line ?? "", /009-x\.md/);
   assert.match(line ?? "", /plan@0\.1/);
-  assert.match(line ?? "", /0\.1→0\.2, 0\.2→3/);
+  // The documents, not the arrows: naming `0.1→0.2` said the record was old and left the reader to work
+  // out what that meant about it. Naming the notes is the routing the dispatch exists to perform.
+  assert.match(line ?? "", /plan-0\.1-to-0\.2\.md, plan-0\.2-to-3\.md/);
+  assert.match(line ?? "", /records --handling project\/plans\/009-x\.md/);
 });
 
 test("an older record whose chain breaks stops, naming the jump nobody wrote down", async () => {
