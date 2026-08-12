@@ -551,17 +551,69 @@ Run from the repository root:
 
 ## Outcomes & Retrospective
 
-**Tracks 1 through 5 have landed; 6 and 7 have not started.** Written here at the halfway point rather
-than at closure, because this file is the recovery surface a session with no history reads first.
+**All seven tracks landed, between 2026-08-11 and 2026-08-12.** The middle section below was written at
+the halfway point and is kept, because this file is the recovery surface a session with no history reads
+first and because a retrospective that only records the end hides how the plan actually went.
 
-Where the six goals stand. Goals 1, 2 and 5 are met for the record and gate surfaces: every template and
-every gate declares a version, an undeclared record fails the gate rather than defaulting, and an emitted
-observation carries the gate that produced it with its own version. Goal 6 is met and readable — `0
-failed, 8 warned`, the eight being the plans still at `plan@0.1`, of which only 004 (Backlog) and 008 (In
-Progress) are open. Goal 3 is **not** met: nothing dispatches on version yet, which is Track 6. Goal 4 is
-met by construction so far, and Track 6 is where it can most easily be lost.
+### The six goals, one by one
 
-Four things are worth carrying forward.
+**Goal 1 — every instrument declares a version, and it is on the record it produces.** Met. Five
+templates, ten gates, seventeen shell fragments; `ModuleDefinition` and `OpsDefinition` already required
+one. `defineGate` refuses a definition without a version and the shell runner refuses a fragment without
+one, so the declaration is not a convention anybody can forget.
+
+**Goal 2 — absent is unknown, never the oldest shape, and the unversioned population cannot grow
+silently.** Met, and enforced in three places rather than asserted once: the `template-version` gate over
+records, the dispatch in front of both closing verbs, and `references-completeness@2` over the policy
+files. Each fails rather than defaults.
+
+**Goal 3 — a verb handed an older record routes to the handling for that version and says so in one
+line.** Met, with a correction the plan needed and got: **the CLI has exactly one handling.** Closure is
+mechanical and does not vary with a record's shape; what varies is the ritual, which is prose. So the
+line names the documents describing the shape and the skill is what reads them. The plan's flowchart said
+*run that handling* for a day while the code did something else, and that gap was the plan describing
+code that was never going to exist rather than the code being wrong.
+
+**Goal 4 — version is invisible in ordinary use.** Met, and this is the one enforced by a type rather
+than by discipline: `describe()` returns `undefined` for a current record, so a caller that logs its
+return value unconditionally says nothing. Both channels are tested — the log and `data` — after the
+first implementation held the constraint on the visible one and dropped the alert entirely under `--json`.
+
+**Goal 5 — two observations under one id are distinguishable when the instrument moved.** Met. The
+emitted record carries `<gate>@<version>`; `--list` and the fragment emission carry `<id>@<version>`; and
+`fragment-parity` records the pair it compared even on a clean run, which is the run that most needs it.
+`references-completeness` moving to `@2` in this plan's own last track is the first real exercise of the
+axis.
+
+**Goal 6 — what is open and what is behind is answerable from the repository.** Met and readable:
+`vibe-ops governance` reports `0 failed, 8 warned`, the eight being plans still at `plan@0.1`, of which
+only 004 (Backlog) and 008 (In Progress) are open. `vibe-ops records --census` answers the same question
+per record; the regex it replaced saw 8 of 32.
+
+### What was cut, and stayed cut
+
+The hook output contract, the five research documents, any package version bump, and retro-migrating
+existing records to the current shape — all four as scoped, none quietly. The `dry-run`-versus-destructive
+question was raised during the work and deliberately deferred rather than folded in.
+
+### Where this plan was wrong about itself
+
+**A track was ticked against an acceptance criterion whose words the delivery did not meet.** Track 4
+claimed *"every gate and every fragment declares a version"* while zero of seventeen fragments did. It
+was found on 2026-08-12, unticked, and completed. Two related instances in the same pass: a work item
+reading *"confirm no ordinary verb gained a version flag"* was checked in the commit that added two flags
+to `records`, and the flowchart divergence above. The common cause is that the author and the reviewer
+were one reader working from memory after a compaction — which is the plan's own subject one level up: a
+plausible, stable, wrong answer.
+
+**A delegation agreement was lost to a compaction and then broken by the agent that proposed it.** The
+split — subagents for discovery and mechanical edits under a closed contract, never for the version
+dispatch — was agreed in conversation before Track 1 and never written down. After the compaction the
+dispatch was handed to a subagent, and both defects that phase left behind came from that work. The fix
+is structural and is now in the template: **a decision about how the work is carried out belongs in the
+`Decision Log`**, because a compaction carries the operator's messages forward and drops the agent's.
+
+### Four things from the middle of the work, kept
 
 **The plan's own track order was wrong twice, in the same direction both times.** Track 1's frontmatter
 move had to precede the sensor, because a sensor built against the comment position would have been
@@ -594,7 +646,15 @@ state a destination positionally, and `cli/AGENTS.md` now says a path inside a g
 needs the `<plugin>/` token and gets no help finding out. Everything else was dropped deliberately —
 mostly because a test or a type already makes the mistake impossible, which is the filter working.
 
-The demotion check found nothing to delete. The nearest candidate is the version paragraph in
+**What Tracks 6 and 7 routed at closure**: one trap to `project/log/` — that removing a section from a
+template leaves every prose description of its shape standing, found as four stale copies of "the four
+living sections" in files cited as authority, invisible to every gate because a *count* shares no token
+with the headings it counts. Two facts held beyond this repository and were promoted out of it: that
+nothing in the host can perform a skill-to-skill forward, and that a compaction carries the operator's
+messages forward while dropping the agent's. Everything else was dropped because a test or a type now
+makes the mistake impossible — which is the filter working, and it accounts for six of the ten entries.
+
+The demotion check found nothing to delete, in this pass or the earlier one. The nearest candidate is the version paragraph in
 `.agents/rules/governance.md`: the `template-version` gate now mechanically enforces its
 *absent-is-unknown* half, but the same paragraph carries where the declaration lives and the rule against
 a second copy, neither of which any guard covers. Trimming to the unguarded remainder would leave a

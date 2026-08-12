@@ -40,3 +40,10 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   ../vibe-ops/scripts/check-agents-md.sh, which moved to cli/packages/module-check/sh/ — so a repo
   scaffolded today gets a gate that refuses every commit, and the third fallback via CLAUDE_PLUGIN_ROOT can
   no longer reach the runner at all.
+
+## `plugin/templates/`
+
+- [`dropping-a-section-from-a-template.md`](dropping-a-section-from-a-template.md) — Removing two living
+  sections from the plan template left four prose descriptions of the old shape standing — the template is
+  the only copy a gate compares, so every sentence that describes it elsewhere goes stale silently and keeps
+  being read as authority.
