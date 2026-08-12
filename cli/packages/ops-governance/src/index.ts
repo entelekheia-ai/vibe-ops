@@ -83,6 +83,11 @@ export default defineOps({
       // Same population markdown-link itself examines — see the header comment on the gate for why
       // that alignment is what makes the comparison mean anything.
       paths: ["**/*.md"],
+      // RFC-0001 removes a fragment only once its port is SHOWN to agree with it, and a demonstration
+      // that is printed and not recorded is not evidence the next time either side moves. The record
+      // carries which two versions agreed, as the gate's `compared:` tag — a clean run writes one too,
+      // because "they agreed over 94 files on this date" is the whole reading.
+      emits: true,
       options: {
         runner: "cli/packages/module-check/sh/check-agents-md.sh",
         fragment: "links",

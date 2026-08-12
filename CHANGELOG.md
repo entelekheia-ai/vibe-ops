@@ -14,11 +14,44 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Five pieces of work. One changes a hook's behaviour in every repository this plugin is installed in; one
+Six pieces of work. One changes a hook's behaviour in every repository this plugin is installed in; one
 closes a leak the record-writing skills had no rule against; the third is design groundwork that reaches
 a first live consequence in the fourth — a hook that repairs `AGENTS.md`/`CLAUDE.md` pairing on write. The
 fifth moves the whole governance lifecycle out of shell and into the CLI, and is the one that changes what
-a user types.
+a user types. The sixth puts a version on everything that can change behaviour and makes the verbs act on
+it, which is what turns a stamp into routing.
+
+### Added — versions travel with the record (Plan-012)
+
+- **Every governance record declares its template version in frontmatter**, as
+  `vibe-ops-template: <type>@<integer>`, and the header table below it is presentation only. The HTML
+  comment above the H1 is the previous form and is still read, so a repository mid-migration is not
+  reported as undeclared. **An artifact declaring no version is reported as unknown and refused, never
+  resolved to the oldest known shape** — that guess is wrong in both directions.
+- **`vibe-ops plan close` and `vibe-ops task close` dispatch on the version they were handed**, before
+  any mutation. A record on an older version is closed with one line naming the documents that describe
+  its shape; an undeclared, newer or mismatched one stops with the reason. **A current record produces no
+  mention of a version anywhere** — the common path acquires no version vocabulary.
+- **`vibe-ops records --census`** reports every record and the version it declares; **`--handling <file>`**
+  answers, for one record, which version it is and which documents describe that shape.
+- **Every gate, shell fragment, ops and module declares a version**, and it travels into the emitted
+  observation's instrument field, so two readings under one id can be told apart when the detector
+  between them changed. `defineGate` and the shell runner both refuse a definition without one.
+- **Each file under `plugin/references/` declares `vibe-ops-reference: <name>@<integer>`**, and a closure
+  reports the routing policy version it applied — which closures ran under which rule is now a query.
+
+### Fixed — four surfaces that were silent (Plan-012)
+
+- **`--json` printed nothing and exited 0 on a terminal**, for every module that declares it: `data` was
+  rendered only by the MCP and hook surfaces. An empty success is the worst shape a query can have.
+- **A refused verb reached an MCP client with no reason attached.** The refusal travelled in the text
+  content, which a client discards in favour of `structuredContent`; `summary` and the logged output now
+  travel there too. This affects every module's refusal, not only the destructive-confirmation gate.
+- **A closure could report zero dangling references while leaving dead ones.** The check asked only about
+  markdown links, and a plan's track list names its dossiers in code spans.
+- **`fragment-parity` reported agreement when the runner did not exist** — a missing path returns no
+  output, which read as "the fragment flagged nothing". It now skips, naming why, and records which two
+  versions it compared even on a clean run.
 
 ### Changed — the governance lifecycle is three CLI nouns (Plan-011)
 

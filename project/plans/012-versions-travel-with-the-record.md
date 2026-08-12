@@ -347,6 +347,16 @@ Run from the repository root:
 
 ## Decision Log
 
+- Decision: `fragment-parity` **emits**. Its parity result is recorded, not only printed.
+  Rationale: found at closure while running the success criteria rather than trusting them —
+  `GateOutcome.instrument` was reaching the verbose CLI line and nowhere else, because the entry declared
+  no `emits`. That made this plan's own requirement vacuous: "records both versions it compared" has
+  nothing to attach to when nothing is recorded. RFC-0001 removes a fragment only once its port is
+  *shown* to agree, and a demonstration that is printed and discarded is not that showing. A clean run
+  writes a record too — "they agreed over ninety-three files on this date, at these two versions" is the
+  whole reading.
+  Date / Author: 2026-08-12 / Danilo Borges
+
 - Decision: a prose reference declares `vibe-ops-reference: <name>@<integer>` in **frontmatter**, where
   `<name>` is its own path under `references/`, and a closure reports only the **routing** policy it
   applied.
@@ -656,6 +666,19 @@ with the headings it counts. Two facts held beyond this repository and were prom
 nothing in the host can perform a skill-to-skill forward, and that a compaction carries the operator's
 messages forward while dropping the agent's. Everything else was dropped because a test or a type now
 makes the mistake impossible — which is the filter working, and it accounts for six of the ten entries.
+
+**Two promotions leave this repository and are not yet filed.** Both are facts about the host toolchain
+rather than about this codebase, so neither may live in a repository that travels alone: that nothing in
+the host can perform a skill-to-skill forward (a hook returns text and cannot invoke a skill; skill→skill
+invocation is non-deterministic), and that a compaction carries the operator's messages forward while
+dropping the agent's. The surface that receives them is the workspace this repository sits in, through its
+own routing ceremony; recorded here so the promotion is visible rather than assumed to have happened.
+
+**Running the success criteria rather than trusting them changed the result once.** Criterion five was
+satisfied on paper — `fragment-parity` computed the pair — and inspecting the emitted artifact showed the
+entry declared no `emits`, so nothing was recorded and the requirement had nothing to attach to. That is
+the plan's own thesis landing on the plan: a stable, plausible, wrong answer, indistinguishable from a
+correct one until someone looked at the output.
 
 The demotion check found nothing to delete, in this pass or the earlier one. The nearest candidate is the version paragraph in
 `.agents/rules/governance.md`: the `template-version` gate now mechanically enforces its
