@@ -67,6 +67,12 @@ template versions above. It runs the census read-only and returns one row per ar
 template, the unknowns kept as `(unknown)`. On `/migrate audit` that gap list is the entire run. Do it
 inline only if the agent is not in the session's listing.
 
+**Ask it for the jump chain too, and for the notes that do not exist**: per artifact, the sequence of
+versions between what it declares and the current template, and which of those jumps has no file in
+[`migrations/`](migrations/). A jump with no note stops the run (Step 2), and knowing that now costs one
+line in a report you were already reading — discovering it halfway through applying notes means stopping
+with some artifacts converted and some not.
+
 ## Step 2 — Read the migration note for each jump
 
 One file per jump, in [`migrations/`](migrations/), named `<type>-<from>-to-<to>.md`. Read **only** the
@@ -104,6 +110,12 @@ for the rule; it governs this skill and `/new-migration` and is not restated her
 vibe-ops governance --verbose   # template-heading-drift reports the population
 ```
 
+**Both readings of that gate go to the `vibe-ops:governance-auditor` agent** — the four inputs are in
+[`convergence-policy.md`](../../references/convergence-policy.md), the target state being the migration
+note's *what a description now says* section. The first reading is the population; the second is the
+completion criterion below, and it is the one that gets skipped, because by then the edits are made and
+the run feels finished. Both are read-only; the rewriting between them is not, and stays here.
+
 Then, for each finding, apply what the note's own *what a description now says* section prescribes. Two
 obligations, and they are the same ones Step 3 already carries, in the form prose needs:
 
@@ -115,6 +127,8 @@ obligations, and they are the same ones Step 3 already carries, in the form pros
 
 **This step is done when the gate is clean and a second run finds nothing to do** — not when the edits
 look complete. A partial sweep that looked complete is the failure this whole step exists to prevent.
+That second run is a **second dispatch of the agent**, not a re-read of your own edits: the reading that
+matters is the one taken by something that did not make them.
 
 ## Step 5 — Report
 

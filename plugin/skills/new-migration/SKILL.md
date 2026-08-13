@@ -102,6 +102,12 @@ Record what the walk found **in the plan or RFC that owns the change**, never in
 
 ## Step 5 — Check the pair
 
+Three mechanical questions, none of them a judgement. **Delegate the step whole to the
+`vibe-ops:governance-auditor` agent** — the four inputs are in
+[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md), the
+target state being the note you just wrote and the template it belongs to. Answer them here only if the
+agent is not in the session's listing.
+
 - Does `/migrate`'s detection actually find artifacts at the old version? An artifact with **no** stamp is
   the previous version by definition — the note must be reachable from that state, not only from an
   explicitly stamped one.

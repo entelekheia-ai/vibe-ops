@@ -164,7 +164,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       `close-plan`/`close-task`/`authoring-agents-md: high`) on the axis of what being wrong costs; these
       three were left undeclared by omission, and `migrate` carries the one safety property the skill says
       it cannot recover from. At the end, every skill and agent in `plugin/` declares one.
-- [ ] **Track 2 — Three more surveys reuse the auditor.** Extend `migrate` Step 1's delegation to return
+- [x] **Track 2 — Three more surveys reuse the auditor.** Extend `migrate` Step 1's delegation to return
       the jump chain and the missing notes; delegate `migrate` Step 4's population read and its
       second-clean-run criterion; delegate `new-migration` Step 5 whole. No new surface, no new contract —
       each is a pointer at `plugin/references/convergence-policy.md`, one line, as the three existing call
