@@ -196,7 +196,7 @@ was reached by hook, by hand, or by `pre-commit`.
       `vibe-ops --version` prints a version, and no command can return a bare empty string.
       Task: to be opened.
 
-- [ ] **Track 3 — The gate command tells the truth about itself.** Touches
+- [x] **Track 3 — The gate command tells the truth about itself.** Touches
       `cli/packages/module-check/`. Give exit 2 a diagnosis: the runner already writes
       `not a git working tree: $ROOT` to stderr at `sh/check-agents-md.sh:577`, and the Node wrapper's
       output filter at `src/index.ts:105-110` is what makes it appear only sometimes; a spawn failure
@@ -385,6 +385,25 @@ Two things the work exposed that the plan did not anticipate:
   green `cli/AGENTS.md` warns about. Running `npm run build` first turned 0 errors into 6 real ones.
   Two errors in `core`'s own tests (`config.test.ts:103`, `ops.test.ts:113`) predate this work and were
   confirmed against a clean checkout; they are still there.
+
+**Track 3 (2026-08-13).** `check` stopped ignoring its own argument, stopped exiting 2 without saying
+which of two unrelated failures happened, and stopped reporting a clean run over a population it had
+silently narrowed. `--explain <id>` reads the fragment's own prose rather than a table kept beside the
+id, so it cannot go stale against the check it describes.
+
+The argument turned out to be a contract question, not a bug. A module may not touch `process.cwd()`
+by design, so a relative `.` or `../other` is unresolvable inside one — which is *why* `check` was
+keying off the working directory and ignoring what it was handed. The fix is a new declaration,
+`repoFromFirstArg`, honoured by `runModule`: the one layer that legitimately knows the working
+directory resolves the path and consumes the argument. `check .` still means what it always meant;
+`check ../dot-agent-spec` now checks that repository instead of this one while reporting on the wrong
+tree. Two tests guard both halves, including that a module *without* the declaration keeps its
+positionals — a dossier path read as a repository would be the same defect inverted.
+
+`--fix` was refused. The seventeen checks are shell fragments with no repair capability, so the flag
+would parse, appear in `--help` and the MCP schema, and do nothing — the same reasoning that kept
+`--verbose` off the nouns in Track 2. `--audit` was added, because it has real behaviour: report
+identically, exit 0.
 
 One failure in `npm test` is inherited, not caused here:
 `project/tasks/template-version-gate-resolves-wrong-templates-path.md` declares no template version, so
