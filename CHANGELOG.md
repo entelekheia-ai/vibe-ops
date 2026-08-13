@@ -14,6 +14,33 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — three agents, a frontmatter gate for them, and a rule for pinning a model (Plan-024)
+
+- **`migration-rehearser`** walks a migration note against the artifact it handles worst and reports where
+  the walk stalls, holding no writing tool. Its first real dispatch stalled on a shipped note:
+  `plan-0.1-to-0.2.md` gives no rule for a `## Progress` line that is both track-grain and a dated working
+  note, which is the shape every such bullet takes in the longest artifact. That gap is live — eight plans
+  here are still stamped `plan@0.1`.
+- **`scaffolder`** carries `setup` Steps 2–3, the fixed template copies and placeholder substitutions, and
+  is the plugin's only surface pinned to a cheaper model.
+- **[ADR-0013](project/adr/0013-the-model-a-shipped-plugin-may-pin.md) replaces "never set `model:`"**: a
+  pin goes downward only, and only where a deterministic check runs immediately after and fails loudly,
+  with the verifier named where the pin is declared. Never upward — a pin runs on the installer's session
+  and budget.
+- **`check-frontmatter` grows an `agent` schema**, composed into `agents-md` over `<plugin>/agents/*.md`.
+  It reports what no other surface can see: a plugin-shipped agent declaring `hooks`, `mcpServers` or
+  `permissionMode` has that field dropped at load, and an `isolation` value other than `worktree`
+  configures nothing. It caught a file written three commits earlier in the same plan, which
+  `claude plugin validate --strict` had passed — that command ignores unknown frontmatter keys entirely.
+- **`unstated-destination`**, in the `self` ops: a migration note that marks a section `**dropped**` and
+  never mentions it outside the shape table has not said where its content goes. The rule as originally
+  stated — watch the migration for a vanished content line — is not decidable, because content loss and
+  the retype a note prescribes are the same diff.
+- **`/new-signal` learns that a sensor has two homes.** It described only the shell fragment surface, one
+  day older than the gates/ops axis, and its emit step told the author to add an emit call to a gate,
+  which must never own one.
+- **Every skill and agent now declares an `effort:`** — four surfaces had none and inherited silently.
+
 ### Added — the survey runs in a read-only subagent
 
 - **`agents/governance-auditor.md`, the plugin's first agent surface.** Every target-state skill opens

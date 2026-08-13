@@ -94,7 +94,7 @@ than the session they chose.
 
 ## Related
 
-- [Plan-024](../plans/024-the-work-a-skill-declares-and-the-caller-cannot-afford.md) — the plan that
+- [Plan-024](../plans/shipped/024-the-work-a-skill-declares-and-the-caller-cannot-afford.md) — the plan that
   raised the question, and whose Decision Log carries the per-surface tier choices this rule is applied to.
 - [ADR-0004](0004-budgeted-artifacts-and-guards.md) — a guard, not a line. The verifier this record
   requires is the same instrument, used as a precondition rather than as documentation.

@@ -6,10 +6,10 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md), [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), `plugin/references/convergence-policy.md` |
+| Related | [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md), [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), `plugin/references/convergence-policy.md` |
 
 ---
 
@@ -201,7 +201,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       content *transformation* are the same diff, and a note that retypes prose into a checklist is
       prescribing exactly the change a vanished-line guard would accuse. Report what Step 2 decides rather
       than assuming the answer.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking issue
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking issue
       closed. The plan file itself is kept.
 
 ## Success criteria
@@ -323,6 +323,72 @@ Run from the repository root:
 
 ## Outcomes & Retrospective
 
+### Against the goals
+
+**Goal 1 — the laborious read-only steps run where they cannot write.** Met, and wider than planned. Three
+survey steps moved to `governance-auditor`, `new-migration` Step 4 got its own agent, and a fifth surface
+appeared mid-plan: `setup` Steps 2–3, which is transcription rather than verification and is the one
+pinned surface.
+
+**Goal 2 — every skill and agent declares an `effort:`.** Met. Twelve surfaces: six `high`, five
+`inherit`, one `low`. The goal covered the population and the track named three of the four surfaces;
+running the criterion is what found `new-log`, not reading the track.
+
+**Goal 3 — a rule for when a shipped plugin may pin a model.** Met, as ADR-0013 and the rewritten
+`plugin/AGENTS.md` bullet. It is applied once, to `scaffolder`, whose verifier is named at the pin.
+
+**Goal 4 — `plugin/agents/*.md` covered by the frontmatter detector.** Met, and it paid for itself
+immediately by catching a file written three commits earlier in this plan.
+
+**Goal 5 — nothing delegated that must agree with the caller's intent, and the refusals recorded.** Met.
+`migrate` Step 3, the sentence rewriting in Step 4, and adding a step a stall revealed are all refused in
+the Decision Log with their reasons.
+
+### What changed shape, and in which direction
+
+**Two tracks were not what the plan predicted, and both were the plan's own procedure working.** Track 7
+and Track 8 traded places, because writing the guard is what revealed that the skill writing it described
+a surface this repository had left behind. And Track 8's rule did not survive its own Step 2: the plan
+asserted a guard was buildable, and it is not, in the form stated. The decidable sibling ships instead.
+That is an acceptance criterion recorded as wrong rather than quietly edited — the plan predicted a
+diff-based guard and the answer was a note-based one.
+
+**One success criterion was half-run at first.** "Fails on a fixture agent file with no `description:`"
+was covered by the shared schema but never asserted, so it was executed at closure against a scratch
+file — and the run surfaced `a agent` in the evidence string of the gate whose entire subject is text
+nobody re-reads. Fixed with the article carried beside the noun.
+
+### What the work taught, and where it went
+
+This plan spawned no task dossier, so closure is the only place its learnings pass through the promotion
+test. Three candidates, three different answers:
+
+- **A blanket `ignore` turns a new ops entry into a vacuous pass.** Names the file where someone meets it
+  again (`vibeops.config.*`), so it is a `project/log/` entry:
+  [`composing-a-gate-over-a-population-the-ops-already-ignores.md`](../../log/composing-a-gate-over-a-population-the-ops-already-ignores.md).
+- **`claude plugin validate --strict` ignores unknown frontmatter keys.** A prescription for how an
+  existing surface should be read, so it became an edit to `plugin/AGENTS.md` rather than a new file.
+- **A read-only guarantee comes from a tool set, not from prose — and a subagent's own output contract is
+  what exposes a shallow pass.** This holds beyond this repository, and its destination does not exist
+  here: there is no `project/learnings/`. **Promotion blocked, on
+  [Plan-021](../021-the-routing-destination-this-repository-does-not-have.md)**, which exists to create that
+  destination. It is recorded here rather than filed one tier down.
+
+The demotion check found nothing: this work added guards over a surface no instruction file described, so
+no line became redundant.
+
+### Still open, and who inherits it
+
+- **`plan-0.1-to-0.2.md` needs a rule** for a Progress line that is both track-grain and a dated working
+  note. Found by `migration-rehearser` on its first real walk; the gap is live, because eight artifacts
+  here are still stamped `plan@0.1`. Writing that rule is a judgement about permanent records and was
+  deliberately left to the maintainer.
+- **Delegating `migrate` Step 3** remains out of scope and now also unblocked-by-nothing: `unstated-
+  destination` checks the note, which is a precondition for trusting a note, not a check on what a
+  migration did to an artifact. Whether that delegation is ever wanted is a separate decision.
+- **A pin whose verifier is later removed is undetected** (ADR-0013's stated cost). The guard for it waits
+  on a second pin — one is not a population.
+
 **Track 3 — the first real walk found a stall in a note that had already shipped.** Dispatched against the
 `plan@0.1 → 0.2` chain and the worst artifact of the population it chose by measurement
 (`project/plans/008-quiet-and-audit-the-plan-progress-nudge.md`, 629 lines, a 150-line `Surprises &
@@ -380,9 +446,9 @@ clean walk" instead of returning a clean walk.
 ## Related
 
 - Commit `78024a7` — the survey moves into a read-only subagent; `convergence-policy@2`.
-- [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md) — a guard, not a line; why mechanical coverage
+- [ADR-0004](../../adr/0004-budgeted-artifacts-and-guards.md) — a guard, not a line; why mechanical coverage
   belongs in a check rather than a sentence.
-- [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — gates and ops as the unit of
+- [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — gates and ops as the unit of
   composition, which Track 6 extends by one schema.
 - `plugin/references/convergence-policy.md` — the four verbs, audit mode, and the delegation contract the
   new call sites point at.

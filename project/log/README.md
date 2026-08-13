@@ -11,6 +11,9 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   A workspace package that other packages import but that sorts after them alphabetically is built against
   its stale dist/ by `npm run build --workspaces`, which typechecks and reports success; the fix is a line
   in build:foundation, and nothing detects the next one.
+- [`composing-a-gate-over-a-population-the-ops-already-ignores.md`](composing-a-gate-over-a-population-the-ops-already-ignores.md) —
+  A gate added to an ops whose `ignore` blankets its population under `"*"` reports `0 examined` and passes;
+  the exclusion belongs to the entry that needs it, not to the ops.
 
 ## `cli/packages/core/`
 

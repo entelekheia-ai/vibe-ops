@@ -53,10 +53,12 @@ const RULE_BY_SCHEMA: Record<Schema, string> = {
 };
 
 // What the reader loses when the frontmatter is dropped, per type — the consequence, not the fault.
-const NEVER_BY_SCHEMA: Record<Schema, string> = {
-  rule: "surfaced",
-  skill: "matched",
-  agent: "delegated to",
+// The article travels with the noun: `a agent` shipped once, in the evidence string of the gate whose
+// whole subject is text nobody re-reads.
+const NEVER_BY_SCHEMA: Record<Schema, { readonly noun: string; readonly never: string }> = {
+  rule: { noun: "a rule", never: "surfaced" },
+  skill: { noun: "a skill", never: "matched" },
+  agent: { noun: "an agent", never: "delegated to" },
 };
 
 export default defineGate(
@@ -68,7 +70,6 @@ export default defineGate(
   async ({ files, documents, options }) => {
     const schema = (options as FrontmatterOptions).schema ?? "rule";
     const rule = RULE_BY_SCHEMA[schema];
-    const noun = schema;
     const findings: GateFinding[] = [];
     let examined = 0;
 
@@ -131,7 +132,7 @@ export default defineGate(
       const frontmatter = readFrontmatter(document);
       const description = frontmatter?.scalars.get("description");
       if (description === undefined || description === "") {
-        findings.push({ rule, file, evidence: `has no description: — a ${noun} without one is never ${NEVER_BY_SCHEMA[schema]}` });
+        findings.push({ rule, file, evidence: `has no description: — ${NEVER_BY_SCHEMA[schema].noun} without one is never ${NEVER_BY_SCHEMA[schema].never}` });
       }
 
       if (schema === "agent" && frontmatter !== undefined) {
