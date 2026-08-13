@@ -279,11 +279,11 @@ installed copy once a version is cut.
       split. The three it does not reproduce are recorded below.
 - [x] 2026-08-06 — Exercised in a live session rather than a probe (ADR-0009 obligation 4), because a
       headless one cannot reach this hook at all. See Surprises.
-- [ ] Cut the release that carries it. Until then no copy installed *from git* has any of this — a copy
-      installed from a directory has had all of it since it was saved, which is how it came to be
-      exercised at all.
-- [ ] Re-measure with `scripts/measure-nudge-noise.sh --since <the release date>` once enough firings
-      have accumulated, and record the result in Outcomes. Nothing to compare yet: one firing.
+- [x] 2026-08-12 — Released as 0.9.0, tagged `vibe-ops--v0.9.0`; `CHANGELOG.md` carries the nudge fix
+      under that heading. The box sat unchecked for a day after the fact.
+- [x] 2026-08-13 — Re-measured over the 14 firings since the release, with both instruments. **Two of the
+      five goals are not met**, and the noise rate this plan exists to drive to zero has risen. Numbers
+      and reading in Outcomes; the plan does not close on this result.
 - [ ] Run `/vibe-ops:close plan` — retrospective, route every Surprises & Discoveries entry, demotion
       check, close the tracking issue. The plan file itself is kept. Stays unchecked until the plan is
       actually closed; a Progress list that is otherwise complete but has this box open is not finished.
@@ -402,6 +402,34 @@ installed copy once a version is cut.
   seeding its offset and saying nothing. Both failures are silent and each alone is enough. Obligation
   4 was discharged instead against a live session, which is stronger evidence and not a substitute
   anyone can schedule: it required waiting for the hook to fire on its own.
+
+- Observation: the memo still loses plans, and the mechanism is not the one Track 1 fixed.
+  Evidence: 2026-08-13, over all 62 logged firings, sixteen were a plan named a second time in the same
+  session. Nine of those sixteen carry an **unchanged** modification time between the two namings — the
+  file was not written at all in between, by this session or anyone else. Compliance re-arming the memo
+  was defect (a) and Track 1 addressed it; this is defect (b), the memo being rebuilt without the
+  repositories the turn did not touch, and Track 1 claimed it too by seeding `STILL_NUDGED` from the
+  previous `NUDGED=`. One instance is after the release: one session named the same plan at
+  `2026-08-12T19:15:06Z` and again at `2026-08-13T02:33:36Z`, seven hours apart, same modification time
+  both times. The fixture suite asserts the branch and passes; the field exercises the whole loop and
+  does not. **A fixture that asserts a branch is not evidence about a loop**, which is the same shape as
+  this plan's own finding that ten hand-run payload cases let every defect through.
+
+- Observation: the instruction to produce no output is not obeyed — not partially, not at all.
+  Evidence: of the 14 firings since the release, **zero were fully silent** and eleven produced visible
+  text with no entry written. The baseline had three silent firings out of 42. The rate this plan set out
+  to drive to zero went from 17 of 42 (40%) to 11 of 14 (79%). What did improve is the price: 53,340
+  tokens across 17 noisy firings is 3,137 each, against 13,490 across 11, or 1,226 each — the noisy
+  firings are roughly two and a half times cheaper and there are proportionally more of them. This is the
+  answer to this plan's first open question, and the plan itself names the consequence: the rejected
+  `decision: block` option reopens.
+
+- Observation: the two instruments agree on the one quantity they both measure, which is worth recording
+  because it is the first time they have been run against the same window.
+  Evidence: the firing log and the transcript measurement both report 14 firings since the release, and
+  both report a maximum of one plan named per firing. The plan predicted they would disagree and that the
+  reason would be interesting; on this window they do not, and the agreement is what makes the noise
+  figure above trustworthy rather than an artifact of one reader.
 
 - Observation: the fix was in production before it was committed, let alone released.
   Evidence: this plugin is installed on this machine from a *directory* source, so `installLocation` is
@@ -524,6 +552,42 @@ expected to make the useful firings cheaper — it makes the useless ones free.
 here from a directory source, so every edit was live in every session on the machine while this was
 being written. The live evidence that discharged ADR-0009 obligation 4 is a direct consequence, and so
 is the fact that a half-finished hook was briefly the real one. Neither was planned.
+
+### 2026-08-13 — the post-release measurement, and why this plan does not close on it
+
+Fourteen firings across four sessions since the 0.9.0 release, read with both instruments over the same
+window. The firing log answers the first three rows; `measure-nudge-noise.sh --since 2026-08-12` answers
+the last three.
+
+| Quantity | Baseline | Target | Measured |
+|---|---|---|---|
+| Plans named in a single firing | max 5 | max 1 | **max 1** — met |
+| A plan named after it was written in that session | observed | 0 | **0** — met on this window |
+| A plan named twice in one session with no write between | not measured | 0 | **1 of 14** (and 9 of 62 over the whole log) |
+| Firings producing visible text and no entry written | 17 of 42 (40%) | 0 | **11 of 14 (79%)** |
+| Output tokens spent on those | 53,340 | 0 | **13,490** |
+| Firings that were fully silent | 3 of 42 (7%) | — | **0 of 14** |
+
+**Goals 3, 4 and 5 are met and asserted.** One plan per firing holds across every logged firing without
+exception. The instruments exist, run from one command each, and agreed with each other the first time
+they were pointed at the same window.
+
+**Goal 1 is not met, and the rate moved the wrong way.** No firing since the release has been silent.
+The instruction added in Track 3 tells the declining branch to produce nothing, and the branch produces
+something every time. What Track 3 did buy is a cheaper refusal — 1,226 output tokens against 3,137 —
+so the change is not inert, it simply did not do the thing it was for. This is the plan's own first open
+question answered with data, and the plan already names what follows: the rejected `decision: block`
+option reopens, because an instruction that is ignored 14 times out of 14 is not an instruction.
+
+**Goal 2 is not met either, for a reason the fixtures cannot see.** Nine repeat namings across the log
+show the same plan named twice in one session with the file untouched in between — the memo losing an
+entry with no compliance involved. The five fixture assertions pass, and they assert the branch Track 1
+changed rather than the loop that rebuilds the set across repositories.
+
+**So the plan stays `In Progress`.** Closing it would file a permanent record whose retrospective claims
+five goals against three that hold, and the two that fail are the two the whole plan was written for.
+What it inherits is now measured rather than suspected, which is the difference between this and where
+it started.
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
