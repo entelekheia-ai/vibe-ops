@@ -62,6 +62,12 @@ The `plan` tool with `{ command: "status" }` — or `vibe-ops plan status` from 
 If work remains, stop and say what. A plan closed while a track is open makes the file lie, and the file
 is the part that survives.
 
+**Read the plan's `Status` first, and stop if it is already terminal.** Nothing else in this skill
+detects a plan that was closed months ago: `plan status` reports it clean *because* it is closed, every
+track is checked, and the ceremony runs to the end before `plan close` says `already in shipped/`. The
+useful run on a closed plan is not this one — it is Step 4's demotion check against whatever the
+retrospective recorded as *blocked*, since the thing that blocked it may since have shipped.
+
 ## Step 1 — Write the retrospective
 
 Fill `Outcomes & Retrospective` by reading the plan's own `Goals` and `Success criteria` and answering
@@ -159,8 +165,8 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    work.
 2. **Set the terminal status and file it:**
 
-   The `plan` tool: `{ command: "close", "dry-run": true, args: ["project/plans/<NNN>-<slug>.md"] }` to
-   preview, then the same call with `confirm: true` instead of `dry-run`. From a terminal:
+   The `plan` tool: `{ command: "close", "dry-run": true, confirm: true, args: ["project/plans/<NNN>-<slug>.md"] }`
+   to preview, then the same call with `dry-run` dropped. From a terminal:
 
    ```bash
    vibe-ops plan close --dry-run project/plans/<NNN>-<slug>.md   # preview
@@ -169,6 +175,12 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 
    **Show the preview and wait before the second call.** `confirm: true` exists because a tool call has no
    prompt to run; it is the mechanism, not the consent.
+
+   **Over MCP the preview needs `confirm: true` too, and that is deliberate** — the gate is on the verb,
+   not the invocation, so there is one answer to "may this tool call delete files" rather than one per
+   flag combination. `dry-run` alone returns exit 2 and a refusal reading *re-send with `confirm: true`
+   to run it*, which is the trap: taken literally it says to drop the flag that made the call safe. The
+   consent is still yours to obtain, from the preview — not from the word `confirm`.
 
    It sets `Status` to whatever this repository's own governance calls terminal — read from the plan
    template's `Status lifecycle` marker, never assumed to be `Shipped` — then `git mv`s the file into

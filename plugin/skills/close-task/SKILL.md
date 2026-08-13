@@ -171,12 +171,19 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 2. **Preview, and confirm.** This is the only irreversible action in the skill, and the skill can be
    invoked by the model rather than typed — so the person whose dossier it is may not have asked for it.
 
-   The `task` tool, `{ command: "close", "dry-run": true, plan: "<source plan, if any>",
+   The `task` tool, `{ command: "close", "dry-run": true, confirm: true, plan: "<source plan, if any>",
    args: ["<dossier>", ...] }` — or from a terminal:
 
    ```bash
    vibe-ops task close --dry-run --plan <source plan, if any> <dossier>...
    ```
+
+   **Over MCP the preview needs `confirm: true` too, and that is deliberate** — the gate is on the verb,
+   not the invocation, so there is one answer to "may this tool call delete files" rather than one per
+   flag combination. `dry-run` alone returns exit 2 and a refusal reading *re-send with `confirm: true`
+   to run it*; taken literally that says to drop the flag that made the call safe, and here dropping it
+   deletes the dossier and writes two commits having shown nobody anything. Keep both, then drop
+   `dry-run`.
 
    It prints every file that links to the dossiers, what it would rewrite, and both commits it would make.
    **Show that output and wait.** Pass every dossier being closed in one invocation — closures come in
