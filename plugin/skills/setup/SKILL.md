@@ -87,6 +87,18 @@ Confirm the plan (shape + names + path) before writing.
 
 Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates`.
 
+**Steps 2 and 3 are dispatched to the `vibe-ops:scaffolder` agent**, once the plan is confirmed. Hand it
+the target path, the copy list below resolved for the shape chosen in Step 1, the substitution table from
+Step 3, and — per destination — what the Step 0 survey decided about anything already there. Nothing is
+left for it to decide, which is why it is the one surface here pinned to a cheaper model.
+
+**Its verifier is named, as [ADR-0013](../../../project/adr/0013-the-model-a-shipped-plugin-may-pin.md)
+requires:** the `grep -rn '{{'` in Step 3 returning empty, and the Step 7 checklist, which you run
+yourself and never delegate. A scaffold that went wrong is red within the minute; that is the whole
+licence for the pin, and it lapses if the checklist stops being run.
+
+Do it inline if the agent is not in the session's listing.
+
 **Root (always):**
 - `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`, `TPL/root/CLAUDE.md` → `CLAUDE.md`
 - `TPL/root/editorconfig` → `.editorconfig`, `TPL/root/gitignore` → `.gitignore`

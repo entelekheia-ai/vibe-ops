@@ -179,7 +179,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       otherwise. Then rewrite the "Never set `model:`" bullet in `plugin/AGENTS.md` to point at it. The
       prohibition lives in no ADR today, so nothing is superseded — but authorising a pin to travel to
       another person's machine and budget is hard to reverse, which is what earns the record.
-- [ ] **Track 5 — `plugin/agents/scaffolder.md`.** Depends on Track 4. `model: haiku`, `effort: low`,
+- [x] **Track 5 — `plugin/agents/scaffolder.md`.** Depends on Track 4. `model: haiku`, `effort: low`,
       `maxTurns` bounded, `Read`/`Write`/`Edit`/`Bash`, invoked by `setup` Steps 2–3 after the caller has
       confirmed the plan. The skill keeps the Step 7 checklist and runs it. At the end, a `setup repo` run
       produces the same tree it produces today, with the copying done elsewhere.
