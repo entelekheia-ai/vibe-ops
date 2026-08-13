@@ -28,9 +28,10 @@ import { runTaskGuardHook } from "./task-guard.ts";
 import { runPreferMcpHook } from "./prefer-mcp.ts";
 import { runPlanFileHook } from "./plan-file.ts";
 import { runPlanStatusHook } from "./plan-status.ts";
+import { runHarnessStatusHook } from "./harness-status.ts";
 
 /** The surfaces `hook` dispatches to, in the order `--help` lists them. */
-export const HOOK_SURFACES = ["ops", "plan-context", "plan-file", "plan-status", "new-context", "task-guard", "prefer-mcp"] as const;
+export const HOOK_SURFACES = ["ops", "plan-context", "plan-file", "plan-status", "new-context", "task-guard", "prefer-mcp", "harness-status"] as const;
 
 /**
  * `vibe-ops hook <surface> [args]`. Returns 2 with a message naming the valid set when the surface is
@@ -53,6 +54,9 @@ export async function runHook(argv: readonly string[]): Promise<number> {
   if (surface === "new-context") return runNewContextHook();
   if (surface === "task-guard") return runTaskGuardHook();
   if (surface === "prefer-mcp") return runPreferMcpHook();
+  // The only surface taking arguments other than `ops` — it needs to be told where the installed norm is,
+  // because a module is handed one repository root and the source/target seam does not exist yet.
+  if (surface === "harness-status") return runHarnessStatusHook(rest);
 
   process.stderr.write(
     `vibe-ops hook needs a surface: ${HOOK_SURFACES.join(", ")} (got ${surface === undefined ? "nothing" : surface})\n`,

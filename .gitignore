@@ -4,3 +4,16 @@ dist/
 
 # Graphify
 graphify-out/
+
+# Clone-local configuration. Layers over the committed vibeops.config.ts; holds what is true of one
+# working tree on one machine, including the applied-version map promulgation writes. The committed
+# counterpart declaring which keys exist is vibeops.config.local.example.ts.
+vibeops.config.local.ts
+vibeops.config.local.mjs
+vibeops.config.local.js
+
+# Gambiarra: the sibling path every repo under this workspace resolves the runner through.
+# The runner moved to cli/packages/module-check/sh/; seven repos still look for vibe-ops/scripts/.
+# Local symlink, never committed — the real fix is those repos moving to the CLI.
+/scripts
+/sh

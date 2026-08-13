@@ -5,6 +5,17 @@
 // and neither should have to restate the other. Nearest wins per key; the search does NOT stop at the
 // git root, because the home-directory file is the whole point of having a cascade at all.
 //
+// TWO FILES PER DIRECTORY, LAYERED. `vibeops.config.local.*` is clone-local and version-control-ignored;
+// `vibeops.config.*` is the committed one. Within a directory the local file wins per key, and BOTH
+// contribute — so a committed config can ship fully populated while a clone overrides only what is true
+// of that machine, which is the .env/.env.example split applied to configuration. The pair repeats at
+// every level, which is what finally gives the home directory the personal-override file this module's
+// consumers have been describing in prose with no mechanism behind it.
+//
+// The directory walk still outranks the pair: a nearer COMMITTED file beats a farther LOCAL one. Getting
+// that backwards produces a plausible-looking cascade in which a stale personal file in the home
+// directory silently governs every repository, and it is asserted against in this package's tests.
+//
 // `.ts` is loaded by dynamic import and relies on Node's native type stripping (>=22.18), so a config
 // file costs no dependency and no build step. `.js`/`.mjs` work identically.
 
@@ -13,7 +24,23 @@ import { homedir } from "node:os";
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-const FILENAMES = ["vibeops.config.ts", "vibeops.config.mjs", "vibeops.config.js"] as const;
+/**
+ * Candidate filenames for one directory, nearest-wins order — every local variant before every committed
+ * one. Extension order within each half is a first-match tiebreak, unchanged from when there was one half:
+ * a directory holding both `.ts` and `.mjs` of the same kind is a mistake, and this picks one rather than
+ * merging two files that were never meant to coexist.
+ */
+const FILENAMES = [
+  "vibeops.config.local.ts",
+  "vibeops.config.local.mjs",
+  "vibeops.config.local.js",
+  "vibeops.config.ts",
+  "vibeops.config.mjs",
+  "vibeops.config.js",
+] as const;
+
+/** Where the local half of the list ends — the boundary `loadOne` splits on to take one file from each. */
+const LOCAL_FILENAME_COUNT = 3;
 
 /** The four governance record types `@entelekheia/vibe-ops-records` resolves. */
 export type RecordType = "adr" | "rfc" | "plan" | "task";
@@ -33,9 +60,29 @@ export interface RecordsConfig {
   readonly templates?: Partial<Record<RecordType, string>>;
 }
 
+/**
+ * Which version of each record type was PROMULGATED into this clone — not which version any given
+ * artifact was written against, which is what that artifact's own `vibe-ops-template:` line says. The two
+ * answer different questions and diverge exactly when something has not been migrated yet, which is the
+ * case worth detecting; storing one would not give you the other.
+ *
+ * Belongs in `vibeops.config.local.*`: it is true of one clone on one machine, and committing it would
+ * make every promulgation a diff in a file the repository owns.
+ *
+ * ABSENCE IS A STATE, AND IT IS NOT ZERO. No `harness` key at all means never promulgated to; a key with
+ * no entry for `plan` means the same about plans specifically. Neither is "version 0", and a reader that
+ * defaults them to a number reports every untouched repository as catastrophically behind — which is how a
+ * signal earns being ignored.
+ */
+export interface HarnessConfig {
+  readonly applied?: Partial<Record<RecordType | "log", number>>;
+}
+
 export interface VibeOpsConfig {
   /** Module ids to treat as enabled without an explicit flag. */
   readonly modules?: readonly string[];
+  /** See `HarnessConfig`. Written by promulgation, read by the session hook; absent until either runs. */
+  readonly harness?: HarnessConfig;
   /** Per-module settings, keyed by module id. A module reads its own slice and nothing else. */
   readonly settings?: Readonly<Record<string, unknown>>;
   /** Where observations go when a module declares `emits`. Absent disables emission entirely. */
@@ -73,17 +120,33 @@ export function searchPath(start: string, home: string = homedir()): readonly st
   return dirs;
 }
 
-async function loadOne(dir: string): Promise<{ file: string; config: VibeOpsConfig } | undefined> {
-  for (const name of FILENAMES) {
-    const candidate = path.join(dir, name);
-    if (!(await exists(candidate))) continue;
-    const module = (await import(pathToFileURL(candidate).href)) as { default?: VibeOpsConfig };
-    if (module.default === undefined) {
-      throw new Error(`${candidate} has no default export — a config file must \`export default { ... }\``);
-    }
-    return { file: candidate, config: module.default };
+async function loadFile(candidate: string): Promise<{ file: string; config: VibeOpsConfig } | undefined> {
+  if (!(await exists(candidate))) return undefined;
+  const module = (await import(pathToFileURL(candidate).href)) as { default?: VibeOpsConfig };
+  if (module.default === undefined) {
+    throw new Error(`${candidate} has no default export — a config file must \`export default { ... }\``);
   }
-  return undefined;
+  return { file: candidate, config: module.default };
+}
+
+/**
+ * Every config file in one directory, nearest-wins order: the local file (if any) then the committed one
+ * (if any). Returns both rather than the first match — returning the first is what would make a local file
+ * REPLACE the committed one it is meant to layer over, which is the whole point of the pair.
+ */
+async function loadOne(dir: string): Promise<readonly { file: string; config: VibeOpsConfig }[]> {
+  const local = FILENAMES.slice(0, LOCAL_FILENAME_COUNT);
+  const committed = FILENAMES.slice(LOCAL_FILENAME_COUNT);
+  const found: { file: string; config: VibeOpsConfig }[] = [];
+  for (const half of [local, committed]) {
+    for (const name of half) {
+      const one = await loadFile(path.join(dir, name));
+      if (one === undefined) continue;
+      found.push(one);
+      break;
+    }
+  }
+  return found;
 }
 
 /**
@@ -103,6 +166,10 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     artifactDir: nearer.artifactDir ?? further.artifactDir,
     settings: { ...further.settings, ...nearer.settings },
     records,
+    // Nearest wins WHOLE, deliberately unlike `settings` and `records`. Merging per record type would let
+    // a map written for one repository answer for another one further down the path — "this clone is on
+    // plan@3" is a fact about a single working tree, and a half-inherited answer is worse than none.
+    harness: nearer.harness ?? further.harness,
   };
 }
 
@@ -110,10 +177,10 @@ export async function loadConfig(start: string, home: string = homedir()): Promi
   const sources: string[] = [];
   let config: VibeOpsConfig = {};
   for (const dir of searchPath(start, home)) {
-    const found = await loadOne(dir);
-    if (found === undefined) continue;
-    sources.push(found.file);
-    config = sources.length === 1 ? found.config : merge(config, found.config);
+    for (const found of await loadOne(dir)) {
+      sources.push(found.file);
+      config = sources.length === 1 ? found.config : merge(config, found.config);
+    }
   }
   return { config, sources };
 }

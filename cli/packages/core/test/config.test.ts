@@ -81,3 +81,79 @@ test("no config anywhere is not an error", async () => {
   assert.deepEqual(sources, []);
   assert.equal(config.artifactDir, undefined);
 });
+
+test("the local file layers over the committed one in the same directory rather than replacing it", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-local-"));
+  await writeFile(
+    path.join(dir, "vibeops.config.mjs"),
+    `export default { artifactDir: "committed", modules: ["a", "b"], settings: { check: { from: "committed" }, other: { keep: true } } };`,
+  );
+  await writeFile(
+    path.join(dir, "vibeops.config.local.mjs"),
+    `export default { artifactDir: "local", settings: { check: { from: "local" } } };`,
+  );
+
+  const { config, sources } = await loadConfig(dir, dir);
+
+  assert.equal(config.artifactDir, "local", "the local file wins per key");
+  assert.deepEqual(config.modules, ["a", "b"], "a key the local file omits falls through to the committed one");
+  assert.deepEqual(settingsFor(config, "check"), { from: "local" });
+  assert.deepEqual(settingsFor(config, "other"), { keep: true }, "another module's settings survive");
+  assert.equal(sources.length, 2, "both files contributed, so both are reported");
+  assert.ok(sources[0].endsWith("vibeops.config.local.mjs"), "sources is nearest-first, local before committed");
+});
+
+test("a nearer committed file beats a farther local one — the directory walk outranks the pair", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "vibeops-home-"));
+  const repo = path.join(home, "nested", "repo");
+  await mkdir(repo, { recursive: true });
+
+  await writeFile(path.join(home, "vibeops.config.local.mjs"), `export default { artifactDir: "home-local" };`);
+  await writeFile(path.join(repo, "vibeops.config.mjs"), `export default { artifactDir: "repo-committed" };`);
+
+  const { config } = await loadConfig(repo, home);
+
+  assert.equal(
+    config.artifactDir,
+    "repo-committed",
+    "a stale personal file in home must not govern a repository that declared its own",
+  );
+});
+
+test("the committed file still loads alone when no local file exists", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-nolocal-"));
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { artifactDir: "committed" };`);
+  const { config, sources } = await loadConfig(dir, dir);
+  assert.equal(config.artifactDir, "committed");
+  assert.equal(sources.length, 1);
+});
+
+test("harness.applied is carried through the cascade, and nearest wins whole", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "vibeops-harness-"));
+  const repo = path.join(home, "nested", "repo");
+  await mkdir(repo, { recursive: true });
+
+  await writeFile(
+    path.join(home, "vibeops.config.local.mjs"),
+    `export default { harness: { applied: { plan: 1, task: 1, adr: 1 } } };`,
+  );
+  await writeFile(
+    path.join(repo, "vibeops.config.local.mjs"),
+    `export default { harness: { applied: { plan: 3 } } };`,
+  );
+
+  const { config } = await loadConfig(repo, home);
+
+  assert.deepEqual(
+    config.harness?.applied,
+    { plan: 3 },
+    "a map is a fact about one working tree — a farther one must not fill in the types it omits",
+  );
+});
+
+test("harness is undefined when nothing declares it, and absence is not zero", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-noharness-"));
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { artifactDir: "x" };`);
+  const { config } = await loadConfig(dir, dir);
+  assert.equal(config.harness, undefined);
+});
