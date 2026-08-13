@@ -183,7 +183,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       `maxTurns` bounded, `Read`/`Write`/`Edit`/`Bash`, invoked by `setup` Steps 2–3 after the caller has
       confirmed the plan. The skill keeps the Step 7 checklist and runs it. At the end, a `setup repo` run
       produces the same tree it produces today, with the copying done elsewhere.
-- [ ] **Track 6 — Agent frontmatter reaches the CLI gate.** An `agent` schema in
+- [x] **Track 6 — Agent frontmatter reaches the CLI gate.** An `agent` schema in
       `cli/packages/gates/src/check-frontmatter/index.ts` and one entry in
       `cli/packages/ops-agents-md/src/index.ts` scoped to `<plugin>/agents/*.md`. The gate's `version`
       stays where it is — see the Decision Log. At the end, an agent file missing `description`, or
@@ -319,6 +319,14 @@ read the other way, it is silent on whether the track still gets its checkbox.
 Two things follow. The note needs a rule for that case, and writing it is a judgement about what happens
 to real content in permanent records, so it is the maintainer's to make and is **not** part of this plan.
 And the gap is live: eight artifacts in this repository are still stamped `plan@0.1`.
+
+**Track 6 — the new schema's first run caught a file written three commits earlier, in this plan.**
+`plugin/agents/scaffolder.md`'s `description` contained an unquoted `": "`, which drops the *entire*
+frontmatter at load: the agent would have registered with no name, no description, no tools and no model
+pin, and nothing anywhere would have said so. `claude plugin validate . --strict` had already passed it —
+the same blindness that produced `skill-frontmatter` after a broken skill shipped (ADR-0004), reproduced
+exactly on the surface that had no equivalent check until this track. The unquoted-`": "` heuristic now
+runs for `agent` as well as `skill`, which is what caught it.
 
 The dispatch before it is worth recording too, because it was the design working rather than failing:
 handed the `0.2 → 3` note alone, the agent found **zero** artifacts at that stamp, distinguished the three

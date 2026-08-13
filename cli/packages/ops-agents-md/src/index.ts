@@ -37,6 +37,14 @@ export default defineOps({
       options: { schema: "skill" },
       paths: ["<plugin>/skills/*/SKILL.md", ".agents/skills/*/SKILL.md"],
     },
+    // No `fragment-parity` entry accompanies this one, and none ever will: parity compares a gate
+    // against the shell fragment it ports, and `agent` has no fragment to replace (Plan-024 Track 6).
+    {
+      gate: "check-frontmatter",
+      label: "agent-frontmatter",
+      options: { schema: "agent" },
+      paths: ["<plugin>/agents/*.md", ".agents/agents/*.md"],
+    },
     // The only entry that emits (RFC-0001, Rationale): the other four are structural properties that,
     // once corrected, stay corrected. This one is behavioural and recurrent, and worth a series.
     {

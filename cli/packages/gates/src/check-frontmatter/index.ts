@@ -1,9 +1,12 @@
 // Ported from cli/packages/module-check/sh/checks/40-frontmatter.sh and 45-skill-frontmatter.sh — the
-// same detector against two schemas: *this markdown declares the frontmatter its type requires*. One
+// same detector against three schemas: *this markdown declares the frontmatter its type requires*. One
 // gate, an `options.schema` argument, and a third type costs a schema rather than a fragment
-// (RFC-0001, Implementation Notes). The `rule` on a finding still names the shell fragment it replaces
-// ("frontmatter" / "skill-frontmatter"), because the two really are distinct failure modes: an
-// unsurfaced rule and a silently-dropped skill are different consequences for the reader who hits them.
+// (RFC-0001, Implementation Notes) — `agent` is that third type, added by Plan-024 with no shell
+// precedent at all and none coming, since the fragments are being retired rather than extended. The
+// `rule` on a finding names the failure per type ("frontmatter" / "skill-frontmatter" /
+// "agent-frontmatter"), because they are distinct failure modes: an unsurfaced rule, a silently-dropped
+// skill and an agent that runs under permissions its own file disclaims are different consequences for
+// the reader who hits them.
 //
 // A rule with no description is never surfaced to the agent. A skill whose frontmatter does not parse
 // loads with EMPTY metadata — the unquoted-": "-in-a-value fault that shipped once and was invisible
@@ -26,13 +29,35 @@ import { defineGate, lineAt, walkLayersWithHostPositions } from "@entelekheia/vi
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
 import { readFrontmatter } from "@entelekheia/vibe-ops-records";
 
-type Schema = "rule" | "skill";
+type Schema = "rule" | "skill" | "agent";
 
 interface FrontmatterOptions {
   readonly schema?: Schema;
 }
 
 const KEY_VALUE = /^([A-Za-z0-9_-]+): (.*)$/;
+
+// Plan-024 Track 6: the third schema, and the first whose faults are not about parsing at all. A
+// plugin-shipped agent declaring one of these is not rejected and not warned about — the field is
+// dropped at load, for security, so the agent runs with the caller's permission context while its own
+// file says otherwise. That is the failure shape this gate exists for: silent, and readable as working.
+const IGNORED_IN_A_PLUGIN = ["hooks", "mcpServers", "permissionMode"] as const;
+
+// The only value the field accepts. Anything else is a typo that reads as configuration.
+const ISOLATION_VALUE = "worktree";
+
+const RULE_BY_SCHEMA: Record<Schema, string> = {
+  rule: "frontmatter",
+  skill: "skill-frontmatter",
+  agent: "agent-frontmatter",
+};
+
+// What the reader loses when the frontmatter is dropped, per type — the consequence, not the fault.
+const NEVER_BY_SCHEMA: Record<Schema, string> = {
+  rule: "surfaced",
+  skill: "matched",
+  agent: "delegated to",
+};
 
 export default defineGate(
   {
@@ -42,8 +67,8 @@ export default defineGate(
   },
   async ({ files, documents, options }) => {
     const schema = (options as FrontmatterOptions).schema ?? "rule";
-    const rule = schema === "skill" ? "skill-frontmatter" : "frontmatter";
-    const noun = schema === "skill" ? "skill" : "rule";
+    const rule = RULE_BY_SCHEMA[schema];
+    const noun = schema;
     const findings: GateFinding[] = [];
     let examined = 0;
 
@@ -85,7 +110,7 @@ export default defineGate(
       // to consume (measured: a colon two keys deep leaves `root.text` ending mid-line, well before the
       // fault this heuristic exists to catch), while `hostEnd` comes from the injection query's capture
       // span and always covers the full `---`-to-`---` block regardless of what the sub-parse recovered.
-      if (schema === "skill") {
+      if (schema === "skill" || schema === "agent") {
         const block = document.text.slice(positioned.hostStart, positioned.hostEnd);
         const offenders: string[] = [];
         for (const line of block.split("\n")) {
@@ -103,9 +128,29 @@ export default defineGate(
         }
       }
 
-      const description = readFrontmatter(document)?.scalars.get("description");
+      const frontmatter = readFrontmatter(document);
+      const description = frontmatter?.scalars.get("description");
       if (description === undefined || description === "") {
-        findings.push({ rule, file, evidence: `has no description: — a ${noun} without one is never ${schema === "skill" ? "matched" : "surfaced"}` });
+        findings.push({ rule, file, evidence: `has no description: — a ${noun} without one is never ${NEVER_BY_SCHEMA[schema]}` });
+      }
+
+      if (schema === "agent" && frontmatter !== undefined) {
+        for (const key of IGNORED_IN_A_PLUGIN) {
+          if (!frontmatter.keys.includes(key)) continue;
+          findings.push({
+            rule,
+            file,
+            evidence: `declares \`${key}:\`, which a plugin-shipped agent does not support — it is dropped at load, silently, and the agent runs under the caller's own instead`,
+          });
+        }
+        const isolation = frontmatter.scalars.get("isolation");
+        if (isolation !== undefined && isolation.replace(/^["']|["']$/g, "") !== ISOLATION_VALUE) {
+          findings.push({
+            rule,
+            file,
+            evidence: `isolation: ${isolation} — the only value is \`${ISOLATION_VALUE}\`, and anything else reads as configuration while doing nothing`,
+          });
+        }
       }
     }
     return { findings, examined };

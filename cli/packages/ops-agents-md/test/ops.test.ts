@@ -42,7 +42,7 @@ function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<strin
   return { context, logs };
 }
 
-/** A repository broken in the five ways this ops composes gates to catch. */
+/** A repository broken in the six ways this ops composes gates to catch. */
 async function brokenFixture(): Promise<string> {
   const repoRoot = await gitRepo();
 
@@ -64,11 +64,21 @@ async function brokenFixture(): Promise<string> {
     "---\nname: demo\ndescription: template and numbering: an ADR\n---\n\nbody\n",
   );
 
+  // check-frontmatter (agent schema): the two faults no other schema looks for. Both parse fine and
+  // both are silent at load — a plugin-shipped agent's permissionMode is dropped, and an isolation
+  // value that is not "worktree" configures nothing. A description is present deliberately, so this
+  // fixture fails on the agent-specific faults rather than on the one every schema shares.
+  await mkdir(path.join(repoRoot, "agents"), { recursive: true });
+  await writeFile(
+    path.join(repoRoot, "agents", "broken.md"),
+    "---\nname: broken\ndescription: an agent that declares what a plugin ignores\npermissionMode: bypassPermissions\nisolation: sandbox\n---\n\nbody\n",
+  );
+
   gitAdd(repoRoot);
   return repoRoot;
 }
 
-test("every gate fires on a repository broken in all five ways", async () => {
+test("every gate fires on a repository broken in all six ways", async () => {
   const repoRoot = await brokenFixture();
   const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
   const result = await ops.run(context);
@@ -77,9 +87,13 @@ test("every gate fires on a repository broken in all five ways", async () => {
   assert.equal(result.code, 1);
   // pairing's rule names its failure mode, not the gate — this fixture triggers the "no sibling at
   // all" mode, not the "sibling exists without the import" one (that one is a warn, not a fail).
-  for (const rule of ["budget", "no-sibling-claude-md", "bridge", "frontmatter", "skill-frontmatter", "memory-slug"]) {
+  for (const rule of ["budget", "no-sibling-claude-md", "bridge", "frontmatter", "skill-frontmatter", "agent-frontmatter", "memory-slug"]) {
     assert.match(output, new RegExp(`FAIL {2}\\[${rule}\\]`), output);
   }
+  // Named individually, because both are agent-only and neither is a parse failure: a rule name in the
+  // loop above would pass on the shared missing-description finding alone.
+  assert.match(output, /declares `permissionMode:`/, output);
+  assert.match(output, /the only value is `worktree`/, output);
 });
 
 test("a clean repository passes every composed entry", async () => {

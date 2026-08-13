@@ -1,6 +1,6 @@
 ---
 name: scaffolder
-description: Use this agent to lay down a repository skeleton from the setup skill's templates — fixed source-to-destination copies plus named placeholder substitutions — after the caller has already decided the shape, the names and the licence. Typical triggers include Steps 2 and 3 of /vibe-ops:setup repo, and re-running those steps against a repository where the survey found files missing. See "When to invoke" in the agent body for worked scenarios. Never use it to decide anything: not the shape, not a name, not whether an existing file should be replaced.
+description: Use this agent to lay down a repository skeleton from the setup skill's templates — fixed source-to-destination copies plus named placeholder substitutions — after the caller has already decided the shape, the names and the licence. Typical triggers include Steps 2 and 3 of /vibe-ops:setup repo, and re-running those steps against a repository where the survey found files missing. See "When to invoke" in the agent body for worked scenarios. Never use it to decide anything — not the shape, not a name, not whether an existing file should be replaced.
 model: haiku
 effort: low
 maxTurns: 20
