@@ -25,6 +25,42 @@
 
 import { defineOps } from "@entelekheia/vibe-ops-core";
 
+/**
+ * The two notes `unstated-destination` is proven on, exported because the fixture runner asserts only
+ * that the expected rule fired — which a gate firing on every `**dropped**` row would also satisfy. The
+ * other direction, that the decoy stays silent, is asserted in this package's test against **this**
+ * object, so the fixture and the assertion cannot drift into describing different notes.
+ */
+export const UNSTATED_DESTINATION_NOTES: Readonly<Record<string, string>> = {
+  // Drops a section and never mentions it again: the finding.
+  "notes/plan-0.1-to-0.2.md": [
+    "# plan 0.1 → 0.2",
+    "",
+    "| Section | 0.1 | 0.2 |",
+    "|---|---|---|",
+    "| `## Progress` | step-level checklist | **dropped** |",
+    "",
+    "## What it costs an existing artifact",
+    "",
+    "The header table gains a row. Nothing else changes.",
+    "",
+  ].join("\n"),
+  // The decoy: drops a section AND routes it. A gate that read the table alone would accuse this one.
+  "notes/task-0.1-to-0.2.md": [
+    "# task 0.1 → 0.2",
+    "",
+    "| Section | 0.1 | 0.2 |",
+    "|---|---|---|",
+    "| `## Surprises & Discoveries` | living section | **dropped** |",
+    "",
+    "## What it costs an existing artifact",
+    "",
+    "Every entry under `Surprises & Discoveries` is routed by the promotion test before the",
+    "dossier is deleted; an entry that survives it lands in the repository's own learnings.",
+    "",
+  ].join("\n"),
+};
+
 export default defineOps({
   id: "self",
   version: "0.0.1",
@@ -91,6 +127,18 @@ export default defineOps({
           ].join("\n"),
         },
       },
+    },
+    {
+      // The notes are prose about this repository's own machinery too — and the one kind whose reader
+      // is a migration about to move somebody's content. Population is the notes themselves, not the
+      // documents describing them, which is what separates this from the entry above: that one reads
+      // the notes as its authority, this one reads them as its subject.
+      gate: "unstated-destination",
+      paths: ["<plugin>/skills/migrate/migrations/*.md"],
+      // Two notes, and the second is the point. A fixture carrying only the violation passes whether or
+      // not the gate distinguishes anything: the decoy drops a section AND routes it, so a gate that
+      // fired on every `**dropped**` row would produce two findings where one is correct.
+      fixture: { expect: ["unstated-destination"], files: UNSTATED_DESTINATION_NOTES },
     },
   ],
 });

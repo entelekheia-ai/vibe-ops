@@ -41,15 +41,8 @@ ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # the compo
 | a `packages/gates/` tree | a **gate**, composed by an **ops** | Steps 4–7, "gate" column, and `cli/AGENTS.md` §Gates and ops |
 | neither | nothing to compose a sensor into | stop; run `/vibe-ops:setup harness` first |
 
-A repository can hold both while a port is in flight. Then the question is which one the *new* detector
-belongs to, and the answer is the composed one: the fragments are being retired, and a detector written
-as a fragment today is written to be ported tomorrow. Extending a fragment that already exists and is
-actively wrong is different from adding one, and stays allowed.
-
-The split matters most at Step 7, where the two surfaces disagree outright: a fragment adds its own emit
-call, and **a gate must never decide that it emits** — emission belongs to the ops entry
-(`{ gate: "…", emits: true }`), because a signal's identity includes the population it was read over and
-only the composition knows that.
+**A repository holding both gets the gate.** Fragments are being retired; write a new detector as one only
+when there is no `packages/gates/`. Editing a fragment that already exists is not covered by this rule.
 
 ---
 
@@ -169,9 +162,9 @@ Then assert both directions:
 ```
 
 Run it and **watch it fail before it passes**. An assertion written against a check that already passes
-has proven nothing; the repository's own history is the argument for this, not a hypothetical.
+has proven nothing.
 
-One hazard, already paid for here: **a fixture must not inherit the operator's environment.** Clear what
+**A fixture must not inherit the operator's environment.** Clear what
 the run must not see, once, where the fixture is built — once rather than per invocation, so an assertion
 added later inherits the isolation instead of the bug.
 
@@ -202,8 +195,7 @@ independently. Expect the answers to differ: the same guard is routinely correct
 wrong in another, and finding that out afterwards means finding it out as a blocked commit in a repository
 whose owner did not ask for the check.
 
-This is the step whose absence has already cost a real incident here, and it is invisible from inside the
-authoring repository, where everything is green.
+Skipping this is invisible from inside the authoring repository, where everything is green.
 
 ## Step 7 — Make it report, if there is anywhere to report to
 
@@ -214,14 +206,11 @@ one place the two disagree outright:**
 - **Shell fragment** — the fragment adds its own emit call, resolving the emitter as
   `$HOME_ROOT/sh/gate-emit.sh` rather than the literal `${CLAUDE_PLUGIN_ROOT}` path; that file's "Where
   the emitter lives" section says why the literal path is usually silently absent.
-- **Gate** — **you add nothing to the gate.** Emission is `{ gate: "…", emits: true }` on the ops entry,
-  and the ops builds the emitter itself from the repository's `artifactDir`. A gate that emitted would be
-  deciding something only the composition can know: a signal's identity includes the population it was
-  read over, so the same detector over two path sets is two signals, and over one file is neither.
+- **Gate** — **add nothing to the gate.** Emission is `{ gate: "…", emits: true }` on the ops entry, and
+  the ops builds the emitter itself from the repository's `artifactDir`.
 
-Emitting is also the exception rather than the default. Most signals are structural properties that stay
-corrected once corrected, and a series of those is a flat line nobody reads; the ones worth recording are
-behavioural and recurrent.
+Emit only a signal that is behavioural and recurrent. A structural property stays corrected once
+corrected, and its series is a flat line.
 
 **Then prove the absent case by diff, not by argument**: with the destination variable unset, the check's
 output must be byte-identical to what it produced before the emit line existed.
@@ -272,12 +261,8 @@ Two failure modes that look like the skill working:
   third row of Step 6's table reached by accident instead of by decision, and the resulting guard checks
   whatever happened to be easy.
 
-**A third failure mode, measured 2026-08-13 and the reason Step 0 exists:** this file described one
-detector surface for a day after the repository grew a second, and a run against a repository with no
-`scripts/checks/` reached a prerequisite telling it to install a harness it had already outgrown. Step 7
-was worse than merely absent — it instructed the author to add an emit call to a detector that must never
-own one. **When a repository's detector surface changes, this file is part of that change**, and the
-symptom to watch for is a step that names exactly one place a sensor can live.
+**When a repository's detector surface changes, this file is part of that change.** The symptom to check
+for is a step that names exactly one place a sensor can live.
 
 Fold back what the run taught: a Step 2 question that decided the outcome and is not among the three, a
 near-miss class Step 3 does not name, a sensor contract the runner or `defineGate` enforces that Step 4

@@ -60,9 +60,12 @@ export default {
       // reader can see. Note what is NOT excluded: `**/templates/**`, because the shipped copies are the
       // population this ops exists to read.
       ignore: {
+        // A migration note is the SOURCE this gate reads, never a description to be corrected. Scoped to
+        // the label rather than blanketed across the ops, because `unstated-destination` takes the same
+        // notes as its SUBJECT — one path whose exclusion belongs to an entry, moved out of a default
+        // that stays safe for everything else.
+        "template-heading-drift": ["plugin/skills/migrate/migrations/**"],
         "*": [
-          // A migration note must name what it drops; it is the source these gates read.
-          "plugin/skills/migrate/migrations/**",
           // A template is the authority on a shape, never a description of one. Both copies.
           "plugin/templates/**",
           "plugin/skills/setup/templates/project/templates/**",

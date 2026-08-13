@@ -194,7 +194,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       `defineOps` zero times. A new Step 0 reads the repository's detector surface; Steps 4, 5 and 7 gain
       the gate column; the checklist gains the two properties a gate may not decide. Step 7 was not merely
       missing — it told the author to add an emit call to a detector that must never own one.
-- [ ] **Track 8 — The guard, written with the corrected skill.** The rule as this plan stated it —
+- [x] **Track 8 — The guard, written with the corrected skill.** The rule as this plan stated it —
       migrating an artifact must not lose a content line the note gave no destination — is the input;
       what comes out is whatever the skill's Step 2 yields, including "not mechanically visible", which is
       a legitimate outcome it names. The literal form is suspect for a stated reason: content *loss* and
@@ -344,6 +344,21 @@ pin, and nothing anywhere would have said so. `claude plugin validate . --strict
 the same blindness that produced `skill-frontmatter` after a broken skill shipped (ADR-0004), reproduced
 exactly on the surface that had no equivalent check until this track. The unquoted-`": "` heuristic now
 runs for `agent` as well as `skill`, which is what caught it.
+
+**Track 8 — Step 2 rejected the rule as this plan stated it, and the skill's own procedure produced the
+sibling that is decidable.** "A migration must not lose a content line the note gave no destination"
+cannot be checked as a diff: content *loss* and content *transformation* are the same diff, and
+`plan-0.1-to-0.2.md` prescribes exactly the transformation a vanished-line guard would accuse. The
+decidable form moves the moment — check the **note**, before anyone migrates: a section it marks
+`**dropped**` and never mentions outside the shape table has nowhere for its content to go. The gate does
+not claim a mentioned section is properly routed; that remains prose, and a note that mentions and still
+fails to route is a review comment.
+
+Composing it surfaced the same structural fault this repository had already paid for once. The `self`
+ops's `ignore` excluded the migration notes under `"*"`, correctly — they are `template-heading-drift`'s
+*source*. For a gate whose *subject* they are, that blanket produced `0 examined, 7 ignored`: a vacuous
+pass, reported as a clean run. The exclusion belongs to the entry, not to the ops, and moving that one
+path to its label left the other entry's population identical at 66 examined.
 
 The dispatch before it is worth recording too, because it was the design working rather than failing:
 handed the `0.2 → 3` note alone, the agent found **zero** artifacts at that stamp, distinguished the three
