@@ -188,11 +188,19 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       `cli/packages/ops-agents-md/src/index.ts` scoped to `<plugin>/agents/*.md`. The gate's `version`
       stays where it is — see the Decision Log. At the end, an agent file missing `description`, or
       declaring a field plugins ignore, fails `vibe-ops agents-md`.
-- [ ] **Track 7 — The guard that says no content vanished.** Written through `/vibe-ops:new-signal`, which
-      produces the rule, the guard and the fixture proving it fires as one act: migrating an artifact must
-      not lose a content line that the note gave no destination. This is the precondition for ever
-      delegating `migrate` Step 3, and it is worth having even if that delegation never happens — the
-      failure it catches is silent, permanent, and lands on the artifact with the most content in it.
+- [x] **Track 7 — `/vibe-ops:new-signal` learns that a sensor has two homes.** Reordered before the guard
+      once running it revealed the skill predates the surface it would have to write into: it was last
+      touched the day before the gates/ops axis landed, and names `defineGate`, `packages/gates` and
+      `defineOps` zero times. A new Step 0 reads the repository's detector surface; Steps 4, 5 and 7 gain
+      the gate column; the checklist gains the two properties a gate may not decide. Step 7 was not merely
+      missing — it told the author to add an emit call to a detector that must never own one.
+- [ ] **Track 8 — The guard, written with the corrected skill.** The rule as this plan stated it —
+      migrating an artifact must not lose a content line the note gave no destination — is the input;
+      what comes out is whatever the skill's Step 2 yields, including "not mechanically visible", which is
+      a legitimate outcome it names. The literal form is suspect for a stated reason: content *loss* and
+      content *transformation* are the same diff, and a note that retypes prose into a checklist is
+      prescribing exactly the change a vanished-line guard would accuse. Report what Step 2 decides rather
+      than assuming the answer.
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking issue
       closed. The plan file itself is kept.
 
@@ -287,6 +295,15 @@ Run from the repository root:
   functionality that no existing caller has to handle differently, which is also the axis `cli/AGENTS.md`
   already states for a gate's `version` and a fragment's `CHECK_VERSION`. A new `rule` value in the
   findings does not break a consumer that was not reading for it.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: the guard trades places with the skill that writes it — the `new-signal` correction becomes
+  Track 7 and the guard becomes Track 8.
+  Rationale: running the skill to write the guard is what surfaced that the skill describes only the shell
+  fragment surface, which this repository no longer uses for a new detector. Writing the guard first would
+  have meant either following a stale procedure or hand-rolling around it, and hand-rolling around a skill
+  is what the workspace already has a measured rule against. Fix the tool, then use it, and let its own
+  Step 2 decide the guard's shape rather than the plan pre-deciding it.
   Date / Author: 2026-08-13 / Danilo Borges
 
 - Decision: `plugin/skills/new-log/SKILL.md` gets `effort: inherit`, not `high`, and Track 1 covers four

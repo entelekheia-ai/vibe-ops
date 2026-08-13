@@ -24,9 +24,32 @@ signal at a point in time. Running it twice correctly produces two signals; it h
 guard that needs to change is edited in place, and a rule that has been superseded gets its guard deleted
 rather than re-scaffolded.
 
-**Prerequisite:** the repository has a harness. If `scripts/checks/` and `scripts/checks/_run.sh` are not
-there, stop and run `/vibe-ops:setup harness` — this skill writes a fragment into an apparatus, and a
-fragment with nothing composing it is a file.
+## Step 0 — Which detector surface this repository has
+
+**Two exist, and they are not interchangeable.** Decide before Step 4, because everything from there on
+differs — where the sensor is written, what its contract is, where its fixture lives, and who is allowed
+to make it emit.
+
+```bash
+ls scripts/checks/_run.sh 2>/dev/null          # the shell harness
+ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # the composed one
+```
+
+| What you found | The sensor is | Read |
+|---|---|---|
+| `scripts/checks/_run.sh` | a **shell fragment** the runner composes | Steps 4–7 as written, "shell" column |
+| a `packages/gates/` tree | a **gate**, composed by an **ops** | Steps 4–7, "gate" column, and `cli/AGENTS.md` §Gates and ops |
+| neither | nothing to compose a sensor into | stop; run `/vibe-ops:setup harness` first |
+
+A repository can hold both while a port is in flight. Then the question is which one the *new* detector
+belongs to, and the answer is the composed one: the fragments are being retired, and a detector written
+as a fragment today is written to be ported tomorrow. Extending a fragment that already exists and is
+actively wrong is different from adding one, and stays allowed.
+
+The split matters most at Step 7, where the two surfaces disagree outright: a fragment adds its own emit
+call, and **a gate must never decide that it emits** — emission belongs to the ops entry
+(`{ gate: "…", emits: true }`), because a signal's identity includes the population it was read over and
+only the composition knows that.
 
 ---
 
@@ -81,12 +104,32 @@ Two things this guide must carry that ordinary prose does not:
 
 ## Step 4 — Write the sensor
 
-A fragment at `scripts/checks/NN-<signal-id>.sh`, defining `check_<signal_id>` with `-` as `_`. Pick `NN`
-from the gap in what is already composed; the number is ordering only, and a fragment sorts near the ones
-it is thematically adjacent to.
+Where, and against which contract, follows from Step 0.
 
-The contract is in the runner's own header: a fragment may use `fail`/`pass`/`skip`, `head_`, `norm_rel`,
-`tracked_md` and `$ROOT`, and **must not write anything into `$ROOT`**.
+**Shell fragment.** A file at `scripts/checks/NN-<signal-id>.sh`, defining `check_<signal_id>` with `-` as
+`_`. Pick `NN` from the gap in what is already composed; the number is ordering only, and a fragment sorts
+near the ones it is thematically adjacent to. The contract is in the runner's own header: a fragment may
+use `fail`/`pass`/`skip`, `head_`, `norm_rel`, `tracked_md` and `$ROOT`, declares `CHECK_VERSION` as an
+integer, and **must not write anything into `$ROOT`**.
+
+**Gate.** A folder at `packages/gates/src/<signal-id>/index.ts`, default-exporting `defineGate({ id,
+version, summary }, run)`. `run` receives `{ files, documents, options }` and returns
+`{ findings, examined }`; a finding is `{ rule, file, line?, evidence }`, where `rule` names the failure
+and is what every reading is filed under. Three properties have no shell equivalent and are where a first
+gate goes wrong:
+
+- **A gate does not choose its population.** It is handed `files` and reads them. Never filter by a
+  repository-specific path rule inside the detector — that belongs to the ops entry's `paths`, and to the
+  repository's own `ignore` config. A hardcoded exclusion here is invisible to the person it affects.
+- **A gate does not decide whether a finding blocks.** It declares a default `level`; the repository
+  overrides it by rule, by label, or with `"*"`.
+- **Read the parsed document, not the file.** `documents.get(file)` carries the tree; `proseText` masks
+  code spans and `describedText` keeps them, and which one a detector reads decides whether a quoted
+  example counts as a mention. A line-based regex over the raw text is how a gate accuses its own
+  documentation.
+
+Then compose it: one entry in the ops that owns this population, `{ gate: "<signal-id>", paths: [...] }`.
+**A gate nothing composes is a file**, exactly as an unwired fragment is.
 
 Four rules with teeth:
 
@@ -107,9 +150,16 @@ Four rules with teeth:
 **This is the step that makes the rest worth anything**, and it is the one that gets dropped. A check that
 detects nothing passes exactly like a check that works.
 
-Add to the repository's `scripts/checks/self-test.sh`: an input that violates the rule, plus **at least
-one decoy** — a near-miss from Step 3 that must *not* fire. A fixture with only violations passes whether
-or not the check distinguishes anything, so the decoy is what gives the assertion meaning.
+An input that violates the rule, plus **at least one decoy** — a near-miss from Step 3 that must *not*
+fire. A fixture with only violations passes whether or not the check distinguishes anything, so the decoy
+is what gives the assertion meaning.
+
+Where it goes follows from Step 0: for a **fragment**, the repository's `scripts/checks/self-test.sh`; for
+a **gate**, the owning ops's own test suite, extending the broken fixture it already builds rather than
+starting a second one — a fixture that lives beside the others is run by whoever runs them, and a private
+one is run by whoever remembers it. Assert the evidence string **this** signal alone produces, not only
+its rule name: a rule name in a list passes on any finding filed under it, including one the detector
+already made before this change.
 
 Then assert both directions:
 
@@ -157,10 +207,21 @@ authoring repository, where everything is green.
 
 ## Step 7 — Make it report, if there is anywhere to report to
 
-Only after Steps 5 and 6. Add the emit call — the shape, the population rules and the absent-destination
-guarantee are all in [`harness-pair.md`](../../references/harness-pair.md). Resolve the emitter as
-`$HOME_ROOT/sh/gate-emit.sh`, not the literal `${CLAUDE_PLUGIN_ROOT}` path — see that file's "Where
-the emitter lives" section for why the literal path is usually silently absent.
+Only after Steps 5 and 6. The shape, the population rules and the absent-destination guarantee are all in
+[`harness-pair.md`](../../references/harness-pair.md). **Who adds it differs by surface, and this is the
+one place the two disagree outright:**
+
+- **Shell fragment** — the fragment adds its own emit call, resolving the emitter as
+  `$HOME_ROOT/sh/gate-emit.sh` rather than the literal `${CLAUDE_PLUGIN_ROOT}` path; that file's "Where
+  the emitter lives" section says why the literal path is usually silently absent.
+- **Gate** — **you add nothing to the gate.** Emission is `{ gate: "…", emits: true }` on the ops entry,
+  and the ops builds the emitter itself from the repository's `artifactDir`. A gate that emitted would be
+  deciding something only the composition can know: a signal's identity includes the population it was
+  read over, so the same detector over two path sets is two signals, and over one file is neither.
+
+Emitting is also the exception rather than the default. Most signals are structural properties that stay
+corrected once corrected, and a series of those is a flat line nobody reads; the ones worth recording are
+behavioural and recurrent.
 
 **Then prove the absent case by diff, not by argument**: with the destination variable unset, the check's
 output must be byte-identical to what it produced before the emit line existed.
@@ -177,9 +238,12 @@ should be said to be.
 
 ## Checklist
 
+- [ ] Step 0 ran: the detector surface was read off the repository, not assumed
 - [ ] The signal id names the failure, not the check or the tool
 - [ ] Step 2 ran: mechanically visible, not already existing, and block-versus-warn decided by the
       sixty-second test rather than by severity
+- [ ] For a gate: it chooses neither its population nor whether its findings block, and it is composed
+      into an ops — a gate nothing composes is a file
 - [ ] The guide carries the reason and the deliberately-allowed near-misses, not just the prohibition
 - [ ] The fragment reports `skip` with a reason when its population is empty — never `pass`
 - [ ] Whether a finding may be named was decided, and the reason is in the fragment's header
@@ -208,6 +272,14 @@ Two failure modes that look like the skill working:
   third row of Step 6's table reached by accident instead of by decision, and the resulting guard checks
   whatever happened to be easy.
 
+**A third failure mode, measured 2026-08-13 and the reason Step 0 exists:** this file described one
+detector surface for a day after the repository grew a second, and a run against a repository with no
+`scripts/checks/` reached a prerequisite telling it to install a harness it had already outgrown. Step 7
+was worse than merely absent — it instructed the author to add an emit call to a detector that must never
+own one. **When a repository's detector surface changes, this file is part of that change**, and the
+symptom to watch for is a step that names exactly one place a sensor can live.
+
 Fold back what the run taught: a Step 2 question that decided the outcome and is not among the three, a
-near-miss class Step 3 does not name, a fragment contract the runner enforces that Step 4 does not state.
+near-miss class Step 3 does not name, a sensor contract the runner or `defineGate` enforces that Step 4
+does not state.
 If a run produced no edits, say so — a pair that fit the procedure exactly is signal too.
