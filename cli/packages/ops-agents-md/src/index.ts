@@ -10,8 +10,16 @@
 // 60-memory-slugs.sh, and the two are meant to be compared, finding by finding, before the shell
 // fragments are ever removed. That removal is a separate, later act. `pairing` and `claude-md-content`
 // are not ports — the shell runner never checked the AGENTS.md ↔ CLAUDE.md pairing at all.
+//
+// Plan-013 Track 6: the three `fragment-parity` entries below are that comparison, made mechanical —
+// same runner as `ops-governance`'s own `links` entry, same shape. Not emitted, same reasoning as that
+// entry: `fragment-parity` is temporary by construction, tied to a shell fragment RFC-0001 expects to
+// eventually delete, and a series that dies with its subject is one nobody reads. Each entry's `paths`
+// mirrors the population of the check it is comparing against, so the comparison means what it says.
 
 import { defineOps } from "@entelekheia/vibe-ops-core";
+
+const CHECK_AGENTS_MD_RUNNER = "cli/packages/module-check/sh/check-agents-md.sh";
 
 export default defineOps({
   id: "agents-md",
@@ -35,6 +43,29 @@ export default defineOps({
       gate: "memory-slug",
       emits: true,
       paths: ["AGENTS.md", "**/AGENTS.md", "**/CLAUDE.md", "**/README.md"],
+    },
+    {
+      gate: "fragment-parity",
+      label: "fragment-parity-frontmatter",
+      paths: [".agents/rules/*.md"],
+      options: { runner: CHECK_AGENTS_MD_RUNNER, fragment: "frontmatter", against: "check-frontmatter", options: { schema: "rule" } },
+    },
+    {
+      gate: "fragment-parity",
+      label: "fragment-parity-skill-frontmatter",
+      paths: ["<plugin>/skills/*/SKILL.md", ".agents/skills/*/SKILL.md"],
+      options: {
+        runner: CHECK_AGENTS_MD_RUNNER,
+        fragment: "skill-frontmatter",
+        against: "check-frontmatter",
+        options: { schema: "skill" },
+      },
+    },
+    {
+      gate: "fragment-parity",
+      label: "fragment-parity-memory-slug",
+      paths: ["AGENTS.md", "**/AGENTS.md", "**/CLAUDE.md", "**/README.md"],
+      options: { runner: CHECK_AGENTS_MD_RUNNER, fragment: "memory-slugs", against: "memory-slug" },
     },
   ],
 });

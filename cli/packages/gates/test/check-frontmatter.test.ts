@@ -40,19 +40,45 @@ test("a rule with a description passes", async () => {
   assert.deepEqual(outcome.findings, []);
 });
 
-test("schema: skill also catches an unquoted value containing \": \", naming the offending key", async () => {
+test("schema: skill catches an unquoted value containing \": \", naming the offending key", async () => {
   const repoRoot = await repo();
   await writeFile(
     path.join(repoRoot, "SKILL.md"),
     '---\nname: x\ndescription: template and numbering: an ADR\n---\n\nbody\n',
   );
   const outcome = await checkFrontmatter.run(ctx(repoRoot, ["SKILL.md"], { schema: "skill" }));
-  // A textual heuristic, same as the shell fragment it replaces — it does not actually parse YAML, so
-  // it does not know the unquoted colon would make a real parser drop the description too. Only the
-  // one fault it can see fires.
-  assert.equal(outcome.findings.length, 1);
+  // Plan-013 Track 5: this fixture now trips the parser too — `hasError` is a real, independent
+  // detector alongside the textual heuristic, not a replacement for it. Two distinct findings, in a
+  // fixed order: the structural parse failure first, then the heuristic naming the offending key —
+  // which the parse failure alone cannot do, since a tree-sitter ERROR node's own span truncates well
+  // before the fault it recovers from.
+  assert.equal(outcome.findings.length, 2);
   assert.equal(outcome.findings[0]!.rule, "skill-frontmatter");
-  assert.equal(outcome.findings[0]!.evidence, "description — unquoted value contains \": \", frontmatter will not parse and ALL fields are silently dropped");
+  assert.match(outcome.findings[0]!.evidence, /frontmatter does not parse/);
+  assert.equal(outcome.findings[0]!.line, 3);
+  assert.equal(outcome.findings[1]!.rule, "skill-frontmatter");
+  assert.equal(outcome.findings[1]!.evidence, "description — unquoted value contains \": \", frontmatter will not parse and ALL fields are silently dropped");
+});
+
+test("schema: skill — hasError alone catches a fault the unquoted-colon heuristic cannot see", async () => {
+  const repoRoot = await repo();
+  // A tab-indented key: no unquoted ": " anywhere, so the old heuristic sees nothing. Only the parser
+  // itself notices — and here it also cannot recover `description:`, which was past the fault, so the
+  // "no description" finding is correct too: the file really would load with that field silently gone.
+  await writeFile(path.join(repoRoot, "SKILL.md"), "---\nname: x\n\tdescription: bad indent\n---\n\nbody\n");
+  const outcome = await checkFrontmatter.run(ctx(repoRoot, ["SKILL.md"], { schema: "skill" }));
+  assert.equal(outcome.findings.length, 2);
+  assert.match(outcome.findings[0]!.evidence, /frontmatter does not parse/);
+  assert.match(outcome.findings[1]!.evidence, /no description/);
+});
+
+test("schema: skill — an unclosed quote is caught by hasError, naming the last key that parsed", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "SKILL.md"), '---\nname: x\ndescription: "unclosed\n---\n\nbody\n');
+  const outcome = await checkFrontmatter.run(ctx(repoRoot, ["SKILL.md"], { schema: "skill" }));
+  const parseFailure = outcome.findings.find((f) => /frontmatter does not parse/.test(f.evidence));
+  assert.ok(parseFailure !== undefined);
+  assert.match(parseFailure.evidence, /`name:`/);
 });
 
 test("schema: skill does not flag a quoted value containing \": \"", async () => {

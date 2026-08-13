@@ -82,7 +82,7 @@ test("every gate fires on a repository broken in all five ways", async () => {
   }
 });
 
-test("a clean repository passes all seven composed entries", async () => {
+test("a clean repository passes every composed entry", async () => {
   const repoRoot = await gitRepo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
   await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
@@ -94,6 +94,25 @@ test("a clean repository passes all seven composed entries", async () => {
   assert.ok(!logs.some((line) => line.includes("FAIL")), logs.join("\n"));
   // no .claude/ directory at all — bridge must say so, not report a vacuous ok
   assert.ok(logs.some((line) => line.includes("SKIP  [bridge]")), logs.join("\n"));
+  // the three fragment-parity entries (Plan-013) SKIP here too — this fixture is a throwaway repo with
+  // no cli/packages/module-check/sh/check-agents-md.sh of its own to compare against, which is the
+  // correct outcome (fragment-parity's own "no runner" test covers the mechanism directly) rather than
+  // a false pass over a hole.
+  for (const label of ["fragment-parity-frontmatter", "fragment-parity-skill-frontmatter", "fragment-parity-memory-slug"]) {
+    assert.ok(logs.some((line) => line.includes(`SKIP  [${label}]`)), logs.join("\n"));
+  }
+});
+
+// Plan-013 Track 6, against the real checkout — the comparison RFC-0001 wants before a shell fragment
+// is ever removed, run for real rather than against a synthetic fixture. `check-agents-md.sh` resolves
+// relative to `repoRoot`, so this is the one test in this file that must point `repoRoot` at this
+// repository's own checkout instead of a throwaway one.
+test("the three fragment-parity entries report zero port-regression against this repository's real checkout", async () => {
+  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
+  const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
+  const result = await ops.run(context);
+  assert.equal(result.code, 0, logs.join("\n"));
+  assert.ok(!logs.some((line) => line.includes("[port-regression]")), logs.join("\n"));
 });
 
 test("only memory-slug is recorded, and only for the entries declaring emits: true", async () => {

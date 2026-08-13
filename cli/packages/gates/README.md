@@ -15,8 +15,14 @@ import "@entelekheia/vibe-ops-gates/budget";      // one folder, one gate, one s
 | `pairing` | new | no sibling `CLAUDE.md` (`fail`), or one that exists but does not import `@AGENTS.md` (`warn`) | the first mode only — creates the missing sibling; never edits one that exists |
 | `claude-md-content` | new | a `CLAUDE.md` carrying content beyond `@AGENTS.md` | no — a judgement about where the content belongs |
 | `bridge` | `module-check/sh/checks/30-bridge.sh` | a `.claude/` entry that is not a resolving relative symlink | no |
-| `check-frontmatter` | `40-frontmatter.sh` + `45-skill-frontmatter.sh` | a missing frontmatter block, description, or (schema `skill`) an unquoted `": "` that silently drops all fields | no |
+| `check-frontmatter` | `40-frontmatter.sh` + `45-skill-frontmatter.sh` | a missing frontmatter block, a description, frontmatter that genuinely does not parse (any fault, named by line — Plan-013), or (schema `skill`) an unquoted `": "` that silently drops all fields | no |
 | `memory-slug` | `60-memory-slugs.sh` | a `[[…]]` personal-memory link, fences and inline code spans excluded | no |
+
+Eight gates read the parsed document model instead of the file — `check-frontmatter`, `memory-slug`,
+`pairing` and `claude-md-content` above, plus `markdown-link`, `breadcrumb`, `record-header` and
+`template-version` (not in the table above; see `cli/AGENTS.md`'s layout table). How to read one is
+[core's README](../core/README.md). Only `budget`, `bridge` and `fragment-parity` do not — none of the
+three has document structure to extract.
 
 `pairing`'s two findings split by **failure mode, not by root-versus-nested depth** — a nested `AGENTS.md`
 with no sibling fails exactly like a root one, because once the file exists it either loads or it does

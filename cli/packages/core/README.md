@@ -88,6 +88,25 @@ supplements it — without that, anything written inside a table cell reaches no
 should be walked. Why it is a separate query rather than a patched grammar:
 [ADR-0010](../../../project/adr/0010-supplement-injection-queries-not-a-branch-per-grammar-gap.md).
 
+### Telling prose from code without walking node types
+
+`proseText(document)` returns `document.text` with everything **except** inline prose blanked to spaces —
+a fenced block, frontmatter, an HTML block, and, within what remains, the interior of every inline
+`code_span`. The result is the **same length** as `document.text`, so a match index against it is a valid
+argument to `lineAt(document.text, index)` directly, with no offset arithmetic at the call site.
+
+It exists because walking node types is not enough to tell prose from code: `[[a-slug]]` inside a code
+span never becomes a `text` node under the inline grammar at all — it parses as
+`(shortcut_link (link_text))`, and that node's own `.text` is `[a-slug]`, one bracket pair, so a pattern
+written against plain text matches it whether or not the surrounding syntax was code. Masking the source
+string first and matching the mask sidesteps the question. A fenced code block needs no separate handling
+for the same reason `hostEnd` needs none: markdown never injects one as a `text.markdown_inline` layer, so
+it is never copied into the buffer to begin with.
+
+Use it for "does this document's real prose say X", never for "does this document exist and parse" — a
+gate reading structure (a link, a header table, a frontmatter key) still reads the layer or the block tree
+directly, per the table above.
+
 ### Positions: always `lineAt`, never `startPosition.row`
 
 ```ts

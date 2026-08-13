@@ -6,16 +6,17 @@
 // Not fixable. Deciding whether a paragraph belongs in CLAUDE.md or in the AGENTS.md it imports is a
 // judgement about someone's content, the same reason pairing's own claude-md-no-import finding is
 // unrepairable: this gate would have to guess where the words go, not just that they exist.
+//
+// Plan-013 Track 4: the HTML-comment strip (`/<!--[\s\S]*?-->/g`) is replaced by `proseText`, which
+// blanks an `html_block` the same way it blanks a fenced code block — structurally, not by a regular
+// expression that has to agree with the grammar's own comment syntax.
 
-import { defineGate } from "@entelekheia/vibe-ops-core";
+import { defineGate, proseText } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 /** What is left after the expected shape — the import, HTML comments, and blank lines — is removed. */
-function residualContent(raw: string): string {
-  const withoutComments = raw.replace(/<!--[\s\S]*?-->/g, "");
-  const lines = withoutComments.split("\n").filter((line) => {
+function residualContent(masked: string): string {
+  const lines = masked.split("\n").filter((line) => {
     const trimmed = line.trim();
     return trimmed !== "" && trimmed !== "@AGENTS.md";
   });
@@ -29,11 +30,12 @@ export default defineGate(
     summary: "A CLAUDE.md carries only its @AGENTS.md import, or the rest looks like a deliberate choice",
     defaultPaths: ["**/CLAUDE.md"],
   },
-  async ({ repoRoot, files }) => {
+  async ({ files, documents }) => {
     const findings: GateFinding[] = [];
     for (const file of files) {
-      const raw = await readFile(path.join(repoRoot, file), "utf8");
-      if (residualContent(raw) === "") continue;
+      const document = documents.get(file);
+      if (document.tree === undefined) continue;
+      if (residualContent(proseText(document)) === "") continue;
       findings.push({
         rule: "claude-md-carries-content",
         file,

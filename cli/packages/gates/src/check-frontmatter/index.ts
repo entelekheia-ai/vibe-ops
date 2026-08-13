@@ -8,11 +8,23 @@
 // A rule with no description is never surfaced to the agent. A skill whose frontmatter does not parse
 // loads with EMPTY metadata — the unquoted-": "-in-a-value fault that shipped once and was invisible
 // from inside the repository until `claude plugin tag` caught it at release (ADR-0004).
+//
+// Plan-013 Track 5: the manual `lines[0] !== "---"` / `indexOf("---", 1)` block extraction is replaced by
+// `readFrontmatter`, which reads the parsed yaml layer instead of guessing where the block ends — it
+// folds a multi-line `description:` correctly, which a line reader does not. The `skill` schema's
+// unquoted-`": "` heuristic stays: it names the offending key and says exactly what breaks, which
+// `hasError` alone cannot. Beside it, `hasError` is now a real, independent finding — measured
+// 2026-08-12 against the installed `@tree-sitter-grammars/tree-sitter-yaml@0.7.1`: a tab-indented key or
+// an unclosed quote sets it and the heuristic below cannot see either. The ERROR node's own span ends
+// exactly at the fault and still contains every `block_mapping_pair` the parser recovered before it, so
+// the finding can usually still name the last key that parsed cleanly. The two findings are
+// complementary, not redundant — a parse failure and a missing `description:` are different faults and
+// both can be true of the same file. `schema` is untouched: both shapes require the same one key today,
+// and generalizing it into a declarative format is deliberately out of scope (Plan-013 Decision Log).
 
-import { defineGate } from "@entelekheia/vibe-ops-core";
+import { defineGate, lineAt, walkLayersWithHostPositions } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import { readFrontmatter } from "@entelekheia/vibe-ops-records";
 
 type Schema = "rule" | "skill";
 
@@ -20,15 +32,7 @@ interface FrontmatterOptions {
   readonly schema?: Schema;
 }
 
-const DESCRIPTION = /^description:\s*\S/m;
 const KEY_VALUE = /^([A-Za-z0-9_-]+): (.*)$/;
-
-function frontmatterBlock(content: string): string[] | undefined {
-  const lines = content.split("\n");
-  if (lines[0] !== "---") return undefined;
-  const close = lines.indexOf("---", 1);
-  return close === -1 ? lines.slice(1) : lines.slice(1, close);
-}
 
 export default defineGate(
   {
@@ -36,23 +40,55 @@ export default defineGate(
     version: 1,
     summary: "The declared type's frontmatter parses and declares a description",
   },
-  async ({ repoRoot, files, options }) => {
+  async ({ files, documents, options }) => {
     const schema = (options as FrontmatterOptions).schema ?? "rule";
     const rule = schema === "skill" ? "skill-frontmatter" : "frontmatter";
     const noun = schema === "skill" ? "skill" : "rule";
     const findings: GateFinding[] = [];
+    let examined = 0;
 
     for (const file of files) {
-      const content = await readFile(path.join(repoRoot, file), "utf8");
-      const block = frontmatterBlock(content);
-      if (block === undefined) {
+      const document = documents.get(file);
+      if (document.tree === undefined) continue;
+      examined += 1;
+
+      const positioned = walkLayersWithHostPositions(document.layers).find(
+        ({ layer, hostStart }) => layer.languageId === "source.yaml" && hostStart === 0,
+      );
+      if (positioned === undefined) {
         findings.push({ rule, file, evidence: "has no frontmatter block" });
         continue;
       }
+      const root = positioned.layer.tree.rootNode;
 
+      if (root.hasError) {
+        const error = root.descendantsOfType("ERROR")[0];
+        const line = lineAt(document.text, positioned.hostStart + (error?.endIndex ?? root.endIndex));
+        const keys = (error?.descendantsOfType("block_mapping_pair") ?? [])
+          .map((pair) => pair.childForFieldName("key")?.text)
+          .filter((key): key is string => key !== undefined);
+        const lastKey = keys[keys.length - 1];
+        findings.push({
+          rule,
+          file,
+          line,
+          evidence:
+            lastKey === undefined
+              ? "frontmatter does not parse"
+              : `frontmatter does not parse — the fault follows \`${lastKey}:\``,
+        });
+      }
+
+      // Kept beside `hasError` deliberately: it names the offending key in language that says what will
+      // happen, not merely that something is wrong. Reads `document.text` sliced to the layer's own
+      // HOST span, not `root.text` — a parse error truncates the tree's own `.text` to what it managed
+      // to consume (measured: a colon two keys deep leaves `root.text` ending mid-line, well before the
+      // fault this heuristic exists to catch), while `hostEnd` comes from the injection query's capture
+      // span and always covers the full `---`-to-`---` block regardless of what the sub-parse recovered.
       if (schema === "skill") {
+        const block = document.text.slice(positioned.hostStart, positioned.hostEnd);
         const offenders: string[] = [];
-        for (const line of block) {
+        for (const line of block.split("\n")) {
           const match = KEY_VALUE.exec(line);
           if (match === null) continue;
           const value = match[2] ?? "";
@@ -67,10 +103,11 @@ export default defineGate(
         }
       }
 
-      if (!DESCRIPTION.test(block.join("\n"))) {
+      const description = readFrontmatter(document)?.scalars.get("description");
+      if (description === undefined || description === "") {
         findings.push({ rule, file, evidence: `has no description: — a ${noun} without one is never ${schema === "skill" ? "matched" : "surfaced"}` });
       }
     }
-    return { findings };
+    return { findings, examined };
   },
 );

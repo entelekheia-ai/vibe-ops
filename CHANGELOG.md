@@ -14,7 +14,27 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed — the document model reaches the last four hand-rolled gates (Plan-013)
+
+- **`memory-slug`, `pairing`, `claude-md-content` and `check-frontmatter` read the parsed document
+  instead of the file.** Each was solving, by hand, the problem the document model exists to solve:
+  `memory-slug` toggled a fence flag and stripped code spans with a regular expression; `pairing` tested
+  a `CLAUDE.md` for `@AGENTS.md` with a bare substring match, so a mention inside a code span or a fenced
+  example read as a real import; `claude-md-content` stripped HTML comments the same fragile way.
+- **`proseText(document)`, new in `@entelekheia/vibe-ops-core`,** is the one shared primitive all three
+  needed: the document's prose with a fenced block, frontmatter, an HTML block and every inline code
+  span masked to spaces, the same length as the source so a match index is a valid `lineAt` argument
+  with no offset arithmetic. `[[slug]]` inside a code span never becomes a `text` node under the inline
+  grammar at all — masking the source string is the only approach that actually finds what a line-based
+  regex found.
+- **`check-frontmatter` now detects frontmatter that does not parse, any fault, not only the one
+  unquoted-`": "` shape a regular expression could name.** `rootNode.hasError` is a real, independent
+  finding beside the existing heuristic — which stays, because it names the offending key in language
+  that says what will happen, which a bare parse failure cannot.
+- **`fragment-parity` forwards `options` to the gate it compares against.** Previously hardcoded to `{}`,
+  so `check-frontmatter` was always compared under its `rule` default — `45-skill-frontmatter.sh` could
+  not be validated against its own port at all. Three parity entries now run in `agents-md`, all reporting
+  zero `port-regression` against this repository's own checkout.
 
 ## [0.9.0] — 2026-08-12
 

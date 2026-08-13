@@ -4,6 +4,7 @@
 // layer's span translated into the host document's own offsets, and a host offset turned into the
 // `GateFinding.line` a reader can jump to. See project/tasks/003-the-inline-layer-gates.md, item 2.
 
+import type { Document } from "./document.ts";
 import type { Layer } from "./injections.ts";
 
 /** A layer alongside its span in HOST document offsets — not parent-relative. */
@@ -47,4 +48,36 @@ export function lineAt(text: string, hostOffset: number): number {
     if (text.charCodeAt(i) === 10 /* "\n" */) line++;
   }
   return line;
+}
+
+/**
+ * `document.text`, with everything except inline markdown prose blanked to spaces (` `) — a fenced
+ * code block, frontmatter, an HTML block, and, within what remains, the interior of every inline
+ * `code_span`. The result is the same length as `document.text`, so a match index against it is a
+ * valid argument to `lineAt(document.text, index)` with no offset arithmetic at the call site: masking,
+ * never slicing.
+ *
+ * Exists because a caller cannot tell prose from code by walking node types alone. `[[slug]]` inside a
+ * code span never becomes a `text` node under the inline grammar at all — it parses as
+ * `(shortcut_link (link_text))`, and that node's own `.text` is `[slug]`, one bracket pair, so a
+ * pattern written against plain text never matches it whether or not it should. Masking the source
+ * string first and then matching against the result sidesteps the question, the same way a fenced code
+ * block is excluded "for free": markdown never injects one as a `text.markdown_inline` layer, so it is
+ * never copied into the buffer in the first place.
+ */
+export function proseText(document: Document): string {
+  const masked = new Array<string>(document.text.length).fill(" ");
+  for (const { layer, hostStart } of walkLayersWithHostPositions(document.layers)) {
+    if (layer.languageId !== "text.markdown_inline") continue;
+    const root = layer.tree.rootNode;
+    for (let i = 0; i < root.text.length; i++) {
+      masked[hostStart + i] = root.text[i]!;
+    }
+    for (const span of root.descendantsOfType("code_span")) {
+      for (let i = span.startIndex; i < span.endIndex; i++) {
+        masked[hostStart + i] = " ";
+      }
+    }
+  }
+  return masked.join("");
 }

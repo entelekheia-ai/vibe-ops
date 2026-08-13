@@ -8,7 +8,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createDocumentStore } from "../src/document.ts";
-import { lineAt, walkLayersWithHostPositions } from "../src/position.ts";
+import { lineAt, proseText, walkLayersWithHostPositions } from "../src/position.ts";
 
 async function repo(): Promise<string> {
   return mkdtemp(path.join(tmpdir(), "vibeops-position-"));
@@ -97,4 +97,91 @@ test("end to end against a real file in this repository: cli/AGENTS.md's first l
   }
   assert.ok(firstLinkHostOffset !== undefined, "no inline_link found in cli/AGENTS.md");
   assert.equal(lineAt(document.text, firstLinkHostOffset), 7);
+});
+
+// Plan-013 Track 1: the shared "prose, code masked out" primitive three gates need instead of each
+// hand-rolling a fence toggle or a code-span strip.
+test("proseText: same length as document.text, always — the invariant lineAt at the call site relies on", async () => {
+  const repoRoot = await repo();
+  const text = [
+    "# heading",
+    "",
+    "```toml",
+    "[[language]]",
+    'name = "description"',
+    "```",
+    "",
+    "inline `[[also_not_a_link]]` quoted as code",
+    "",
+    "a real one: [[project_something]]",
+    "",
+  ].join("\n");
+  await writeFile(path.join(repoRoot, "f.md"), text);
+  const document = createDocumentStore(repoRoot).get("f.md");
+  assert.ok(document.tree !== undefined);
+
+  const masked = proseText(document);
+  assert.equal(masked.length, text.length);
+});
+
+test("proseText: a fenced block is blanked — never injected as inline content in the first place", async () => {
+  const repoRoot = await repo();
+  const text = ["```toml", "[[language]]", "```", "", "prose stays: hello"].join("\n");
+  await writeFile(path.join(repoRoot, "f.md"), text);
+  const document = createDocumentStore(repoRoot).get("f.md");
+  const masked = proseText(document);
+  assert.ok(!masked.includes("[[language]]"));
+  assert.ok(masked.includes("hello"));
+});
+
+test("proseText: an inline code span is blanked, prose beside it is not", async () => {
+  const repoRoot = await repo();
+  const text = "inline `[[also_not_a_link]]` quoted as code, but a real [[project_something]] stays\n";
+  await writeFile(path.join(repoRoot, "f.md"), text);
+  const document = createDocumentStore(repoRoot).get("f.md");
+  const masked = proseText(document);
+  assert.ok(!masked.includes("[[also_not_a_link]]"));
+  assert.ok(masked.includes("[project_something]"), "the shortcut_link's own text survives masking");
+});
+
+test("proseText: frontmatter is blanked", async () => {
+  const repoRoot = await repo();
+  const text = "---\ndescription: has a secret marker HERE\n---\n\nprose body\n";
+  await writeFile(path.join(repoRoot, "f.md"), text);
+  const document = createDocumentStore(repoRoot).get("f.md");
+  const masked = proseText(document);
+  assert.ok(!masked.includes("HERE"));
+  assert.ok(masked.includes("prose body"));
+});
+
+test("proseText: an HTML block is blanked", async () => {
+  const repoRoot = await repo();
+  const text = "<!-- a comment MARKER -->\n\nprose stays\n";
+  await writeFile(path.join(repoRoot, "f.md"), text);
+  const document = createDocumentStore(repoRoot).get("f.md");
+  const masked = proseText(document);
+  assert.ok(!masked.includes("MARKER"));
+  assert.ok(masked.includes("prose stays"));
+});
+
+test("proseText: a masked match's index is still a valid lineAt argument against the ORIGINAL text", async () => {
+  const repoRoot = await repo();
+  const text = [
+    "# decoys",
+    "```toml",
+    "[[language]]",
+    'name = "description"',
+    "```",
+    "inline `[[also_not_a_link]]` quoted as code",
+    "a real one: see [[project_something]]",
+    "",
+  ].join("\n");
+  await writeFile(path.join(repoRoot, "f.md"), text);
+  const document = createDocumentStore(repoRoot).get("f.md");
+  const masked = proseText(document);
+
+  const match = /\[\[[a-z0-9][a-z0-9_-]*\]\]/.exec(masked);
+  assert.ok(match !== undefined, "the real slug must survive masking");
+  assert.equal(match![0], "[[project_something]]");
+  assert.equal(lineAt(document.text, match!.index), 7);
 });

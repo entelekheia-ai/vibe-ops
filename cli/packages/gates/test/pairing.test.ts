@@ -64,6 +64,30 @@ test("fix() creates the missing sibling, containing exactly @AGENTS.md", async (
   assert.deepEqual(after.findings, []);
 });
 
+// Plan-013 Track 3: `content.includes("@AGENTS.md")` used to read this as importing, because the string
+// is present — just not as an import. `proseText` masks the fenced example out before the test runs.
+test("a CLAUDE.md whose only mention of @AGENTS.md is inside a code span does not count as importing it", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
+  await writeFile(path.join(repoRoot, "CLAUDE.md"), "See `@AGENTS.md` for an example of the convention.\n");
+  const outcome = await pairing.run(ctx(repoRoot, ["AGENTS.md"]));
+  assert.equal(outcome.findings.length, 1);
+  assert.equal(outcome.findings[0]!.level, "warn");
+  assert.match(outcome.findings[0]!.evidence, /does not link back/);
+});
+
+test("a CLAUDE.md whose only mention of @AGENTS.md is inside a fenced example does not count as importing it", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
+  await writeFile(
+    path.join(repoRoot, "CLAUDE.md"),
+    ["A nested repo's CLAUDE.md looks like:", "", "```", "@AGENTS.md", "```", ""].join("\n"),
+  );
+  const outcome = await pairing.run(ctx(repoRoot, ["AGENTS.md"]));
+  assert.equal(outcome.findings.length, 1);
+  assert.equal(outcome.findings[0]!.level, "warn");
+});
+
 test("fix() never touches a CLAUDE.md that exists but does not import — that finding is unrepairable on purpose", async () => {
   const repoRoot = await repo();
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");

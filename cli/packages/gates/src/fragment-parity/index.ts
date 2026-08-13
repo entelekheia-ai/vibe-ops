@@ -12,6 +12,12 @@
 // and which port to compare against. This is what lets the same gate generalize to every other
 // fragment eventually ported, by changing `options` rather than writing a new gate — and it is what
 // lets this gate leave the repository the day its `fragment` does, with nothing else to update.
+//
+// Plan-013 Track 6: `options.options` forwards to the gate under test, previously hardcoded to `{}`.
+// Without it, comparing anything against `check-frontmatter` silently exercised its default `rule`
+// schema, and `45-skill-frontmatter.sh` — a real, distinct fragment — could never be named as the
+// `fragment` in a parity entry at all: the port it would be compared against was unreachable under the
+// schema that fragment actually checks.
 
 import { defineGate, loadGate } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
@@ -26,6 +32,8 @@ interface FragmentParityOptions {
   readonly fragment?: string;
   /** The gate id the fragment was ported to. Resolved and run fresh, over this entry's own population. */
   readonly against?: string;
+  /** Forwarded verbatim to the `against` gate's own `options` — e.g. `{ schema: "skill" }`. */
+  readonly options?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -59,8 +67,8 @@ export default defineGate(
     version: 1,
     summary: "A shell fragment and the gate that ported it agree on every file the fragment flags",
   },
-  async ({ repoRoot, pluginDir, files, options, documents }) => {
-    const { runner, fragment, against } = options as FragmentParityOptions;
+  async ({ repoRoot, pluginDir, files, options: entryOptions, documents }) => {
+    const { runner, fragment, against, options: againstOptions } = entryOptions as FragmentParityOptions;
     if (runner === undefined || fragment === undefined || against === undefined) {
       throw new Error("fragment-parity requires options.runner, options.fragment and options.against");
     }
@@ -87,7 +95,7 @@ export default defineGate(
     }
 
     const gate = await loadGate(against);
-    const outcome = await gate.run({ repoRoot, pluginDir, files, options: {}, documents });
+    const outcome = await gate.run({ repoRoot, pluginDir, files, options: againstOptions ?? {}, documents });
     const portFailures = new Set(outcome.findings.map((finding) => finding.file).filter((file): file is string => file !== undefined));
 
     const findings: GateFinding[] = [];
