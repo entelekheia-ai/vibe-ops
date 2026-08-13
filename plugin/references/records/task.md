@@ -1,5 +1,5 @@
 ---
-vibe-ops-reference: records/task@1
+vibe-ops-reference: records/task@2
 ---
 
 # Task — what only a task needs
@@ -23,6 +23,24 @@ Splitting work into tasks is not the same decision as deciding where its reasoni
 only the first is the failure — see
 [`project/plans/007-taxonomy-guards-one-close-and-filing-approved-plans.md`](../../../project/plans/shipped/007-taxonomy-guards-one-close-and-filing-approved-plans.md),
 migrated back into the repository a day after its four dossiers were closed and deleted.
+
+## A work item states a cause, so the cause is measured before it is written
+
+A work item is `What` / `Why` / `Change`, and the `Why` is a claim about the world: this file embeds that,
+this rule blocks that, this directory is missing something. **Run the command that confirms it before
+writing the item, not before starting the work.** A cause reasoned from a plausible mechanism reads
+exactly like a cause that was checked, survives review, and is only caught when someone finally opens the
+file — by which point it has been copied into the parent plan and any dossier written beside it.
+
+Measured 2026-08-13: one item was diagnosed wrong twice in a single day — first as a path to extract from
+a file that did not contain one, then as a rule to lift that had no effect on the file in question. Each
+was refuted by one command taking seconds, and the second wrong diagnosis was written immediately after
+correcting the first. Nothing had been built on either, so the cost was a rewrite; that is luck, not
+process.
+
+The cheap discipline: if the `Why` contains a verb like *embeds*, *excludes*, *blocks* or *is missing*,
+that sentence is a claim with a command behind it. Run it. If the command is not obvious, the item is not
+ready to be written.
 
 ## Before writing — the issue
 

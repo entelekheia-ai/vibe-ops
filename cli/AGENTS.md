@@ -115,7 +115,8 @@ second concept.
 
 `vibe-ops hook <surface>` ([`packages/cli/src/hook.ts`](packages/cli/src/hook.ts)) is the **one namespace
 for every entry point that reads a hook payload on stdin** — `ops <ops> [--fix <gates>]` (PostToolUse, an
-ops over the file just written), `plan-context` (UserPromptSubmit), `new-context` (UserPromptExpansion).
+ops over the file just written), `plan-context` (UserPromptSubmit), `new-context` (UserPromptExpansion),
+`harness-status` (SessionStart).
 They are not variations on one hook: the payload field, the guard and the `hookEventName` in the reply
 differ in each; what they share is the envelope, and that is what the namespace names. **`ops` is a
 reserved first word**, so an arbitrary ops name can never shadow a surface, nor a new surface someone's
@@ -146,6 +147,22 @@ cascade a linter uses, for the same reason: the per-repo file holds what is true
 file holds the operator's preferences, and neither should restate the other. Nearest wins per key;
 `settings` merges one level deep so a repo overriding one module's settings does not discard the home
 file's settings for every other module.
+
+**Each directory holds two files, layered, not one.** `vibeops.config.local.*` is clone-local and
+gitignored; `vibeops.config.*` is committed. Both contribute and the local one wins per key, so a
+committed config ships fully populated while a clone overrides only what is true of that machine. The pair
+repeats at every level, which is what gives the home directory the personal-override file this section
+used to describe with no mechanism behind it. **The directory walk still outranks the pair** — a nearer
+committed file beats a farther local one, asserted by a test because inverting it yields a cascade that
+still looks correct while a stale home file governs every repository. `loadOne()` therefore returns every
+match in a directory rather than the first, which is the thing to preserve if it is ever refactored:
+returning the first makes a local file *replace* the committed one it exists to layer over
+([ADR-0014](../project/adr/0014-clone-local-configuration-layers-rather-than-replaces.md)).
+
+`harness.applied` lives there — which version of each record type was **promulgated** into this clone, not
+what any artifact was written against, which is that artifact's own frontmatter. Absence is a state and is
+never zero, and unlike `settings` it merges nearest-wins **whole**: a half-inherited map would answer for a
+repository it was never applied to.
 
 `.ts` is loaded by dynamic `import()` and relies on Node's native type stripping (**≥22.18**), so a
 config file costs no dependency and no build step. `.mjs` and `.js` work identically.
