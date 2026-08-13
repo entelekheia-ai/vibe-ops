@@ -6,7 +6,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
 | Related | [ADR-0004](../adr/0004-budgeted-artifacts-and-guards.md), [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), `plugin/references/convergence-policy.md` |
@@ -158,7 +158,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
 
 ## Tracks
 
-- [ ] **Track 1 — Effort declared where it is missing.** `plugin/agents/governance-auditor.md` gets
+- [x] **Track 1 — Effort declared where it is missing.** `plugin/agents/governance-auditor.md` gets
       `effort: high`; `plugin/skills/migrate/SKILL.md` and `plugin/skills/new-migration/SKILL.md` get
       `effort: high`. The repository already differentiates effort deliberately (`license-setup: low`,
       `close-plan`/`close-task`/`authoring-agents-md: high`) on the axis of what being wrong costs; these
@@ -287,6 +287,15 @@ Run from the repository root:
   functionality that no existing caller has to handle differently, which is also the axis `cli/AGENTS.md`
   already states for a gate's `version` and a fragment's `CHECK_VERSION`. A new `rule` value in the
   findings does not break a consumer that was not reading for it.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: `plugin/skills/new-log/SKILL.md` gets `effort: inherit`, not `high`, and Track 1 covers four
+  surfaces rather than the three it names.
+  Rationale: The track enumerated the surfaces this plan had looked at; the goal and the success criterion
+  were written over the whole population, and running the criterion is what found the fourth. `new-log`
+  writes one entry recording a trap — an event skill, the same class as `new`, which also inherits. It
+  carries neither an unrecoverable step nor a failure that is silent and plausible, which is what the two
+  `high` values above are for, and it is not transcription behind a verifier, which is what `low` is for.
   Date / Author: 2026-08-13 / Danilo Borges
 
 - Decision: New mechanical coverage goes to the CLI gates, never to a new shell fragment.

@@ -2,6 +2,7 @@
 name: new-migration
 description: Move a template to a new version and write the migration note that comes with it — the version stamp, one note per jump under skills/migrate/migrations/, every dropped section given a destination, and every step classified mechanical or needs-a-decision. Use when changing any file under plugin/templates/, when a template changed and no note was written, or "/new-migration <type>".
 argument-hint: "[template-type]"
+effort: high
 paths:
   - "plugin/templates/*.md"
   - "**/plugin/templates/*.md"

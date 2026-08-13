@@ -2,6 +2,7 @@
 name: new-log
 description: Write one entry into project/log/ — a trap someone would otherwise hit again, recorded as what was attempted and what happened, addressed by the path where it recurs. Use when closure routes a Surprises entry that names a file, folder or package; when a dead end is found outside a task; or when anything is being written under project/log/.
 argument-hint: "[slug]"
+effort: inherit
 paths:
   - "project/log/*.md"
   - "**/project/log/*.md"

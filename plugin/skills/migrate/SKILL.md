@@ -2,6 +2,7 @@
 name: migrate
 description: Bring governance artifacts written against an older template up to the current one — finds the `vibe-ops-template` stamp each one declares, applies the recorded migration for each version jump, and reports what needs a human decision instead of guessing. Use when a repo's plans, tasks, ADRs or RFCs predate a template change, after updating vibe-ops, when a plan still carries sections the current template dropped, or "/migrate [path]".
 argument-hint: "[path | audit]"
+effort: high
 ---
 
 # /migrate — artifacts, one template version at a time

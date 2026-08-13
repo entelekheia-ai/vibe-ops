@@ -2,6 +2,7 @@
 name: governance-auditor
 description: Use this agent to run the survey step of a target-state skill — the read-only pass that compares a repository against a declared target state and returns a gap list, writing nothing. Typical triggers include an `audit` argument to /vibe-ops:setup, /vibe-ops:authoring-agents-md or /vibe-ops:migrate, the survey that opens a full (non-audit) run of any of those, and any moment a skill must learn what a repository already has before it decides what to write. See "When to invoke" in the agent body for worked scenarios. Never use it to apply a verb, write a file, or fix what it finds.
 model: inherit
+effort: high
 color: cyan
 tools: ["Read", "Grep", "Glob", "Bash"]
 ---
