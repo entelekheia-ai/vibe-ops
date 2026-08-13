@@ -13,7 +13,11 @@ const twoVerbs = defineModule(
       { name: "loud", summary: "shouts", flags: [{ name: "shout", type: "boolean", description: "extra bang" }] },
     ],
   },
-  async (context) => ({ code: 0, summary: context.command, data: { command: context.command, flags: context.flags } }),
+  async (context) => ({
+    code: 0,
+    summary: context.command ?? "(no command)",
+    data: { command: context.command, flags: context.flags },
+  }),
 );
 
 function baseOptions(overrides: Partial<Parameters<typeof runModule>[0]> = {}) {
@@ -55,6 +59,7 @@ test("a second valid command reaches the module's context with its own flags", a
 test("a module with no commands declared never runs the command guard — today's flat shape is untouched", async () => {
   const flat = defineModule({ id: "flat", version: "1", summary: "s" }, async (context) => ({
     code: 0,
+    summary: "flat ran",
     data: { command: context.command },
   }));
   const result = await runModule({ ...baseOptions({ plugin: flat }), command: undefined });

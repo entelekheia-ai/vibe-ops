@@ -74,6 +74,10 @@ export default defineModule(
       { name: "list", type: "boolean", description: "Print the checks that would run and their source files" },
       { name: "self-test", type: "boolean", description: "Assert every check still fires on a deliberately broken fixture" },
       { name: "verbose", type: "boolean", description: "Print the full run rather than only failures" },
+      // `check` is the most-invoked verb by a wide margin, and its output is the noisiest — which is why
+      // sessions reformulate the same call three and four times adding `tail`, `grep` and `sed`. The flag
+      // exists on the nouns and was missing exactly where the volume is.
+      { name: "json", type: "boolean", description: "Return the findings as JSON on stdout instead of lines" },
     ],
   },
   async (context: ModuleContext): Promise<ModuleResult> => {
@@ -101,7 +105,11 @@ export default defineModule(
     // Only the failing and warning lines reach the caller by default. The expensive reader is an
     // agent, not a terminal, and a clean run of seventeen `ok` lines says nothing that the summary
     // does not.
-    if (context.surface === "cli") {
+    // `--json` suppresses the lines entirely: they and the payload share stdout, so a preamble printed
+    // beside the JSON is a preamble printed INSIDE it, and the whole point of the flag is a stream `jq`
+    // can read. The three nouns already gate their own logging on the same flag; this module had no
+    // `--json` to gate on until now.
+    if (context.surface === "cli" && context.flags["json"] !== true) {
       const interesting = context.flags["verbose"] === true || context.flags["list"] === true
         ? output
         : output.split("\n").filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
@@ -130,7 +138,7 @@ export default defineModule(
       for (const id of OPS_WITH_FIXTURES) {
         const ops = await runOpsSelfTest(id, context);
         suites.push(ops);
-        if (context.surface === "cli") context.log(ops.output);
+        if (context.surface === "cli" && context.flags["json"] !== true) context.log(ops.output);
       }
       const failed = suites.filter((suite) => suite.code !== 0).map((suite) => suite.id);
       return {

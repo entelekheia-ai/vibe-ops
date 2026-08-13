@@ -65,7 +65,14 @@ export default defineModule(
         throw error;
       }
       if (context.flags.json !== true) for (const line of formatCensus(entries)) context.log(line);
-      return { code: 0, data: entries };
+      return {
+        code: 0,
+        summary:
+          entries.length === 0
+            ? "no governance records found in this repository"
+            : `${entries.length} record type(s) censused`,
+        data: entries,
+      };
     }
 
     // Also no `--type`, for the same class of reason: the type is resolved from where each file lives,
@@ -88,7 +95,7 @@ export default defineModule(
       if (context.flags.json !== true) {
         for (const answer of answers) for (const line of formatHandling(answer)) context.log(line);
       }
-      return { code: 0, data: answers };
+      return { code: 0, summary: `${answers.length} record path(s) answered for`, data: answers };
     }
 
     if (context.command === "resolve") {
@@ -106,7 +113,14 @@ export default defineModule(
       }
 
       if (context.flags.json !== true) for (const line of formatResolved(resolved)) context.log(line);
-      return { code: 0, data: resolved };
+      return {
+        code: 0,
+        summary:
+          resolved.dir === undefined
+            ? `no ${type} directory in this repository`
+            : `${type} records live in ${resolved.dir}, next number ${typeof resolved.next === "string" ? resolved.next : "unknown"}`,
+        data: resolved,
+      };
     }
 
     return { code: 2, summary: `records ${String(context.command)} is not implemented yet` };

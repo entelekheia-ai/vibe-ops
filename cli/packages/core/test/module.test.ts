@@ -6,7 +6,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const ok = async () => ({ code: 0 });
+const ok = async () => ({ code: 0, summary: "ok" });
 
 test("a module id must be lowercase and hyphenated", () => {
   assert.throws(() => defineModule({ id: "Check", version: "1", summary: "x" }, ok), /lowercase/);

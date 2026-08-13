@@ -83,7 +83,14 @@ export default defineModule(
       if (context.flags.json !== true) {
         for (const line of formatResolved(resolved)) context.log(line);
       }
-      return { code: 0, data: resolved };
+      return {
+        code: 0,
+        summary:
+          resolved.dir === undefined
+            ? "no plans directory in this repository"
+            : `plans live in ${resolved.dir}, next number ${typeof resolved.next === "string" ? resolved.next : "unknown"}`,
+        data: resolved,
+      };
     }
 
     if (context.command === "status") {
@@ -109,7 +116,19 @@ export default defineModule(
           context.log(`${finding.file}: ${reason}`);
         }
       }
-      return { code: 0, data: { findings } };
+      // The summary names the population, not just the verdict. "no incoherent plan found" alone reads
+      // as an answer about the repository; with nowhere named, it is indistinguishable from having
+      // looked nowhere — which is exactly what an empty result was doing before.
+      return {
+        code: 0,
+        summary:
+          resolved.dir === undefined
+            ? "no plans directory in this repository, so no plan was read"
+            : findings.length === 0
+              ? `no plan in ${resolved.dir} has a Status disagreeing with its tracks`
+              : `${findings.length} plan(s) in ${resolved.dir} have a Status disagreeing with their tracks`,
+        data: { findings },
+      };
     }
 
     if (context.command === "context") {
@@ -123,7 +142,11 @@ export default defineModule(
       const projectDir = typeof context.flags["project-dir"] === "string" ? context.flags["project-dir"] : undefined;
       const text = planModeGuidance(resolved, projectDir);
       if (context.flags.json !== true && text !== "") context.log(text);
-      return { code: 0, data: { text } };
+      return {
+        code: 0,
+        summary: text === "" ? "no plan-mode guidance applies in this repository" : "plan-mode guidance built",
+        data: { text },
+      };
     }
 
     if (context.command === "file") {
@@ -143,10 +166,10 @@ export default defineModule(
       const filed = filePlan({ repoRoot: context.repoRoot, dir: resolved.dir, next: resolved.next, text });
       if (filed.skipped !== undefined) {
         if (context.flags.json !== true) context.log(`not filed: ${filed.skipped}`);
-        return { code: 0, data: filed };
+        return { code: 0, summary: `not filed: ${filed.skipped}`, data: filed };
       }
       if (context.flags.json !== true) context.log(`filed: ${filed.file}`);
-      return { code: 0, data: filed };
+      return { code: 0, summary: `filed: ${filed.file}`, data: filed };
     }
 
     if (context.command === "close") {
@@ -183,7 +206,10 @@ export default defineModule(
           migrationsDir: migrationsDir(context.repoRoot),
         });
         const line = describe(dispatch, file);
-        if (blocks(dispatch)) return { code: 2, summary: line };
+        // `describe` returns undefined for a current plan, and a current plan never blocks — but the two
+        // facts are not tied together in the types, so a blocking dispatch with no line still needs to
+        // say something rather than close silently on an empty summary.
+        if (blocks(dispatch)) return { code: 2, summary: line ?? `${file}: its template version blocks closing` };
         if (line !== undefined) {
           version = { line, dispatch };
           if (context.flags.json !== true) context.log(line);
@@ -213,7 +239,14 @@ export default defineModule(
       // is owed: the question it answers — "which closures used the old rule" — is asked about the runs
       // that looked ordinary at the time.
       const policy = routingPolicy(resolvePluginDir(context.repoRoot), context.repoRoot, documents);
-      return { code: 0, data: { ...closed, version, policy } };
+      return {
+        code: 0,
+        summary:
+          context.flags["dry-run"] === true
+            ? `dry run: ${closed.from} would move to ${closed.to} with status "${closed.status}"`
+            : `${closed.from} closed as "${closed.status}" and moved to ${closed.to}`,
+        data: { ...closed, version, policy },
+      };
     }
 
     return { code: 2, summary: `plan ${String(context.command)} is not implemented yet` };

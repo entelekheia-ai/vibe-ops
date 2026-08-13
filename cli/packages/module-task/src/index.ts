@@ -65,7 +65,14 @@ export default defineModule(
       if (context.flags.json !== true) {
         for (const line of formatResolved(resolved)) context.log(line);
       }
-      return { code: 0, data: resolved };
+      return {
+        code: 0,
+        summary:
+          resolved.dir === undefined
+            ? "no tasks directory in this repository"
+            : `task dossiers live in ${resolved.dir}, next number ${typeof resolved.next === "string" ? resolved.next : "unknown"}`,
+        data: resolved,
+      };
     }
 
     if (context.command === "guard") {
@@ -77,7 +84,14 @@ export default defineModule(
         if (open.length === 0) context.log("no dossier with an open closure box");
         for (const file of open) context.log(`${file}: the closure box is still unchecked`);
       }
-      return { code: 0, data: { open } };
+      return {
+        code: 0,
+        summary:
+          open.length === 0
+            ? `${context.args.length} dossier(s) checked, none with an open closure box`
+            : `${open.length} of ${context.args.length} dossier(s) still have an open closure box`,
+        data: { open },
+      };
     }
 
     if (context.command === "close") {
@@ -142,7 +156,11 @@ export default defineModule(
       return {
         code: result.dangling.length > 0 ? 1 : 0,
         summary:
-          result.dangling.length > 0 ? `${result.dangling.length} file(s) still link to a deleted dossier` : undefined,
+          result.dangling.length > 0
+            ? `${result.dangling.length} file(s) still link to a deleted dossier`
+            : dryRun
+              ? `dry run: ${context.args.length} dossier(s) would be closed, no reference left dangling`
+              : `${context.args.length} dossier(s) closed, no reference left dangling`,
         // Which routing policy this closure ran under — the promotion test the dossier's Surprises
         // entries were routed through. Recorded on every closure, not only when something is owed.
         data: {

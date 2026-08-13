@@ -45,7 +45,11 @@ export default defineModule(
 
     if (context.command === "resolve") {
       if (context.flags.json !== true) context.log(`DIR=${dir ?? "(none)"}`);
-      return { code: 0, data: { type: "log" as const, root: context.repoRoot, dir } };
+      return {
+        code: 0,
+        summary: dir === undefined ? "no log directory in this repository" : `log entries live in ${dir}`,
+        data: { type: "log" as const, root: context.repoRoot, dir },
+      };
     }
 
     if (dir === undefined) {
@@ -59,7 +63,14 @@ export default defineModule(
         if (findings.length === 0) context.log(`${entries.length} entr(ies) examined, nothing to report`);
         for (const finding of findings) context.log(`${finding.file}: [${finding.rule}] ${finding.evidence}`);
       }
-      return { code: findings.length > 0 ? 1 : 0, data: { findings, examined: entries.length } };
+      return {
+        code: findings.length > 0 ? 1 : 0,
+        summary:
+          findings.length === 0
+            ? `${entries.length} log entr(ies) in ${dir} examined, nothing to report`
+            : `${findings.length} finding(s) across ${entries.length} log entr(ies) in ${dir}`,
+        data: { findings, examined: entries.length },
+      };
     }
 
     if (context.command === "sweep") {
@@ -73,7 +84,14 @@ export default defineModule(
       // Zero is the ordinary answer, and a candidate is a judgement to make rather than a failure, so
       // this never changes the exit code. Retirement is deletion plus a tombstone, and both are the
       // skill's to write — an entry whose path merely moved is not one whose trap is gone.
-      return { code: 0, data: { retirable, examined: entries.length } };
+      return {
+        code: 0,
+        summary:
+          retirable.length === 0
+            ? `${entries.length} log entr(ies) in ${dir} examined, none retirable`
+            : `${retirable.length} of ${entries.length} log entr(ies) in ${dir} are retirement candidates`,
+        data: { retirable, examined: entries.length },
+      };
     }
 
     if (context.command === "index") {
@@ -86,12 +104,20 @@ export default defineModule(
         if (context.flags.json !== true) {
           context.log(drifted ? `${indexFile} is out of date — run vibe-ops log index` : `${indexFile} is up to date`);
         }
-        return { code: drifted ? 1 : 0, data: { drifted, file: indexFile } };
+        return {
+          code: drifted ? 1 : 0,
+          summary: drifted ? `${indexFile} is out of date — run vibe-ops log index` : `${indexFile} is up to date`,
+          data: { drifted, file: indexFile },
+        };
       }
 
       writeFileSync(path.join(context.repoRoot, indexFile), next);
       if (context.flags.json !== true) context.log(`${indexFile}: ${entries.length} entr(ies) written`);
-      return { code: 0, data: { file: indexFile, entries: entries.length } };
+      return {
+        code: 0,
+        summary: `${indexFile}: ${entries.length} entr(ies) written`,
+        data: { file: indexFile, entries: entries.length },
+      };
     }
 
     return { code: 2, summary: `log ${String(context.command)} is not implemented yet` };

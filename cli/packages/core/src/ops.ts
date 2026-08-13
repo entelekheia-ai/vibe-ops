@@ -181,6 +181,11 @@ export function defineOps(definition: OpsDefinition): ModulePlugin {
       flags: [
         { name: "list", type: "boolean", description: "Print the gates composed, and the paths each runs over" },
         { name: "audit", type: "boolean", description: "Report exactly as a run would, and always exit 0" },
+        // The four governance nouns have had `--json` since they existed; the ops did not, so the only way
+        // to read an ops report from a terminal was to parse its rendered lines back. `runModule` already
+        // suppresses logging under the flag, and `bin.ts` already renders `data` — this declares the flag
+        // the plumbing was waiting for.
+        { name: "json", type: "boolean", description: "Return the report as JSON on stdout instead of lines" },
         { name: "verbose", type: "boolean", description: "Print the full run rather than only what failed" },
         { name: "file", type: "string", description: "Scope to one file instead of every tracked file" },
         {
@@ -300,7 +305,7 @@ async function selfTest(
     const label = labelFor(entry);
     if (entry.fixture === undefined) {
       cases.push({ label, fired: false, missing: [], skipped: "no fixture declared" });
-      if (context.surface === "cli") context.log(`SKIP  [${label}] no fixture declared`);
+      if (context.surface === "cli" && context.flags["json"] !== true) context.log(`SKIP  [${label}] no fixture declared`);
       continue;
     }
     const { files, expect, options } = entry.fixture;
@@ -322,7 +327,7 @@ async function selfTest(
       const produced = new Set(outcome.findings.map((finding) => finding.rule));
       const missing = expect.filter((rule) => !produced.has(rule));
       cases.push({ label, fired: missing.length === 0, missing });
-      if (context.surface === "cli") {
+      if (context.surface === "cli" && context.flags["json"] !== true) {
         context.log(
           missing.length === 0
             ? `ok    [${label}] fired on its fixture: ${expect.join(", ")}`
@@ -364,7 +369,7 @@ async function run(
       summary: gate.definition.summary,
       emits: entry.emits === true,
     }));
-    if (context.surface === "cli") {
+    if (context.surface === "cli" && context.flags["json"] !== true) {
       for (const { entry, gate, patterns } of resolved) {
         const marks = entry.emits === true ? "  (emits)" : "";
         context.log(`  ${labelFor(entry).padEnd(18)} ${patterns.join(" ")}${marks}`);
@@ -396,7 +401,11 @@ async function run(
   const fileFlag = context.flags["file"];
   const files = typeof fileFlag === "string" ? [toRepoRelative(fileFlag, context.repoRoot)] : trackedFiles(context.repoRoot);
   const verbose = context.flags["verbose"] === true;
-  const cli = context.surface === "cli";
+  // `--json` puts the payload on stdout, which is the same stream these lines use — so a line printed
+  // beside the JSON is a line printed inside it. Folding the flag into `cli` silences every log site at
+  // once rather than leaving each one to remember, which is how `module-check` lost its own preamble
+  // into the payload the first time this flag was added there.
+  const cli = context.surface === "cli" && context.flags["json"] !== true;
   const fixSpec = fixSpecFrom(context.flags["fix"], resolved, definition.id);
   const governed = context.settings as GovernedSettings | undefined;
   // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so

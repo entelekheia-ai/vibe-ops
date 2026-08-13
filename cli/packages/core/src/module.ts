@@ -12,8 +12,21 @@ import type { ModuleContext } from "./context.ts";
 /** What a module reports back. `code` is the process exit code when run from the CLI. */
 export interface ModuleResult {
   readonly code: number;
-  /** Human-facing summary line. The CLI prints it; the MCP server returns it as tool text. */
-  readonly summary?: string;
+  /**
+   * Human-facing summary line. The CLI prints it; the MCP server returns it as tool text.
+   *
+   * **Required, and the empty result is the reason.** A run that found nothing used to return neither
+   * `summary` nor `data`, so both surfaces printed nothing at all — and an empty string is not read as
+   * "this surface rendered no report", it is read as "there is nothing", which is a different and often
+   * false answer. Measured across the session corpus: four abandoned calls returned empty, and in every
+   * one the caller distrusted the silence and re-derived the answer by hand rather than believing it.
+   *
+   * So a summary states what was looked for and where, even — especially — when the answer is none:
+   * `"no incoherent plan among 12 in project/plans"` rather than nothing at all. There is deliberately
+   * no `count` field beside it; a report array carries its own length, and the summary carries the
+   * population.
+   */
+  readonly summary: string;
   /** Structured payload, returned verbatim by MCP. Must be JSON-serializable. */
   readonly data?: unknown;
 }
