@@ -209,7 +209,7 @@ was reached by hook, by hand, or by `pre-commit`.
       the ops, and unify the duplicated `--list`/`--self-test` pair. At the end: no failure mode of
       `check` requires reading its source to interpret. Task: to be opened.
 
-- [ ] **Track 4 — The read verb.** Touches `cli/packages/records/` (where the reading primitives
+- [x] **Track 4 — The read verb.** Touches `cli/packages/records/` (where the reading primitives
       already live) and `cli/packages/module-records/src/index.ts` (where the verb is declared). Add
       `records show <file>` with the seven fields tabulated in the Design section, reusing
       `trackCheckboxes` and `findHeaderTable` from `records/src/status.ts` rather than reparsing.
@@ -404,6 +404,30 @@ positionals — a dossier path read as a repository would be the same defect inv
 would parse, appear in `--help` and the MCP schema, and do nothing — the same reasoning that kept
 `--verbose` off the nouns in Track 2. `--audit` was added, because it has real behaviour: report
 identically, exit 0.
+
+**Track 4 (2026-08-13).** `records show <file>` exists and answers the five questions in one call. It is
+a projection, not new analysis: `handlingFor` already knew the type and the migrations, `trackCheckboxes`
+and `findHeaderTable` already read what they read. What was missing was `packages/records/src/shape.ts`
+— the headings a record has, and how many entries stand under a named section.
+
+The design choice worth keeping is that **`entriesUnder` returns `undefined` for an absent section and
+`0` for an empty one.** A plan with an empty `## Surprises & Discoveries` and a plan with no such
+section are different states, and only one of them means nothing is owed. Collapsing both to zero would
+have been the same defect as a command returning an empty string — the one Track 2 removed.
+
+Reading the block tree rather than the text pays for itself immediately: the shipped templates contain
+`## Surprises` inside a fenced example, and a `grep '^## '` counts it. The tests assert that difference
+directly, since it is the whole reason a verb beats the grep it replaces.
+
+`resolve` gained `--next-number` (17 greps for `[0-9]{3}`) and `--template`, which returns the body
+rather than the path (five `resolve → Read` pairs). `--template` is a flag rather than the default: a
+template body is ~150 lines and the common path should not carry it into every payload.
+
+Covered on all three surfaces, and the third was a live gap rather than a formality: the module tests
+call `run()` directly, which is surface-agnostic, so `records show` had no coverage on the MCP path
+until a test was added to `mcp-nouns.test.ts` — the file that exists because positionals once reached
+the terminal and nowhere else. It also asserts the summary arrives in the structured channel, since an
+MCP client renders `structuredContent` and discards the text.
 
 One failure in `npm test` is inherited, not caused here:
 `project/tasks/template-version-gate-resolves-wrong-templates-path.md` declares no template version, so

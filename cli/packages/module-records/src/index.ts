@@ -15,11 +15,14 @@
 // `task` already name their own resolver `resolve`, and the MCP schema becomes an enum with a summary per
 // verb instead of three flags that read as independent.
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
 import { formatResolved, resolveRecord, RecordsConfigError } from "@entelekheia/vibe-ops-records";
 import type { RecordType } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
+import { formatShown, showRecord, summariseShown } from "./show.ts";
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
 
@@ -39,7 +42,18 @@ export default defineModule(
       {
         name: "resolve",
         summary: "directory, template and next number for one record type",
-        flags: [{ name: "type", type: "string", description: "adr | rfc | plan | task" }, JSON_FLAG],
+        flags: [
+          { name: "type", type: "string", description: "adr | rfc | plan | task" },
+          // 17 greps for `[0-9]{3}` over project/ in the measured corpus, all asking this. The number was
+          // already in the payload, as one `NEXT=` line among a dozen — which is not the same as being
+          // answerable.
+          { name: "next-number", type: "boolean", description: "print only the next free number" },
+          // Five `resolve → Read` pairs in the same corpus: the command named the template and the caller
+          // then opened it. Behind a flag rather than always, because a template body is ~150 lines and
+          // the common path should not carry it.
+          { name: "template", type: "boolean", description: "print the template's body, not only its path" },
+          JSON_FLAG,
+        ],
       },
       {
         name: "census",
@@ -49,6 +63,11 @@ export default defineModule(
       {
         name: "handling",
         summary: "for the given record paths, the version each declares and the documents describing that shape",
+        flags: [JSON_FLAG],
+      },
+      {
+        name: "show",
+        summary: "one record read: status, sections, open tracks, accumulating entries, migrations owed",
         flags: [JSON_FLAG],
       },
     ],
@@ -98,6 +117,29 @@ export default defineModule(
       return { code: 0, summary: `${answers.length} record path(s) answered for`, data: answers };
     }
 
+    if (context.command === "show") {
+      if (context.args.length === 0) {
+        return { code: 2, summary: "records show needs at least one record path" };
+      }
+      const documents = createDocumentStore(context.repoRoot);
+      const pluginDir = resolvePluginDir(context.repoRoot);
+      let shown;
+      try {
+        shown = context.args.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents));
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
+      if (context.flags.json !== true) {
+        for (const one of shown) for (const line of formatShown(one)) context.log(line);
+      }
+      return {
+        code: 0,
+        summary: shown.length === 1 ? summariseShown(shown[0]!) : `${shown.length} records read`,
+        data: shown.length === 1 ? shown[0] : shown,
+      };
+    }
+
     if (context.command === "resolve") {
       const type = context.flags.type;
       if (typeof type !== "string" || !TYPES.includes(type as RecordType)) {
@@ -110,6 +152,32 @@ export default defineModule(
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;
+      }
+
+      if (context.flags["next-number"] === true) {
+        if (typeof resolved.next !== "string") {
+          return { code: 2, summary: `the next ${type} number is unknown — see ${resolved.authority ?? "the authority"}` };
+        }
+        if (context.flags.json !== true) context.log(resolved.next);
+        return { code: 0, summary: `next ${type} number is ${resolved.next}`, data: { next: resolved.next } };
+      }
+
+      if (context.flags["template"] === true) {
+        if (resolved.template === undefined) {
+          return { code: 2, summary: `no ${type} template found in this repository` };
+        }
+        let body: string;
+        try {
+          body = readFileSync(path.resolve(context.repoRoot, resolved.template), "utf8");
+        } catch (error) {
+          return { code: 2, summary: `${resolved.template} could not be read: ${(error as Error).message}` };
+        }
+        if (context.flags.json !== true) context.log(body);
+        return {
+          code: 0,
+          summary: `${resolved.template} (${body.split("\n").length} lines)`,
+          data: { ...resolved, templateBody: body },
+        };
       }
 
       if (context.flags.json !== true) for (const line of formatResolved(resolved)) context.log(line);

@@ -24,6 +24,8 @@ export {
   planTerminalFromTemplate,
 } from "./plan-fields.ts";
 export { planStatusFindings, trackCheckboxes } from "./status.ts";
+export { entriesUnder, sectionHeadings } from "./shape.ts";
+export type { Heading } from "./shape.ts";
 export { closureBoxOpen, tickClosureBox, tickPlanClosureBox } from "./closure.ts";
 export { closeTasks, TaskCloseError } from "./close.ts";
 export { citationsToBasenames, linksToBasenames, relativeLinks, spliceLinks } from "./links.ts";

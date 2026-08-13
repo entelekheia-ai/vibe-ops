@@ -295,3 +295,47 @@ test("an unknown verb over MCP is refused by the module, not by the schema alone
   const result = await call(c, "plan", { repo: await fixture(), command: "nope" });
   assert.equal(result.exitCode, -1, "the enum rejects it at the transport, before the module is reached");
 });
+
+// Plan-026 Track 4 over MCP: `records show` takes its record path as a POSITIONAL, which is the exact
+// input shape this file exists to guard — a verb reachable from a terminal and from nowhere else is the
+// bug it was written for. It also asserts the summary reaches the structured channel, because an MCP
+// client renders `structuredContent` and discards the text: a read verb whose answer arrives only as
+// terminal lines has not answered.
+test("Track 4 over MCP: records show reads a record through its positional, and answers structurally", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-mcp-show-"));
+  execFileSync("git", ["-C", repo, "init", "-q"]);
+  await mkdir(path.join(repo, "project", "plans"), { recursive: true });
+  await writeFile(
+    path.join(repo, "project", "plans", "001-a-plan.md"),
+    [
+      "# Plan-001: A plan",
+      "",
+      "| Field | Value |",
+      "|---|---|",
+      "| Status | In Progress |",
+      "",
+      "## Tracks",
+      "- [x] Track 1",
+      "- [ ] Track 2",
+      "",
+    ].join("\n"),
+  );
+
+  const c = await client();
+  const shown = await call(c, "records", {
+    repo,
+    command: "show",
+    args: ["project/plans/001-a-plan.md"],
+  });
+
+  assert.equal(shown.exitCode, 0, shown.text);
+  const data = shown.data as { status?: string; tracks?: { open: number; total: number } };
+  assert.equal(data.status, "In Progress");
+  assert.deepEqual(data.tracks, { total: 2, checked: 1, open: 1 });
+  assert.match(String(shown.summary), /1 of 2 tracks open/, "the summary is structured, not only printed");
+
+  // The positional is required, and its absence is a refusal with a reason rather than a report on nothing.
+  const bare = await call(c, "records", { repo, command: "show" });
+  assert.equal(bare.exitCode, 2);
+  assert.match(String(bare.summary), /at least one record path/);
+});
