@@ -83,6 +83,20 @@ export interface ModuleDefinition {
   readonly emits?: readonly string[];
   /** Set when the module must not run unattended — the CLI confirms before invoking it. */
   readonly destructive?: boolean;
+  /**
+   * That this module's first positional argument names the repository to act on, so the CLI resolves
+   * `repoRoot` from it instead of from the working directory, and removes it from `args`.
+   *
+   * It exists because a module may not touch `process.cwd()` — everything positional is resolved once,
+   * by the CLI — and a relative path like `.` or `../other` cannot be resolved without it. `vibe-ops
+   * check .` was therefore accepting an argument it silently ignored, keying off the working directory
+   * instead: harmless for `.`, and wrong for every other value. Declaring the intent here lets the one
+   * layer that legitimately knows the working directory do the resolution.
+   *
+   * Only for a module whose subject IS a repository. A module whose positionals are file paths
+   * (`task close <dossier>…`) must not set it.
+   */
+  readonly repoFromFirstArg?: boolean;
 }
 
 export interface ModulePlugin {

@@ -66,3 +66,34 @@ test("a module with no commands declared never runs the command guard — today'
   assert.equal(result.code, 0);
   assert.deepEqual(result.data, { command: undefined });
 });
+
+// `repoFromFirstArg` — the declaration that lets `vibe-ops check <path>` mean what it says. Before it,
+// the positional was accepted and silently ignored: `check .` was right by accident because the working
+// directory is what it keyed off, and `check ../other-repo` checked the wrong repository while reporting
+// success. The two assertions below are the halves that were wrong together.
+
+const repoScoped = defineModule(
+  { id: "repo-scoped", version: "0.0.1", summary: "a throwaway module whose subject is a repository", repoFromFirstArg: true },
+  async (context) => ({ code: 0, summary: "ran", data: { repoRoot: context.repoRoot, args: context.args } }),
+);
+
+const fileScoped = defineModule(
+  { id: "file-scoped", version: "0.0.1", summary: "a throwaway module whose positionals are file paths" },
+  async (context) => ({ code: 0, summary: "ran", data: { repoRoot: context.repoRoot, args: context.args } }),
+);
+
+test("a module declaring repoFromFirstArg has its first positional resolved into repoRoot, and consumed", async () => {
+  const here = await runModule(baseOptions({ plugin: repoScoped, args: ["."] }));
+  const bare = await runModule(baseOptions({ plugin: repoScoped, args: [] }));
+  const withArg = here.data as { repoRoot: string; args: readonly string[] };
+  const withoutArg = bare.data as { repoRoot: string; args: readonly string[] };
+
+  assert.equal(withArg.repoRoot, withoutArg.repoRoot, "`.` resolves to the same repository as no argument at all");
+  assert.deepEqual(withArg.args, [], "the argument is consumed, so the module never interprets it a second time");
+});
+
+test("a module NOT declaring repoFromFirstArg keeps its positionals — a dossier path must never be read as a repository", async () => {
+  const result = await runModule(baseOptions({ plugin: fileScoped, args: ["project/tasks/whatever.md"] }));
+  const data = result.data as { args: readonly string[] };
+  assert.deepEqual(data.args, ["project/tasks/whatever.md"]);
+});

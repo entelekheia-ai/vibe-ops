@@ -66,6 +66,13 @@ export default defineModule(
   a module logs only when `surface === "cli"`. Report arrays carry their own length: no `count`
   beside the array it summarises, and no "composed N" preamble.
 - **`destructive: true`** makes the CLI confirm before running. Set it on anything not trivially undone.
+- **`repoFromFirstArg: true`** makes the CLI resolve `repoRoot` from the module's first positional
+  instead of from the working directory, and **consume it** so the module never sees it. Only for a
+  module whose subject *is* a repository — `check` sets it; `task close <dossier>…` must not, or a file
+  path would be read as a repository. It exists because a module may not touch `process.cwd()`, so a
+  relative `.` or `../other` is unresolvable inside one: `vibe-ops check .` was accepting an argument it
+  silently ignored and keying off the working directory, which was right for `.` by accident and wrong
+  for every other value.
 
 ## Gates and ops
 

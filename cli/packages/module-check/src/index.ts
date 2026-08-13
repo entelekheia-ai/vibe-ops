@@ -11,6 +11,7 @@
 import { defineModule } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, ModulePlugin, ModuleResult } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -56,6 +57,40 @@ const SUMMARY_PATTERN = /^(\d+) checks, (\d+) failed$/m;
 const REPORT_LINE = /^(FAIL|WARN|SKIP)\s+\[([^\]]+)\]\s*(.*)$/;
 const LIST_LINE = /^ {2}(\S+)\s+(\S+)$/;
 
+/**
+ * A fragment's own prose, taken from the comment block above its first line of code — the paragraph
+ * after the licence header, which is where every fragment already states what it looks for. Read rather
+ * than duplicated into a table here: a description kept beside the id would be the copy that goes stale
+ * while the check it names changes.
+ */
+function describeFragment(source: string): readonly string[] {
+  let text: string;
+  try {
+    text = readFileSync(source, "utf8");
+  } catch {
+    return [];
+  }
+  const prose: string[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trimEnd();
+    if (line.startsWith("#!")) continue;
+    if (!line.startsWith("#")) {
+      // The comment block ended. Anything after the first line of code is implementation, not intent.
+      if (prose.length > 0) break;
+      continue;
+    }
+    const body = line.replace(/^#\s?/, "");
+    // The licence header is boilerplate on every fragment and says nothing about this one.
+    if (/^(Copyright|Licensed under)/.test(body)) continue;
+    if (body.trim() === "") {
+      if (prose.length > 0) break;
+      continue;
+    }
+    prose.push(body);
+  }
+  return prose;
+}
+
 function parseList(output: string): { readonly id: string; readonly source: string }[] {
   const checks: { id: string; source: string }[] = [];
   for (const line of output.split("\n")) {
@@ -78,9 +113,46 @@ export default defineModule(
       // sessions reformulate the same call three and four times adding `tail`, `grep` and `sed`. The flag
       // exists on the nouns and was missing exactly where the volume is.
       { name: "json", type: "boolean", description: "Return the findings as JSON on stdout instead of lines" },
+      { name: "audit", type: "boolean", description: "Report exactly as a run would, and always exit 0" },
+      {
+        name: "explain",
+        type: "string",
+        description: "Print what one check looks for, by id, instead of running anything",
+      },
     ],
+    // `vibe-ops check <path>` now checks that repository instead of silently checking the working
+    // directory's. `check .` meant the right thing by accident and every other value meant nothing.
+    repoFromFirstArg: true,
   },
   async (context: ModuleContext): Promise<ModuleResult> => {
+    // Answered before anything is spawned: the question is what a check looks for, which is in its own
+    // source and needs no run. Sessions answered it by opening the fragment's `.sh` by hand — twice in
+    // the measured corpus — because the only other thing `check` would say about an id was its filename.
+    const explain = context.flags["explain"];
+    if (typeof explain === "string" && explain !== "") {
+      const listed = spawnSync(RUNNER, ["--list"], { encoding: "utf8" });
+      const entry = parseList(`${listed.stdout ?? ""}${listed.stderr ?? ""}`).find(
+        (check) => check.id === explain || check.id.split("@")[0] === explain,
+      );
+      if (entry === undefined) {
+        return { code: 2, summary: `no check called "${explain}" — run vibe-ops check --list for the ids` };
+      }
+      const source = path.join(here, "..", "sh", entry.source.replace(/^sh\//, ""));
+      const prose = describeFragment(source);
+      if (context.surface === "cli" && context.flags["json"] !== true) {
+        context.log(`${entry.id}  ${entry.source}`);
+        for (const line of prose) context.log(`  ${line}`);
+      }
+      return {
+        code: 0,
+        summary:
+          prose.length === 0
+            ? `${entry.id} is defined in ${entry.source} and carries no description`
+            : `${entry.id}: ${prose[0]}`,
+        data: { id: entry.id, source: entry.source, description: prose },
+      };
+    }
+
     const argv: string[] = [];
     if (context.flags["list"] === true) argv.push("--list");
     else if (context.flags["self-test"] === true) argv.push("--self-test");
@@ -120,7 +192,21 @@ export default defineModule(
     // taxonomy references/harness-pair.md forbids because it grows with the tooling instead of with
     // the phenomena (RFC-0001, Rationale). agents-md's memory-slug gate is the replacement signal.
 
-    const summary = match ? `${match[1]} checks, ${match[2]} failed` : `check exited ${code}`;
+    // Exit 2 has two unrelated causes and used to print the same six words for both: the runner refusing
+    // the target (`not a git working tree: <root>`, written to stderr) and the runner failing to start
+    // at all, handled above. The refusal already names itself — it was the wrapper's own output filter
+    // that dropped it, so the last thing the runner said is carried into the summary rather than
+    // re-derived here.
+    const lastSaid = output
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "")
+      .pop();
+    const summary = match
+      ? `${match[1]} checks, ${match[2]} failed`
+      : lastSaid === undefined
+        ? `check exited ${code} and said nothing — the runner at ${RUNNER} produced no output`
+        : `check exited ${code}: ${lastSaid}`;
 
     if (context.flags["list"] === true) {
       return { code, summary, data: { checks: parseList(output) } };
@@ -161,6 +247,26 @@ export default defineModule(
       else findings.push({ level: kind === "WARN" ? "warn" : "fail", check: id!, evidence: rest! });
     }
 
-    return { code, summary, data: { findings, skipped } };
+    // The gate reads `git ls-files`, so a file that has never been staged is not in its population — and
+    // a clean run over a population that silently excludes the file you just wrote is indistinguishable
+    // from a clean run over one that includes it. Three separate sessions discovered this by watching a
+    // green run lie and then reaching for `git add -A`. Counted, never repaired: staging someone's work
+    // to make a gate see it is not a gate's decision.
+    const untracked = spawnSync("git", ["-C", context.repoRoot, "ls-files", "--others", "--exclude-standard", "*.md"], {
+      encoding: "utf8",
+    });
+    const unseen = (untracked.stdout ?? "").split("\n").filter((line) => line.trim() !== "");
+
+    // `--audit` reports exactly as a run would and always exits 0, the same contract the three ops give
+    // the flag. Nothing about the reading changes — only whether it blocks.
+    const audited = context.flags["audit"] === true;
+    const staging =
+      unseen.length === 0 ? "" : `; ${unseen.length} untracked .md file(s) were not examined — the gate reads tracked files`;
+
+    return {
+      code: audited ? 0 : code,
+      summary: `${summary}${staging}${audited && code !== 0 ? " (audit: not blocking)" : ""}`,
+      data: { findings, skipped, untracked: unseen },
+    };
   },
 );

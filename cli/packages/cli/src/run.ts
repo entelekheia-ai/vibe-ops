@@ -66,7 +66,13 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     };
   }
 
-  const repoRoot = repoRootFrom(cwd);
+  // A module declaring `repoFromFirstArg` is asking for its first positional to name the repository.
+  // Resolved here and nowhere else: this is the layer that knows the working directory, and the module
+  // contract forbids the module from reading it. The argument is consumed, so the module never sees a
+  // positional it is not supposed to interpret.
+  const takesRepoArg = plugin.definition.repoFromFirstArg === true && args.length > 0;
+  const repoRoot = takesRepoArg ? repoRootFrom(path.resolve(cwd, args[0]!)) : repoRootFrom(cwd);
+  const remainingArgs = takesRepoArg ? args.slice(1) : args;
   const { config } = await loadConfig(repoRoot);
 
   // Defaults come from the definition, so a module reads context.flags without re-deriving them and
@@ -94,7 +100,7 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
   const context: ModuleContext = {
     repoRoot,
     flags: resolved,
-    args,
+    args: remainingArgs,
     command,
     config,
     settings: settingsFor(config, plugin.definition.id),
