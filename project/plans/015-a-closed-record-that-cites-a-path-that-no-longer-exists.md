@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [Plan-014](014-the-prose-that-describes-a-template-is-checked-against-it.md) |
+| Related | [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) |
 
 ---
 
@@ -179,5 +179,5 @@ Run from the repository root:
 
 ## Related
 
-- [Plan-014](014-the-prose-that-describes-a-template-is-checked-against-it.md) — the same class of rot in
+- [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) — the same class of rot in
   prose that describes a template's shape rather than a path.

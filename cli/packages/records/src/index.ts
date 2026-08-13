@@ -36,6 +36,7 @@ export type { Frontmatter } from "./frontmatter.ts";
 export { readTemplateVersion, VERSION_KEY } from "./template-version.ts";
 export { readReferenceVersion, REFERENCE_KEY, routingPolicy } from "./reference-version.ts";
 export type { DeclaredVersion } from "./template-version.ts";
+export { droppedSections } from "./migration-shape.ts";
 export { blocks, compareVersions, describe, dispatchRecord, readMigrationNotes } from "./dispatch.ts";
 export type { Dispatch, DispatchOptions, MigrationNote } from "./dispatch.ts";
 export { findLogDir, groupOf, logIndex, logLint, logSweep, preambleOf, readLogEntries } from "./log.ts";

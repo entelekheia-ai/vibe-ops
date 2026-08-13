@@ -1,16 +1,34 @@
 {
   "name": "@entelekheia/vibe-ops-module-check",
   "version": "0.0.1",
-  "description": "The governance gate as a vibe-ops module — budget, links, the rules bridge, licence texts",
+  "description": "The governance gate as a vibe-ops module \u2014 budget, links, the rules bridge, licence texts",
   "type": "module",
   "license": "Apache-2.0",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "files": ["dist", "sh"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "sh"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=22.18" },
-  "dependencies": { "@entelekheia/vibe-ops-core": "^0.0.1" },
-  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@entelekheia/vibe-ops-core": "^0.0.1",
+    "@entelekheia/vibe-ops-governance": "^0.0.1",
+    "@entelekheia/vibe-ops-agents-md": "^0.0.1",
+    "@entelekheia/vibe-ops-self": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
 }

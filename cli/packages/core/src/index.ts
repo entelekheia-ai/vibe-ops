@@ -12,6 +12,7 @@ export type {
   GovernedSettings,
   OpsDefinition,
   OpsFinding,
+  OpsFixture,
   OpsGateEntry,
   OpsPopulation,
   OpsRepair,
@@ -23,5 +24,5 @@ export type { GrammarDescriptor } from "./grammars.ts";
 export { createDocumentStore, documentFromText } from "./document.ts";
 export type { Document, DocumentStore } from "./document.ts";
 export type { Layer, UncoveredLayer } from "./injections.ts";
-export { lineAt, proseText, walkLayersWithHostPositions } from "./position.ts";
+export { describedText, lineAt, proseText, walkLayersWithHostPositions } from "./position.ts";
 export type { HostPositionedLayer } from "./position.ts";

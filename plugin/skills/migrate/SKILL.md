@@ -84,13 +84,41 @@ recording what that costs an existing artifact, and inventing the migration here
 
 Then update the stamp to the new version, and only then.
 
-## Step 4 — Report
+## Step 4 — The documents that DESCRIBE the shape
+
+Step 1 counts records. A document that says what shape a record has is not a record: it carries no stamp,
+appears in no census, and is invisible to everything above. It is also the half a reader acts on — a
+reference claiming plans carry a section teaches everyone who reads it to write one.
+
+Read [`${CLAUDE_PLUGIN_ROOT}/references/template-shape-change.md`](../../references/template-shape-change.md)
+for the rule; it governs this skill and `/new-migration` and is not restated here. What this step does:
+
+```sh
+vibe-ops governance --verbose   # template-heading-drift reports the population
+```
+
+Then, for each finding, apply what the note's own *what a description now says* section prescribes. Two
+obligations, and they are the same ones Step 3 already carries, in the form prose needs:
+
+- **A sentence is rewritten or reported. Never deleted**, and never rewritten into a claim the note does
+  not support. If the note does not say what the new shape means, that is a note to finish, not a sentence
+  to guess at.
+- **An occurrence the gate could not attribute to a record type is a sentence to read, not a verdict.**
+  It names two types, or none. Scope it or correct it; do not resolve it by picking one.
+
+**This step is done when the gate is clean and a second run finds nothing to do** — not when the edits
+look complete. A partial sweep that looked complete is the failure this whole step exists to prevent.
+
+## Step 5 — Report
 
 Per artifact: migrated, skipped (and why), or needs-a-decision (and what the decision is). A run that
 migrates nothing and explains three blockers has done its job.
 
 **Never report a migration that did not happen.** The stamp is the evidence — an artifact whose stamp did
 not move was not migrated, whatever else the run did to it.
+
+Report the second population separately, and by its own evidence: the gate's verdict, not a count of
+edits. A run that rewrote six sentences and left the gate red has not finished that half.
 
 ## Adding a migration note
 
@@ -107,6 +135,10 @@ a run destroyed anything, or came close, that belongs here before anything else.
 Step 2's *one note per jump* rule is the second place to look, and it fails by pressure rather than by
 error: a run facing `0.1 → 0.3` will be tempted to write one combined note, and a combined note is one
 that stops matching either jump the next time a version moves.
+
+Step 4 fails in a way that looks like success: the edits get made, the run reports them, and nobody runs
+the gate again. The prose half has no stamp to prove it moved, which is exactly why its completion
+criterion is a second clean run rather than a list of files touched.
 
 The notes themselves fail differently again — by being written from the template diff rather than from a
 real artifact. A note that says "delete the section" without having opened a plan that has forty entries

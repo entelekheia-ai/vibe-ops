@@ -24,18 +24,18 @@ types by what happens to the file. The formats are adopted from
 | `Decision Log` | the plan | `Decision:` / `Rationale:` / `Date / Author:` | a choice made mid-flight that no ADR covers |
 | `Outcomes & Retrospective` | the plan | prose | the result measured against the original purpose |
 
-**The split is not arbitrary and it is the reason a plan carries no `Surprises & Discoveries`.** A dossier
-is deleted at closure, so a note written there is discharged by construction; a plan is permanent, so a
-note written there stays pending forever. What a plan holds is design, which is why its `Decision Log` is
-never routed anywhere.
+**The split is not arbitrary.** A dossier is deleted at closure, so a note written there is discharged by
+construction; a plan is permanent, so a note written there would stay pending forever. That is why the
+working record of *doing* belongs to the dossier and a plan holds only design — which is also why a plan's
+`Decision Log` is never routed anywhere.
 
-`Surprises & Discoveries` is the load-bearing one: it is the named home whose absence is what makes
-learnings evaporate. Filled in retrospectively from memory at the end of the work, every one of them is worthless —
-the value is entirely in writing the entry when the surprise happens.
+The dossier's `Surprises & Discoveries` is the load-bearing one: it is the named home whose absence is
+what makes learnings evaporate. Filled in retrospectively from memory at the end of the work, every one of
+them is worthless — the value is entirely in writing the entry when the surprise happens.
 
 ## The promotion test
 
-At closure, **each entry** under `Surprises & Discoveries` faces four questions in order. The first three
+At closure, **each entry** under a dossier's `Surprises & Discoveries` faces four questions in order. The first three
 can eliminate it; the fourth routes what survives.
 
 1. **Recurrence** — has it burned us, or would it burn a fresh agent, *more than once*? A one-off stays in

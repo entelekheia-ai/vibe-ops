@@ -147,9 +147,9 @@ A state directory that cannot be written must cost a repeated injection, never a
 | 4 | Writing to stdout for any other reason | One stray line corrupts the response envelope | Only the single JSON line; a module reached this way prints only under `surface: "cli"` |
 | 5 | Restating a format in the hook's own prose | Right against today's template, wrong the day it changes, and nothing detects the drift | Read it from the artifact — the template's markers, the resolver's output |
 
-Trap 5 is the one with a measurement behind it: the plan-mode hook named the four living sections in its
-own text, which was correct until the template declared two, at which point it prescribed a format that had
-been deleted. The names now cross the boundary as a list from
+Trap 5 is the one with a measurement behind it: the plan-mode hook listed the plan template's living
+sections in its own text, which was correct until the template dropped two of them, at which point it
+prescribed a format that had been deleted. The names now cross the boundary as a list from
 [`vibe-ops plan resolve`](../reference/hook-surfaces.md), and there is no second place to write them down.
 
 ## Verify

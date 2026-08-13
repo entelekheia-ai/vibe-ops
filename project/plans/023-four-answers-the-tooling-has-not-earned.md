@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [Plan-014](014-the-prose-that-describes-a-template-is-checked-against-it.md) · [Plan-019](019-an-artefact-that-shows-the-tool-goes-stale-in-silence.md) |
+| Related | [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) · [Plan-019](019-an-artefact-that-shows-the-tool-goes-stale-in-silence.md) |
 
 ---
 
@@ -57,7 +57,7 @@ did not earn" defects lives in how `--self-test` inherits the operator's environ
 the consuming repository's gate rather than of this plugin, and it is recorded where it recurs.
 
 **Anything about images or template prose.** [Plan-019](019-an-artefact-that-shows-the-tool-goes-stale-in-silence.md)
-and [Plan-014](014-the-prose-that-describes-a-template-is-checked-against-it.md) own those, and both are a
+and [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) own those, and both are a
 different failure — an artefact that *was* right and drifted, rather than one that was never right.
 
 ## Design
@@ -181,7 +181,7 @@ can find later.
 
 ## Related
 
-- [Plan-014](014-the-prose-that-describes-a-template-is-checked-against-it.md) — prose that describes a
+- [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) — prose that describes a
   template, checked against it. Adjacent: a claim that was true and went stale, rather than one never true.
 - [Plan-019](019-an-artefact-that-shows-the-tool-goes-stale-in-silence.md) — the same distinction, for an
   image.

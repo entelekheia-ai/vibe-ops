@@ -23,6 +23,15 @@ differently — a different number from any package's semver, which answers a di
 version into it, and never keep a second copy anywhere.** A record declaring no version is reported as
 *unknown*, never resolved to the oldest known shape.
 
+**A migration note that changes a template's sections MUST also state what a document *describing* that
+shape now says.** The records are not the only population, and `template-heading-drift` reads the note to
+fail any document asserting a record carries a section its template no longer has, or stating the wrong
+count of living ones.
+
+**A rule, a reference or a skill MUST describe the present**, leaving what a template no longer has to the
+migration note — the one document whose subject is a change. An absence **MUST** be written as what the
+record does carry rather than as the name of the section that left.
+
 ### ADR (`project/adr/`)
 
 ```
@@ -60,18 +69,19 @@ Backlog → In Progress → Shipped   (the file is never deleted)
 **Permanent.** A plan answers "how do we build X?" and stays as the design record after the work ships —
 the opposite of a task dossier. Numbering is `NNN`, monotonic, never renumbered.
 
-Four sections are **living** and are maintained while the work happens, not written at the end:
-`Progress` (dated checkboxes), `Surprises & Discoveries` (`Observation:` / `Evidence:`), `Decision Log`
-(`Decision:` / `Rationale:` / `Date / Author:`), and `Outcomes & Retrospective`. Reconstructed from memory
-afterwards they are worthless — the value is in writing the entry when it happens.
+Two sections are **living** and are maintained while the work happens, not written at the end:
+`Decision Log` (`Decision:` / `Rationale:` / `Date / Author:`) and `Outcomes & Retrospective`.
+Reconstructed from memory afterwards they are worthless — the value is in writing the entry when it
+happens. Per-step progress and the discoveries a run produces are recorded in the task dossier a track
+spawns, which is deleted at closure; a permanent file cannot discharge what is written into it.
 
 If a plan carries a GitHub issue, the **issue owns status and the executive summary; this file owns the
 design and the working record**. The issue closes when the last track lands; the plan file does not close,
 because it is what someone reads a year later to find out why the thing is shaped this way.
 
-At closure, use `/vibe-ops:close-plan` — retrospective written against the plan's own goals, every
-`Surprises & Discoveries` entry routed, the demotion check run, living docs propagated, the issue closed
-and **the file kept**. A plan that never spawned a task dossier has no other exit: skip this and it ships
+At closure, use `/vibe-ops:close-plan` — retrospective written against the plan's own goals, the demotion
+check run, living docs propagated, the issue closed and **the file kept**. What the work taught was routed
+by the dossiers as they closed, not here. A plan that never spawned a task dossier has no other exit: skip this and it ships
 having taught nobody anything.
 
 ### Task (`project/tasks/`)

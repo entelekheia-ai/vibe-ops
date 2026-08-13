@@ -88,9 +88,19 @@ are gates that remembered it. `**/templates/**` — a shipped template's links r
 repository, never this one — existed in three divergent forms before anyone noticed: the shell runner
 filtered it, one gate hardcoded it internally, and a third applied nothing at all. The third was worth 13
 false findings the first time an ops ran the set unfiltered. Population is now a typed key on an ops's own
-configuration, applied uniformly to every gate it composes, including gates written by someone who has
-never seen this repository
-([ADR-0011](../../project/adr/0011-population-belongs-to-configuration-not-a-gate.md)).
+configuration, read by every gate it composes, including gates written by someone who has never seen this
+repository ([ADR-0011](../../project/adr/0011-population-belongs-to-configuration-not-a-gate.md)).
+
+**Read by every gate is not the same as identical for every gate**, and the difference is worth stating
+because the paragraph above used to say "uniformly" and that reads as a rule. What ADR-0011 decides is
+*where* population lives; it says nothing about the entries agreeing. `**/templates/**` was a single `*`
+entry for as long as every gate had the same relationship to a shipped template — noise. The first gate
+for which a shipped template is the **subject** rather than noise is `template-heading-drift`, which
+exists to catch false prose in the copies the setup skill scaffolds into other repositories: excluding
+them would hide exactly the population it was built for. `ignore` is additive and has no negation, so
+seeing them meant naming the entries that still need the exclusion rather than un-naming the one that
+does not. A future reader restoring the blanket entry as a tidy-up would silence that gate, and the run
+would still be green.
 
 ## What this does not do
 

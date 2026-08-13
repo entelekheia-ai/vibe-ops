@@ -45,3 +45,10 @@ jobs:
       # `npm test` builds first (pretest): the packages typecheck against each other's dist, so a
       # stale one reports a false green.
       - run: npm test
+
+      # Same rationale as the agents-md job's first step, one layer up: a gate that has silently stopped
+      # detecting reports a clean tree, which is what a working one reports too. This runs both suites —
+      # the shell fragments and every ops gate that declares a fixture — and is placed after `npm test`
+      # only because it needs the build `pretest` produces.
+      - name: Detector self-test, both suites
+        run: node cli/packages/cli/dist/bin.js check --self-test

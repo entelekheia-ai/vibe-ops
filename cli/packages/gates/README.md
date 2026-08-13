@@ -17,12 +17,19 @@ import "@entelekheia/vibe-ops-gates/budget";      // one folder, one gate, one s
 | `bridge` | `module-check/sh/checks/30-bridge.sh` | a `.claude/` entry that is not a resolving relative symlink | no |
 | `check-frontmatter` | `40-frontmatter.sh` + `45-skill-frontmatter.sh` | a missing frontmatter block, a description, frontmatter that genuinely does not parse (any fault, named by line — Plan-013), or (schema `skill`) an unquoted `": "` that silently drops all fields | no |
 | `memory-slug` | `60-memory-slugs.sh` | a `[[…]]` personal-memory link, fences and inline code spans excluded | no |
+| `template-heading-drift` | new | a document CLAIMING a record carries a section its template no longer has, or stating the wrong living-section count — per record type, so a heading dropped from one template but live in another is judged against the type the sentence is about | no — rewriting a sentence is a judgement about someone else's prose |
 
-Eight gates read the parsed document model instead of the file — `check-frontmatter`, `memory-slug`,
-`pairing` and `claude-md-content` above, plus `markdown-link`, `breadcrumb`, `record-header` and
-`template-version` (not in the table above; see `cli/AGENTS.md`'s layout table). How to read one is
-[core's README](../core/README.md). Only `budget`, `bridge` and `fragment-parity` do not — none of the
-three has document structure to extract.
+Nine gates read the parsed document model instead of the file — `check-frontmatter`, `memory-slug`,
+`pairing`, `claude-md-content` and `template-heading-drift` above, plus `markdown-link`, `breadcrumb`,
+`record-header` and `template-version` (not in the table above; see `cli/AGENTS.md`'s layout table).
+How to read one is [core's README](../core/README.md). Only `budget`, `bridge` and `fragment-parity`
+do not — none of the three has document structure to extract.
+
+`template-heading-drift` is the one that reads **two** masks of the same document, and which is which
+matters: the signal comes from `describedText`, which keeps the interior of a code span, because a
+claim about a section is written as `` `Progress` `` and masking it blanks the very thing being
+detected; the record type a sentence is about comes from `proseText`, which masks code spans, because
+`` `Decision Log` `` is a quoted name rather than a mention of the log record type.
 
 `pairing`'s two findings split by **failure mode, not by root-versus-nested depth** — a nested `AGENTS.md`
 with no sibling fails exactly like a root one, because once the file exists it either loads or it does

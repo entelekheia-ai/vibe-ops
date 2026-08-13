@@ -9,7 +9,7 @@
 // module — never from PATH and never by searching upward for a checkout.
 
 import { defineModule } from "@entelekheia/vibe-ops-core";
-import type { ModuleContext, ModuleResult } from "@entelekheia/vibe-ops-core";
+import type { ModuleContext, ModulePlugin, ModuleResult } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -17,6 +17,37 @@ import path from "node:path";
 const here = path.dirname(fileURLToPath(import.meta.url));
 // dist/index.js -> ../sh
 const RUNNER = path.join(here, "..", "sh", "check-agents-md.sh");
+
+/**
+ * The ops whose self-tests `--self-test` chains, by module name.
+ *
+ * Named rather than discovered, and resolved through the same `@entelekheia/vibe-ops-<name>` convention
+ * the CLI uses, so this stays a list a reader can check against the composition. An ops that carries no
+ * fixture still reports what it skipped, which is the point: a self-test covering four of fourteen gates
+ * reads exactly like one covering all fourteen unless it says so.
+ */
+const OPS_WITH_FIXTURES = ["governance", "self", "agents-md"] as const;
+
+/** One ops's self-test, as its own exit code and its own text. An ops that cannot be loaded is a failure,
+ *  never a silent pass — an absent suite and a clean one are the same output otherwise. */
+async function runOpsSelfTest(
+  id: string,
+  context: ModuleContext,
+): Promise<{ id: string; code: number; output: string }> {
+  const lines: string[] = [];
+  try {
+    const loaded = (await import(`@entelekheia/vibe-ops-${id}`)) as { default: ModulePlugin };
+    const result = await loaded.default.run({
+      ...context,
+      flags: { "self-test": true },
+      log: (line: string) => lines.push(line),
+    });
+    return { id, code: result.code, output: [...lines, result.summary].join("\n") };
+  } catch (error) {
+    const why = error instanceof Error ? error.message : String(error);
+    return { id, code: 2, output: `FAIL  [${id}] self-test could not run: ${why}` };
+  }
+}
 
 const SUMMARY_PATTERN = /^(\d+) checks, (\d+) failed$/m;
 // The runner's own line shapes: `FAIL  [id] evidence`, `SKIP  [id] reason`, and, under --list,
@@ -88,8 +119,28 @@ export default defineModule(
     }
     // --self-test asserts a fixture behaves; its report is a narrative, not a finding list, so it is
     // the one mode where the runner's own text is the answer.
+    //
+    // IT CHAINS THE OPS SUITES HERE, NOT IN THE SHELL SCRIPT. One command has to mean "prove every
+    // detector still fires", and the two halves have different dependency footprints: the runner is what
+    // a consumer installs as a `pre-commit` and what continuous integration executes on a bare checkout,
+    // with no Node and no install step. Making it invoke built TypeScript would couple a dependency-free
+    // gate to a build artifact. Chaining above it costs the shell side nothing — it still passes alone.
     if (context.flags["self-test"] === true) {
-      return { code, summary, data: { output } };
+      const suites = [{ id: "check", code, output }];
+      for (const id of OPS_WITH_FIXTURES) {
+        const ops = await runOpsSelfTest(id, context);
+        suites.push(ops);
+        if (context.surface === "cli") context.log(ops.output);
+      }
+      const failed = suites.filter((suite) => suite.code !== 0).map((suite) => suite.id);
+      return {
+        code: failed.length > 0 ? 1 : 0,
+        summary:
+          failed.length > 0
+            ? `self-test: ${failed.join(", ")} did not fire on its own fixture`
+            : `self-test: ${suites.map((suite) => suite.id).join(", ")} each fired on their own fixtures`,
+        data: { suites },
+      };
     }
 
     const findings: { level: string; check: string; evidence: string }[] = [];

@@ -6,7 +6,7 @@ import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export default {
   // Which modules `vibe-ops mcp` exposes as tools. Absent means the built-ins.
-  modules: ["check", "agents-md", "governance", "plan", "task", "log", "records"],
+  modules: ["check", "agents-md", "governance", "self", "plan", "task", "log", "records"],
 
   // Absent would disable emission entirely. Pointed inside .git/ deliberately: these are observations
   // about a working tree, not a product of it, and committing them would make every run a diff.
@@ -32,6 +32,12 @@ export default {
     // otherwise re-invent it; see the "POPULATION VS BEHAVIOUR" note in cli/packages/core/src/ops.ts.
     "agents-md": { ignore: { "*": ["**/templates/**"] } },
     governance: {
+      // One line, and it is a SAFE DEFAULT: every entry composed here inherits it, including one added
+      // by somebody who never read this file. A shipped template's content is written to resolve in the
+      // *target* repository, never this one, so a link or a `[[memory-slug]]`-shaped placeholder inside
+      // plugin/skills/*/templates/ is not this repository's to judge. The one gate for which those
+      // copies are the SUBJECT rather than noise lives in the `self` ops below, precisely so this line
+      // can stay a blanket — see the "POPULATION VS BEHAVIOUR" note in cli/packages/core/src/ops.ts.
       ignore: {
         "*": ["**/templates/**"],
         // A directory's index is not one of its records. `project/log/README.md` is generated from the
@@ -45,6 +51,46 @@ export default {
       // nothing is indistinguishable from a clean one.
       disabled: {
         "template-version-research": "research has no template; its shape is not settled — Plan-012",
+      },
+    },
+    self: {
+      // THE PATH POLICY (Plan-014). What separates a record that HAS an old heading — legitimate, it was
+      // written against an older template — from a document that SAYS records have it, which is the
+      // defect. Declared here rather than inside the gate, so it is reviewable and wrong in a way a
+      // reader can see. Note what is NOT excluded: `**/templates/**`, because the shipped copies are the
+      // population this ops exists to read.
+      ignore: {
+        "*": [
+          // A migration note must name what it drops; it is the source these gates read.
+          "plugin/skills/migrate/migrations/**",
+          // A template is the authority on a shape, never a description of one. Both copies.
+          "plugin/templates/**",
+          "plugin/skills/setup/templates/project/templates/**",
+          // A record's own structure. Written against the template of its day and correct as it stands;
+          // migrating them is a separate job with its own per-entry decisions.
+          "project/adr/**",
+          "project/plans/**",
+          "project/rfc/**",
+          "project/tasks/**",
+          // Write-once by this repository's own governance rule, and both legitimately narrate the old
+          // shape — the trap that motivated Plan-014 lives in `project/log/` and describes the drop.
+          "project/log/**",
+          "project/research/**",
+          // A historical record of what the shape once was.
+          "CHANGELOG.md",
+          // Keeps history deliberately, has its own template, and the mention attributes an EXTERNAL
+          // contract rather than this repository's template — correcting it would falsify a credit.
+          "ACKNOWLEDGEMENTS.md",
+          // Relative symlinks into `.agents/`. The same bytes, reported twice, closed once.
+          ".claude/**",
+        ],
+      },
+      level: {
+        // An occurrence the gate could not attribute to a record type ships as a warning, which is right
+        // for a repository midway through a migration. This one has just finished a sweep and wants the
+        // sentence read before it is committed, not after — the whole failure being prevented is a
+        // partial sweep that looked complete.
+        "template-heading-drift-unattributed": "fail",
       },
     },
   },

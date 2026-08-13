@@ -53,14 +53,28 @@ vibe-ops-template: <type>@<version>
 
 1. **What changed in the template** — a table, old shape against new. Structure only.
 2. **What it costs an existing artifact** — for every dropped or retyped section, where its content goes.
-3. **Mechanical vs. needs a decision** — a two-column table.
-4. **Done looks like** — concrete enough to check without judgement.
+3. **What a description of this shape now says** — see the completeness rules below.
+4. **Mechanical vs. needs a decision** — a two-column table.
+5. **Done looks like** — concrete enough to check without judgement.
 
-Two completeness rules, both hard:
+The table in section 1 is a **contract, not a layout**, because `template-heading-drift` parses it for
+what the template no longer has. Its first header cell is the literal `Section`; a row names a section by
+putting the heading in a code span in its first cell (`` `## Progress` ``); the last column is the new
+shape, and a dropped section's cell opens with `**dropped**`. A table that departs from this parses to
+nothing, and a dropped set that parses to nothing is a gate that reports every document clean.
+
+Three completeness rules, all hard:
 
 - **A dropped section with no stated destination is an unfinished note.** Content does not evaporate
   because the template stopped asking for it. If the honest destination is *dropped*, say so explicitly —
   silence reads as an oversight and `/migrate` will refuse to act on it.
+- **A note that changes structure MUST say what a document DESCRIBING this shape now says.** The records
+  are not the only population: governance docs, always-on rules, references and skills all assert what
+  shape a record has, and every one of those assertions goes false in this commit. Say what the new shape
+  means — "the living sections are now X and Y" — never a list of files, which is stale before the note is
+  committed. The rule and the reason are in
+  [`${CLAUDE_PLUGIN_ROOT}/references/template-shape-change.md`](../../references/template-shape-change.md);
+  do not restate them here.
 - **Say WHERE positionally and absolutely, never relative to something that may not be there.** "At
   offset 0, before whatever is currently first" holds for every artifact; "above the licence block" holds
   only for the ones that have one. Written from the template alone the second phrasing looks equivalent,
@@ -93,6 +107,10 @@ Record what the walk found **in the plan or RFC that owns the change**, never in
 - Is the jump contiguous? `/migrate` applies notes in sequence, so `0.1 → 0.3` needs both notes and
   **MUST NOT** get one combined note — a combined note stops matching either jump the next time a version
   moves.
+- Does the note parse? `vibe-ops governance` runs `template-heading-drift`, which reads this note for the
+  dropped set. A dropped section it cannot see is a gate reporting every stale description as clean, so
+  **the note is not finished until the gate reports the drift the change just created** — the notes and
+  the descriptions go out of agreement in the same commit, and this is where that is caught.
 
 ## ⟳ After every use: review this skill
 
@@ -109,6 +127,12 @@ Step 3's completeness rules are the ones that will be argued with, because a dro
 "obviously" goes nowhere is the common case. It is also the case where being wrong destroys content. When
 a note turns out to have needed a destination it did not state, add the destination — and consider whether
 the rule itself needs sharpening, not just that one note.
+
+The description rule fails by feeling like somebody else's job. It reads as documentation while the note
+reads as migration, and the note ships without it. Measured once: two sections were dropped from a
+template, the note was written and the change called complete, and nine documents were still asserting the
+old shape eight days later — two of them shipped into every repository this plugin scaffolds, and two
+agents auditing the repository read them and reported the dropped sections as the current model.
 
 A gap that shows up across several notes is a workspace fact rather than a skill fix — route it with
 `/route-learnings` instead of growing this file.

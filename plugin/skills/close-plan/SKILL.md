@@ -87,9 +87,10 @@ from memory, which is what the living-sections rule exists to prevent.
 
 ## Step 3 — Route what the plan taught
 
-A plan carries no `Surprises & Discoveries` section: a permanent file cannot discharge what is written
-into it, so there is nothing here to empty. What a plan does carry is a `Decision Log`, and that is
-**design** — it stays with the plan and is not routed anywhere.
+What a plan carries is a `Decision Log`, and that is **design** — it stays with the plan and is not
+routed anywhere. A permanent file cannot discharge what is written into it, so the working record of doing
+lives in the task dossiers the tracks spawned and was routed as each of those closed. There is nothing
+here to empty.
 
 So this step is usually empty, and saying so is the point. Where it is not empty is the case the plan
 above named: **a plan that never spawned a task dossier**, whose learnings therefore never passed through

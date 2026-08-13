@@ -52,8 +52,9 @@ That case has its own rules, and getting them wrong destroys the source:
 
 - **Preserve all existing content.** Extract text as-is. Do not invent, simplify, or rewrite.
 - **Reorganise by section.** Decisions found in the source belong in `Decision Log`; anything the source
-  records as a surprise, a dead end, or a wrong assumption belongs in `Surprises & Discoveries`. Open
-  questions and closed decisions move intact, with their rationale.
+  records as a surprise, a dead end, or a wrong assumption belongs to the task dossier the track spawns,
+  which is where the working record of doing lives. Open questions and closed decisions move intact, with
+  their rationale.
 - **When the source is a file on disk, move its bytes rather than retyping them** — copy the file and edit
   in place. Retyping a long document into a tool call is where content silently changes.
 - **A section with no source content stays a stub**, or carries a short italic note such as *"Not yet
@@ -72,22 +73,21 @@ That case has its own rules, and getting them wrong destroys the source:
   repository-relative one; a pointer to the private original is dropped rather than rewritten, because a
   record that says "the fuller version lives elsewhere" has disclosed that it exists.
 
-Do not fill any section from inference. A brand-new plan legitimately has an empty `Progress` and no
-surprises yet.
+Do not fill any section from inference. A brand-new plan legitimately has an empty `Decision Log` and an
+empty retrospective — nothing has been decided or learned yet.
 
 ## After writing — hand off the maintenance contract
 
 State this in the report, plainly. It is the part most likely to be dropped, and a plan that loses it
 becomes a document rather than an instrument:
 
-- `Progress` is updated at **every stopping point**, not at the end.
-- A non-obvious discovery goes into `Surprises & Discoveries` **when found**, with its evidence, while the
-  evidence is still at hand.
-- A decision goes into `Decision Log` when made; if it is hard to reverse, also write an ADR and link it.
+- A decision goes into `Decision Log` when made, not at the end; if it is hard to reverse, also write an
+  ADR and link it.
+- A track's checkbox is ticked when that track lands. Anything finer — per-step progress, a discovery and
+  its evidence — is recorded in the task dossier that track spawns, while the evidence is still at hand.
 - `Status` moves `Backlog → In Progress → Shipped`. The file is never deleted — it is the record.
-- At closure, `/vibe-ops:close-plan` writes the retrospective against these goals and routes every
-  `Surprises & Discoveries` entry into the repo's durable knowledge. **Never re-run `/new` on an existing
-  plan** — edit it in place.
+- At closure, `/vibe-ops:close-plan` writes the retrospective against these goals and runs the demotion
+  check. **Never re-run `/new` on an existing plan** — edit it in place.
 
 ## Checklist additions
 
@@ -97,8 +97,8 @@ becomes a document rather than an instrument:
 - [ ] If migrating: all source content preserved as-is; decisions landed in `Decision Log`; a surprise has
       no home here and belongs to the task dossier the track spawns; sections without source material left
       as honest stubs; any incompleteness caveat preserved; external refs are full URLs
-- [ ] Exposure contract applied to `Context`, `Decision Log` and `Surprises & Discoveries`: nothing outside
-      this repository is named, and no command pasted into `Success criteria` carries a machine path
+- [ ] Exposure contract applied to `Summary`, `Design` and `Decision Log`: nothing outside this repository
+      is named, and no command pasted into `Success criteria` carries a machine path
 - [ ] The `| Repository |` row is either genuinely needed *right now* by the filing step, or absent —
       never left behind in a filed plan
 - [ ] The maintenance contract was stated in the report, not assumed

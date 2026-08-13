@@ -60,7 +60,7 @@ private note may name a repository file; a repository file never points back.
 
 | Artifact | The section that leaks | Why |
 |---|---|---|
-| **Plan** | `Context`, `Decision Log`, `Surprises & Discoveries` | They hold the *reason*, and a reason is often "because of what something outside this repository does". Write the constraint, drop the owner. `Success criteria` leaks machine paths instead, because that is where commands get pasted. |
+| **Plan** | `Summary`, `Design`, `Decision Log` | They hold the *reason*, and a reason is often "because of what something outside this repository does". Write the constraint, drop the owner. `Success criteria` leaks machine paths instead, because that is where commands get pasted. |
 | **Task** | the **issue**, more than the dossier | The dossier is deleted at closure; the issue comment is permanent and, on a public repository, world-readable the moment it is posted. `close`'s executive summary is subject to this contract in full — it is the most exposed thing either skill writes. |
 | **ADR / RFC** | `Options considered`, `Consequences` | Rejecting an option invites explaining who else it would have affected. |
 | **`AGENTS.md` / README** | the layout table, the "not obvious from the code" list | A line earns its place there by being non-obvious — which is exactly where outside context creeps in. |

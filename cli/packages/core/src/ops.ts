@@ -50,6 +50,8 @@ import type { ModulePlugin, ModuleResult } from "./module.ts";
 import type { ModuleContext } from "./context.ts";
 import path from "node:path";
 import { realpathSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 
 export interface OpsGateEntry {
   /** A gate name, resolved by the convention in gate.ts. */
@@ -62,6 +64,28 @@ export interface OpsGateEntry {
   readonly options?: Readonly<Record<string, unknown>>;
   /** Distinguishes two entries that use the same gate. Required when `emits` and the name is not bare. */
   readonly label?: string;
+  /** A tree built to make this entry fire, and what it must report. See `OpsFixture`. */
+  readonly fixture?: OpsFixture;
+}
+
+/**
+ * A deliberately broken tree, declared beside the entry it proves.
+ *
+ * A guard nobody has watched fail is not evidence of anything, and this repository has shipped that
+ * mistake before — which is why the shell suite has carried `--self-test` since it had four fragments.
+ * Gates had no equivalent: a detector that silently stopped detecting reported a clean tree, and a clean
+ * tree is what a working one reports too.
+ *
+ * The fixture is inline rather than a directory because it must travel with the composition. A fixture in
+ * a folder somewhere is one nobody notices has stopped matching the entry it was written for.
+ */
+export interface OpsFixture {
+  /** Repo-relative path → contents. Written into a fresh temp repository, which is also its plugin dir. */
+  readonly files: Readonly<Record<string, string>>;
+  /** The `rule` names this entry MUST produce against that tree. Every one of them, or the self-test fails. */
+  readonly expect: readonly string[];
+  /** Options for the fixture run. Defaults to the entry's own — override when they name real paths. */
+  readonly options?: Readonly<Record<string, unknown>>;
 }
 
 /** One finding as the caller receives it — the gate that produced it, plus the finding itself. */
@@ -160,6 +184,11 @@ export function defineOps(definition: OpsDefinition): ModulePlugin {
         { name: "verbose", type: "boolean", description: "Print the full run rather than only what failed" },
         { name: "file", type: "string", description: "Scope to one file instead of every tracked file" },
         {
+          name: "self-test",
+          type: "boolean",
+          description: "Assert every gate that declares a fixture still fires on it",
+        },
+        {
           name: "fix",
           type: "string",
           implicit: "all",
@@ -248,6 +277,74 @@ async function resolveAll(definition: OpsDefinition, repoRoot: string, pluginDir
   return resolved;
 }
 
+/**
+ * Every entry that declares a fixture, run against it, asserting each declared rule fired.
+ *
+ * THE POPULATION IS THE FIXTURE, NOT THE REPOSITORY. The temp tree is its own `repoRoot` **and** its own
+ * `pluginDir`, so `<plugin>/` expands inside it — a fixture addressed through the real plugin surface
+ * would pass while the entry was pointed at nothing. It is laid out flat for the same reason the
+ * end-to-end fixtures are: a fixture shaped like this repository never exercises the expansion at all.
+ *
+ * AN ENTRY WITHOUT A FIXTURE REPORTS `SKIP`, NEVER NOTHING. A self-test that silently covers four of
+ * fourteen gates reads exactly like one that covers all fourteen, which is the failure this whole verb
+ * exists to prevent one level down.
+ */
+async function selfTest(
+  definition: OpsDefinition,
+  resolved: readonly Resolved[],
+  context: ModuleContext,
+): Promise<ModuleResult> {
+  const cases: { label: string; fired: boolean; missing: readonly string[]; skipped?: string }[] = [];
+
+  for (const { entry, gate } of resolved) {
+    const label = labelFor(entry);
+    if (entry.fixture === undefined) {
+      cases.push({ label, fired: false, missing: [], skipped: "no fixture declared" });
+      if (context.surface === "cli") context.log(`SKIP  [${label}] no fixture declared`);
+      continue;
+    }
+    const { files, expect, options } = entry.fixture;
+    const root = await mkdtemp(path.join(tmpdir(), `vibeops-selftest-${label}-`));
+    // realpath: on macOS the temp root is a symlink, and the document store resolves what it is handed.
+    const repoRoot = tryRealpath(root);
+    try {
+      for (const [name, body] of Object.entries(files)) {
+        await mkdir(path.dirname(path.join(repoRoot, name)), { recursive: true });
+        await writeFile(path.join(repoRoot, name), body);
+      }
+      const outcome = await gate.run({
+        repoRoot,
+        pluginDir: repoRoot,
+        files: Object.keys(files),
+        options: options ?? entry.options ?? {},
+        documents: createDocumentStore(repoRoot),
+      });
+      const produced = new Set(outcome.findings.map((finding) => finding.rule));
+      const missing = expect.filter((rule) => !produced.has(rule));
+      cases.push({ label, fired: missing.length === 0, missing });
+      if (context.surface === "cli") {
+        context.log(
+          missing.length === 0
+            ? `ok    [${label}] fired on its fixture: ${expect.join(", ")}`
+            : `FAIL  [${label}] declared fixture did not fire: ${missing.join(", ")}`,
+        );
+      }
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+    }
+  }
+
+  const failed = cases.filter((one) => one.skipped === undefined && !one.fired);
+  const covered = cases.filter((one) => one.skipped === undefined);
+  return {
+    code: failed.length > 0 ? 1 : 0,
+    summary:
+      `${definition.id} self-test: ${covered.length} of ${cases.length} gates carry a fixture, ` +
+      `${failed.length} did not fire`,
+    data: { cases },
+  };
+}
+
 async function run(
   definition: OpsDefinition,
   emits: readonly string[],
@@ -276,6 +373,8 @@ async function run(
     }
     return { code: 0, summary: `${resolved.length} gates composed`, data: { gates } };
   }
+
+  if (context.flags["self-test"] === true) return selfTest(definition, resolved, context);
 
   // The emitter is doubly opt-in, unchanged: an entry declares `emits` AND the config names a
   // destination. Either alone produces nothing, so an observation is never written somewhere nobody
