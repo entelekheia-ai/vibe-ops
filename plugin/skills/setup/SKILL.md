@@ -44,7 +44,13 @@ convention the repo settled on deliberately.
 
 Skip only if the target directory does not exist. Otherwise, before writing anything, produce a **gap
 list** against the target state described in Steps 2–5 — each entry marked *missing*, *divergent*, *extra*
-or *conflicting*, with the verb to apply:
+or *conflicting*, with the verb to apply.
+
+**Delegate the survey to the `vibe-ops:governance-auditor` agent**, passing the four inputs
+[`convergence-policy.md`](../../references/convergence-policy.md) names — the target path, *this file with
+Steps 2–5 as the target state*, that policy, and whether this is an `audit` or the survey ahead of a full
+run. It reads the disk with no writing tool, and returns the gap list without spending your context on the
+listings. Run the commands below yourself only if the agent is not in the session's listing:
 
 ```bash
 ls -a "$TARGET"; ls "$TARGET/project" "$TARGET/.agents/rules" "$TARGET/.claude/rules" 2>/dev/null
@@ -191,7 +197,9 @@ ls "$TARGET/scripts/checks/" 2>/dev/null      # fragments already here?
 ls "$TARGET/scripts/check-agents-md.sh" 2>/dev/null   # a runner snapshot already copied in?
 ```
 
-Produce the gap list, verb per gap, exactly as Step 0 does. If the user asked for `audit`, stop here.
+Produce the gap list, verb per gap, exactly as Step 0 does — including the delegation to
+`vibe-ops:governance-auditor`, with [`harness-pair.md`](../../references/harness-pair.md) and this step as
+the target state it is given. If the user asked for `audit`, stop here.
 
 **A repository with no remote cannot have CI**, and that is the single most common wrong recommendation
 in this area — it survives review because "add CI" sounds correct everywhere. For those repositories the

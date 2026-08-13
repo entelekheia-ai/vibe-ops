@@ -2,11 +2,17 @@
 # Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
 # Licensed under the Apache License, Version 2.0 — https://www.apache.org/licenses/LICENSE-2.0
 #
-# Every `/vibe-ops:<name>` mentioned in the LIVE surfaces — README and skills/ (which also holds the
-# templates this plugin SHIPS into other repositories, under skills/setup/templates/) — must
+# Every `/vibe-ops:<name>` mentioned in the LIVE surfaces — README, skills/ (which also holds the
+# templates this plugin SHIPS into other repositories, under skills/setup/templates/) and agents/ — must
 # resolve to a real skills/<name>/ directory. 0.7.0 removed four `new-*` commands when they collapsed
 # into `/new`; nothing checked that every reference to the old names went with them. project/tasks/
 # 002-*.md found this by hand; this makes it mechanical.
+#
+# 2: `vibe-ops:<name>` names TWO surfaces, not one. A subagent is dispatched as `vibe-ops:<agent>` —
+# the same token, resolving to agents/<agent>.md — and every skill that delegates its survey writes it.
+# Resolving against skills/ alone reported three of them as broken references to skills that were never
+# meant to exist. agents/*.md joined the scanned population in the same move: a plugin surface whose own
+# broken references nothing reads is the hole this check was written to close.
 #
 # Deliberately scoped to README + skills/, NOT project/**, CHANGELOG.md, or any other historical record:
 # an ADR is immutable once Accepted, a plan is a permanent record, and CHANGELOG documents what a past
@@ -16,7 +22,7 @@
 # Deliberately does not check the reverse (every skill mentioned somewhere) — an unreferenced skill is
 # not a bug, a reference to a nonexistent one is.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_command_references() {
   head_
@@ -34,15 +40,16 @@ check_command_references() {
     [ -n "$file" ] || continue
     for name in $(awk 'BEGIN { fenced = 0 } /^[[:space:]]*```/ { fenced = !fenced; next } !fenced' "$ROOT/$file" \
         | grep -o 'vibe-ops:[A-Za-z0-9_-]*' | sed 's/^vibe-ops://' | sort -u); do
-      if [ ! -d "$PLUGIN_DIR/skills/$name" ]; then
-        fail "$id" "$file references /vibe-ops:$name — no skills/$name/ directory"
+      if [ ! -d "$PLUGIN_DIR/skills/$name" ] && [ ! -f "$PLUGIN_DIR/agents/$name.md" ]; then
+        fail "$id" "$file references vibe-ops:$name — no skills/$name/ directory and no agents/$name.md"
         problems=$((problems + 1))
       fi
     done
   done <<EOF
 $( { [ -f "$ROOT/README.md" ] && printf 'README.md\n'
-     [ -d "$PLUGIN_DIR/skills" ] && find "$PLUGIN_DIR/skills" -name '*.md' 2>/dev/null | sed "s|^$ROOT/||"; } )
+     [ -d "$PLUGIN_DIR/skills" ] && find "$PLUGIN_DIR/skills" -name '*.md' 2>/dev/null | sed "s|^$ROOT/||"
+     [ -d "$PLUGIN_DIR/agents" ] && find "$PLUGIN_DIR/agents" -name '*.md' 2>/dev/null | sed "s|^$ROOT/||"; } )
 EOF
 
-  [ "$problems" -eq 0 ] && pass "$id" "every /vibe-ops:<name> reference resolves to a real skill"
+  [ "$problems" -eq 0 ] && pass "$id" "every vibe-ops:<name> reference resolves to a real skill or agent"
 }

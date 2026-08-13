@@ -8,13 +8,13 @@ Shared policy the skills point at instead of restating. Each file here is the **
 that governs more than one skill; a `SKILL.md` that repeats one of these has created a second copy, and
 the copy in the skill is the one that goes stale.
 
-Read from a skill at `${CLAUDE_PLUGIN_ROOT}/references/<file>`. These are not skills — the plugin manifest
-exposes only `./skills/`, so nothing here is ever invoked directly. It is content a skill loads when its
-own steps say to.
+Read from a skill at `${CLAUDE_PLUGIN_ROOT}/references/<file>`. These are not skills — the plugin exposes
+only `skills/` and `agents/`, so nothing here is ever invoked directly. It is content a skill loads when
+its own steps say to, or hands to a subagent as an absolute path.
 
 | File | Answers | Pointed at by |
 |---|---|---|
-| [`convergence-policy.md`](convergence-policy.md) | Is this skill target-state or event, and how does it reconcile a repo that already exists? | every target-state skill; `new` and `close` declare themselves events |
+| [`convergence-policy.md`](convergence-policy.md) | Is this skill target-state or event, and how does it reconcile a repo that already exists? | every target-state skill; `new` and `close` declare themselves events; the `governance-auditor` agent, for the verbs it assigns |
 | [`knowledge-lifecycle.md`](knowledge-lifecycle.md) | Where does a learning go once the work is done? | `close`, `authoring-agents-md` |
 | [`instruction-surfaces.md`](instruction-surfaces.md) | Which file gets a given fact, and how does it reach the agent? | `authoring-agents-md`, `setup`, and question 4 of the promotion test |
 | [`authoring-style.md`](authoring-style.md) | How is a generated document written — phrasing, budget, tables, diagrams? | every skill that writes prose into a target repo |

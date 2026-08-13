@@ -54,7 +54,11 @@ Decide what this file covers, because it decides everything else:
 
 ## Step 2 — Survey (skip only if no file exists)
 
-Read the current file and produce a gap list before writing:
+Read the current file and produce a gap list before writing. **Delegate that survey to the
+`vibe-ops:governance-auditor` agent** — the four inputs are in
+[`convergence-policy.md`](../../references/convergence-policy.md), and the target state is this file's
+Steps 1 and 3–8. It has no writing tool, and the listings stay in its context rather than yours. Run these
+yourself only if the agent is not in the session's listing:
 
 ```bash
 vibe-ops check .   # budget, links, the bridge, rule frontmatter

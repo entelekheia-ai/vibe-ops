@@ -36,6 +36,7 @@ you are editing the file they govern, not only when invoked.
 | | |
 |---|---|
 | `skills/` | The commands above. A `templates/` folder beside a `SKILL.md` holds files the skill copies at runtime. |
+| `agents/` | Subagents the skills dispatch to. `governance-auditor` runs the survey every target-state skill opens with — read-only, so an `audit` cannot write. |
 | `templates/` | The versioned governance templates (`plan`, `task`, `adr`, `rfc`) that `/new` and `/migrate` read. |
 | `hooks/` | The only always-on surface — six guards, each silent unless its exact condition holds. |
 | `references/` | Shared policy the skills point at instead of restating. |

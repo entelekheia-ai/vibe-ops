@@ -1,5 +1,5 @@
 ---
-vibe-ops-reference: convergence-policy@1
+vibe-ops-reference: convergence-policy@2
 ---
 
 # Convergence policy — two kinds of skill, four verbs
@@ -62,6 +62,35 @@ follow-up.** A migrate that leaves dangling pointers is worse than a `leave`.
 Survey without writing is a **mode, not a skill**. A target-state skill accepts an `audit` argument that
 runs steps 1–2, reports the gap list with the verb it would apply to each, and stops. Nothing is written,
 including the files a run would normally create from scratch.
+
+## Where the survey runs — the `governance-auditor` agent
+
+**Step 2 is delegated, in every target-state skill, whether or not `audit` was passed.** It runs in the
+`vibe-ops:governance-auditor` subagent, which holds `Read`, `Grep`, `Glob` and `Bash` and no writing tool
+at all. Two things follow, and only the first is obvious:
+
+- **Read-only stops being a promise the skill has to keep.** The mode's whole guarantee was one sentence in
+  a `SKILL.md` saying "write nothing" — in the same context that had just been told how to write
+  everything. Now the tools are the guarantee.
+- **The survey's bytes never reach the caller.** Directory listings, `vibe-ops check` output, `test -L`
+  probes and `git` reads stay in the subagent; what comes back is the gap list. A survey that costs the
+  caller nothing to run is a survey that gets run.
+
+**Pass it four things**, as absolute paths where they are paths:
+
+1. The target path.
+2. The target state — this skill's own `SKILL.md`, naming the steps or headings that declare it.
+3. This file, `${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`, for the verbs.
+4. The scope — `audit` or the survey ahead of a full run, plus any narrowing to one file or folder.
+
+It returns a gap-list table (path · state · verb · evidence), the rows needing a human decision, and what
+it could not check. **It never applies a verb**, and the confirmation before any destructive write stays
+with the caller, where the user is.
+
+**If it is not in the session's agent listing, run the survey inline** exactly as the skill's own step
+describes, and say once that you did. An install pinned to a version predating the agent will not have it
+(`plugin/AGENTS.md`, "why the install goes stale"); the gap list is the same either way, and only the
+context cost differs.
 
 ## Writing the `description`
 

@@ -11,6 +11,7 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the deterministic hal
 | Path | What is not obvious about it |
 |---|---|
 | [`skills/<name>/SKILL.md`](skills/) | **The product** — what Claude Code loads (`plugin.json`'s `"skills"` points here). A `templates/` folder beside a SKILL.md holds files that skill copies at runtime; it is never inlined into the SKILL.md. A skill may also ship tooling it *runs* rather than copies — `license-setup/get-license.sh` + its pinned `licenses/`, the only sanctioned way a LICENSE is produced ([ADR-0008](../project/adr/0008-license-text-is-fetched-and-verified.md)). |
+| [`agents/<name>.md`](agents/) | Subagents the skills dispatch to. **Auto-discovered — no manifest entry**, and that is the tested shape: with no `agents` key in `plugin.json`, `--plugin-dir` lists the file as `vibe-ops:governance-auditor` (measured 2026-08-13); the manifest's `agents` field takes an *array of file paths*, not a directory, so declaring it would trade auto-discovery for one entry per agent. One today — [`governance-auditor`](agents/governance-auditor.md), which every target-state skill delegates its survey to, holding no writing tool so `audit`'s guarantee is enforced rather than promised ([`convergence-policy.md`](references/convergence-policy.md)). Its `model: inherit` is the agent-side spelling of "never set `model:`" below. |
 | [`templates/`](templates/) | The versioned governance templates `/new` and `/migrate` read. Each declares `vibe-ops-template: <type>@<version>` in its frontmatter, and it survives into the produced artifact, so migration is **per artifact, not per plugin**. Artifacts predating the move carry the same token in an HTML comment above the H1, and both forms are read. |
 | [`hooks/`](hooks/) | The only always-on surface — auto-discovered from `hooks.json`, no manifest entry. A hook fires in **every** repository where the plugin is installed, so each carries its own cheap exit as its first act. **Five of the seven registrations name `vibe-ops` directly and ship no script** ([`docs/reference/hook-surfaces.md`](../docs/reference/hook-surfaces.md) is the catalogue; [`docs/how-to/write-a-hook.md`](../docs/how-to/write-a-hook.md) is the recipe). Why this surface exists: [`positioned-context-and-hooks.md`](../project/research/positioned-context-and-hooks.md). |
 | [`references/`](references/) | Shared policy the skills point at instead of restating — the single copy of any rule governing more than one skill. Each declares `vibe-ops-reference: <name>@<integer>` in its frontmatter, where the name is its own path under `references/`; a closure reports the routing policy version it applied, so which closures ran under which rule is a query rather than an archaeology. |
@@ -129,8 +130,8 @@ The three "don't do this or it breaks" invariants are in
 
 ## Keeping this file current
 
-Updating it is **part of any task that changes the plugin's shape**. Triggers: a skill is added, renamed
-or removed; a skill gains or loses a `templates/` folder; a file is added to `references/` or a skill
+Updating it is **part of any task that changes the plugin's shape**. Triggers: a skill or an agent is
+added, renamed or removed; a skill gains or loses a `templates/` folder; a file is added to `references/` or a skill
 stops pointing at one; an invariant above stops being true; a manifest field worth knowing about appears.
 Adjust the one affected line, keep entries to one line, and point at the source of truth rather than
 restating it.

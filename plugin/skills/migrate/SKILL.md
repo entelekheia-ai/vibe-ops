@@ -60,6 +60,12 @@ artifact that merely *discusses* versioning as declared; both failures report a 
 Compare each against the current template version in
 `${CLAUDE_PLUGIN_ROOT}/templates/<type>.md`. Report the counts before touching anything.
 
+**Delegate this whole step to the `vibe-ops:governance-auditor` agent** — the four inputs are in
+[`convergence-policy.md`](../../references/convergence-policy.md), the target state being the current
+template versions above. It runs the census read-only and returns one row per artifact behind its
+template, the unknowns kept as `(unknown)`. On `/migrate audit` that gap list is the entire run. Do it
+inline only if the agent is not in the session's listing.
+
 ## Step 2 — Read the migration note for each jump
 
 One file per jump, in [`migrations/`](migrations/), named `<type>-<from>-to-<to>.md`. Read **only** the

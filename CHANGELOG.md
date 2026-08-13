@@ -14,6 +14,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — the survey runs in a read-only subagent
+
+- **`agents/governance-auditor.md`, the plugin's first agent surface.** Every target-state skill opens
+  with a survey, and `audit` mode is that survey alone. Both used to run in the skill's own context, where
+  "write nothing" was a sentence in the same file that had just explained how to write everything. The
+  agent holds `Read`, `Grep`, `Glob` and `Bash` and no writing tool, so the guarantee is enforced by the
+  tool set instead of promised by prose — and the directory listings, `vibe-ops check` output and `test -L`
+  probes stay in its context, while only the gap list comes back to the caller.
+- **`agents/` is auto-discovered — no manifest entry.** Measured: with no `agents` key in `plugin.json`,
+  `claude --plugin-dir` lists the file as `vibe-ops:governance-auditor`. The manifest field exists but
+  takes an *array of file paths* rather than a directory, so declaring it would cost one entry per agent
+  and buy nothing; adding an agent stays "adding a file", as adding a skill is "adding a folder".
+- **`convergence-policy@2` owns the delegation contract**, in one copy: the four inputs a caller passes,
+  the gap-list shape that comes back, and the inline fallback for an install pinned to a version that
+  predates the agent. `setup` (both modes), `authoring-agents-md` and `migrate` each point at it in one
+  line instead of restating it.
+
 ### Changed — the document model reaches the last four hand-rolled gates (Plan-013)
 
 - **`memory-slug`, `pairing`, `claude-md-content` and `check-frontmatter` read the parsed document
