@@ -171,20 +171,20 @@ conversation, and each spawns its own dossier when it starts.
       declaration plus the reference documentation that explains it, and every later track reads it rather
       than re-deciding. At the end there is a file that answers "may promulgation write this path?" without
       a judgement call.
-      Task: [the-foundation-the-harness-module-stands-on.md](../tasks/the-foundation-the-harness-module-stands-on.md)
+      Task: the-foundation-the-harness-module-stands-on.md (closed dossier — `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`)
 - [x] **Track 2 — Narrow an ignore rule that is a trap for the next file, not a blocker for this one.**
       The commit hook turned out to need nothing: it is machine-independent and already tracked everywhere.
       The clone-local ignore rule names its whole directory in order to hide one neighbour, and an ignore
       rule cannot reach a tracked file — so what it actually endangers is anything promulgation adds to
       that directory later, which would arrive untracked and be swallowed in silence. Narrow the rule to
       the one file that needs it.
-      Task: [the-foundation-the-harness-module-stands-on.md](../tasks/the-foundation-the-harness-module-stands-on.md)
+      Task: the-foundation-the-harness-module-stands-on.md (closed dossier — `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`)
 - [x] **Track 3 — The applied-version stamp, and a session hook that is silent by default.** Add the
       clone-local configuration file to the existing resolution cascade as its nearest entry, store the
       applied version in it, and register a session-start hook that compares it against the installed
       version. At the end the hook exists, says nothing when the versions match, and says something
       specific and actionable when they do not.
-      Task: [the-foundation-the-harness-module-stands-on.md](../tasks/the-foundation-the-harness-module-stands-on.md)
+      Task: the-foundation-the-harness-module-stands-on.md (closed dossier — `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`)
 - [ ] **Track 4 — A module learns it has a source as well as a target.** Add the resolved source surface to
       what a module is handed, declared only by the modules that need it, so promulgation can read the norm
       from where it is installed rather than from the repository it is writing into. At the end a module
@@ -343,3 +343,6 @@ that is luck, not process, and it is why the Decision Log now carries a rule abo
 - [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the separation between a detector and
   the composition that decides its scope; this plan applies the same separation one level up, between what
   promulgates the norm and what verifies it.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`
