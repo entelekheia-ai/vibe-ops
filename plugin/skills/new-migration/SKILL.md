@@ -98,6 +98,20 @@ This is the step that finds what a diff cannot: a note written from the template
 "delete the section" and will not have met a file with forty entries in it. If the walk stalls, the note
 is missing a step; add the step to the note.
 
+**Dispatch the `vibe-ops:migration-rehearser` agent to do the walk**, passing the note, the population and
+the template as absolute paths. It holds no writing tool, so "without editing anything" is enforced rather
+than promised, and it returns the stall — or a clean walk with the artifact, its size and the step that
+met the heaviest content, which is the only form of "it applied cleanly" worth accepting.
+
+**Decide the fan-out here, and say which you chose.** One rehearsal against the artifact you judge worst
+is the default and is usually right. Dispatch **one agent per candidate** when the population is
+heterogeneous — several artifacts long for different reasons, or a section that is empty in most files and
+enormous in two — because then "the worst" is a guess, and a guess is what the fan-out exists to remove.
+That decision changes coverage, not cost, and coverage is what shrinks in silence.
+
+Adding a step the stall revealed is yours, not the agent's: what the note *should* say is the judgement
+this whole skill is about.
+
 Record what the walk found **in the plan or RFC that owns the change**, never in the note.
 
 ## Step 5 — Check the pair

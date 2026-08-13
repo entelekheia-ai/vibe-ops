@@ -169,7 +169,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       second-clean-run criterion; delegate `new-migration` Step 5 whole. No new surface, no new contract —
       each is a pointer at `plugin/references/convergence-policy.md`, one line, as the three existing call
       sites already are.
-- [ ] **Track 3 — `plugin/agents/migration-rehearser.md`.** A new agent for `new-migration` Step 4:
+- [x] **Track 3 — `plugin/agents/migration-rehearser.md`.** A new agent for `new-migration` Step 4:
       `model: inherit`, `effort: high`, `Read`/`Grep`/`Glob`/`Bash`, no `maxTurns`. Its body carries the
       output contract above. The dispatch site in the skill declares the fan-out — one rehearsal or one
       per candidate artifact — because that decides coverage, and coverage is what shrinks in silence.
@@ -306,8 +306,28 @@ Run from the repository root:
 
 ## Outcomes & Retrospective
 
-<!-- Filled at each track completion. Nothing to record yet: the plan has not started. The delegation it
-     generalises from shipped on 2026-08-13 as commit 78024a7 and is not part of these tracks. -->
+**Track 3 — the first real walk found a stall in a note that had already shipped.** Dispatched against the
+`plan@0.1 → 0.2` chain and the worst artifact of the population it chose by measurement
+(`project/plans/008-quiet-and-audit-the-plan-progress-nudge.md`, 629 lines, a 150-line `Surprises &
+Discoveries` section), `migration-rehearser` stalled at the step that splits `## Progress` by grain.
+`plugin/skills/migrate/migrations/plan-0.1-to-0.2.md` gives three buckets — track-level, step-level, dated
+item — and every substantive bullet in that artifact is **both** track-level and a dated working note, a
+shape the note's only worked example (`"Track 2 done"`, a bare completion marker) does not anticipate. Read
+one way the technical narrative has no stated destination, which the note's own *Done looks like* forbids;
+read the other way, it is silent on whether the track still gets its checkbox.
+
+Two things follow. The note needs a rule for that case, and writing it is a judgement about what happens
+to real content in permanent records, so it is the maintainer's to make and is **not** part of this plan.
+And the gap is live: eight artifacts in this repository are still stamped `plan@0.1`.
+
+The dispatch before it is worth recording too, because it was the design working rather than failing:
+handed the `0.2 → 3` note alone, the agent found **zero** artifacts at that stamp, distinguished the three
+prose mentions of `plan@0.2` from live stamps, refused to substitute a `plan@0.1` file without the
+caller's say-so, and reported the empty-population case as "not tested, which is a different claim from a
+clean walk" instead of returning a clean walk.
+
+<!-- Tracks 1, 2 and 4–7: filled at completion. The delegation this plan generalises from shipped on
+     2026-08-13 as commit 78024a7 and is not part of these tracks. -->
 
 ---
 
