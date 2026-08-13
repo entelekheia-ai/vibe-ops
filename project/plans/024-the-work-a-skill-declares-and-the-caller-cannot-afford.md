@@ -174,7 +174,7 @@ parity compares a gate against a shell fragment, and this one has no fragment to
       output contract above. The dispatch site in the skill declares the fan-out — one rehearsal or one
       per candidate artifact — because that decides coverage, and coverage is what shrinks in silence.
       At the end, a run of `/new-migration` produces a walk that was actually performed.
-- [ ] **Track 4 — The model rule, decided.** An ADR (next number `0013`) stating: pin downward only, and
+- [x] **Track 4 — The model rule, decided.** An ADR (next number `0013`) stating: pin downward only, and
       only where a deterministic check runs immediately and fails loudly; never pin upward; `inherit`
       otherwise. Then rewrite the "Never set `model:`" bullet in `plugin/AGENTS.md` to point at it. The
       prohibition lives in no ADR today, so nothing is superseded — but authorising a pin to travel to

@@ -119,8 +119,14 @@ The three "don't do this or it breaks" invariants are in
   asks for exactly that job in plain language. That failure is silent and looks like the skill not
   working. **A model-invocable skill must confirm before any irreversible step**, since the user may not
   have asked for the run.
-- **Never set `model:`** — it silently overrides the user's session choice. A small model fabricates
-  sections to fill a template with no source material, exactly what `/new`'s migration mode warns about.
+- **`model:` is pinned downward only, and only behind a verifier** — a cheaper tier is permitted where a
+  deterministic check runs immediately after the pinned work and fails loudly, and the verifier is named
+  where the pin is declared. Never upward: a pin runs on the installer's session and budget, and they
+  sized it when they chose their model. `inherit` everywhere else, which is also the default when the
+  field is absent. The reasoning, and the three rejected alternatives, are
+  [ADR-0013](../project/adr/0013-the-model-a-shipped-plugin-may-pin.md); this line is the rule, not the
+  record. A small model still fabricates sections to fill a template with no source material — which is
+  why no *authoring* surface qualifies, exactly what `/new`'s migration mode warns about.
 - **Don't use `when_to_use`.** The listing renders it as `description - when_to_use`, making it a second
   home for trigger text. Keep triggers in `description`; one copy.
 - **The skill listing is a fraction of the context window, shared with every other installed plugin.**
