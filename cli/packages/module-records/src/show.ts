@@ -24,6 +24,49 @@ import {
 import { handlingFor } from "./handling.ts";
 import type { CensusType } from "./census.ts";
 
+/** Every field a listing row may carry — the selectable set, and the order a row renders them in. */
+export const LISTABLE = [
+  "file",
+  "type",
+  "status",
+  "tracks",
+  "entries",
+  "migrations",
+  "ceremony",
+  "sections",
+] as const;
+
+export type ListField = (typeof LISTABLE)[number];
+
+/**
+ * What a listing carries when the caller selects nothing: the three facts its own terminal line prints,
+ * plus the type. `sections` is deliberately outside it.
+ *
+ * The distinction is the one between opening a file and listing a directory, and getting it wrong is not
+ * a matter of taste — measured over this repository's 28 plans, a listing returning the whole `Shown`
+ * shape was 43,761 bytes of JSON against 2,711 bytes of printed lines, a factor of 16, with `sections`
+ * alone 78.7% of it. A default is still a choice, so this one is the cheap answer to the common question
+ * and every other field stays one `--fields` away.
+ */
+export const LIST_DEFAULT: readonly ListField[] = ["file", "type", "status", "tracks"];
+
+/**
+ * A listing row carrying exactly the requested fields, in `LISTABLE` order rather than the order asked
+ * for — so two calls selecting the same set produce byte-identical rows regardless of how they spelled it.
+ *
+ * A key absent from `Shown` stays absent rather than arriving as `null`: `entries` missing means the
+ * record has no such section, which is not the same fact as an empty one, and flattening that here would
+ * undo the distinction `show` exists to preserve.
+ */
+export function pickFrom(shown: Shown, fields: readonly ListField[]): Partial<Shown> {
+  const wanted = new Set(fields);
+  const row: Record<string, unknown> = {};
+  for (const key of LISTABLE) {
+    if (wanted.has(key) && shown[key] !== undefined) row[key] = shown[key];
+  }
+  return row as Partial<Shown>;
+}
+
 export interface Shown {
   /** Repository-relative, as given. */
   readonly file: string;

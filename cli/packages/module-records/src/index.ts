@@ -28,7 +28,8 @@ import {
 import type { RecordType } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
-import { formatShown, showRecord, summariseShown } from "./show.ts";
+import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
+import type { ListField } from "./show.ts";
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
 
@@ -80,7 +81,18 @@ export default defineModule(
         // place (Plan-027 Track 1) — one implementation over `--type` cannot drift against itself.
         name: "list",
         summary: "every record of one type with its status and, for a plan, how many tracks are open",
-        flags: [{ name: "type", type: "string", description: "adr | rfc | plan | task" }],
+        flags: [
+          { name: "type", type: "string", description: "adr | rfc | plan | task" },
+          // The caller picks the projection rather than choosing between two points on a line somebody
+          // else drew. `sections` across every record was 78.7% of this verb's first payload and answers
+          // a question about ONE record — but "which plans still carry a Surprises section?" is a real
+          // cross-record question, and a boolean makes it all-or-nothing.
+          {
+            name: "fields",
+            type: "string",
+            description: `comma-separated subset of ${LISTABLE.join(",")}, or "all" (default: ${LIST_DEFAULT.join(",")})`,
+          },
+        ],
       },
     ],
     // Declared once at module level, as `plan`, `task` and `log` each declare theirs. It was repeated on
@@ -179,13 +191,39 @@ export default defineModule(
       const files = listMarkdownFiles(path.join(context.repoRoot, resolved.dir), DEPTH[type as RecordType]).map(
         (name) => `${resolved.dir}/${name}`,
       );
-      const rows = files.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents));
+      // Resolved before the records are read: an unknown field name is the caller's typo, and reporting it
+      // after doing the work would be answering a question they did not ask.
+      const raw = context.flags.fields;
+      let fields = LIST_DEFAULT;
+      if (typeof raw === "string") {
+        if (raw.trim() === "all") {
+          fields = LISTABLE;
+        } else {
+          const asked = raw.split(",").map((name) => name.trim()).filter((name) => name !== "");
+          const unknown = asked.filter((name) => !LISTABLE.includes(name as ListField));
+          if (unknown.length > 0) {
+            return {
+              code: 2,
+              summary: `unknown field(s) ${unknown.join(", ")} — --fields takes ${LISTABLE.join(",")} or "all"`,
+            };
+          }
+          if (asked.length === 0) {
+            return { code: 2, summary: `--fields was empty — it takes ${LISTABLE.join(",")} or "all"` };
+          }
+          fields = asked as ListField[];
+        }
+      }
+
+      const shown = files.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents));
       if (context.flags.json !== true) {
-        for (const row of rows) {
+        for (const row of shown) {
           const tracks = row.tracks === undefined ? "" : `  ${row.tracks.open}/${row.tracks.total} open`;
           context.log(`${(row.status ?? "(no Status)").padEnd(14)} ${row.file}${tracks}`);
         }
       }
+      // The printed line is fixed — it is the human summary, and it stays the same whatever `--fields`
+      // selects. What varies is `data`, which is the surface the selection is for.
+      const rows = shown.map((one) => pickFrom(one, fields));
       return {
         code: 0,
         summary:

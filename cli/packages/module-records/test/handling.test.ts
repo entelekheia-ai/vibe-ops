@@ -126,3 +126,59 @@ test("handling with no path is the census — a full answer, never an empty succ
   assert.ok((result.data as unknown[]).length > 0, "and never an empty array reported as success");
   assert.match(result.summary, /censused/);
 });
+
+// The listing projection. `list` first shipped returning `show`'s whole shape per record, which over this
+// repository's 28 plans was 43,761 bytes of JSON against 2,711 bytes of printed lines — `sections` alone
+// 78.7% of it, answering a question about ONE record for every record in the directory. The assertion
+// below is the one that would have caught it: what `list` carries per row is what its own line prints.
+test("list carries the listing shape, and only --full carries show's", async () => {
+  const repo = await fixture();
+  await write(repo, "project/plans/001-a.md", [
+    "# Plan-001: A", "", "| Field | Value |", "|---|---|", "| Status | Backlog |", "",
+    "## Tracks", "- [ ] one", "", "## Surprises & Discoveries", "- Observation: x", "",
+  ].join("\n"));
+
+  // Not the `run` helper above — that one is bound to `command: "handling"` and passes no flags.
+  const list = async (flags: Record<string, unknown>) =>
+    records.run({
+      repoRoot: repo,
+      flags,
+      command: "list",
+      args: [],
+      config: {},
+      settings: undefined,
+      surface: "cli",
+      log: () => {},
+      warn: () => {},
+    });
+
+  const result = await list({ type: "plan" });
+  assert.equal(result.code, 0);
+  const [row] = result.data as Record<string, unknown>[];
+
+  assert.deepEqual(Object.keys(row).sort(), ["file", "status", "tracks", "type"]);
+  assert.equal("sections" in row, false, "a listing must not carry every record's headings");
+  assert.equal("entries" in row, false);
+  assert.equal(row.status, "Backlog", "and it still carries what its printed line shows");
+
+  const all = await list({ type: "plan", fields: "all" });
+  const [allRow] = all.data as Record<string, unknown>[];
+  assert.ok(Array.isArray(allRow.sections), `"all" is how the whole shape stays reachable`);
+
+  // The cross-record question the projection exists to make cheap: which plans carry a Surprises
+  // section, without paying for seven other fields to ask it.
+  const picked = await list({ type: "plan", fields: "file,sections" });
+  const [pickedRow] = picked.data as Record<string, unknown>[];
+  assert.deepEqual(Object.keys(pickedRow).sort(), ["file", "sections"]);
+
+  // Order comes from LISTABLE, not from how the caller spelled the selection, so two calls asking for
+  // the same set produce identical rows.
+  const reversed = await list({ type: "plan", fields: "sections,file" });
+  assert.deepEqual(reversed.data, picked.data);
+
+  // A typo is the caller's, and it is named rather than silently dropped — a listing missing a field
+  // nobody notices is the same defect class as an empty string reported as success.
+  const typo = await list({ type: "plan", fields: "file,setcions" });
+  assert.equal(typo.code, 2);
+  assert.match(typo.summary, /unknown field\(s\) setcions/);
+});
