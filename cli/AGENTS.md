@@ -109,10 +109,16 @@ second concept.
   `plugin/` here, the root in a flat repo — via `resolvePluginDir`/`expandPluginToken` in
   `packages/core/src/files.ts`. Hardcoding one layout for the other makes a dogfooded pair unreachable
   in the other, which is exactly the bug the shell runner's `$PLUGIN_DIR` already exists to avoid.
-  **A path inside a gate's free-form `options` needs the same token and gets no help finding out** —
-  `paths` is expanded by the ops, `options` is not, and nothing type-checks a string. A gate handed a
-  path expands it itself (`template-version` does); a fixture shaped like *this* repository will never
-  reveal the omission, so the end-to-end fixtures are deliberately flat.
+  **`options` is expanded too, by the same ops** (`expandOptionTokens`), so a path there is no longer a
+  different kind of string — the asymmetry this paragraph used to describe in prose is gone rather than
+  documented. A gate that expands `<plugin>/` itself keeps working: the second pass finds no token.
+- **`<template:<type>>` in `options` resolves to where that type's template actually is** — the
+  repository's `records.templates`, else the first existing candidate (`project/templates/`, `templates/`,
+  `.agents/templates/`), else the plugin surface, which is what a repository whose templates *are* its
+  distributable needs and what `log` requires, since `RecordType` cannot name it. `<plugin>/templates/…`
+  was the literal before, and in a flat repo it resolved to the repository root — a path `setup repo`
+  never writes, so `template-version` was inert in **every** repository this tooling scaffolds and said
+  `SKIP`. The search order has one copy, in core; `packages/records/` builds its candidate map from it.
 - **A gate declares `fixable: true` and a `fix()` third argument to `defineGate` together, or neither.**
   `fix()` receives the findings `run()` just returned and repairs the mechanical ones — `pairing` creates
   a missing sibling `CLAUDE.md` but never edits one that exists without the import, because that is a

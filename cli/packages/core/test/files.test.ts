@@ -5,7 +5,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { realpathSync, statSync } from "node:fs";
-import { expandPluginToken, filterByGlobs, resolveArtifactDir, resolvePluginDir } from "../src/files.ts";
+import {
+  expandOptionTokens,
+  expandPluginToken,
+  expandTemplateToken,
+  filterByGlobs,
+  resolveArtifactDir,
+  resolvePluginDir,
+} from "../src/files.ts";
 
 function git(cwd: string, args: readonly string[]): void {
   const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8" });
@@ -87,6 +94,56 @@ test("an artifactDir outside .git is the plain resolve it always was, in both tr
 test("outside a repository a .git-relative artifactDir falls back to the plain resolve", async () => {
   const loose = await mkdtemp(path.join(tmpdir(), "vibeops-notarepo-"));
   assert.equal(resolveArtifactDir(loose, ".git/gate-artifacts"), path.join(loose, ".git", "gate-artifacts"));
+});
+
+// `<plugin>/templates/<type>.md` resolved to the repository ROOT in a repo laid out flat, and nothing
+// writes a root-level templates/. So the check was inert in every repository this tooling scaffolds, and
+// reported SKIP — indistinguishable, in the summary, from a repository that keeps no records.
+test("<template:t> resolves to what the repository declared in records.templates", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  assert.equal(
+    expandTemplateToken("<template:adr>", repoRoot, repoRoot, { templates: { adr: "docs/adr-template.md" } }),
+    "docs/adr-template.md",
+  );
+});
+
+test("<template:t> falls back to the first candidate that exists, never to a path nothing writes", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "project", "templates", "plan.md"), "# plan\n");
+  assert.equal(expandTemplateToken("<template:plan>", repoRoot, repoRoot, undefined), "project/templates/plan.md");
+});
+
+// `log` is not a RecordType, so no config can declare it. A repository whose templates ARE its
+// distributable keeps them under the plugin dir, and without that last candidate its log entry stops
+// resolving — which is what a run against the one repository shaped that way reported.
+test("<template:t> reaches the plugin surface for a type no config can declare", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  const pluginDir = path.join(repoRoot, "plugin");
+  await mkdir(path.join(pluginDir, "templates"), { recursive: true });
+  await writeFile(path.join(pluginDir, "templates", "log.md"), "# log\n");
+  assert.equal(expandTemplateToken("<template:log>", repoRoot, pluginDir, undefined), "plugin/templates/log.md");
+});
+
+test("an absent template still names a path a reader recognises, so the SKIP is actionable", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  assert.equal(expandTemplateToken("<template:rfc>", repoRoot, repoRoot, undefined), "project/templates/rfc.md");
+});
+
+test("expandOptionTokens expands both tokens, leaves non-strings alone, and is idempotent", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  const expanded = expandOptionTokens(
+    { template: "<template:adr>", runner: "<plugin>/sh/run.sh", schema: "adr", depth: 2 },
+    repoRoot,
+    path.join(repoRoot, "plugin"),
+    { templates: { adr: "project/templates/adr.md" } },
+  );
+  assert.equal(expanded["template"], "project/templates/adr.md");
+  assert.equal(expanded["runner"], "plugin/sh/run.sh");
+  assert.equal(expanded["schema"], "adr", "a string carrying no token is untouched");
+  assert.equal(expanded["depth"], 2, "a non-string option is passed through as it is");
+  // A gate that expands <plugin>/ itself must keep working: a second pass finds no token.
+  assert.deepEqual(expandOptionTokens(expanded, repoRoot, path.join(repoRoot, "plugin"), undefined), expanded);
 });
 
 test("filterByGlobs matches AGENTS.md against both a bare pattern and **/AGENTS.md", () => {

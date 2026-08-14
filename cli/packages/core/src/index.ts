@@ -21,10 +21,14 @@ export type {
 } from "./ops.ts";
 export {
   excludeByGlobs,
+  expandOptionTokens,
   expandPluginToken,
+  expandTemplateToken,
   filterByGlobs,
   resolveArtifactDir,
   resolvePluginDir,
+  TEMPLATE_DIRS,
+  templateCandidates,
   trackedFiles,
 } from "./files.ts";
 export { allGrammars, grammarForExtension } from "./grammars.ts";

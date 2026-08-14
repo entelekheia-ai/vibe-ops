@@ -4,6 +4,7 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { templateCandidates } from "@entelekheia/vibe-ops-core";
 import type { RecordType, RecordsConfig } from "@entelekheia/vibe-ops-core";
 
 export const CANDIDATE_DIRS: Readonly<Record<RecordType, readonly string[]>> = {
@@ -13,11 +14,13 @@ export const CANDIDATE_DIRS: Readonly<Record<RecordType, readonly string[]>> = {
   task: ["project/tasks", "tasks"],
 };
 
+/** Built from core's own list rather than restated: the `<template:<type>>` token an ops expands and this
+ *  resolver must agree, and two copies of a search order drift invisibly — both answers look like a path. */
 export const CANDIDATE_TEMPLATES: Readonly<Record<RecordType, readonly string[]>> = {
-  adr: ["project/templates/adr.md", "templates/adr.md", ".agents/templates/adr.md"],
-  rfc: ["project/templates/rfc.md", "templates/rfc.md", ".agents/templates/rfc.md"],
-  plan: ["project/templates/plan.md", "templates/plan.md", ".agents/templates/plan.md"],
-  task: ["project/templates/task.md", "templates/task.md", ".agents/templates/task.md"],
+  adr: templateCandidates("adr"),
+  rfc: templateCandidates("rfc"),
+  plan: templateCandidates("plan"),
+  task: templateCandidates("task"),
 };
 
 export const DEFAULT_PAD: Readonly<Record<RecordType, number>> = { adr: 4, rfc: 4, plan: 3, task: 3 };

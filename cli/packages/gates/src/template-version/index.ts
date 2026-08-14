@@ -41,10 +41,16 @@ import { compareVersions, findHeaderTable, readTemplateVersion, valueOf } from "
 
 interface TemplateVersionOptions {
   /**
-   * Repository-relative path to the template whose declaration is the current one. A leading
-   * `<plugin>/` expands to wherever the target's plugin surface actually is — `plugin/` in a repo
-   * shaped like this one, the root in a flat one. Hardcoding either layout makes the pair unreachable
-   * in the other, which is the failure `$PLUGIN_DIR` already exists to prevent on the shell side.
+   * Repository-relative path to the template whose declaration is the current one, **already expanded
+   * by the composing ops**. A composition names `<template:<type>>` and the ops resolves it against the
+   * repository's own `records.templates` and search order; `<plugin>/` still expands too, for a
+   * composition that names a path inside the plugin surface directly.
+   *
+   * It arrives expanded rather than being resolved here because where a template lives is a fact about
+   * the target's layout, which is the ops's half of the split and never the detector's. Naming
+   * `<plugin>/templates/<type>.md` in the composition put that decision here by accident: in a repo laid
+   * out flat the token resolved to the repository root, where nothing writes templates, so this gate was
+   * inert in every repository the tooling scaffolds while reporting SKIP.
    */
   readonly template?: string;
 }

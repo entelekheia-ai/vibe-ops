@@ -43,6 +43,7 @@
 import { createEmitter, UndeclaredObservationError } from "./emit.ts";
 import {
   excludeByGlobs,
+  expandOptionTokens,
   expandPluginToken,
   filterByGlobs,
   resolveArtifactDir,
@@ -453,7 +454,9 @@ async function run(
       repoRoot: context.repoRoot,
       pluginDir,
       files: scoped,
-      options: entry.options ?? {},
+      // Expanded here, not left to each gate: `<plugin>/` and `<template:<type>>` are facts about the
+      // target's layout, which is the ops's half of the split, never the detector's.
+      options: expandOptionTokens(entry.options ?? {}, context.repoRoot, pluginDir, context.config.records),
       documents,
     };
     let outcome = await gate.run(gateContext);

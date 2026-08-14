@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
+import type { RecordsConfig, RecordType } from "./config.ts";
 
 /**
  * Every file git tracks, repository-relative. One spawn per run, shared across every gate in an ops —
@@ -69,6 +70,85 @@ export function expandPluginToken(pattern: string, repoRoot: string, pluginDir: 
   if (!pattern.includes("<plugin>/")) return pattern;
   const rel = path.relative(repoRoot, pluginDir);
   return pattern.replaceAll("<plugin>/", rel === "" ? "" : `${rel}/`);
+}
+
+/**
+ * The directories a record type's template is searched in, nearest convention first. Exported because
+ * `@entelekheia/vibe-ops-records` builds its own candidate map from this list rather than restating it —
+ * two search orders would drift, and a drift here is invisible from either side because both answers look
+ * like a template path.
+ */
+export const TEMPLATE_DIRS = ["project/templates", "templates", ".agents/templates"] as const;
+
+/** Where a type's template could be, in search order. Generic in the type name, so `log` and any type a
+ *  repository brings resolve by the same rule as the four the tooling ships. */
+export function templateCandidates(type: string): readonly string[] {
+  return TEMPLATE_DIRS.map((dir) => `${dir}/${type}.md`);
+}
+
+const TEMPLATE_TOKEN = /<template:([a-z][a-z0-9-]*)>/g;
+
+/**
+ * `<template:<type>>` in a declared option expands to where that type's template ACTUALLY is — what the
+ * repository declared in `records.templates`, else the first candidate that exists, else the first
+ * candidate so an absent template is reported against a path a reader recognises.
+ *
+ * It exists because the composition cannot name the path. `<plugin>/templates/adr.md` resolves to the
+ * repository root in a repo laid out flat, and `setup repo` writes templates to `project/templates/`
+ * — never to a root-level `templates/`. So every repository scaffolded by this tooling had its template
+ * checked at a path nothing writes, the gate read the absence as "no records of that type" and reported
+ * SKIP. Measured 2026-08-14 on a repository holding five stamped templates, naming all five in its own
+ * config, with 43 records carrying no stamp and the composition reporting no failure at all.
+ *
+ * The repository's `records` declaration is what the records resolver already honours; this is what
+ * carries that same declaration to the half that examines.
+ */
+export function expandTemplateToken(
+  value: string,
+  repoRoot: string,
+  pluginDir: string,
+  records: RecordsConfig | undefined,
+): string {
+  if (!TEMPLATE_TOKEN.test(value)) {
+    TEMPLATE_TOKEN.lastIndex = 0;
+    return value;
+  }
+  TEMPLATE_TOKEN.lastIndex = 0;
+  return value.replace(TEMPLATE_TOKEN, (_match, type: string) => {
+    const declared = records?.templates?.[type as RecordType];
+    if (declared !== undefined) return declared;
+    // The plugin surface last, and it is not decoration: a repository whose templates ARE its
+    // distributable keeps them under its plugin dir, and `log` cannot be declared in `records.templates`
+    // at all because `RecordType` does not include it. Without this candidate the log entry of the one
+    // repository shaped that way stops resolving — caught by running the composition against it.
+    const candidates = [...templateCandidates(type), path.join(path.relative(repoRoot, pluginDir), "templates", `${type}.md`)];
+    return candidates.find((candidate) => existsSync(path.join(repoRoot, candidate))) ?? candidates[0]!;
+  });
+}
+
+/**
+ * Every token an ops expands in a gate's free-form `options`, applied to string values only.
+ *
+ * `paths` was expanded and `options` was not, which made a path inside `options` a different kind of
+ * string with no help finding out — a trap this repository's own guidance had to describe in prose
+ * because nothing enforced it. Expanding both here is what removes the asymmetry rather than documenting
+ * it. A gate that expands `<plugin>/` itself keeps working: an already-expanded string carries no token,
+ * so the second pass is a no-op.
+ */
+export function expandOptionTokens(
+  options: Readonly<Record<string, unknown>>,
+  repoRoot: string,
+  pluginDir: string,
+  records: RecordsConfig | undefined,
+): Readonly<Record<string, unknown>> {
+  const expanded: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(options)) {
+    expanded[key] =
+      typeof value === "string"
+        ? expandTemplateToken(expandPluginToken(value, repoRoot, pluginDir), repoRoot, pluginDir, records)
+        : value;
+  }
+  return expanded;
 }
 
 /** Files matching any of the patterns. `path.matchesGlob` is native, so this costs no dependency. */
