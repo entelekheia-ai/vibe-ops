@@ -165,6 +165,19 @@ Run from the repository root:
   migration touches. Doing both at once produces a conflict whose resolution is guesswork.
   Date / Author: 2026-08-13 / Danilo Borges
 
+- Decision: Track 1 routes from the migration note's three questions, not from `/vibe-ops:close-plan`'s
+  Step 3, and every entry it acts on is marked as acted on before the pass moves to the next file.
+  Rationale: Step 3 of that skill opens by saying a plan holds only design and *"there is nothing here to
+  empty"*. That is true of the current template and false of exactly the eight files this plan is about —
+  they predate the split, so their discoveries section is the working record. A pass that follows the
+  skill as written concludes it has nothing to do. The marking half comes from the same measurement: a
+  closure elsewhere, on a plan of this shape, found fifty-seven entries of which eleven carried a
+  prescription, and separating the seven already implemented from the four still open took a
+  comparison of every one against the current text of two surfaces. Nothing in an append-only section
+  records that an entry was acted on, so seventy-seven entries here would be re-derived the same way by
+  whoever reads them next. The marking is cheap while the routing decision is in hand and expensive after.
+  Date / Author: 2026-08-14 / Danilo Borges
+
 - Decision: discovery and mechanical edits under a contract that fits in a paragraph may be handed to a
   subagent; any judgement that has to agree with this plan's intent may not.
   Rationale: extracting the entries, counting them, and applying the second jump are closed contracts and
