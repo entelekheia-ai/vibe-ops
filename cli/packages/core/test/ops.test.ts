@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { defineOps } from "../src/ops.ts";
+import { createEmitter, UndeclaredObservationError } from "../src/emit.ts";
 import type { ModuleContext } from "../src/context.ts";
 import type { VibeOpsConfig } from "../src/config.ts";
 
@@ -177,6 +178,85 @@ test("zero examined writes nothing — a population of zero is not a reading", a
   const { context } = contextFor(dir, { artifactDir });
   await plugin.run(context);
   await assert.rejects(() => readFile(path.join(artifactDir, "demo.watcher.jsonl")));
+});
+
+// A DESTINATION THAT CANNOT BE WRITTEN IS NOT A FINDING ABOUT THE REPOSITORY. Until these three, any
+// emission failure aborted the whole ops, so a sensor that could not record refused a commit whose
+// content was clean — which is how a `harness sync` into a linked working tree read as the target's own
+// gate rejecting the promulgation.
+test("an unwritable artifactDir warns and does not block a run whose gates are clean", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "watcher", `{ findings: [], examined: 3 }`);
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "watcher.mjs"), emits: true, label: "watcher" }],
+  });
+  // A file where the directory should be — the same shape as `.git/gate-artifacts` under a linked
+  // working tree, reached here without needing one.
+  const blocked = path.join(dir, "not-a-directory");
+  await writeFile(blocked, "");
+  const { context, logs } = contextFor(dir, { artifactDir: path.join(blocked, "artifacts") });
+  const result = await plugin.run(context);
+  assert.equal(result.code, 0, "a clean gate must still pass when only the destination failed");
+  assert.ok(logs.some((line) => line.includes("WARN  [emit-failed]")), logs.join("\n"));
+});
+
+test("settings.level raises emit-failed to fail for a repository whose series matters more", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "watcher", `{ findings: [], examined: 3 }`);
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "watcher.mjs"), emits: true, label: "watcher" }],
+  });
+  const blocked = path.join(dir, "not-a-directory");
+  await writeFile(blocked, "");
+  const { context, logs } = contextFor(
+    dir,
+    { artifactDir: path.join(blocked, "artifacts") },
+    {},
+    { level: { "emit-failed": "fail" } },
+  );
+  const result = await plugin.run(context);
+  assert.equal(result.code, 1);
+  assert.ok(logs.some((line) => line.includes("FAIL  [emit-failed]")), logs.join("\n"));
+});
+
+test("an undeclared observation id stays fatal — no repository may declare that disagreement away", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-fixture-"));
+  await writeFakeGate(dir, "watcher", `{ findings: [], examined: 3 }`);
+  const plugin = defineOps({
+    id: "demo",
+    version: "1",
+    summary: "s",
+    gates: [{ gate: path.join(dir, "watcher.mjs"), emits: true, label: "watcher" }],
+  });
+  const { context } = contextFor(
+    dir,
+    { artifactDir: path.join(dir, "artifacts") },
+    {},
+    // Even with the loudest possible declaration that nothing here should block.
+    { level: { "*": "warn" } },
+  );
+  // The emitter is built from the composition's declared ids, so the only way to reach the undeclared
+  // path is to hand it an observation the definition never promised — done here by emitting under an id
+  // the entry does not carry.
+  const emitter = createEmitter({
+    artifactDir: path.join(dir, "artifacts"),
+    moduleId: "demo",
+    moduleVersion: "1",
+    repoRoot: dir,
+    declared: ["demo.watcher"],
+    now: () => "now",
+  });
+  await assert.rejects(
+    () => emitter({ id: "not-declared", tool: "watcher@1", examined: 1, unit: "file", counts: {}, moment: "sweep" }),
+    (error: unknown) => error instanceof UndeclaredObservationError,
+  );
+  assert.equal((await plugin.run(context)).code, 0);
 });
 
 test("a non-zero population is recorded, and the record carries no verdict field", async () => {

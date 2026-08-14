@@ -40,8 +40,15 @@
 // because a template bump leaves every record behind at once, which is right while a migration is in
 // flight and wrong for a repository that has finished one and wants the gate to hold the line.
 
-import { createEmitter } from "./emit.ts";
-import { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+import { createEmitter, UndeclaredObservationError } from "./emit.ts";
+import {
+  excludeByGlobs,
+  expandPluginToken,
+  filterByGlobs,
+  resolveArtifactDir,
+  resolvePluginDir,
+  trackedFiles,
+} from "./files.ts";
 import { createDocumentStore } from "./document.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
@@ -384,10 +391,19 @@ async function run(
   // The emitter is doubly opt-in, unchanged: an entry declares `emits` AND the config names a
   // destination. Either alone produces nothing, so an observation is never written somewhere nobody
   // chose. Built here rather than taken from context.emit — see the header.
+  /**
+   * Whether one finding blocks. Most specific wins: the rule it names, else the entry it came from,
+   * else every finding in this ops, else the caller's default — the gate's own declared level for a
+   * real finding, `warn` for the emission failure below. One cascade, because two would drift and a
+   * drift here is invisible from either side: both answers look like a level.
+   */
+  const levelOf = (rule: string, label: string, fallback: "fail" | "warn"): "fail" | "warn" =>
+    governed?.level?.[rule] ?? governed?.level?.[label] ?? governed?.level?.["*"] ?? fallback;
+
   const emit =
     emits.length > 0 && context.config.artifactDir !== undefined
       ? createEmitter({
-          artifactDir: path.resolve(context.repoRoot, context.config.artifactDir),
+          artifactDir: resolveArtifactDir(context.repoRoot, context.config.artifactDir),
           moduleId: definition.id,
           moduleVersion: definition.version,
           repoRoot: context.repoRoot,
@@ -472,14 +488,7 @@ async function run(
     population.push({ gate: label, examined, ignored: ignoredCount });
 
     for (const finding of outcome.findings) {
-      // Most specific wins: the rule this finding names, else the entry it came from, else every finding
-      // in this ops, else what the gate itself declared, else fail.
-      const level =
-        governed?.level?.[finding.rule] ??
-        governed?.level?.[label] ??
-        governed?.level?.["*"] ??
-        finding.level ??
-        "fail";
+      const level = levelOf(finding.rule, label, finding.level ?? "fail");
       if (level === "warn") warnings += 1;
       else failures += 1;
       findings.push({
@@ -510,7 +519,7 @@ async function run(
       for (const finding of outcome.findings) {
         counts[finding.rule] = (counts[finding.rule] ?? 0) + 1;
       }
-      await emit({
+      const observation = {
         id: emitIdFor(entry),
         // The GATE and its own version — the detector that produced these findings, never the
         // composition that ran it. See the header comment on emit.ts.
@@ -527,7 +536,33 @@ async function run(
           ...(outcome.instrument === undefined ? [] : [`compared:${outcome.instrument}`]),
           ...patterns,
         ],
-      });
+      };
+
+      try {
+        await emit(observation);
+      } catch (error) {
+        // The two ways an emitter throws mean opposite things, and until they were told apart every
+        // emission failure aborted the whole ops — so a sensor that could not WRITE refused a commit
+        // whose content was clean. That is what made `harness sync` read as the target's gate rejecting
+        // a promulgation: `.git/gate-artifacts` under a linked working tree, where `.git` is a file.
+        //
+        // An undeclared id is not that. It is this repository's own composition disagreeing with its own
+        // definition, and no target may declare it away.
+        if (error instanceof UndeclaredObservationError) throw error;
+
+        // Everything else is the DESTINATION failing, not the reading: a read-only mount, a full disk, a
+        // path that is not a directory. Declared `warn`, and that word is the default rather than the
+        // verdict — `settings.<ops>.level` raises `emit-failed` to `fail` for a repository whose series
+        // matters more than its commits. Reported as a finding rather than swallowed, because the
+        // objection to not blocking is that a reading goes missing in silence, and a named finding in
+        // the run's own output and `data` is the answer to the silence, not to the blocking.
+        const level = levelOf("emit-failed", label, "warn");
+        if (level === "warn") warnings += 1;
+        else failures += 1;
+        const why = error instanceof Error ? error.message : String(error);
+        findings.push({ gate: label, rule: "emit-failed", evidence: `${observation.id} was not recorded: ${why}`, level });
+        if (cli) context.log(`${level === "warn" ? "WARN" : "FAIL"}  [emit-failed] ${observation.id} was not recorded: ${why}`);
+      }
     }
   }
 

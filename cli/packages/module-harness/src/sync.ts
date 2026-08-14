@@ -191,6 +191,10 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   const added = git(repoRoot, ["worktree", "add", "-B", branch, worktree, base]);
   if (added.code !== 0) throw new Error(`could not create a working tree on ${branch} from ${base}: ${added.err}`);
 
+  // Set only on the way out through a throw — the cleanup below must not fire on the returns, which
+  // hand their branch back deliberately. A `finally` cannot tell the two apart on its own.
+  let unwinding = false;
+
   try {
     const touched = [...written, ...seeded];
     for (const file of touched) {
@@ -239,8 +243,26 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
     }
 
     return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied };
+  } catch (error) {
+    unwinding = true;
+    throw error;
   } finally {
     // Last, and in a finally: a failed run must not leave a sibling directory nobody remembers creating.
     git(repoRoot, ["worktree", "remove", "--force", worktree]);
+
+    // `worktree add -B` creates the branch at base BEFORE anything is committed to it, so a throw left
+    // `vibe-ops/norm-N` behind pointing exactly where it started: no commit, no tag, and `harness status`
+    // still reporting never promulgated. Litter shaped like a partial success, which is worse than no
+    // branch at all — the next reader has to prove it is empty before deleting it.
+    //
+    // Only when the tip never moved, and only while unwinding: the tag-failure path above throws over a
+    // branch that IS complete and says so, and the two early returns hand their branch back to be read.
+    // `-B` has already reset whatever the name pointed at, so nothing deletable here survived the add.
+    // After the worktree is gone, never before — git refuses to delete a branch still checked out in one.
+    if (unwinding) {
+      const tip = git(repoRoot, ["rev-parse", "--verify", branch]);
+      const from = git(repoRoot, ["rev-parse", "--verify", base]);
+      if (tip.code === 0 && from.code === 0 && tip.out === from.out) git(repoRoot, ["branch", "-D", branch]);
+    }
   }
 }

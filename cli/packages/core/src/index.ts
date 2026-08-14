@@ -4,7 +4,7 @@ export type { ModuleContext, Surface } from "./context.ts";
 export { loadConfig, searchPath, settingsFor, statePath, writeHarnessState } from "./config.ts";
 export type { HarnessConfig } from "./config.ts";
 export type { LoadedConfig, RecordsConfig, RecordType, VibeOpsConfig } from "./config.ts";
-export { createEmitter } from "./emit.ts";
+export { createEmitter, UndeclaredObservationError } from "./emit.ts";
 export type { Emitter, EmitterOptions, Observation } from "./emit.ts";
 export { defineGate, gateSpecifierFor, loadGate, GATE_PREFIX } from "./gate.ts";
 export type { GateDefinition, GateFinding, GateFix, GateOutcome, GatePlugin, GateRunContext } from "./gate.ts";
@@ -19,7 +19,14 @@ export type {
   OpsRepair,
   OpsSkip,
 } from "./ops.ts";
-export { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+export {
+  excludeByGlobs,
+  expandPluginToken,
+  filterByGlobs,
+  resolveArtifactDir,
+  resolvePluginDir,
+  trackedFiles,
+} from "./files.ts";
 export { allGrammars, grammarForExtension } from "./grammars.ts";
 export type { GrammarDescriptor } from "./grammars.ts";
 export { createDocumentStore, documentFromText } from "./document.ts";

@@ -69,6 +69,29 @@ test("sync leaves the target's working tree untouched, and stops at a branch and
   assert.ok(git(repoRoot, ["tag", "-l", "vibe-ops/norm@1"]) !== "", "the tag survives the tree it was made in");
 });
 
+// `worktree add -B` creates the branch BEFORE anything is committed to it, so a run that threw used to
+// leave `vibe-ops/norm-1` sitting at base: no commit, no tag, `harness status` still saying never
+// promulgated. Litter shaped like a partial success — the next reader has to prove it is empty before
+// daring to delete it. Found by a real promulgation that failed for an unrelated reason, 2026-08-14.
+test("a run that fails deletes the branch it created, when nothing ever landed on it", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+
+  // A gate the target refuses to pass. This is the real failure shape: `sync` commits inside the linked
+  // working tree, so the target's own hook runs and can reject it.
+  const hooks = path.join(repoRoot, "refusing-hooks");
+  await mkdir(hooks, { recursive: true });
+  await writeFile(path.join(hooks, "pre-commit"), "#!/bin/sh\necho 'the gate says no' >&2\nexit 1\n", { mode: 0o755 });
+  git(repoRoot, ["config", "core.hooksPath", hooks]);
+
+  await assert.rejects(() => sync({ repoRoot, sourceRoot, dryRun: false }), /the promulgation commit failed/);
+
+  assert.equal(git(repoRoot, ["branch", "--list", "vibe-ops/norm-1"]), "", "the empty branch must not survive");
+  assert.equal(git(repoRoot, ["tag", "-l", "vibe-ops/norm@1"]), "", "and neither should a tag");
+  assert.equal(git(repoRoot, ["worktree", "list"]).split("\n").length, 1, "no sibling working tree left behind");
+  assert.equal(git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"]), "main", "the target stayed on its own branch");
+});
+
 // The verb has to record what it did, or the question the whole mechanism exists to answer — "which
 // repositories are on version N?" — is left exactly as unanswered by the act that should have answered it.
 // Shipped without this once: sync wrote the files, recorded only the boundary, and `harness status` went

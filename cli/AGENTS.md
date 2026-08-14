@@ -247,6 +247,24 @@ grades. There is deliberately no `severity`, `pass` or `score` field, and a test
 thresholds belong to the consuming product. Emitting an id the module does not declare **throws**, so
 the definition and the code cannot silently disagree.
 
+**An emitter throws for two unrelated reasons and they are told apart, because they mean opposite
+things.** An undeclared id (`UndeclaredObservationError`) is this repository's own composition
+disagreeing with its own definition and stays **fatal** — no target may declare it away. A failure to
+*write* is the destination, not the reading: it becomes an `emit-failed` finding, default **`warn`**,
+levelable like any other through `settings.<ops>.level`. Until they were separated, an unwritable
+`artifactDir` aborted the whole ops, so a sensor that could not record refused a commit whose content was
+clean — which is how a `harness sync` into a linked working tree read as the *target's* gate rejecting
+the promulgation. The objection to not blocking is that a reading goes missing in silence; a named
+finding in the run's output and in `data` answers the silence, not the blocking.
+
+**An `artifactDir` declared under `.git/` is resolved through `git rev-parse --git-common-dir`**
+(`resolveArtifactDir`, `packages/core/src/files.ts`), never through the working tree. In a linked working
+tree `.git` is a *file*, so the plain resolve produces a path under a file and `mkdir` raises `ENOTDIR`.
+The common dir is `.git` in an ordinary checkout, so this **moves no existing artifacts**, and it is the
+better answer anyway: every working tree of one clone accumulates where a drain reads. The test that
+proves it must use a real linked working tree — against an ordinary checkout the old code gives the same
+answer and the test proves nothing.
+
 ## Working here
 
 ```bash

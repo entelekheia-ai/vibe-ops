@@ -63,6 +63,19 @@ export interface EmitterOptions {
   readonly now: () => string;
 }
 
+/**
+ * The definition and the code disagreeing about what this module records — its own class, because a
+ * caller must be able to tell it apart from the emitter failing to *write*. The two arrive at the same
+ * `catch` and mean opposite things: this one is a defect in a composition, never something a target
+ * repository may declare away, so it stays fatal wherever a write failure is levelable.
+ */
+export class UndeclaredObservationError extends Error {
+  constructor(moduleId: string, observationId: string) {
+    super(`module "${moduleId}" emitted "${observationId}", which it does not declare in emits`);
+    this.name = "UndeclaredObservationError";
+  }
+}
+
 export function createEmitter(options: EmitterOptions): Emitter {
   const declared = new Set(options.declared);
   let ready = false;
@@ -71,9 +84,7 @@ export function createEmitter(options: EmitterOptions): Emitter {
     if (!declared.has(observation.id)) {
       // Undeclared means the definition and the code disagree. Failing loudly here is the only way
       // that disagreement ever surfaces — a silently accepted id would make `emits` decorative.
-      throw new Error(
-        `module "${options.moduleId}" emitted "${observation.id}", which it does not declare in emits`,
-      );
+      throw new UndeclaredObservationError(options.moduleId, observation.id);
     }
     if (!ready) {
       await mkdir(options.artifactDir, { recursive: true });

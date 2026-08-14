@@ -1,4 +1,4 @@
-// The two facts about a target repository that every gate would otherwise re-derive, resolved once.
+// The facts about a target repository that every gate would otherwise re-derive, resolved once.
 
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -26,6 +26,38 @@ export function resolvePluginDir(repoRoot: string): string {
   return existsSync(path.join(repoRoot, "plugin", ".claude-plugin", "plugin.json"))
     ? path.join(repoRoot, "plugin")
     : repoRoot;
+}
+
+/**
+ * Where an `artifactDir` actually is, which is not `path.resolve(repoRoot, declared)` whenever the
+ * declaration starts at `.git/` — the shape this tooling's own config uses and its docs recommend.
+ *
+ * **In a linked working tree `.git` is a file, not a directory**, 85 bytes holding `gitdir: …`. So
+ * `.git/gate-artifacts` resolves to a path *under a file*, `mkdir` raises ENOTDIR, and the emitter
+ * throws. `harness sync` is the only verb that commits inside a linked working tree, so it is the only
+ * caller that can hit this — and it hits it while running the *target's* gate, which makes an emission
+ * failure read as the target's gate refusing a clean commit. Every other invocation of the same gate,
+ * in the same repository, passes. Measured 2026-08-14, promulgating into a real repository.
+ *
+ * `--git-common-dir` is `.git` in an ordinary checkout and the main clone's `.git` from inside a linked
+ * working tree, so the resolved path is **unchanged for every existing repository** — this moves no
+ * artifacts. It is also the better answer on its own terms: every working tree of one clone accumulates
+ * into the one place a drain reads.
+ *
+ * Only a `.git`-relative declaration pays the spawn; anything else is the plain resolve it always was.
+ */
+export function resolveArtifactDir(repoRoot: string, declared: string): string {
+  const absolute = path.resolve(repoRoot, declared);
+  const dotGit = path.join(repoRoot, ".git");
+  if (absolute !== dotGit && !absolute.startsWith(`${dotGit}${path.sep}`)) return absolute;
+
+  const result = spawnSync("git", ["-C", repoRoot, "rev-parse", "--git-common-dir"], { encoding: "utf8" });
+  const common = (result.stdout ?? "").trim();
+  // Not a repository, or a git too old to know the flag. The plain resolve is what this did before, and
+  // it is right in the ordinary checkout that is the only place either condition can hold.
+  if (result.status !== 0 || common === "") return absolute;
+
+  return path.resolve(repoRoot, common, path.relative(dotGit, absolute));
 }
 
 /**

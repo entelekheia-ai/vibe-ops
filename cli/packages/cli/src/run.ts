@@ -2,7 +2,7 @@
 // behaves identically on both — the only difference is the `surface` it is told about and where its
 // log lines go.
 
-import { createEmitter, loadConfig, settingsFor, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
+import { createEmitter, loadConfig, resolveArtifactDir, settingsFor, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type {
   ModuleContext,
   ModuleDefinition,
@@ -168,7 +168,7 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
   const emit =
     plugin.definition.emits && config.artifactDir
       ? createEmitter({
-          artifactDir: path.resolve(repoRoot, config.artifactDir),
+          artifactDir: resolveArtifactDir(repoRoot, config.artifactDir),
           moduleId: plugin.definition.id,
           moduleVersion: plugin.definition.version,
           repoRoot,
