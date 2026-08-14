@@ -17,6 +17,13 @@ does not go here.
 One entry per trap, and there is no update mode: a trap that changes shape becomes a new entry, and the
 old one retires.
 
+> **Prefer the MCP tool over the terminal.** This plugin ships its own `vibe-ops` MCP server
+> (`.claude-plugin/plugin.json`), so the verbs below are tools, and a tool returns its report as
+> structured data instead of terminal text to read back. The tool's full name depends on how the server
+> was registered — `mcp__vibe-ops__<noun>` from a project `.mcp.json`, `mcp__plugin_vibe-ops_vibe-ops__<noun>`
+> when it comes from the plugin. **If neither is listed, the CLI is correct**: the shell forms shown below
+> are the same command, and the server may simply not be running in this session.
+
 ## Step 1 — The admission test, before anything is written
 
 **Name the file, folder or package where someone meets this again.**

@@ -234,7 +234,7 @@ was reached by hook, by hand, or by `pre-commit`.
       generation and `records` stops mixing layout with template-version reporting. At the end: no
       two sibling verbs differ in a way nobody chose. Task: to be opened.
 
-- [ ] **Track 6 — Routing and the duplicated entrypoint.** Touches `plugin/skills/*/SKILL.md` and
+- [x] **Track 6 — Routing and the duplicated entrypoint.** Touches `plugin/skills/*/SKILL.md` and
       `plugin/skills/setup/templates/harness/`. Replicate into the nine skills that lack it the exact
       six-line MCP blockquote that `close-task/SKILL.md:31-37` and `close-plan/SKILL.md:39-45`
       already carry verbatim, including its honest fallback that the CLI is correct when no server is
@@ -275,7 +275,9 @@ Then re-run the measurement that produced this plan and compare:
 - `vibe-ops check --json` and `vibe-ops governance --json` both emit structured data.
 - `git grep -n 'check-agents-md.sh' plugin/skills/setup/templates/` shows no path under a `scripts/`
   directory that the repository does not have.
-- `git grep -L 'Prefer the MCP tool' plugin/skills/*/SKILL.md` returns nothing.
+- Every skill that prescribes a `vibe-ops` command carries the MCP blockquote. Checkable as: the set of
+  skills matching `vibe-ops [a-z]` and the set matching `Prefer the MCP tool` are the same six. A skill
+  that names no command is deliberately not in either.
 - Editing a governance file in a session with the plugin loaded runs the gate without anyone typing
   it. In a repository whose configuration changes a check's severity away from its default, the hook
   and the terminal report that check identically — same resolved severity, same text — and a check
@@ -489,6 +491,26 @@ basenames instead of paths, because `listMarkdownFiles` returns names relative t
 handed and they were being run through `path.relative` a second time. The output looked entirely
 plausible. It was found by reading the output rather than by any test — which is the argument for
 looking at what a new command actually prints, not only at whether it exits 0.
+
+**Track 6 (2026-08-13).** Six skills gained the MCP blockquote and the harness template's dead
+resolution branches were repointed.
+
+Six, not the nine the track named. Three of the nine — `authoring-readme`, `license-setup`,
+`new-signal` — prescribe no `vibe-ops` command at all, and a notice telling a reader to prefer a tool
+over a terminal, in a skill that names neither, is noise that makes the other six easier to skim past.
+The success criterion was written as `git grep -L 'Prefer the MCP tool'` returning nothing and has been
+corrected to the six that invoke something.
+
+The template's two dead branches were worse than stale. Branch 2 is the one this workspace's own
+repositories are wired to prefer — the sibling checkout — and it had been naming `../vibe-ops/scripts/`
+since the CLI was packaged, so it resolved nothing, silently, and every repository relying on it fell
+through to branch 1 or to the error. The path now lives in one variable, `RUNNER_IN_CHECKOUT`, because
+three spellings of one path is how two of them came to disagree with reality while the third stayed
+right.
+
+The CI template needed no change, which was worth checking rather than assuming: `./scripts/
+check-agents-md.sh` there is the **snapshot** `setup` copies into the target repository, not the
+pre-split location — branch 1, and correct.
 
 One failure in `npm test` is inherited, not caused here:
 `project/tasks/template-version-gate-resolves-wrong-templates-path.md` declares no template version, so
