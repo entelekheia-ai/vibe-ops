@@ -85,6 +85,15 @@
               "${CLAUDE_PLUGIN_ROOT}/hooks/plan-progress-nudge.sh"
             ],
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "vibe-ops",
+            "args": [
+              "hook",
+              "check-global"
+            ],
+            "timeout": 30
           }
         ]
       }

@@ -245,7 +245,7 @@ was reached by hook, by hand, or by `pre-commit`.
       the post-split reality. At the end: no skill prescribes only the terminal, and no resolution
       branch names a path that does not exist. Task: to be opened.
 
-- [ ] **Track 7 — The gate becomes a hook.** Touches `cli/packages/cli/src/hook.ts` and
+- [x] **Track 7 — The gate becomes a hook.** Touches `cli/packages/cli/src/hook.ts` and
       `plugin/hooks/hooks.json`. Add the `hook` verb that runs the gate on `PostToolUse` for
       `Write|Edit|MultiEdit`, in the shape `authoring-agents-md` already ships, using the severity the
       config cascade resolved for each check rather than the check's default or a policy of its own. This track is last because it
@@ -300,6 +300,40 @@ Then re-run the measurement that produced this plan and compare:
   `plugin/skills/authoring-agents-md/SKILL.md:11-19`, and `cli/packages/cli/src/hook.ts` already
   parses the `PostToolUse` payload. It is a new `hook` verb, not new machinery. What a red gate does
   inside the hook inherits the gate's own configured severity, decided below.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: Track 7's approved shape — the gate as a hook — is reopened. A hook cannot satisfy the
+  requirement the track was given, and the replacement candidate is a plugin **monitor**.
+  Rationale: Three findings, in the order they forced each other. (1) `PostToolUse` was ruled out twice
+  over: the runner has no per-file scope and sweeps the repository in ~3.1s, and — the reason that
+  settles it — a file is *broken while it is being written*, so a gate reading a mid-edit tree reports
+  failures that were never real. Scoping to the written path does not help; that path is the one being
+  edited. (2) `Stop` was then chosen, with the requirement that it speak even on a green run, because a
+  silent pass is indistinguishable from a hook that did not run and the agent re-runs the gate by hand —
+  the behaviour this track exists to remove. (3) But `Stop` + `hookSpecificOutput.additionalContext`
+  **continues the conversation**: the documentation states it "keeps the conversation going through the
+  same loop protections as `decision: block`, namely the `stop_hook_active` input and the
+  8-consecutive-continuation cap". A hook that always speaks therefore makes every turn continue for one
+  extra model round-trip to say "17 checks, 0 failed" — the opposite of the goal.
+  A plugin monitor (`monitors/monitors.json`, `experimental.monitors`) runs a persistent command whose
+  every stdout line reaches Claude as a *notification*, with no turn continuation, which is the channel
+  this needs. Its open question is the trigger, since the gate is one-shot and a monitor is long-lived:
+  watching for quiescence rather than polling on a timer, so the same mid-edit objection that killed
+  `PostToolUse` does not return. Monitors are an experimental component and do not load for
+  project-scope plugins — both weigh on the choice and neither has been decided yet.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: Track 7 ships the `Stop` hook after all, and pays the continuation with an explicit opening
+  line rather than avoiding it. The debounced channel becomes [Plan-028](028-the-debounced-channel-for-opportunistic-verification.md), Backlog.
+  Rationale: The continuation is one model round-trip, and what makes it expensive is not the round-trip
+  but the model trying to act on a report saying everything passed. So the first sentence of the
+  feedback is `Hook: vibe-ops check — ok. No response needed, and no need to run it again this turn.`,
+  which is the whole point of speaking on a green run: the agent learns the gate already ran, which is
+  what stops the 68 manual invocations, and is told in the same breath that there is nothing to do.
+  The smarter shape — a hook that signals a write, a debounce of a few seconds, and a run only once the
+  batch has settled — is better and is not this track: it needs a channel that does not exist yet, it
+  would carry the plan-status hook and opportunistic test runs on the same rails, and designing it while
+  finishing a cleanup pass is how it would get designed badly.
   Date / Author: 2026-08-13 / Danilo Borges
 
 - Decision: The `PostToolUse` hook uses the severity the config cascade resolved for each check —
@@ -511,6 +545,35 @@ right.
 The CI template needed no change, which was worth checking rather than assuming: `./scripts/
 check-agents-md.sh` there is the **snapshot** `setup` copies into the target repository, not the
 pre-split location — branch 1, and correct.
+
+**Track 7 (2026-08-13).** `vibe-ops hook check-global` runs the gate at the end of a turn and reports
+whether or not anything failed, so the 68 manual post-edit invocations are unnecessary.
+
+The track was designed twice, and the second design came from reading the documentation rather than
+from the plan. `PostToolUse` — what the plan specified — is wrong for a reason no measurement would have
+surfaced: **a file is broken while it is being written**, so a gate reading a mid-edit tree reports
+failures that were never real, and scoping to the written path makes it worse rather than better,
+because that path is the one being edited. `Stop` is the first moment the tree is meant to be coherent.
+
+Then `Stop` turned out to have a cost of its own: `hookSpecificOutput.additionalContext` there
+**continues the conversation**, documented as keeping it going "through the same loop protections as
+`decision: block`". Speaking on a clean run — which this surface must do, since a silent pass is
+indistinguishable from a hook that never ran, and that is what sends the agent back to the terminal —
+buys one model round-trip per turn.
+
+That cost is paid rather than avoided, and the payment is a sentence: the feedback opens with
+`Hook: vibe-ops check — ok. No response needed, and no need to run it again this turn.` The expensive
+part was never the round-trip; it was the model trying to act on a report saying everything passed.
+
+The better shape — a write signals, a few seconds of quiet confirm the batch has settled, and only then
+does anything run — is [Plan-028](028-the-debounced-channel-for-opportunistic-verification.md), Backlog.
+It needs a channel that does not exist, and it would carry `plan-status` and opportunistic test runs on
+the same rails, so designing it while finishing a cleanup pass would have designed it badly.
+
+Two corrections worth recording, both from delegating a documentation question and then checking it: the
+subagent reported that `additionalContext` does not exist for `Stop` (it does, and the surface depends
+on it) and that monitors do not exist at all (they do — in the *plugins* reference, not the hooks one,
+which is where it looked). Neither error would have been visible from the answer alone.
 
 One failure in `npm test` is inherited, not caused here:
 `project/tasks/template-version-gate-resolves-wrong-templates-path.md` declares no template version, so

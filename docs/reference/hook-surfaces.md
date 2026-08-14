@@ -22,6 +22,7 @@ member per hook **event**; the payload field, the guard and the reply's `hookEve
 | `task-guard` | `PreToolUse` | `tool_input.command`, `cwd` | the command deletes a `tasks/*.md` whose closure box is unchecked |
 | `prefer-mcp` **(temporary)** | `PreToolUse` | `tool_input.command`, `cwd` | the command invokes a `vibe-ops` module that is also an MCP tool |
 | `harness-status --plugin <dir>` | `SessionStart` | `cwd` | a record type's promulgated version is older than the installed template's |
+| `check-global` | `Stop` | `cwd`, `stop_hook_active` | the repository declares a `vibeops.config.*` of its own — **and then it reports whether or not anything failed**, the one surface here that speaks on a clean run |
 
 **`ops` is a reserved first word.** That surface takes an arbitrary ops name, so the reservation is what
 keeps a third-party ops from shadowing a surface, and a surface added later from shadowing an ops.
