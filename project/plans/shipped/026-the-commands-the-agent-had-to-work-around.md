@@ -6,7 +6,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
 | Related | Plan-027 (surface reform, Backlog) |
@@ -253,7 +253,7 @@ was reached by hook, by hand, or by `pre-commit`.
       interpretable without reading source. At the end: the 68 manual post-edit invocations are
       unnecessary. Task: to be opened.
 
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -324,7 +324,7 @@ Then re-run the measurement that produced this plan and compare:
   Date / Author: 2026-08-13 / Danilo Borges
 
 - Decision: Track 7 ships the `Stop` hook after all, and pays the continuation with an explicit opening
-  line rather than avoiding it. The debounced channel becomes [Plan-028](028-the-debounced-channel-for-opportunistic-verification.md), Backlog.
+  line rather than avoiding it. The debounced channel becomes [Plan-028](../028-the-debounced-channel-for-opportunistic-verification.md), Backlog.
   Rationale: The continuation is one model round-trip, and what makes it expensive is not the round-trip
   but the model trying to act on a report saying everything passed. So the first sentence of the
   feedback is `Hook: vibe-ops check — ok. No response needed, and no need to run it again this turn.`,
@@ -418,6 +418,65 @@ Then re-run the measurement that produced this plan and compare:
   Date / Author: 2026-08-13 / Danilo Borges
 
 ## Outcomes & Retrospective
+
+### Against the goals, one by one (2026-08-13)
+
+1. **One `records show` answers the five questions.** Delivered, plus `--next-number`, `--template` and
+   `records list`. The projection cost almost nothing because the readers existed; what was missing was
+   `records/src/shape.ts`.
+2. **No command returns an empty string indistinguishable from success.** Delivered, and by a different
+   mechanism than the plan specified — `summary` made required rather than a new `{ok, count, reason}`
+   object. The compiler then found every site, which no search would have.
+3. **`--version`, `--help`, and `check` saying why it failed.** Delivered. `--help` turned out to already
+   work at the top level; the real gaps were `--version` and per-subcommand help, which are two different
+   fixes.
+4. **The same three cross-cutting flags everywhere.** Delivered for `--json` and for the "do not write"
+   name; **not** for `--verbose`, refused because it would have no behaviour on a noun. The goal as
+   written was wrong: symmetry is not a value on its own, and three of this plan's items were symmetries
+   worth declining.
+5. **The gate runs as a `PostToolUse` hook.** Delivered as `Stop`, not `PostToolUse`, and the goal was
+   wrong in a way worth keeping: a file is broken while it is being written, so the event the goal named
+   is the one event that cannot carry this. Plan-028 holds the shape that is better than either.
+
+### The acceptance criteria that turned out to be wrong
+
+Two of the nine were mis-specified by this plan rather than unmet, and both were mis-specified in the
+same direction — asserting a *proxy* instead of the property:
+
+- *"`git grep -L 'Prefer the MCP tool' plugin/skills/*.md` returns nothing"* assumed every skill should
+  carry the blockquote. Three prescribe no command at all, and a notice preferring a tool over a terminal
+  in a skill naming neither is noise. Corrected to: the set that invokes a command and the set carrying
+  the notice are the same six. Verified — and the verification itself needed care, since a loose
+  `vibe-ops [a-z]` matches the prose "vibe-ops working tree" in `license-setup`.
+- *"`git grep 'check-agents-md.sh' templates/` shows no path under a `scripts/` directory the repository
+  does not have"* named the wrong repository: those paths are the **target** repo's snapshot, which
+  `setup` creates, and they are correct. What mattered was that no pre-split path remained. Verified by
+  the narrower query, which returns nothing.
+
+### What is not verified, and why
+
+**The hook firing in a live session is unverified.** The surface is exercised end to end — a real `Stop`
+payload in, the documented envelope out — and its registration is validated by
+`25-hooks-registration.sh`. But `~/.claude/plugins/installed_plugins.json` records the installed plugin
+at `ba6232d0`, which is this plan's Track 4 commit; `check-global` landed two commits later at
+`b6923d4`. It is not in the install, so it cannot have fired here, and nothing in this session is
+evidence that it does. Closing this plan does not close that question: it needs one real session against
+a reinstalled plugin, and the honest state until then is untested-in-place.
+
+The severity-parity criterion inherits the same gap. Propagation is asserted by construction — the hook
+reads the run's own findings and reclassifies nothing — and not by a repository whose config changes a
+level.
+
+### Inherited, still open
+
+Two defects predate this work, were confirmed against a clean checkout, and are untouched: two typecheck
+errors in `cli/packages/core/test/` (`config.test.ts:103`, `ops.test.ts:113`), and
+`project/tasks/template-version-gate-resolves-wrong-templates-path.md` carrying no
+`vibe-ops-template` stamp, which is the single failing test in a suite of 396. That dossier's own subject
+— the `template-version` gate reading `<plugin>/templates/` while `setup` writes `project/templates/` —
+is also untouched and still live.
+
+### Per track
 
 **Track 1 (2026-08-13).** The baseline is written, with the aggregation reproducible from a single
 recorded block rather than from the ad-hoc passes that produced the original figures. No task dossier
@@ -566,7 +625,7 @@ That cost is paid rather than avoided, and the payment is a sentence: the feedba
 part was never the round-trip; it was the model trying to act on a report saying everything passed.
 
 The better shape — a write signals, a few seconds of quiet confirm the batch has settled, and only then
-does anything run — is [Plan-028](028-the-debounced-channel-for-opportunistic-verification.md), Backlog.
+does anything run — is [Plan-028](../028-the-debounced-channel-for-opportunistic-verification.md), Backlog.
 It needs a channel that does not exist, and it would carry `plan-status` and opportunistic test runs on
 the same rails, so designing it while finishing a cleanup pass would have designed it badly.
 

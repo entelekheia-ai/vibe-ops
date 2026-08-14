@@ -10,7 +10,7 @@ vibe-ops-template: plan@3
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
 | Depends on | Plan-026 |
-| Related | [Plan-026](026-the-commands-the-agent-had-to-work-around.md), which carried the cleanup this plan's two decisions were removed from |
+| Related | [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md), which carried the cleanup this plan's two decisions were removed from |
 
 ---
 
@@ -138,5 +138,5 @@ multiplies the tool count against a listing budget shared with every other insta
 
 ## Related
 
-- [Plan-026](026-the-commands-the-agent-had-to-work-around.md) — the cleanup pass these two were removed
+- [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md) — the cleanup pass these two were removed
   from, and where the measurement that found them is recorded.

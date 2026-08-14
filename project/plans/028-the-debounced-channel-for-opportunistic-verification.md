@@ -10,7 +10,7 @@ vibe-ops-template: plan@3
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
 | Depends on | Plan-026 |
-| Related | [Plan-026](026-the-commands-the-agent-had-to-work-around.md) Track 7, which ships the unconditional version this replaces |
+| Related | [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md) Track 7, which ships the unconditional version this replaces |
 
 ---
 
@@ -150,6 +150,6 @@ not only *a quiet timer* — the two differ in what starts them and agree on eve
 
 ## Related
 
-- [Plan-026](026-the-commands-the-agent-had-to-work-around.md) — Track 7 and its Decision Log carry the
+- [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md) — Track 7 and its Decision Log carry the
   measurements that produced this plan: the ~3.1s sweep, the mid-edit objection, and the documented
   turn continuation on `Stop`.

@@ -14,6 +14,33 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — a read verb, and commands that stop being silent (Plan-026)
+
+- **`vibe-ops records show <file>`** answers in one call what an agent was asking by grep: a record's
+  status, its sections, how many tracks are still open, how many entries stand under the sections that
+  accumulate work, and which migrations it is behind. Measured across ~390 session transcripts,
+  1,400–1,650 greps were scoped to `project/` across ~600 distinct patterns to ask exactly this.
+  `records list --type <t>` answers which records exist and where they stand.
+- **Every module command now returns a summary.** A run that finds nothing says where it looked
+  (`no plan in project/plans has a Status disagreeing with its tracks`) instead of exiting silently —
+  `ModuleResult.summary` is required rather than optional. Under `--json` the line goes to stderr so
+  stdout stays a stream `jq` can read.
+- **`vibe-ops --version`**, and `--help` on every module rather than only at the top level.
+- **`--json` on `check` and on all three ops**, where output volume actually hurts; `check --explain <id>`
+  prints what a check looks for, read from the fragment's own source.
+- **`check` stops ignoring its argument**: `vibe-ops check <path>` checks that repository, via the new
+  `repoFromFirstArg` field on the module contract. It also says which of two failures produced exit 2,
+  and reports untracked `.md` files it did not examine — a clean run over a silently narrowed population
+  reads exactly like a clean run over a whole one.
+- **`plan guard`**, the symmetric of `task guard`; `records handling` with no path is the census;
+  `--dry-run` is the one name for "do not write", with `--check` kept as a deprecated spelling.
+- **`vibe-ops hook check-global`** runs the gate at the end of a turn and reports whether or not anything
+  failed, so it does not have to be run by hand afterwards. It declares no severity of its own — whatever
+  the config cascade resolved is passed through.
+- **Fixed:** the harness template's runner resolution named `scripts/check-agents-md.sh` for its sibling
+  checkout and its `CLAUDE_PLUGIN_ROOT` branch. Both had been dead since the CLI was packaged, so the
+  branch a shared-checkout workspace is wired to prefer resolved nothing, silently.
+
 ### Added — three agents, a frontmatter gate for them, and a rule for pinning a model (Plan-024)
 
 - **`migration-rehearser`** walks a migration note against the artifact it handles worst and reports where
