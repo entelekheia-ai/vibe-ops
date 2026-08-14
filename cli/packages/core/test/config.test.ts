@@ -100,7 +100,7 @@ test("the local file layers over the committed one in the same directory rather 
   assert.deepEqual(settingsFor(config, "check"), { from: "local" });
   assert.deepEqual(settingsFor(config, "other"), { keep: true }, "another module's settings survive");
   assert.equal(sources.length, 2, "both files contributed, so both are reported");
-  assert.ok(sources[0].endsWith("vibeops.config.local.mjs"), "sources is nearest-first, local before committed");
+  assert.ok(sources[0]!.endsWith("vibeops.config.local.mjs"), "sources is nearest-first, local before committed");
 });
 
 test("a nearer committed file beats a farther local one — the directory walk outranks the pair", async () => {

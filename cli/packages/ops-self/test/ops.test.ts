@@ -110,7 +110,7 @@ test("unstated-destination fires on the note that states no destination, and not
   });
 
   assert.equal(outcome.findings.length, 1, JSON.stringify(outcome.findings));
-  assert.match(outcome.findings[0]!.file, /plan-0\.1-to-0\.2\.md$/);
+  assert.match(outcome.findings[0]!.file!, /plan-0\.1-to-0\.2\.md$/);
   assert.match(outcome.findings[0]!.evidence, /never mentions it outside the shape table/);
   assert.equal(outcome.examined, 2);
 });

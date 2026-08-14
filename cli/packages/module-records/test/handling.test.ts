@@ -139,7 +139,7 @@ test("list carries the listing shape, and only --full carries show's", async () 
   ].join("\n"));
 
   // Not the `run` helper above — that one is bound to `command: "handling"` and passes no flags.
-  const list = async (flags: Record<string, unknown>) =>
+  const list = async (flags: Record<string, string | boolean>) =>
     records.run({
       repoRoot: repo,
       flags,
@@ -155,6 +155,7 @@ test("list carries the listing shape, and only --full carries show's", async () 
   const result = await list({ type: "plan" });
   assert.equal(result.code, 0);
   const [row] = result.data as Record<string, unknown>[];
+  assert.ok(row, "the listing produced a row");
 
   assert.deepEqual(Object.keys(row).sort(), ["file", "status", "tracks", "type"]);
   assert.equal("sections" in row, false, "a listing must not carry every record's headings");
@@ -163,12 +164,14 @@ test("list carries the listing shape, and only --full carries show's", async () 
 
   const all = await list({ type: "plan", fields: "all" });
   const [allRow] = all.data as Record<string, unknown>[];
+  assert.ok(allRow, "the listing produced a row");
   assert.ok(Array.isArray(allRow.sections), `"all" is how the whole shape stays reachable`);
 
   // The cross-record question the projection exists to make cheap: which plans carry a Surprises
   // section, without paying for seven other fields to ask it.
   const picked = await list({ type: "plan", fields: "file,sections" });
   const [pickedRow] = picked.data as Record<string, unknown>[];
+  assert.ok(pickedRow, "the listing produced a row");
   assert.deepEqual(Object.keys(pickedRow).sort(), ["file", "sections"]);
 
   // Order comes from LISTABLE, not from how the caller spelled the selection, so two calls asking for
