@@ -30,7 +30,18 @@ that, and a human confirms it.
 
 Allowed: `ls`, `find`, `test -L`, `readlink`, `wc`, `git -C <target> status --porcelain`, `git remote -v`,
 `git config --get <key>`, `git ls-files`, `git check-ignore -v`, `vibe-ops check .`,
-`vibe-ops records census`, and any other command that only reports.
+`vibe-ops records census`, `vibe-ops records list`, `vibe-ops harness resolve|shape|catalog|audit`, and any
+other command that only reports.
+
+**For a harness survey, those four `harness` verbs are the survey** — do not compose shell to obtain what
+they answer. Each carries tests against the specific way its measurement used to go wrong: a glob matching
+nothing while `2>/dev/null` swallows the error reads exactly like an empty population, and a line count
+derived from a proxy was once 35% off and was then placed against a published budget. What the readings
+*mean*, and the three tests that turn a gap into a recommendation rather than a guess, are in
+[`../references/harness-model.md`](../references/harness-model.md).
+
+`vibe-ops harness sync` is **not** on the allowed list and no prompt may put it there: it is the one verb
+in that module that writes.
 
 Forbidden, with no exception a prompt can grant: output redirection (`>`, `>>`, `tee`), `cp`, `mv`, `rm`,
 `mkdir`, `touch`, `ln`, `chmod`, `git add`/`commit`/`checkout`/`restore`, `git config <key> <value>` (the

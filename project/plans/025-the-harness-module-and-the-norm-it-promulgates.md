@@ -220,14 +220,16 @@ conversation, and each spawns its own dossier when it starts.
       design only for "when isolation is unwanted", nobody has wanted it yet, and it is the one mode that
       needs a clean-tree check and a prompt — machinery whose first user should be a real need.
       Task: [tasks/promulgation-a-branch-a-tag-and-a-boundary.md](../tasks/promulgation-a-branch-a-tag-and-a-boundary.md)
-- [ ] **Track 6 — The audit's judging half becomes a skill that calls the audit's measuring half.** Retire
+- [x] **Track 6 — The audit's judging half becomes a skill that calls the audit's measuring half.** Retire
       the hand-run audit's measurement steps in favour of the verbs from Track 4, leaving the skill only
       what genuinely needs a model: placing components on the guide/sensor grid, recognising an instruction
       that is a command written in prose, and deciding whether a check may block or must only warn. At the
       end the skill is substantially shorter and cannot produce a wrong number. **Opens with a decision it
       cannot avoid**: the skill this retires does not live in this repository, so either it moves in — and
       becomes a shipped surface with a public contract — or the verbs are consumed from where it already
-      is, and this repository ships no skill at all.
+      is, and this repository ships no skill at all. **Answered a third way**: it is not a skill of its own
+      at all, it is `/vibe-ops:setup harness audit`.
+      Task: [tasks/the-audit-that-cannot-mis-measure.md](../tasks/the-audit-that-cannot-mis-measure.md)
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
       track list that is otherwise complete but has this box open is not finished.
@@ -251,6 +253,19 @@ conversation, and each spawns its own dossier when it starts.
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
 ## Decision Log
+
+- Decision: The harness audit is a **mode of `/vibe-ops:setup`**, not a skill of its own and not left
+  outside this repository — answering Track 6's forced choice with a third option neither branch named.
+  Rationale: auditing a repository as a harness and installing one into it are the same knowledge asked in
+  two directions, so two surfaces both had to hold it and the survey step existed twice — measured as the
+  same four shell commands in both, three of which the verbs from Track 4 already answer with tests the
+  shell versions do not carry. Moving it in as its own skill would have kept that duplication and added a
+  listing entry; consuming the verbs from outside would have left the measuring half reachable only by an
+  operator with this workspace checked out. Folding costs nothing in the listing budget and removes an
+  entry from it — `setup`'s description is unchanged at 863 characters, and the standalone skill's own
+  323-character entry is gone. The theory it rests on ships as `references/harness-model.md`, which was
+  already written repo-neutral and so needed no rewrite to become a public surface.
+  Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: A promulgation that meets a newer ownership declaration refuses only the paths whose class
   **widened**, and the consent that clears them is recorded in the clone as `harness.boundary`.

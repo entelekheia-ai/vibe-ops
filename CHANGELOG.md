@@ -14,6 +14,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — the harness audit is a mode of `/vibe-ops:setup`, and stops composing shell (Plan-025 Track 6)
+
+- **`/vibe-ops:setup harness audit` is the assessment**, rather than a separate skill. Its survey calls
+  `harness resolve`/`shape`/`catalog` instead of running four commands by hand — three of which the module
+  already answered, with tests the shell versions never carried, including the one for a glob that matches
+  nothing while `2>/dev/null` swallows the error and reads exactly like an empty population.
+- **`plugin/references/harness-model.md`** is new: the two axes, the lifecycle positions, the regulation
+  categories, the attention-budget calibration, the three tests that turn a gap into a recommendation, and
+  the five ways this audit has produced confident nonsense before. Every number in a report now comes from
+  a verb; the reference is what the numbers *mean*.
+- **The `governance-auditor` agent may run the four reading verbs**, and `harness sync` is named as
+  excluded with no prompt able to grant it — the first module here where some verbs read and one writes.
+
 ### Added — promulgation, and the verb that says where a harness is (Plan-025 Tracks 4–5)
 
 - **`vibe-ops harness sync`** brings a repository to the installed version of the norm **without touching

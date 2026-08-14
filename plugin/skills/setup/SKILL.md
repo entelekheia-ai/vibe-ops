@@ -15,6 +15,12 @@ for too long:
 | `repo` | the repository — package/build, `project/`, docs, the rules bridge, `AGENTS.md`, a license | Steps 0–7 below |
 | `harness` | what steers the agent and what verifies it — fragments, runner wiring, fixtures, the artifact path | [`harness-pair.md`](../../references/harness-pair.md), then Step H |
 
+**`harness audit` is the assessment, and it is a mode of this skill rather than a skill of its own.**
+Auditing a repository as a harness and installing one into it are the same knowledge asked two ways: what
+the apparatus should be. Splitting them gave two surfaces that both had to know it, and the survey step of
+each was the same four shell commands written twice. It reads
+[`harness-model.md`](../../references/harness-model.md) and writes nothing.
+
 **If the user did not say which, ask.** Do not infer from the topic: "set up this repo" means `repo` about
 as often as it means "it has an `AGENTS.md` and nothing checks it", and the two write into different
 places. `/vibe-ops:setup repo <name>` and `/vibe-ops:setup harness` are the two invocations.
@@ -207,22 +213,50 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 Read [`${CLAUDE_PLUGIN_ROOT}/references/harness-pair.md`](../../references/harness-pair.md) first. It is
 the contract; this step is the installation.
 
-### H0 — Survey, and decide whether a gate is even available
+### H0 — Survey, with commands rather than composed shell
+
+Four facts decide which recommendations are even available, and getting any of them wrong invalidates
+everything after. **Do not compose shell to obtain them** — three verbs answer, and each carries tests
+against the specific way its measurement used to go wrong:
 
 ```bash
-git -C "$TARGET" remote -v                    # no remote → CI is not an option; say so, do not offer it
-git -C "$TARGET" config core.hooksPath        # where hooks would live, if any
-ls "$TARGET/scripts/checks/" 2>/dev/null      # fragments already here?
-ls "$TARGET/scripts/check-agents-md.sh" 2>/dev/null   # a runner snapshot already copied in?
+vibe-ops harness resolve "$TARGET"   # which harness surfaces exist here, and which are absent
+vibe-ops harness shape   "$TARGET"   # remote, hooks path, CI workflows, churn by top-level directory
+vibe-ops harness catalog "$TARGET"   # every gate and fragment this install ships and nothing composes
 ```
 
 Produce the gap list, verb per gap, exactly as Step 0 does — including the delegation to
 `vibe-ops:governance-auditor`, with [`harness-pair.md`](../../references/harness-pair.md) and this step as
-the target state it is given. If the user asked for `audit`, stop here.
+the target state it is given.
 
 **A repository with no remote cannot have CI**, and that is the single most common wrong recommendation
-in this area — it survives review because "add CI" sounds correct everywhere. For those repositories the
-commit gate is the *only* enforcement available, which raises its value rather than lowering it.
+in this area — it survives review because "add CI" sounds correct everywhere. `harness shape` reports the
+remote; read it before offering anything that needs one. For those repositories the commit gate is the
+*only* enforcement available, which raises its value rather than lowering it.
+
+**Churn by top-level directory is the least obvious of the four and the most useful:** it says what the
+repository is actually *for*. One whose commits are 90% documentation is not under-tested — it is a
+governance repository, and the sensors it needs are not the sensors a service needs.
+
+### H0a — If the user asked for `audit`, this is the whole run
+
+Stop before writing anything and report instead. Read
+[`${CLAUDE_PLUGIN_ROOT}/references/harness-model.md`](../../references/harness-model.md) — the two axes,
+the lifecycle positions, the three tests that turn a gap into a recommendation, and the list of ways this
+audit has produced confident nonsense before.
+
+`vibe-ops harness audit "$TARGET"` gives the inventory the grid is filled from: guides with an exact line
+count and an always-on/scoped split, sensors with the lifecycle position each fires at, and the governance
+overlay. **Every number in the report comes from that command.** One that does not is one somebody
+estimated, and the model file's last section is what estimating has cost.
+
+Lead with the grid and one sentence naming which cell is empty. Then the recommendations, each carrying
+the command that produced its evidence, a *wire-it* or *build-it* estimate, and where in the lifecycle it
+belongs. Then the gaps considered and dropped, with the reason each failed. Then **state what was not
+examined** — an audit that reports only findings reads as complete, and no audit of a real repository is.
+
+Write nothing. If the gaps justify sustained work, offer `/vibe-ops:new plan` and stop: number, lifecycle
+and template belong to that skill, and reproducing them by hand drops whatever it knows that you skimmed.
 
 ### H1 — The apparatus
 

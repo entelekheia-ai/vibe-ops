@@ -21,7 +21,7 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the deterministic hal
 
 | Skill | Does |
 |---|---|
-| [`setup`](skills/setup/SKILL.md) | Two modes. `repo` brings a repo to the baseline — package/build, `project/`, docs, the rules bridge, `AGENTS.md` — orchestrating the skills below. `harness` installs the guide/sensor apparatus: fragment directory, runner wiring, the commit gate, the artifact path. |
+| [`setup`](skills/setup/SKILL.md) | Two modes. `repo` brings a repo to the baseline — package/build, `project/`, docs, the rules bridge, `AGENTS.md` — orchestrating the skills below. `harness` installs the guide/sensor apparatus: fragment directory, runner wiring, the commit gate, the artifact path. **`harness audit` is the assessment**, and it lives here rather than in a skill of its own because auditing a harness and installing one are the same knowledge asked twice; it measures with `vibe-ops harness resolve|shape|catalog|audit` and judges with [`references/harness-model.md`](references/harness-model.md). |
 | [`authoring-agents-md`](skills/authoring-agents-md/SKILL.md) | Writes or refreshes an `AGENTS.md` (+ its `CLAUDE.md`). Path-scoped, so it also arrives on a one-line edit. |
 | [`authoring-readme`](skills/authoring-readme/SKILL.md) | Writes or cleans up a README as presentation and usage, not process history. Path-scoped. |
 | [`license-setup`](skills/license-setup/SKILL.md) | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, and optional header enforcement. |
