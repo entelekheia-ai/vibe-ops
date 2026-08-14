@@ -29,6 +29,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { classOf, entryFor, readOwnership, widens } from "./ownership.ts";
 import type { Ownership, OwnershipClass } from "./ownership.ts";
+import { shippedVersions } from "./status.ts";
+import type { VersionedType } from "./status.ts";
 
 export interface SyncOptions {
   readonly repoRoot: string;
@@ -59,6 +61,12 @@ export interface SyncResult {
   /** Paths that were written and did not reach the index, with the rule that swallowed each. */
   readonly swallowed: readonly { path: string; rule: string }[];
   readonly boundary: { agreed?: number; installed: number };
+  /**
+   * The version of each record type this run actually put into the target — what the caller records as
+   * `harness.applied`. Empty on a dry run and on any run that produced no branch: the map answers "what
+   * was promulgated here", and a run that promulgated nothing must not claim otherwise.
+   */
+  readonly applied: Partial<Record<VersionedType, number>>;
 }
 
 function git(cwd: string, args: readonly string[]): { code: number; out: string; err: string } {
@@ -172,7 +180,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   }
 
   if (refused.length > 0 || dryRun) {
-    return { written, seeded, refused, swallowed: [], boundary };
+    return { written, seeded, refused, swallowed: [], boundary, applied: {} };
   }
 
   // ── The ceremony ────────────────────────────────────────────────────────────────────────────────────
@@ -199,10 +207,10 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
     const swallowed = touched.filter((file) => !staged.has(file)).map((file) => ({ path: file, rule: ignoredBy(worktree, file) }));
 
     if (swallowed.length > 0) {
-      return { branch, written, seeded, refused, swallowed, boundary };
+      return { branch, written, seeded, refused, swallowed, boundary, applied: {} };
     }
     if (staged.size === 0) {
-      return { branch, written: [], seeded: [], refused, swallowed: [], boundary };
+      return { branch, written: [], seeded: [], refused, swallowed: [], boundary, applied: {} };
     }
 
     const committed = git(worktree, ["commit", "-q", "-m", `chore(norm): promulgate ownership@${installed.version}`]);
@@ -221,7 +229,16 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
       throw new Error(`${branch} was committed, but tagging it ${tag} failed: ${tagged.err}`);
     }
 
-    return { branch, tag, written, seeded, refused, swallowed: [], boundary };
+    // What this run actually put there, restricted to the types whose file reached the index. Without it
+    // `harness status` reports a freshly promulgated repository as never promulgated to — the exact
+    // question this whole mechanism exists to answer, left unanswered by the act that should answer it.
+    const shipped = await shippedVersions(sourceRoot);
+    const applied: Partial<Record<VersionedType, number>> = {};
+    for (const [type, version] of Object.entries(shipped) as [VersionedType, number][]) {
+      if (staged.has(`project/templates/${type}.md`)) applied[type] = version;
+    }
+
+    return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied };
   } finally {
     // Last, and in a finally: a failed run must not leave a sibling directory nobody remembers creating.
     git(repoRoot, ["worktree", "remove", "--force", worktree]);

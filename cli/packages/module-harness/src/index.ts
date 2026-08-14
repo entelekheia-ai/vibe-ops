@@ -124,9 +124,19 @@ export default defineModule(
         };
       }
 
-      // Consent and currency are recorded only on a run that actually finished one, never on a dry run.
-      if (context.flags["dry-run"] !== true && result.branch !== undefined && typeof accept === "string") {
-        await writeHarnessState(context.repoRoot, { boundary: result.boundary.installed });
+      // Recorded only on a run that actually promulgated — never on a dry run, and never on one that
+      // refused. Both keys, not just consent: `applied` is what makes `harness status` and the session
+      // signal able to answer "is this repository current?", and a sync that wrote the files without
+      // recording them would leave that question exactly as unanswered as before it ran.
+      //
+      // The boundary is recorded whenever the run succeeded, not only when `--accept-boundary` was
+      // passed. A refusal is the only thing consent clears, and a run reaching here produced none — so
+      // either the versions already agreed or consent was given on this invocation.
+      if (context.flags["dry-run"] !== true && result.branch !== undefined && result.tag !== undefined) {
+        await writeHarnessState(context.repoRoot, {
+          applied: { ...context.config.harness?.applied, ...result.applied },
+          boundary: result.boundary.installed,
+        });
       }
 
       return {

@@ -69,6 +69,21 @@ test("sync leaves the target's working tree untouched, and stops at a branch and
   assert.ok(git(repoRoot, ["tag", "-l", "vibe-ops/norm@1"]) !== "", "the tag survives the tree it was made in");
 });
 
+// The verb has to record what it did, or the question the whole mechanism exists to answer — "which
+// repositories are on version N?" — is left exactly as unanswered by the act that should have answered it.
+// Shipped without this once: sync wrote the files, recorded only the boundary, and `harness status` went
+// on reporting a freshly promulgated repository as never promulgated to.
+test("sync reports the version of each type it applied, and only for what reached the index", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+
+  const result = await sync({ repoRoot, sourceRoot, dryRun: false });
+  assert.deepEqual(result.applied, { adr: 3, plan: 3 }, "the two types this norm ships, at their declared versions");
+
+  const dry = await sync({ repoRoot: await target(), sourceRoot, dryRun: true });
+  assert.deepEqual(dry.applied, {}, "a dry run promulgated nothing and must not claim otherwise");
+});
+
 // THE ONE THIS VERB EXISTS TO GET RIGHT. A linked working tree shares the repository's internal
 // directory, so `.git/info/exclude` applies inside it. `git add` on an ignored path succeeds, stages
 // nothing, and says so only as a hint — so trusting the exit code produces a branch that looks complete
