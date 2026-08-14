@@ -19,6 +19,7 @@ vibe-ops-template: plan@3
 | Status | In Progress |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
+| Depends on | [Plan-027](027-one-resolve-and-a-schema-that-tells-the-truth.md) — Track 4's `resolve` verb waits on its consolidation |
 | Related | [RFC-0002](../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) · [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) |
 
 ---
@@ -64,7 +65,7 @@ is out of scope deliberately: its central rule is unstatable until Track 1 lands
 each reach a different subset of repositories. This plan builds machinery that any of those channels can
 call.
 
-**A new composition over the harness apparatus.** Two detectors are named in Track 5 and both are useful,
+**A new composition over the harness apparatus.** Two detectors are named in Track 4 and both are useful,
 but composing them into an ops is a separate decision about population, and the wrong time to make it is
 while the module they would report on is still being designed.
 
@@ -102,6 +103,17 @@ internalises records, as a thing that actually happened, a confident recommendat
 was already written and merely unwired — sitting in a dependency the repository already had. A command that
 prints what exists against what is composed makes that recommendation impossible to make, and it serves any
 skill that recommends building something.
+
+**Half of it now exists and the verb is smaller than designed.** The gate command lists what it would run,
+naming each check's source file — seventeen entries, measured 2026-08-13. So "what is composed here" is
+answered. What is not is the complement: the detectors and fragments that exist and are *not* composed,
+which is the half a wrong recommendation actually turns on. `catalog` is that difference, and nothing more.
+
+Two of the verbs are also constrained by work outside this plan. `resolve` waits on the consolidation of
+the four verbs that already share one resolver — writing a fifth before that lands would add the defect
+that work exists to remove. `audit`'s governance half is largely served by the record read and list verbs
+that shipped 2026-08-13, so what it adds is the *harness* reading — guides with their always-on cost,
+sensors with their lifecycle position — not a second way to read records.
 
 ### Promulgation
 
@@ -185,26 +197,30 @@ conversation, and each spawns its own dossier when it starts.
       version. At the end the hook exists, says nothing when the versions match, and says something
       specific and actionable when they do not.
       Task: the-foundation-the-harness-module-stands-on.md (closed dossier — `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`)
-- [ ] **Track 4 — A module learns it has a source as well as a target.** Add the resolved source surface to
-      what a module is handed, declared only by the modules that need it, so promulgation can read the norm
-      from where it is installed rather than from the repository it is writing into. At the end a module
-      can name both ends without reaching for the filesystem itself.
-- [ ] **Track 5 — The `harness` noun: `resolve`, `shape`, `catalog`, `audit`, `status`.** The read-only
-      half of the module, complete and tested, including the measurement traps the audit has historically
-      fallen into — a glob that matches nothing and reports zero everywhere, a count derived rather than
-      taken. At the end each of those traps is a test rather than a paragraph asking a reader to be
-      careful. The two detectors this track will surface but not compose — one refusing a gate runner that
-      was copied in rather than resolved, one requiring a disabled check to name its reason — are recorded
-      here and left to a later decision about population.
-- [ ] **Track 6 — `sync`: isolated working tree, branch, tag.** Promulgation as designed above, including
+- [ ] **Track 4 — The `harness` noun, and the source it needs to exist at all.** Formerly two tracks; see
+      the Decision Log for why they merged. The read-only half of the module — `resolve`, `shape`,
+      `catalog`, `audit`, `status` — together with the one contract change it rests on: a module is handed
+      a resolved **source** surface as well as its target, declared only by the modules that need it, so
+      promulgation can read the norm from where it is installed rather than from the repository it is
+      writing into. Carries the measurement traps this audit has historically fallen into — a glob that
+      matches nothing and reports zero everywhere, a count derived rather than taken — as tests rather than
+      as paragraphs asking a reader to be careful. Two detectors are surfaced and deliberately not
+      composed: one refusing a gate runner copied in rather than resolved, one requiring a disabled check
+      to name its reason.
+      Task: [the-harness-noun-and-the-source-it-reads-from.md](../tasks/the-harness-noun-and-the-source-it-reads-from.md)
+- [ ] **Track 5 — `sync`: isolated working tree, branch, tag.** Promulgation as designed above, including
       the in-place mode and its clean-tree requirement. At the end a repository can be brought to a version
       of the norm without its working tree being disturbed, and the result is inspectable as an ordinary
-      branch before anyone merges it.
-- [ ] **Track 7 — The audit's judging half becomes a skill that calls the audit's measuring half.** Retire
-      the hand-run audit's measurement steps in favour of the verbs from Track 5, leaving the skill only
+      branch before anyone merges it. **It must verify what it staged rather than trust an exit code** — an
+      ignored new path stages as nothing and says so only in a hint.
+- [ ] **Track 6 — The audit's judging half becomes a skill that calls the audit's measuring half.** Retire
+      the hand-run audit's measurement steps in favour of the verbs from Track 4, leaving the skill only
       what genuinely needs a model: placing components on the guide/sensor grid, recognising an instruction
       that is a command written in prose, and deciding whether a check may block or must only warn. At the
-      end the skill is substantially shorter and cannot produce a wrong number.
+      end the skill is substantially shorter and cannot produce a wrong number. **Opens with a decision it
+      cannot avoid**: the skill this retires does not live in this repository, so either it moves in — and
+      becomes a shipped surface with a public contract — or the verbs are consumed from where it already
+      is, and this repository ships no skill at all.
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
       track list that is otherwise complete but has this box open is not finished.
@@ -228,6 +244,26 @@ conversation, and each spawns its own dossier when it starts.
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
 ## Decision Log
+
+- Decision: The source/target seam merges into the `harness` noun rather than shipping as its own track.
+  Rationale: it is one field on what a module is handed, it changes no observable behaviour, and it has
+  exactly one consumer. Landed alone it produces a contract addition nothing reads, which is the shape that
+  gets refactored away by someone who cannot see why it exists. Merged, the field arrives with the verb
+  that proves it.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: `harness resolve` is not written until the resolve consolidation has decided its shape.
+  Rationale: four verbs already share one resolver and have diverged where nobody chose to, and that is an
+  open plan of its own. Adding a fifth before it lands would be adding the defect that plan exists to
+  remove, and doing it inside the plan that is meant to make governance legible.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: `catalog` shrinks to the half that is missing rather than being built whole.
+  Rationale: the gate command now lists what it would run, with each check's source — measured 2026-08-13,
+  seventeen entries. That is the "what is composed here" half. What remains unanswered, and is the half
+  that kills the failure this verb exists for, is what exists and is **not** composed. Building the part
+  that already works would be a second answer to a question already answered.
+  Date / Author: 2026-08-13 / Danilo Borges
 
 - Decision: Discovery and mechanical porting may be delegated to a subagent; design judgements may not.
   Rationale: a subagent can survey what exists across repositories, and can port a detector from shell to
