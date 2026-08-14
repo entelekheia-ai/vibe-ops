@@ -7,6 +7,7 @@ import { defineModule } from "@entelekheia/vibe-ops-core";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
+import { buildAudit } from "./audit.ts";
 
 export { behindEntries, formatBehind, shippedVersion, shippedVersions, TYPES } from "./status.ts";
 export type { BehindEntry, VersionedType } from "./status.ts";
@@ -14,6 +15,8 @@ export { churnByTopLevel, hasRemote, hooksPath, repoShape, workflowFiles } from 
 export type { ChurnEntry, RepoShape } from "./shape.ts";
 export { buildCatalog } from "./catalog.ts";
 export type { Catalog, CatalogEntry } from "./catalog.ts";
+export { buildAudit, isScopedRule, lineCount } from "./audit.ts";
+export type { Audit, GuideEntry, RecordOverlayEntry, SensorEntry } from "./audit.ts";
 
 export default defineModule(
   {
@@ -82,7 +85,20 @@ export default defineModule(
     }
 
     if (context.command === "audit") {
-      return { code: 2, summary: "harness audit is not implemented yet" };
+      const audit = await buildAudit(context);
+      if (context.flags["json"] !== true) {
+        context.log(`guides: ${audit.guides.length}`);
+        for (const g of audit.guides) context.log(`  [${g.scope}] ${g.path} (${g.lines} lines)`);
+        context.log(`sensors: ${audit.sensors.length}`);
+        for (const s of audit.sensors) context.log(`  [${s.firesAt}] ${s.id} — ${s.source}`);
+        context.log("governance:");
+        for (const o of audit.governance) context.log(`  ${o.type}: ${o.count} record(s), ${o.behind} behind the current template`);
+      }
+      return {
+        code: 0,
+        summary: `${audit.guides.length} guide(s), ${audit.sensors.length} sensor(s), ${audit.governance.reduce((n, o) => n + o.count, 0)} governance record(s)`,
+        data: audit,
+      };
     }
 
     return { code: 2, summary: `harness ${String(context.command)} is not implemented yet` };

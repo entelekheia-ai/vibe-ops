@@ -58,6 +58,16 @@ test("status: sourceRoot present but this clone was never promulgated to — sil
   assert.match(result.summary, /never been promulgated/);
 });
 
+test("audit dispatches to buildAudit and reports the shape", async () => {
+  const repoRoot = new URL("../../../..", import.meta.url).pathname.replace(/\/$/, "");
+  const result = await harness.run(baseContext({ repoRoot, command: "audit" }));
+  assert.equal(result.code, 0);
+  const data = result.data as { guides: unknown; sensors: unknown; governance: unknown };
+  assert.ok(Array.isArray(data.guides));
+  assert.ok(Array.isArray(data.sensors));
+  assert.ok(Array.isArray(data.governance));
+});
+
 test("catalog dispatches to buildCatalog and reports the shape", async () => {
   const repoRoot = new URL("../../../..", import.meta.url).pathname.replace(/\/$/, "");
   const result = await harness.run(baseContext({ repoRoot, command: "catalog" }));

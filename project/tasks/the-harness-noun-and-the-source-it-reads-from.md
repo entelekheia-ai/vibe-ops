@@ -145,9 +145,9 @@ exclusions fails in silence.
 - [x] P0 — Item 2: `harness shape`, with the no-remote case asserted by a fixture.
 - [x] P0 — Item 3: `harness status`, reusing the hook's comparison rather than copying it.
 - [x] P1 — Item 4: `harness catalog`, reading the composed set from the existing report.
-- [ ] P1 — Item 5: `harness audit`. **Not delegable** — what counts as a guide, and what its cost means,
+- [x] P1 — Item 5: `harness audit`. **Not delegable** — what counts as a guide, and what its cost means,
       is the judgement this plan exists to make; a subagent returns a plausible inventory that drifts.
-- [ ] P1 — Item 5: the three measurement traps as fixtures that fail before the guard exists.
+- [x] P1 — Item 5: the three measurement traps as fixtures that fail before the guard exists.
 - [ ] P2 — Item 6: the two detectors, tested and uncomposed.
 - [ ] P2 — Once the resolve consolidation lands: add `harness resolve` in whatever shape it settled on.
 
@@ -164,6 +164,17 @@ exclusions fails in silence.
   into `resolveSourceRoot` as the flag tier, so tier 3 is an added fallback rather than the only path —
   the hook does not regress if the env var turns out to be unset in practice. Tier 3 is unverified for
   this specific invocation path and should not be relied on alone until it is.
+
+- Observation: a fourth measurement trap surfaced during manual verification of `harness audit`, beyond
+  the three named in this item's own text.
+  Evidence: run cold against this repository, the guide inventory included
+  `plugin/skills/setup/templates/root/CLAUDE.md` — a shipped template copy, not an instruction surface
+  anyone actually loads by working in that directory. `governance`/`self` already exclude `**/templates/**`
+  as a documented safe default; this reading had no ops config to inherit it from and leaked the file in.
+  Resolution: `guides()` excludes any tracked path containing `templates/` directly, mirroring the existing
+  convention rather than inventing a new one. Covered by
+  `cli/packages/module-harness/test/audit.test.ts`'s "a shipped template copy under templates/ is
+  excluded" case.
 
 ## Closure
 
