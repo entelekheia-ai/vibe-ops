@@ -291,7 +291,8 @@ conversation, and each spawns its own dossier when it starts.
   Consequence, recorded because it is easy to miss: `harness` merged nearest-wins *whole*, which was
   correct while `applied` was its only key and became wrong the moment a machine-written file could rank
   nearer than the one an operator declares `source` in. The whole-key rule now applies to the `applied`
-  map alone.
+  map alone. Recorded as [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md), which extends
+  ADR-0014 rather than superseding it.
   Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: `harness resolve` does not print through the record resolvers' shared formatter.

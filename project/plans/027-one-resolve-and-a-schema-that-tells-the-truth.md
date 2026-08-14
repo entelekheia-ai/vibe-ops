@@ -137,6 +137,8 @@ multiplies the tool count against a listing budget shared with every other insta
   against a listing budget shared with every installed plugin, and it invalidates the
   `<prefix>__<noun>` + `command:` pattern eight shipped skill files document. What is left is the union
   schema, which is the SDK's constraint rather than a choice, plus the thing that was actually missing.
+  Recorded, with the widen-only rule the two schema decisions below produced, as
+  [ADR-0016](../adr/0016-a-flag-is-validated-where-both-surfaces-pass-through.md).
   Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: The rejection lives in `runModule`, and this plan's own success criterion was vacuous until
