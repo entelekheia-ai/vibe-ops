@@ -148,7 +148,7 @@ exclusions fails in silence.
 - [x] P1 — Item 5: `harness audit`. **Not delegable** — what counts as a guide, and what its cost means,
       is the judgement this plan exists to make; a subagent returns a plausible inventory that drifts.
 - [x] P1 — Item 5: the three measurement traps as fixtures that fail before the guard exists.
-- [ ] P2 — Item 6: the two detectors, tested and uncomposed.
+- [x] P2 — Item 6: the two detectors, tested and uncomposed.
 - [ ] P2 — Once the resolve consolidation lands: add `harness resolve` in whatever shape it settled on.
 
 ## Surprises & Discoveries
@@ -175,6 +175,17 @@ exclusions fails in silence.
   convention rather than inventing a new one. Covered by
   `cli/packages/module-harness/test/audit.test.ts`'s "a shipped template copy under templates/ is
   excluded" case.
+
+- Observation: `runner-provenance`'s own test suite was flaky under a full `npm test` run and green in
+  isolation — the gate checks `repoRoot/../vibe-ops/...`, and every fixture's `repoRoot` was created as a
+  direct child of the shared OS tmpdir, so `repoRoot/..` was the SAME directory across every test. A
+  sibling written by the "outranks a live sibling" test leaked into the "no sibling" test's reading
+  whenever node's test runner scheduled them in the same tmpdir generation.
+  Evidence: `npm test` reported the "no live sibling" case failing while running the file alone passed
+  every time — the signature of shared mutable fixture state, not a logic bug in the gate.
+  Resolution: each fixture now nests `repoRoot` inside its own `mkdtemp`-created workspace
+  (`<workspace>/repo`), so `repoRoot/..` is exclusive to that test. Worth a general note for any future
+  gate whose population check walks OUTSIDE `repoRoot` — nest, don't create the repo at the tmpdir root.
 
 ## Closure
 

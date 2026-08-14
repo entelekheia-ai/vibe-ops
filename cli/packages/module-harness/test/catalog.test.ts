@@ -2,10 +2,9 @@
 // is no fixture-injectable seam for "what gates exist" — that IS the question being asked), so these
 // tests run against this repository's own checkout, the same way `ops.test.ts` does for the ops suite.
 //
-// NOTE for Plan-025 Track 4 item 6: once `runner-provenance` and `disabled-declared` land as gates that
-// are deliberately composed into nothing, this repository's own catalog gains exactly two entries. The
-// "currently zero" assertion below is expected to need updating at that point — that is the point of the
-// verb, not a regression.
+// `runner-provenance` and `disabled-declared` (Plan-025 Track 4 item 6) are gates that exist and are
+// deliberately composed into nothing, so this repository's own catalog reports exactly those two — the
+// verb doing its job, not a regression.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -26,9 +25,15 @@ function baseContext() {
   };
 }
 
-test("buildCatalog: against this repository's own checkout, every available gate and shell fragment is composed into something", async () => {
+test("buildCatalog: against this repository's own checkout, the only gap is the two gates deliberately composed into nothing", async () => {
   const catalog = await buildCatalog(baseContext());
-  assert.deepEqual(catalog.uncomposed, []);
+  assert.deepEqual(
+    [...catalog.uncomposed].sort((a, b) => a.id.localeCompare(b.id)),
+    [
+      { kind: "gate", id: "disabled-declared" },
+      { kind: "gate", id: "runner-provenance" },
+    ],
+  );
 });
 
 test("buildCatalog: an ops package that fails to load composes nothing from itself, rather than throwing", async () => {
