@@ -109,8 +109,9 @@ export function showRecord(
   pluginDir: string,
   config: VibeOpsConfig,
   documents: DocumentStore,
+  sourceRoot?: string,
 ): Shown {
-  const handling = handlingFor(file, repoRoot, pluginDir, config, documents);
+  const handling = handlingFor(file, repoRoot, pluginDir, config, documents, sourceRoot);
   const document = documents.get(file);
 
   // `findHeaderTable` takes the tree's root node, not the document — it is a reader over the block tree,

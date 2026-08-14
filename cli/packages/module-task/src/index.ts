@@ -21,9 +21,15 @@ import {
 /**
  * Where `/vibe-ops:migrate` keeps its notes. The dispatch reads the same evidence the migrate skill
  * does, so "there is handling for this version" has one answer and one place to look when it is wrong.
+ *
+ * The target's own notes when it has them, otherwise the installed norm's — the same resolution
+ * `module-plan` documents at length. `resolvePluginDir` alone answers for the *target's* plugin surface,
+ * which a consumer repository does not have, so every older dossier reported `unhandled` and blocked.
  */
-function migrationsDir(repoRoot: string): string {
-  return path.join(resolvePluginDir(repoRoot), "skills", "migrate", "migrations");
+function migrationsDir(repoRoot: string, sourceRoot: string | undefined): string | undefined {
+  const local = path.join(resolvePluginDir(repoRoot), "skills", "migrate", "migrations");
+  if (existsSync(local)) return local;
+  return sourceRoot === undefined ? undefined : path.join(sourceRoot, "skills", "migrate", "migrations");
 }
 
 export default defineModule(
@@ -31,6 +37,9 @@ export default defineModule(
     id: "task",
     version: "0.0.1",
     summary: "The ephemeral dossier: resolve its layout, close it, or read its closure box",
+    // The migration notes this module dispatches on belong to the installed norm, not to the repository
+    // holding the dossier — the same reason `plan` declares it.
+    needsSource: true,
     commands: [
       { name: "resolve", summary: "directory, template, next number, GitHub remote and auth" },
       {
@@ -113,7 +122,7 @@ export default defineModule(
       // A path that does not exist is not a version question, and answering it as one tells the operator
       // to declare frontmatter in a file that is not there. `closeTasks` already owns that message, so
       // the dispatch stands aside and lets it be thrown rather than growing a second copy of it.
-      const dir = migrationsDir(context.repoRoot);
+      const dir = migrationsDir(context.repoRoot, context.sourceRoot);
       const present = context.args.filter((file) => existsSync(path.join(context.repoRoot, file)));
       const dispatched = (present.length === context.args.length ? context.args : []).map((file) => {
         const dispatch = dispatchRecord({

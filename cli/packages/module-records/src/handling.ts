@@ -22,6 +22,7 @@
 // another type's token is the `mismatch` branch — a real finding — and inferring the type from the token
 // would make that branch unreachable by construction.
 
+import { existsSync } from "node:fs";
 import path from "node:path";
 import type { Document, DocumentStore, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import {
@@ -51,9 +52,17 @@ export interface Handling {
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
 
-/** Where `/vibe-ops:migrate` keeps its notes — the same evidence the closing verbs dispatch on. */
-function migrationsDir(pluginDir: string): string {
-  return path.join(pluginDir, "skills", "migrate", "migrations");
+/**
+ * Where `/vibe-ops:migrate` keeps its notes — the same evidence the closing verbs dispatch on, and
+ * resolved the same two ways they resolve it: the target's own notes when it ships them, otherwise the
+ * installed norm's. `pluginDir` answers for the *target's* plugin surface, which a consumer repository
+ * does not have, and reporting `nothing describes that shape` because the note was sought in the wrong
+ * tree is the diagnostic saying the opposite of the truth.
+ */
+function migrationsDir(pluginDir: string, sourceRoot: string | undefined): string | undefined {
+  const local = path.join(pluginDir, "skills", "migrate", "migrations");
+  if (existsSync(local)) return local;
+  return sourceRoot === undefined ? undefined : path.join(sourceRoot, "skills", "migrate", "migrations");
 }
 
 /**
@@ -118,6 +127,7 @@ export function handlingFor(
   pluginDir: string,
   config: VibeOpsConfig | undefined,
   documents: DocumentStore,
+  sourceRoot?: string,
 ): Handling {
   const document = documents.get(file);
   if (document.tree === undefined) {
@@ -132,7 +142,7 @@ export function handlingFor(
   const dispatch = dispatchRecord({
     record: document,
     current: located.current,
-    migrationsDir: migrationsDir(pluginDir),
+    migrationsDir: migrationsDir(pluginDir, sourceRoot),
   });
   const handling =
     dispatch.kind === "behind" ? dispatch.notes.map((note) => path.relative(repoRoot, note.file)) : [];

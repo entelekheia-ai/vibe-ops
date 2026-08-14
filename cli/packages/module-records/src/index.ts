@@ -85,6 +85,9 @@ export default defineModule(
     id: "records",
     version: "0.0.1",
     summary: "The record types with no noun of their own: resolve a layout, census the repository, or ask which handling a record needs",
+    // `handling` and `show` dispatch on migration notes, which belong to the installed norm rather than
+    // to the repository being read — the same reason `plan` and `task` declare it.
+    needsSource: true,
     commands: [
       {
         name: "resolve",
@@ -198,7 +201,7 @@ export default defineModule(
       let answers;
       try {
         answers = context.args.map((file) =>
-          handlingFor(file, context.repoRoot, pluginDir, context.config, documents),
+          handlingFor(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
         );
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
@@ -286,7 +289,9 @@ export default defineModule(
       const pluginDir = resolvePluginDir(context.repoRoot);
       let shown;
       try {
-        shown = context.args.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents));
+        shown = context.args.map((file) =>
+          showRecord(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
+        );
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;

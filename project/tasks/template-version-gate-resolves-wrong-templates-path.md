@@ -74,6 +74,22 @@ regression.
 
 ## Surprises & Discoveries
 
+- Observation: **The same misuse has a second victim, and that one blocks rather than skips silently.**
+  `module-plan`, `module-task` and `module-records` all located `/vibe-ops:migrate`'s notes at
+  `resolvePluginDir(repoRoot) + skills/migrate/migrations`. A consumer repository ships no migration
+  notes, so that path does not exist, the version dispatch walked an empty note set, and every record not
+  already at the current template version came back `unhandled` — which `blocks()` treats as a stop. So
+  `plan close` and `task close` refused any older record in every repository but this one, reporting
+  *nothing describes that shape* about a shape two committed notes describe in full.
+  Evidence: 2026-08-14, closing an external plan declaring `plan@0.1` against a `plan@3` template, with
+  `plan-0.1-to-0.2.md` and `plan-0.2-to-3.md` both present here. Fixed in the same session: the notes are
+  the **installed norm**, not the target's, so the three modules now declare `needsSource: true` and fall
+  back to `context.sourceRoot` when the target ships no notes of its own.
+  Why it belongs to this task rather than its own: it is the same root cause one directory over —
+  `resolvePluginDir` answers *where is the target's plugin surface*, and both defects come from asking it
+  *where does the tool keep its own files*. Whatever fix work item 1 chooses should be checked against
+  both call sites, not only `template:`.
+
 - Observation: `expandPluginToken`'s two-layout design (`plugin/` vs. flat root) was built for `skills/`,
   `references/`, and similar plugin-internal paths, where "flat" correctly means "this repo's root is
   where a copied plugin surface would live." `template-version` reuses the same token for a path that
