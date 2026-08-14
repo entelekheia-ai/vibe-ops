@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Depends on | [Plan-027](027-one-resolve-and-a-schema-that-tells-the-truth.md) — Track 4's `resolve` verb waits on its consolidation |
-| Related | [RFC-0002](../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) · [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) |
+| Depends on | [Plan-027](./027-one-resolve-and-a-schema-that-tells-the-truth.md) — Track 4's `resolve` verb waits on its consolidation |
+| Related | [RFC-0002](../../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) · [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) |
 
 ---
 
@@ -60,7 +60,7 @@ split of the existing harness audit into a deterministic half here and an infere
 ### Out of scope
 
 **Which channel performs a repository's *first* wiring, and what an automatic step may decide on its own.**
-That is [RFC-0002](../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md), and it
+That is [RFC-0002](../../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md), and it
 is out of scope deliberately: its central rule is unstatable until Track 1 lands, and its candidate channels
 each reach a different subset of repositories. This plan builds machinery that any of those channels can
 call.
@@ -291,7 +291,7 @@ conversation, and each spawns its own dossier when it starts.
   Consequence, recorded because it is easy to miss: `harness` merged nearest-wins *whole*, which was
   correct while `applied` was its only key and became wrong the moment a machine-written file could rank
   nearer than the one an operator declares `source` in. The whole-key rule now applies to the `applied`
-  map alone. Recorded as [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md), which extends
+  map alone. Recorded as [ADR-0015](../../adr/0015-a-third-config-layer-the-tooling-writes.md), which extends
   ADR-0014 rather than superseding it.
   Date / Author: 2026-08-14 / Danilo Borges
 
@@ -473,10 +473,10 @@ bears on it.
 
 ## Related
 
-- [RFC-0002](../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) — which
+- [RFC-0002](../../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) — which
   channel performs a repository's first wiring, and the limit on what an automatic step may decide; blocked
   on Track 1 and deliberately outside this plan.
-- [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the separation between a detector and
+- [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the separation between a detector and
   the composition that decides its scope; this plan applies the same separation one level up, between what
   promulgates the norm and what verifies it.
 

@@ -90,5 +90,5 @@ would silently remove those messages.
 
 ## Related
 
-- [Plan-027](../plans/027-one-resolve-and-a-schema-that-tells-the-truth.md) — the plan whose Track 2
+- [Plan-027](../plans/shipped/027-one-resolve-and-a-schema-that-tells-the-truth.md) — the plan whose Track 2
   produced this, and whose Decision Log records what the measurements refuted.

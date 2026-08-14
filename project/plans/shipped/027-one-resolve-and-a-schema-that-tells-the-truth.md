@@ -6,11 +6,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
 | Depends on | Plan-026 |
-| Related | [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md), which carried the cleanup this plan's two decisions were removed from |
+| Related | [Plan-026](./026-the-commands-the-agent-had-to-work-around.md), which carried the cleanup this plan's two decisions were removed from |
 
 ---
 
@@ -138,7 +138,7 @@ multiplies the tool count against a listing budget shared with every other insta
   `<prefix>__<noun>` + `command:` pattern eight shipped skill files document. What is left is the union
   schema, which is the SDK's constraint rather than a choice, plus the thing that was actually missing.
   Recorded, with the widen-only rule the two schema decisions below produced, as
-  [ADR-0016](../adr/0016-a-flag-is-validated-where-both-surfaces-pass-through.md).
+  [ADR-0016](../../adr/0016-a-flag-is-validated-where-both-surfaces-pass-through.md).
   Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: The rejection lives in `runModule`, and this plan's own success criterion was vacuous until
@@ -200,7 +200,7 @@ multiplies the tool count against a listing budget shared with every other insta
 **Both tracks landed 2026-08-14.** Against the three goals: goal 1 is met — every record type resolves
 under exactly one spelling, and a test asserts that asking `records` for a type that has a noun refuses
 and names the noun. Goal 3 is met twice over, in this Decision Log and in
-[ADR-0016](../adr/0016-a-flag-is-validated-where-both-surfaces-pass-through.md).
+[ADR-0016](../../adr/0016-a-flag-is-validated-where-both-surfaces-pass-through.md).
 
 **Goal 2 is not met as written, and the wording was wrong rather than the work.** It asked for "an MCP
 tool schema that accepts what is valid for the command being called, and nothing else". No schema can do
@@ -237,7 +237,7 @@ turned on were established by running something rather than by reading it.
 
 ## Related
 
-- [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md) — the cleanup pass these two were removed
+- [Plan-026](./026-the-commands-the-agent-had-to-work-around.md) — the cleanup pass these two were removed
   from, and where the measurement that found them is recorded.
 
 - Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):

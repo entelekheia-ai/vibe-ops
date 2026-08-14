@@ -82,7 +82,7 @@ assembled from two levels would answer for a repository it was never applied to.
 
 ## Related
 
-- [Plan-025](../plans/025-the-harness-module-and-the-norm-it-promulgates.md) — the promulgation work this
+- [Plan-025](../plans/shipped/025-the-harness-module-and-the-norm-it-promulgates.md) — the promulgation work this
   decision was made for; Track 3.
 - [RFC-0002](../rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) — why the
   state stored is a version applied rather than a set of switches, which is what needed a clone-local home

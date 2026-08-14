@@ -19,7 +19,7 @@ vibe-ops-template: rfc@2
 | Status | Draft |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [Plan-025](../plans/025-the-harness-module-and-the-norm-it-promulgates.md) |
+| Related | [Plan-025](../plans/shipped/025-the-harness-module-and-the-norm-it-promulgates.md) |
 
 ---
 
@@ -170,7 +170,7 @@ boundary — is a Plan-025 track that has not shipped.
 
 ## Related
 
-- [Plan-025](../plans/025-the-harness-module-and-the-norm-it-promulgates.md) — the module this RFC's answer
+- [Plan-025](../plans/shipped/025-the-harness-module-and-the-norm-it-promulgates.md) — the module this RFC's answer
   would be delivered through; its Track 1 defines the ownership boundary this RFC's central rule needs, and
   its Track 3 builds the version stamp the derived-signal decision rests on.
 - [RFC-0001](0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the split between a detector and the

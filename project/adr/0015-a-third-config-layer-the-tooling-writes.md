@@ -87,7 +87,7 @@ machine-written file could rank nearer than the one an operator declares `source
 
 ## Related
 
-- [Plan-025](../plans/025-the-harness-module-and-the-norm-it-promulgates.md) — the plan whose Track 5
+- [Plan-025](../plans/shipped/025-the-harness-module-and-the-norm-it-promulgates.md) — the plan whose Track 5
   produced this, and whose Decision Log records the reasoning as it was made.
 - [ADR-0014](0014-clone-local-configuration-layers-rather-than-replaces.md) — the layering rule this
   extends.
