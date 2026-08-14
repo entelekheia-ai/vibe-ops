@@ -107,6 +107,15 @@ export const NOT_A_RECORD = new Set(["README.md", "RETIRED.md", "AGENTS.md", "CL
  * caller that must OPEN each file needs, where `listMarkdownBasenames` answers the numbering question
  * and can flatten because a number is a number wherever the file sits.
  */
+/**
+ * Every `.md` under `absDir`, as paths **relative to `absDir`** — `plan.md`, `shipped/026-x.md` — never
+ * absolute and never repository-relative. Join them back onto the directory you passed to get either.
+ *
+ * Stated because the shape is invisible at the call site and the failure is silent: running the result
+ * through `path.relative(repoRoot, …)` a second time yields a bare basename, which still resolves to
+ * nothing, so a listing built on it renders in full with every field empty. Cost one `records list` that
+ * reported `(no Status)` for all 27 plans and read as plausible output.
+ */
 export function listMarkdownFiles(absDir: string, maxDepth: number): string[] {
   const out: string[] = [];
   function walk(dir: string, prefix: string, depth: number): void {

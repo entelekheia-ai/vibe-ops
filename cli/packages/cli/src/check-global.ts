@@ -112,9 +112,14 @@ export async function runCheckGlobalHook(): Promise<number> {
   // round-trip, and the only thing that makes that round-trip cheap is telling the model, in the first
   // sentence, that there is nothing to do with it. Without the line the model tries to act on a report
   // that says everything passed.
+  // "OUTPUT NOTHING", not "no response needed". Permission to decline is not an instruction to be
+  // silent: measured across a project's session history, one `Stop` hook returning `additionalContext`
+  // fired 42 times and produced 263 assistant turns, two-fifths of which ended in a paragraph explaining
+  // to the user why nothing needed doing. The model narrates the decline unless told plainly not to, and
+  // that narration is the whole cost of speaking on a clean run.
   const clean = findings.length === 0;
   const opening = clean
-    ? "Hook: vibe-ops check — ok. No response needed, and no need to run it again this turn."
+    ? "Hook: vibe-ops check — ok, nothing failed. It has already run this turn; do not run it again. Output nothing about this — do not mention it, do not acknowledge it, end the turn as you otherwise would."
     : "Hook: vibe-ops check — findings below. It has already run; do not run it again to confirm.";
 
   process.stdout.write(
