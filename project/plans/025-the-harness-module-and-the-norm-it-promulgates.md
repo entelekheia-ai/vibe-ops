@@ -219,7 +219,7 @@ conversation, and each spawns its own dossier when it starts.
       **The in-place mode was not built**, and that is a cut rather than an omission: it exists in the
       design only for "when isolation is unwanted", nobody has wanted it yet, and it is the one mode that
       needs a clean-tree check and a prompt — machinery whose first user should be a real need.
-      Task: [tasks/promulgation-a-branch-a-tag-and-a-boundary.md](../tasks/promulgation-a-branch-a-tag-and-a-boundary.md)
+      Task: tasks/promulgation-a-branch-a-tag-and-a-boundary.md (closed dossier — `git show e346ae7f6a0d9cc6c45f63240a114746f4235aca:project/tasks/promulgation-a-branch-a-tag-and-a-boundary.md`)
 - [x] **Track 6 — The audit's judging half becomes a skill that calls the audit's measuring half.** Retire
       the hand-run audit's measurement steps in favour of the verbs from Track 4, leaving the skill only
       what genuinely needs a model: placing components on the guide/sensor grid, recognising an instruction
@@ -229,7 +229,7 @@ conversation, and each spawns its own dossier when it starts.
       becomes a shipped surface with a public contract — or the verbs are consumed from where it already
       is, and this repository ships no skill at all. **Answered a third way**: it is not a skill of its own
       at all, it is `/vibe-ops:setup harness audit`.
-      Task: [tasks/the-audit-that-cannot-mis-measure.md](../tasks/the-audit-that-cannot-mis-measure.md)
+      Task: tasks/the-audit-that-cannot-mis-measure.md (closed dossier — `git show e346ae7f6a0d9cc6c45f63240a114746f4235aca:project/tasks/the-audit-that-cannot-mis-measure.md`)
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
       track list that is otherwise complete but has this box open is not finished.
@@ -453,3 +453,7 @@ that is luck, not process, and it is why the Decision Log now carries a rule abo
 
 - Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
   - `git show 38104edaa41754c4bb754271f97449acbe1b3f64:project/tasks/the-harness-noun-and-the-source-it-reads-from.md`
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show e346ae7f6a0d9cc6c45f63240a114746f4235aca:project/tasks/promulgation-a-branch-a-tag-and-a-boundary.md`
+  - `git show e346ae7f6a0d9cc6c45f63240a114746f4235aca:project/tasks/the-audit-that-cannot-mis-measure.md`
