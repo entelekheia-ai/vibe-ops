@@ -91,6 +91,36 @@ function describeFragment(source: string): readonly string[] {
   return prose;
 }
 
+/**
+ * This module's slice of `settings`, and the one key it honors. The shape is `disabled` from
+ * `GovernedSettings` deliberately — an ops declares a gate off as `{ id: "reason" }` and a repository
+ * should not have to learn a second spelling for the same act because the detector behind it happens
+ * to be shell.
+ */
+interface CheckSettings {
+  readonly disabled?: Readonly<Record<string, string>>;
+}
+
+/**
+ * The runner reads declared disablements from the environment and from nowhere else, which made a
+ * repository's declaration live in the one file that sets that variable — its own `scripts/checks/_run.sh`.
+ * Every other caller of the same gate — a `Stop` hook, `vibe-ops check <path>` from a sibling directory,
+ * an editor — ran an undeclared configuration and reported the repository's whole known backlog as
+ * failures. Measured 2026-08-14: 38.
+ *
+ * So the declaration moves to where the repository's other declarations already are, and the variable
+ * stays what it was: an override at the point of invocation. Environment entries are emitted first
+ * because `disabled_reason_for` matches the first line carrying an id, which makes the nearer
+ * declaration win without the runner needing to know two sources exist.
+ */
+function disabledChecksEnv(settings: CheckSettings | undefined): string | undefined {
+  const declared = Object.entries(settings?.disabled ?? {});
+  const inherited = process.env["VIBE_OPS_DISABLED_CHECKS"] ?? "";
+  if (declared.length === 0) return inherited === "" ? undefined : inherited;
+  const lines = declared.map(([id, reason]) => `${id}:${reason}`);
+  return [inherited, ...lines].filter((line) => line.trim() !== "").join("\n");
+}
+
 function parseList(output: string): { readonly id: string; readonly source: string }[] {
   const checks: { id: string; source: string }[] = [];
   for (const line of output.split("\n")) {
@@ -158,11 +188,15 @@ export default defineModule(
     else if (context.flags["self-test"] === true) argv.push("--self-test");
     else argv.push(context.repoRoot);
 
+    const settings = context.settings as CheckSettings | undefined;
+    const disabled = disabledChecksEnv(settings);
+
     const result = spawnSync(RUNNER, argv, {
       encoding: "utf8",
       env: {
         ...process.env,
         ...(context.flags["verbose"] === true ? { GATE_VERBOSE: "1" } : {}),
+        ...(disabled === undefined ? {} : { VIBE_OPS_DISABLED_CHECKS: disabled }),
       },
     });
 
@@ -247,6 +281,18 @@ export default defineModule(
       else findings.push({ level: kind === "WARN" ? "warn" : "fail", check: id!, evidence: rest! });
     }
 
+    // A declared disablement that names no composed check is a ledger entry pointing at nothing — a
+    // renamed or removed fragment leaves one behind, and the config keeps reading as though something
+    // were switched off. The run itself is unaffected, which is exactly why it needs saying.
+    const undeclared = Object.keys(settings?.disabled ?? {}).filter(
+      (id) => !skipped.some((skip) => skip.check === id || skip.check.split("@")[0] === id),
+    );
+    if (undeclared.length > 0) {
+      context.warn(
+        `settings.check.disabled names ${undeclared.join(", ")}, which no composed check answers to — run vibe-ops check --list for the ids`,
+      );
+    }
+
     // The gate reads `git ls-files`, so a file that has never been staged is not in its population — and
     // a clean run over a population that silently excludes the file you just wrote is indistinguishable
     // from a clean run over one that includes it. Three separate sessions discovered this by watching a
@@ -266,7 +312,7 @@ export default defineModule(
     return {
       code: audited ? 0 : code,
       summary: `${summary}${staging}${audited && code !== 0 ? " (audit: not blocking)" : ""}`,
-      data: { findings, skipped, untracked: unseen },
+      data: { findings, skipped, undeclared, untracked: unseen },
     };
   },
 );

@@ -218,8 +218,15 @@ settings: {
     disabled: { "record-header-rfc": "still migrating" }, // a reason, never a boolean
     level: { "template-version-behind": "fail" },      // by rule, label, or "*"; most specific wins
   },
+  check: { disabled: { "machine-paths": "the private layer" } }, // the shell runner, same spelling
 },
 ```
+
+**`check` honors `disabled` under the same key and the same shape**, translating it into the
+`VIBE_OPS_DISABLED_CHECKS` the shell runner already read — appended after whatever the environment
+carries, so an invocation-time override still wins. A repository whose only declaration was that variable
+had a different configuration per caller: the same gate run from a hook or from a sibling directory
+reported its whole declared backlog as failures, 38 of them, measured 2026-08-14.
 
 `"*"` applies to every entry in the ops; a gate's own label narrows further, additively with `"*"`,
 never replacing it. `disabled` takes a reason string — never a boolean — so a disablement is a ledger
