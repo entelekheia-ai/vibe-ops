@@ -58,6 +58,13 @@ test("status: sourceRoot present but this clone was never promulgated to — sil
   assert.match(result.summary, /never been promulgated/);
 });
 
+test("catalog dispatches to buildCatalog and reports the shape", async () => {
+  const repoRoot = new URL("../../../..", import.meta.url).pathname.replace(/\/$/, "");
+  const result = await harness.run(baseContext({ repoRoot, command: "catalog" }));
+  assert.equal(result.code, 0);
+  assert.ok(Array.isArray((result.data as { uncomposed: unknown }).uncomposed));
+});
+
 test("status: a type behind the installed norm is reported", async () => {
   const repoRoot = await gitRepo();
   const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));

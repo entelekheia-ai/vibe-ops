@@ -144,7 +144,7 @@ exclusions fails in silence.
       fail-open behaviour and its silence tests green.
 - [x] P0 — Item 2: `harness shape`, with the no-remote case asserted by a fixture.
 - [x] P0 — Item 3: `harness status`, reusing the hook's comparison rather than copying it.
-- [ ] P1 — Item 4: `harness catalog`, reading the composed set from the existing report.
+- [x] P1 — Item 4: `harness catalog`, reading the composed set from the existing report.
 - [ ] P1 — Item 5: `harness audit`. **Not delegable** — what counts as a guide, and what its cost means,
       is the judgement this plan exists to make; a subagent returns a plausible inventory that drifts.
 - [ ] P1 — Item 5: the three measurement traps as fixtures that fail before the guard exists.

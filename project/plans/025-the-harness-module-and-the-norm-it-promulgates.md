@@ -265,6 +265,17 @@ conversation, and each spawns its own dossier when it starts.
   that already works would be a second answer to a question already answered.
   Date / Author: 2026-08-13 / Danilo Borges
 
+- Decision: `catalog`'s "composed" set is the union of `check --list`'s shell fragments and the gate ids
+  every shipped ops (`agents-md`, `governance`, `self`) reports composed via its own `--list` — not
+  `check --list` alone.
+  Rationale: most gates have no shell precedent at all, so reading only the shell side would report every
+  such gate as "available but not composed" even when an ops already runs it on every commit — a false
+  gap that IS the wrong recommendation this verb exists to prevent ("build something already written and
+  merely unwired"). Gate identity is consistent across both sides because `catalog` compares against
+  `entry.gate` (the ops's own field) and the gates package's own directory names, never against a shell
+  fragment's differently-spelled id (`links` vs. the `markdown-link` gate it was ported from).
+  Date / Author: 2026-08-13 / Danilo Borges
+
 - Decision: Discovery and mechanical porting may be delegated to a subagent; design judgements may not.
   Rationale: a subagent can survey what exists across repositories, and can port a detector from shell to
   TypeScript under a contract that fits in a paragraph, because both have a checkable result. The ownership

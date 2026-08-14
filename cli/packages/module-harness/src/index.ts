@@ -6,11 +6,14 @@
 import { defineModule } from "@entelekheia/vibe-ops-core";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
+import { buildCatalog } from "./catalog.ts";
 
 export { behindEntries, formatBehind, shippedVersion, shippedVersions, TYPES } from "./status.ts";
 export type { BehindEntry, VersionedType } from "./status.ts";
 export { churnByTopLevel, hasRemote, hooksPath, repoShape, workflowFiles } from "./shape.ts";
 export type { ChurnEntry, RepoShape } from "./shape.ts";
+export { buildCatalog } from "./catalog.ts";
+export type { Catalog, CatalogEntry } from "./catalog.ts";
 
 export default defineModule(
   {
@@ -63,7 +66,19 @@ export default defineModule(
     }
 
     if (context.command === "catalog") {
-      return { code: 2, summary: "harness catalog is not implemented yet" };
+      const catalog = await buildCatalog(context);
+      if (context.flags["json"] !== true) {
+        if (catalog.uncomposed.length === 0) context.log("every available gate and shell fragment is composed into something");
+        for (const entry of catalog.uncomposed) context.log(`  [${entry.kind}] ${entry.id}`);
+      }
+      return {
+        code: 0,
+        summary:
+          catalog.uncomposed.length === 0
+            ? "every available gate and shell fragment is composed into something"
+            : `${catalog.uncomposed.length} available but not composed into anything`,
+        data: catalog,
+      };
     }
 
     if (context.command === "audit") {
