@@ -231,9 +231,16 @@ npm test               # builds first via pretest
 node cli/packages/cli/dist/bin.js check
 ```
 
-- **`npm run build` builds `core` explicitly before `--workspaces`.** Workspaces build in *directory*
-  order, not dependency order, so `cli` sorts ahead of `core` and would typecheck against its stale
-  `dist/` and report success. That produced a false green three times in eita before the line existed.
+- **`npm run build` builds `core`, `records` and `module-harness` explicitly before `--workspaces`.**
+  Workspaces build in *directory* order, not dependency order, so `cli` sorts ahead of all three and
+  would typecheck against their stale `dist/` and report success. That produced a false green three times
+  in eita before the line existed, and once more here — `module-harness` was added to the list only after
+  a from-scratch build failed on `cli` while every incremental build had passed. **A package earns a
+  place in `build:foundation` by being *statically* imported by something that sorts ahead of it.** That
+  is why `module-harness` is there and no other `module-*` is: `cli` reaches every other module through a
+  dynamic `import()` with a computed specifier, which creates no compile-time dependency, but
+  `src/harness-status.ts` imports `module-harness` by name. **Verify a new cross-package import with
+  `rm -rf cli/packages/*/dist && npm run build`** — an incremental build cannot see this class of break.
 - **The checks are shell and stay shell.** Porting seventeen fragments to TypeScript is a separate act;
   doing it as part of packaging would have shipped seventeen freshly-written checks with no history of
   having caught anything. `packages/module-check/src/index.ts` is their front door, not a rewrite.

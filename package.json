@@ -9,8 +9,8 @@
     "cli/packages/*"
   ],
   "scripts": {
-    "_comment_build": "core first, explicitly. `--workspaces` runs in directory order, not dependency order, so `cli` sorts before `core` and would typecheck against its stale dist and report success.",
-    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core && npm run build -w @entelekheia/vibe-ops-records",
+    "_comment_build": "core first, explicitly. `--workspaces` runs in directory order, not dependency order, so `cli` sorts before `core`, `records` and `module-harness` and would typecheck against their stale dist and report success. A package earns a place here by being STATICALLY imported by something that sorts ahead of it; module-harness qualifies because cli/src/harness-status.ts imports it by name, unlike every other module-*, which cli only ever reaches through a dynamic import().",
+    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core && npm run build -w @entelekheia/vibe-ops-records && npm run build -w @entelekheia/vibe-ops-module-harness",
     "build": "npm run build:foundation && npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "pretest": "npm run build",
