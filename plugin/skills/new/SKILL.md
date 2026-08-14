@@ -34,14 +34,18 @@ mode. An existing record is advanced through its own lifecycle, never re-scaffol
 
 ## Step 0 — Resolve the repo, in one call
 
+**One record type, one spelling.** Two of the four have a noun of their own and are resolved through it;
+the other two have no noun, and `records` is where they are answered.
+
 ```bash
-vibe-ops records resolve --type <adr|rfc|plan|task>
+vibe-ops plan resolve                 # plan
+vibe-ops task resolve                 # task
+vibe-ops records resolve --type adr   # adr, and rfc the same way
 ```
 
-It prints where records of that type live, which template governs them, which file is the numbering
-authority, how many exist, and what number comes next. `plan` and `task` also have their own nouns —
-`vibe-ops plan resolve`, `vibe-ops task resolve` — which answer the same block plus what is specific to
-them; either is correct here.
+Each prints where records of that type live, which template governs them, which file is the numbering
+authority, how many exist, and what number comes next. `plan` and `task` add what is specific to them —
+the status chain and living sections for one, the GitHub remote and auth for the other.
 
 **Then read two files it named**, in this order:
 

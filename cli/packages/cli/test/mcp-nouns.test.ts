@@ -185,6 +185,15 @@ test("Track 2 over MCP: <noun> resolve answers with the resolved record", async 
   // independent while exactly one may be true.
   const records = await call(c, "records", { repo, command: "resolve", type: "adr" });
   assert.equal(records.exitCode, 0, records.text);
+
+  // Plan-027 Track 1, over MCP: `plan` and `task` were reachable here as well as under their own nouns.
+  // The loop above is what must keep working; this is what must stop, and it must stop by naming where
+  // the answer moved rather than by reporting an unknown value.
+  for (const [type, noun] of [["plan", "plan resolve"], ["task", "task resolve"]] as const) {
+    const gone = await call(c, "records", { repo, command: "resolve", type });
+    assert.equal(gone.exitCode, 2, `records resolve --type ${type} must not still answer`);
+    assert.match(String(gone.summary ?? gone.text), new RegExp(noun), `it must name ${noun}`);
+  }
 });
 
 test("Track 3 over MCP: plan status finds the incoherent plan, and plan context carries the living sections", async () => {

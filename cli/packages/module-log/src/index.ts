@@ -11,12 +11,14 @@
 import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
 import {
   findLogDir,
+  formatResolved,
   logIndex,
   logLint,
   logSweep,
   preambleOf,
   readLogEntries,
 } from "@entelekheia/vibe-ops-records";
+import type { ResolvedLocation } from "@entelekheia/vibe-ops-records";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -52,11 +54,15 @@ export default defineModule(
     const dir = findLogDir(context.repoRoot);
 
     if (context.command === "resolve") {
-      if (context.flags.json !== true) context.log(`DIR=${dir ?? "(none)"}`);
+      // Through the shared formatter, not a hand-written line: `log` prints fewer keys than a numbered
+      // type, and which keys those are is the formatter's call to make once rather than this module's to
+      // restate (Plan-027 Track 1).
+      const resolved: ResolvedLocation = { type: "log", root: context.repoRoot, dir };
+      if (context.flags.json !== true) for (const line of formatResolved(resolved)) context.log(line);
       return {
         code: 0,
         summary: dir === undefined ? "no log directory in this repository" : `log entries live in ${dir}`,
-        data: { type: "log" as const, root: context.repoRoot, dir },
+        data: resolved,
       };
     }
 

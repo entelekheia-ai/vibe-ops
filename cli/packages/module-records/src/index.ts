@@ -1,9 +1,10 @@
 // vibe-ops records — the generic resolver, for a record type none of the three noun modules own. `adr`
 // and `rfc` get no lifecycle actions in this plan (Plan-011 Out of scope), but `/new` still needs their
-// layout resolved, and the hook that used to shell out to resolve-governance.sh needs one command that
-// answers for all four types. `plan`/`task`/`log` also resolve through this same library directly —
-// this module exists for the two types that have no noun of their own, not as a detour for the three
-// that do.
+// layout resolved. This module exists for those two types, and is not a detour for the three that have a
+// noun: `plan`, `task` and `log` resolve under their own, which is the whole of Plan-027 Track 1's
+// decision. `resolve` therefore answers for `adr|rfc`; `list`, `census` and `show` still answer for all
+// four, because nothing on a noun answers their question and narrowing them would remove the only way to
+// ask it.
 //
 // VERBS, NOT FLAGS, and it was the other way round for a day. `census` and `handling` shipped as booleans
 // on the grounds that declaring `commands` makes the verb mandatory and would break `vibe-ops records
@@ -25,13 +26,52 @@ import {
   resolveRecord,
   RecordsConfigError,
 } from "@entelekheia/vibe-ops-records";
-import type { RecordType } from "@entelekheia/vibe-ops-core";
+import type { ModuleResult, RecordType } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
 import type { ListField } from "./show.ts";
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
+
+/**
+ * What `resolve` answers for: the two record types with no noun of their own. `plan` and `task` were
+ * reachable here and under their own nouns at once, which is the duplication Plan-027 Track 1 exists to
+ * remove — the noun is the spelling, so this verb no longer offers a second name for either.
+ *
+ * `list`, `census` and `show` keep all four deliberately. Nothing on a noun answers their question, so
+ * narrowing them would remove the only way to ask it.
+ */
+const RESOLVE_TYPES: readonly RecordType[] = ["adr", "rfc"];
+
+/** Where a type that used to resolve here resolves now — named in the refusal, so a removal reads as a rename. */
+const RESOLVES_UNDER: Partial<Record<RecordType, string>> = {
+  plan: "vibe-ops plan resolve",
+  task: "vibe-ops task resolve",
+};
+
+/**
+ * The one `--type` gate. It was written twice, byte-identical, back when both verbs took the same four
+ * types; the moment their domains differ is the moment two copies stop being harmless. Returns the
+ * validated type or the failure to return verbatim — never a thrown error, because an unknown flag value
+ * is the caller's typo and not this module's exception.
+ */
+function gateType(
+  value: string | boolean | undefined,
+  allowed: readonly RecordType[],
+): { readonly type: RecordType } | { readonly failure: ModuleResult } {
+  if (typeof value === "string" && allowed.includes(value as RecordType)) return { type: value as RecordType };
+  const elsewhere = typeof value === "string" ? RESOLVES_UNDER[value as RecordType] : undefined;
+  return {
+    failure: {
+      code: 2,
+      summary:
+        elsewhere === undefined
+          ? `--type must be one of ${allowed.join(", ")}, got ${String(value)}`
+          : `--type must be one of ${allowed.join(", ")} — ${value} resolves under its own noun (${elsewhere})`,
+    },
+  };
+}
 
 /** Declared once: every verb here can render structured output instead of lines. */
 const JSON_FLAG = {
@@ -48,9 +88,15 @@ export default defineModule(
     commands: [
       {
         name: "resolve",
-        summary: "directory, template and next number for one record type",
+        summary: "directory, template and next number for a record type with no noun of its own",
         flags: [
-          { name: "type", type: "string", description: "adr | rfc | plan | task" },
+          {
+            name: "type",
+            type: "string",
+            description: "adr | rfc — plan and task resolve under their own nouns",
+            required: true,
+            choices: RESOLVE_TYPES,
+          },
           // 17 greps for `[0-9]{3}` over project/ in the measured corpus, all asking this. The number was
           // already in the payload, as one `NEXT=` line among a dozen — which is not the same as being
           // answerable.
@@ -59,7 +105,6 @@ export default defineModule(
           // then opened it. Behind a flag rather than always, because a template body is ~150 lines and
           // the common path should not carry it.
           { name: "template", type: "boolean", description: "print the template's body, not only its path" },
-          JSON_FLAG,
         ],
       },
       {
@@ -82,7 +127,7 @@ export default defineModule(
         name: "list",
         summary: "every record of one type with its status and, for a plan, how many tracks are open",
         flags: [
-          { name: "type", type: "string", description: "adr | rfc | plan | task" },
+          { name: "type", type: "string", description: "adr | rfc | plan | task", required: true, choices: TYPES },
           // The caller picks the projection rather than choosing between two points on a line somebody
           // else drew. `sections` across every record was 78.7% of this verb's first payload and answers
           // a question about ONE record — but "which plans still carry a Surprises section?" is a real
@@ -166,15 +211,14 @@ export default defineModule(
     }
 
     if (context.command === "list") {
-      const type = context.flags.type;
-      if (typeof type !== "string" || !TYPES.includes(type as RecordType)) {
-        return { code: 2, summary: `--type must be one of ${TYPES.join(", ")}, got ${String(type)}` };
-      }
+      const gated = gateType(context.flags.type, TYPES);
+      if ("failure" in gated) return gated.failure;
+      const type = gated.type;
       const documents = createDocumentStore(context.repoRoot);
       const pluginDir = resolvePluginDir(context.repoRoot);
       let resolved;
       try {
-        resolved = resolveRecord(type as RecordType, context.repoRoot, context.config, documents);
+        resolved = resolveRecord(type, context.repoRoot, context.config, documents);
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;
@@ -188,7 +232,7 @@ export default defineModule(
       // so the repository-relative path is that name joined back onto `resolved.dir`. Getting this wrong
       // produced a listing that looked right and reported `(no Status)` for every record, because each
       // path resolved to nothing and an unparseable document has no header table.
-      const files = listMarkdownFiles(path.join(context.repoRoot, resolved.dir), DEPTH[type as RecordType]).map(
+      const files = listMarkdownFiles(path.join(context.repoRoot, resolved.dir), DEPTH[type]).map(
         (name) => `${resolved.dir}/${name}`,
       );
       // Resolved before the records are read: an unknown field name is the caller's typo, and reporting it
@@ -258,14 +302,13 @@ export default defineModule(
     }
 
     if (context.command === "resolve") {
-      const type = context.flags.type;
-      if (typeof type !== "string" || !TYPES.includes(type as RecordType)) {
-        return { code: 2, summary: `--type must be one of ${TYPES.join(", ")}, got ${String(type)}` };
-      }
+      const gated = gateType(context.flags.type, RESOLVE_TYPES);
+      if ("failure" in gated) return gated.failure;
+      const type = gated.type;
 
       let resolved;
       try {
-        resolved = resolveRecord(type as RecordType, context.repoRoot, context.config, createDocumentStore(context.repoRoot));
+        resolved = resolveRecord(type, context.repoRoot, context.config, createDocumentStore(context.repoRoot));
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;

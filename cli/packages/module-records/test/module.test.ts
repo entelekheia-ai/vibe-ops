@@ -22,10 +22,10 @@ test("records is a noun with verbs, like plan/task/log — and none of them is d
   );
 });
 
-test("an unknown --type fails naming the valid set", async () => {
-  const result = await records.run({
+function resolving(type: string) {
+  return records.run({
     repoRoot: "/does/not/matter",
-    flags: { type: "wat" },
+    flags: { type },
     command: "resolve",
     args: [],
     config: {},
@@ -34,8 +34,45 @@ test("an unknown --type fails naming the valid set", async () => {
     log: () => {},
     warn: () => {},
   });
+}
+
+test("an unknown --type fails naming the valid set", async () => {
+  const result = await resolving("wat");
   assert.equal(result.code, 2);
-  assert.match(result.summary ?? "", /adr, rfc, plan, task/);
+  assert.match(result.summary ?? "", /adr, rfc/);
+});
+
+// Plan-027 Track 1: the noun is the spelling. `plan` and `task` were reachable here AND under their own
+// nouns, which is the duplication that track exists to remove — so the criterion is not merely that this
+// verb refuses them, but that it says where they went. A removal that does not name its replacement is a
+// break; one that does is a rename.
+test("resolve no longer answers for a type that has a noun, and names the noun instead", async () => {
+  for (const [type, noun] of [
+    ["plan", "vibe-ops plan resolve"],
+    ["task", "vibe-ops task resolve"],
+  ] as const) {
+    const result = await resolving(type);
+    assert.equal(result.code, 2, `records resolve --type ${type} must not still answer`);
+    assert.match(result.summary ?? "", new RegExp(noun.replace(/ /g, "\\s")), `it must name ${noun}`);
+  }
+});
+
+// The narrowing is `resolve`'s alone. Nothing on a noun answers what `list` answers, so narrowing it too
+// would have removed the only way to ask — which is the failure mode of converging by symmetry rather
+// than by what each verb is for.
+test("list still answers for all four types, including the two that have a noun", async () => {
+  const result = await records.run({
+    repoRoot: "/does/not/matter",
+    flags: { type: "plan" },
+    command: "list",
+    args: [],
+    config: {},
+    settings: undefined,
+    surface: "cli",
+    log: () => {},
+    warn: () => {},
+  });
+  assert.notEqual(result.code, 2, "list --type plan is not a rejected flag value");
 });
 
 test("resolve --type adr resolves the same way module-plan resolves plan — one library underneath both", async () => {

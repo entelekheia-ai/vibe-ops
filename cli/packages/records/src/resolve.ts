@@ -25,6 +25,20 @@ import {
 } from "./plan-fields.ts";
 import { readTemplateVersion, type DeclaredVersion } from "./template-version.ts";
 
+/**
+ * Where records of some kind live, and nothing more. The half of a resolution that does not depend on
+ * the kind being numbered — which is what makes it the shape `log` resolves to, the one governance kind
+ * with no number at all. `ResolvedRecord` is this plus everything numbering implies.
+ *
+ * It exists so `formatResolved` is the single place that decides how a resolved location prints. Two
+ * modules formatting the same `DIR=` line independently is how the four resolvers diverged.
+ */
+export interface ResolvedLocation {
+  readonly type: RecordType | "log";
+  readonly root: string;
+  readonly dir?: string;
+}
+
 export interface ResolvedRecord {
   readonly type: RecordType;
   readonly root: string;

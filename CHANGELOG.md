@@ -14,6 +14,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — one spelling per record type (Plan-027 Track 1)
+
+- **`vibe-ops records resolve` answers for `adr` and `rfc` only.** `plan` and `task` were reachable both
+  here and under their own nouns, and the two surfaces had diverged where nobody chose to. The noun is now
+  the spelling: use `vibe-ops plan resolve` and `vibe-ops task resolve`. Asking `records` for either
+  reports where the answer moved rather than an unrecognised value, so this is a rename and not a removal.
+  `records list`, `census` and `show` still answer for all four types — nothing on a noun answers what they
+  answer.
+- **`vibe-ops log resolve` prints through the same formatter every other resolver uses**, instead of a
+  line built inside its own module. Its output is unchanged; what changed is that one place now decides how
+  a resolved location prints. `log` remains deliberately unnumbered, so the formatter stops after `DIR=`.
+
+### Added — a flag may declare that it is required, and what it accepts (Plan-027 Track 1)
+
+- **`ModuleFlag` gains `required` and `choices`.** A closed value domain and a mandatory flag were being
+  re-checked by hand inside each verb that read them — `records` carried the same `--type` conditional
+  twice, byte-identical, and a missing flag reported the same message as a misspelt one. `defineModule`
+  now rejects a declaration that contradicts itself (choices on a boolean, an empty choices list, a
+  required flag that also has a default) at load rather than at the call that happens to hit it.
+
 ### Added — the `harness` module's read-only half (Plan-025 Track 4)
 
 - **`vibe-ops harness shape`** reports whether a repository has a remote, where its hooks live, what CI

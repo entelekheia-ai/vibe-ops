@@ -6,7 +6,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
 | Depends on | Plan-026 |
@@ -93,11 +93,12 @@ multiplies the tool count against a listing budget shared with every other insta
 
 ## Tracks
 
-- [ ] **Track 1 — One resolve.** Decide the direction, record it in the Decision Log with the option
+- [x] **Track 1 — One resolve.** Decide the direction, record it in the Decision Log with the option
       not taken and why, then converge the four implementations onto it. Touches
       `cli/packages/module-plan/`, `module-task/`, `module-log/`, `module-records/` and
       `cli/packages/records/src/format.ts`. At the end: asking where a record type lives has one
-      spelling, and the per-type extras have one home. Task: to be opened.
+      spelling, and the per-type extras have one home.
+      Task: [tasks/one-resolve-and-the-flag-contract-it-needs.md](../tasks/one-resolve-and-the-flag-contract-it-needs.md)
 
 - [ ] **Track 2 — A schema per verb.** Decide between a discriminated schema per noun and one tool per
       verb, weighing the skill-listing budget, then replace the flag union in
@@ -118,6 +119,32 @@ multiplies the tool count against a listing budget shared with every other insta
 ---
 
 ## Decision Log
+
+- Decision: The noun is the spelling. `records resolve` answers for `adr` and `rfc` — the two record
+  types with no noun of their own — and no longer for `plan` or `task`. `list`, `census` and `show` keep
+  all four.
+  Rationale: surveying first narrowed the question. The per-type extras this plan's Design attributes to
+  the four verbs are already converged inside `resolveRecord`, which branches on its own `type` argument
+  rather than on the caller, so there was no divergence needing a single home — only two names for one
+  answer. Given that, the direction is decided by what it costs: collapsing onto `records resolve --type`
+  would have broken `plugin/hooks/plan-progress-nudge.sh`, which shells `vibe-ops plan resolve` and
+  parses five key names out of its output, plus the `resolve` step in both close skills and the MCP test,
+  and would have put a required flag on the most common call. Keeping the nouns costs the two spellings
+  nobody uses. The third option this plan floated — a declared alias — was rejected as a new contract
+  concept that `--help` and the MCP schema would both have to learn, for four call sites. The narrowing
+  applies to `resolve` alone, deliberately: nothing on a noun answers what `list` answers, so converging
+  it by symmetry would have removed the only way to ask.
+  Date / Author: 2026-08-14 / Danilo Borges
+
+- Decision: A flag declares that it is required and what values it accepts (`ModuleFlag.required`,
+  `ModuleFlag.choices`), and this lands with Track 1 rather than Track 2.
+  Rationale: `--type`'s requirement and its domain were a hand-written conditional, copied byte-identical
+  into two verbs, and a missing flag reported the same message as a misspelt one. Track 1 is where the
+  two domains stop being equal, which is the moment two copies stop being harmless — so the declaration
+  arrives with the verb that proves it, the same argument Plan-025 recorded when it merged the source
+  seam into `harness`. Track 2 then consumes both fields for the schema instead of introducing them for
+  a consumer that does not yet exist.
+  Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: These two consolidations are a plan of their own rather than tracks inside Plan-026.
   Rationale: Both change a public contract and they influence each other — what `resolve` returns

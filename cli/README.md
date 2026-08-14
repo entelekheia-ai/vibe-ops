@@ -59,7 +59,8 @@ vibe-ops log lint                # name matches filename, kind is trap|debt, no 
 vibe-ops log sweep               # entries whose path: no longer resolves — candidates, never deletions
 vibe-ops log index               # regenerate the index from the entries; --check reports drift instead
 
-vibe-ops records resolve --type adr      # the layout block for a record type with no noun of its own
+vibe-ops records resolve --type adr|rfc  # the layout block for the two record types with no noun
+vibe-ops records list --type plan        # all four types here — nothing on a noun answers this
 
 vibe-ops @scope/pkg --flag      # a third-party module, by package name
 vibe-ops ./path/to/module       # a module you are developing

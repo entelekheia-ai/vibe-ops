@@ -44,6 +44,19 @@ export interface ModuleFlag {
    * gate. Unused on a `boolean` flag, which already has this for free.
    */
   readonly implicit?: string;
+  /**
+   * That the flag must be present. Declared rather than checked inside the module, because a
+   * requirement enforced by a hand-written conditional is a requirement each verb re-states: `records`
+   * carried the same `--type` check twice, byte-identical, and a missing flag reported the same message
+   * as a misspelt one. Only meaningful on a flag with no `default`, which would satisfy it for free.
+   */
+  readonly required?: boolean;
+  /**
+   * The closed set of values a `string` flag accepts. Declaring it here is what lets one refusal
+   * message, the terminal's `--help` and the MCP schema's enum all derive from the same list instead of
+   * three copies that drift. Never set on a `boolean` flag — its domain is already closed.
+   */
+  readonly choices?: readonly string[];
 }
 
 /**
@@ -124,6 +137,25 @@ export interface ModulePlugin {
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
+/**
+ * The three ways a flag can describe itself incoherently. Checked here rather than where the flag is
+ * read, so a module that declares itself wrongly fails at load instead of at the one call that happens
+ * to exercise the contradiction — the same argument `defineModule` already makes for duplicate names.
+ */
+function checkFlagDeclaration(flag: ModuleFlag, where: string): void {
+  if (flag.choices !== undefined) {
+    if (flag.type !== "string") {
+      throw new Error(`${where} declares choices on --${flag.name}, which is a ${flag.type} flag — its domain is already closed`);
+    }
+    if (flag.choices.length === 0) {
+      throw new Error(`${where} declares an empty choices list on --${flag.name} — a flag no value satisfies is unreachable`);
+    }
+  }
+  if (flag.required === true && flag.default !== undefined) {
+    throw new Error(`${where} declares --${flag.name} required and also gives it a default, which satisfies it for free`);
+  }
+}
+
 export function defineModule(
   definition: ModuleDefinition,
   run: (context: ModuleContext) => Promise<ModuleResult>,
@@ -138,6 +170,7 @@ export function defineModule(
   for (const flag of definition.flags ?? []) {
     if (seen.has(flag.name)) throw new Error(`module "${definition.id}" declares --${flag.name} twice`);
     seen.add(flag.name);
+    checkFlagDeclaration(flag, `module "${definition.id}"`);
   }
   if (definition.commands !== undefined) {
     if (definition.commands.length === 0) {
@@ -164,6 +197,7 @@ export function defineModule(
           throw new Error(`module "${definition.id}" command "${command.name}" declares --${flag.name} twice`);
         }
         seenCommandFlags.add(flag.name);
+        checkFlagDeclaration(flag, `module "${definition.id}" command "${command.name}"`);
       }
     }
   }

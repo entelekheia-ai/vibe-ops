@@ -1,5 +1,5 @@
 export { resolveRecord } from "./resolve.ts";
-export type { ResolvedRecord } from "./resolve.ts";
+export type { ResolvedLocation, ResolvedRecord } from "./resolve.ts";
 export { formatResolved } from "./format.ts";
 export { findHeaderTable, keysOf, valueOf } from "./header-table.ts";
 export {
