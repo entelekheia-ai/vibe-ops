@@ -111,7 +111,7 @@ multiplies the tool count against a listing budget shared with every other insta
       all nine exposed modules rather than the four nouns the test file covered.
       Task: tasks/a-schema-that-tells-the-truth.md (closed dossier — `git show 6955ea35b94d101619c15ba1804b6cfbc78c08a7:project/tasks/a-schema-that-tells-the-truth.md`)
 
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -197,7 +197,36 @@ multiplies the tool count against a listing budget shared with every other insta
 
 ## Outcomes & Retrospective
 
-<!-- Filled at each track completion. -->
+**Both tracks landed 2026-08-14.** Against the three goals: goal 1 is met — every record type resolves
+under exactly one spelling, and a test asserts that asking `records` for a type that has a noun refuses
+and names the noun. Goal 3 is met twice over, in this Decision Log and in
+[ADR-0016](../adr/0016-a-flag-is-validated-where-both-surfaces-pass-through.md).
+
+**Goal 2 is not met as written, and the wording was wrong rather than the work.** It asked for "an MCP
+tool schema that accepts what is valid for the command being called, and nothing else". No schema can do
+that while there is one tool per noun: an MCP input schema is one static object shape, so every verb's
+flags are published for every verb. What was delivered instead is a tool that *refuses* what is not valid,
+naming the sibling verb that owns it, and a schema whose every entry names the verbs that accept it. That
+is the achievable form of the same intent, and the plan should have asked for it.
+
+**The second success criterion was vacuous when written, and that is the finding worth keeping.** It reads
+"the input schema of a given `command` contains no flag that `runModule` would reject for that command" —
+and `runModule` rejected no flag at all, so any schema satisfied it. A criterion phrased against a
+component's behaviour is only as strong as the assumption that the component behaves; this one encoded an
+assumption nobody had checked. It now holds because the rejection exists, and the assertion runs over all
+nine exposed modules rather than the four the test file covered.
+
+**The third criterion is met with one exception, stated rather than papered over.** `vibe-ops check .` is
+green at 17 checks. `npm test` is 448 passing and 1 failing, and that failure predates this plan: the
+ops-governance dogfood test reports a task dossier declaring no template version, confirmed present at
+`HEAD` before any of this work, in a record belonging to another open dossier.
+
+**What the plan got most wrong was its diagnosis, and measurement corrected it twice.** The design blames
+the schema and proposes replacing it; the schema turned out to be the SDK's constraint, and the real gap
+was that nothing validated a flag on the path both surfaces share. Then two changes that looked correct by
+reasoning broke the *sibling* verb rather than the one being edited — a narrowed value domain, and a
+scoped requirement — both caught by tests, both now the widen-only rule. Three of the four things this plan
+turned on were established by running something rather than by reading it.
 
 ---
 

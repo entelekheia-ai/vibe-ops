@@ -230,7 +230,7 @@ conversation, and each spawns its own dossier when it starts.
       is, and this repository ships no skill at all. **Answered a third way**: it is not a skill of its own
       at all, it is `/vibe-ops:setup harness audit`.
       Task: tasks/the-audit-that-cannot-mis-measure.md (closed dossier — `git show e346ae7f6a0d9cc6c45f63240a114746f4235aca:project/tasks/the-audit-that-cannot-mis-measure.md`)
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Stays unchecked until the plan is actually closed; a
       track list that is otherwise complete but has this box open is not finished.
 
@@ -421,7 +421,39 @@ from rather than commands run, both were refuted in seconds, and the second was 
 correcting the first. Nothing had been built on either, so the cost was a rewrite rather than a defect —
 that is luck, not process, and it is why the Decision Log now carries a rule about it.
 
-<!-- ===== END LIVING SECTIONS ===== -->
+**Tracks 4–6 landed 2026-08-14, and the plan closes here.** Against the five goals:
+
+Goal 1 is met in mechanism and **not yet in ergonomics.** A repository declares which version of the norm
+it carries, and `harness status` prints it — but for several repositories that is one invocation each, not
+one command. The module contract hands a module exactly one repository, and the honest reading is that many
+targets are the caller's loop; the goal asked for something the contract does not offer, and neither was
+adjusted. It is recorded as still open rather than quietly reworded.
+
+Goals 3 and 4 are met and were the easiest to verify: `sync` against a target with uncommitted work leaves
+that work untouched, and produces a branch and a tag whose diff contains only paths the declaration marks
+as the norm's — run end-to-end against a scratch clone, not only asserted in tests. Goal 5 is met: the
+audit's measurements are four verbs with tests, and the skill that judges them cannot produce a number of
+its own.
+
+Goal 2 is met for what is promulgated, and **the gap is coverage rather than correctness.** `sync` writes
+one of the seven `norm` entries the declaration carries. The mechanism — the isolated tree, the staged-
+content verification, the boundary consent — works against whatever the content function returns; the
+payload is a fifth of what the boundary describes. That is written up as research rather than left as a
+retrospective line, because it is input to the next decision and not a lesson from this one.
+
+**Three defects were found by writing the documentation, not by running the code**, and none of them
+appeared in 447 tests or a 17-check gate: `sync` recorded consent and never the versions it applied, so a
+freshly promulgated repository still reported never having been promulgated to; the module never declared
+that its first argument names a repository, so every verb silently answered about the working directory;
+and the state file was covered by no ignore rule, here or in the shipped scaffold. Each surfaced from a
+sentence asserting an effect in the user's voice, which is checkable immediately in a way a unit test is
+not — a unit test asserts what the code does, the sentence asserts what the reader was promised.
+
+**What was cut, deliberately:** `sync`'s in-place mode. It exists in the design only for the case where
+isolation is unwanted, nobody has wanted it, and it is the one mode needing a clean-tree check and a
+prompt. **What remains open and is inherited by nobody yet:** which composition the two uncomposed
+detectors belong to — the same open question this plan opened with, unmoved because nothing this work did
+bears on it.
 
 ---
 
