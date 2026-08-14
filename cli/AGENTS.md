@@ -12,7 +12,7 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 |---|---|
 | [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract, the config cascade, the eita seam, and the tree-sitter document model behind `GateRunContext.documents`. **How to read a document is [its own README](packages/core/README.md)**, not restated here: the block-vs-inline split, `lineAt` over `startPosition.row`, and what `uncovered` obliges. Depends on nothing else **in this workspace**, so it builds first — but its runtime dependencies are **native**: `tree-sitter` ships prebuilt binaries for `darwin-arm64`, `darwin-x64`, `linux-x64` and `win32-x64`, **not** `linux-arm64`, which compiles from source, so `npm install` can fail there where it previously could not. **Two grammar-manifest conventions coexist** and `grammars.ts` reads both — markdown declares grammars in a `"tree-sitter"` array in its own `package.json`; yaml has no such key and ships a standalone `tree-sitter.json` with the same fields under `"grammars"`. Check a third grammar against both before assuming either is universal. |
 | [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, the **stateless** MCP server, and the `hook` surface (`src/hook.ts`) a skill-scoped `hooks:` block calls by name. Also the programmatic API a third-party module builds against. |
-| [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. `module-plan`, `module-task` and `module-log` are the three governance **nouns** (Plan-011); `module-records` answers for `adr`/`rfc`, the two record types with no noun of their own. `module-harness` (Plan-025 Track 4) is read-only against the repository it acts on — `shape`/`status`/`catalog`/`audit` — and is the first module declaring `needsSource`, so its `status` verb also reads the installed norm at `context.sourceRoot`. |
+| [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. `module-plan`, `module-task` and `module-log` are the three governance **nouns** (Plan-011); `module-records` answers for `adr`/`rfc`, the two record types with no noun of their own. `module-harness` is the first module declaring `needsSource`, so it reads the installed norm at `context.sourceRoot` as well as the repository it acts on. Five of its six verbs read — `resolve`/`shape`/`status`/`catalog`/`audit`; **`sync` is the only thing here that writes into another repository**, and it does so on a linked working tree so the target's checkout is never touched, stopping at a branch and a tag it neither merges nor pushes. What it may overwrite is `plugin/ownership.json`, read through `src/ownership.ts` — **a path with no entry there is not permission**, and the run stops. |
 | [`packages/records/`](packages/records/) | `@entelekheia/vibe-ops-records` — the governance record library the nouns share: where records live, the next number, a plan's status chain and living sections, the closure box, filing and closing, and (`shape.ts`) a record's own shape — its headings and how many entries stand under a named section, which is what `records show` projects. `entriesUnder` returns **`undefined` for an absent section and `0` for an empty one**; collapsing the two is the defect the verb exists to remove. **Action, never detection** — it mutates and resolves destinations, which is exactly what a gate may not do. It is also a second foundation package: it sorts after every `module-*` that depends on it, so `npm run build` builds it explicitly, like `core`. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. The script stays **Node-free and standalone** — `vibe-ops check --self-test` chains it with each ops's own `--self-test` above it, so one command proves every detector still fires without the runner ever needing a build. |
 | [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate; twelve of them. Nine read the document model rather than the file, and how to do that is [core's README](packages/core/README.md); only `budget` (counts lines), `bridge` (reads `git ls-files -s` for the symlink mode bit) and `fragment-parity` (holds no repository knowledge at all, see below) do not. Five have shell precedent under `module-check/sh/checks/` — `budget`, `bridge`, `check-frontmatter`, `memory-slug`, `markdown-link`; `pairing`, `claude-md-content`, `breadcrumb`, `record-header`, `template-version`, `template-heading-drift` and `fragment-parity` have none. Two are worth knowing before composing them: **`record-header`** demands `options.schema` (`adr`/`plan`/`rfc`/`task`) and throws without it, so one entry per record type — its header-table reader is shared with `packages/records/`, not duplicated; **`fragment-parity`** takes `{runner, fragment, against, options?}` and reports only what a shell fragment caught that its port missed (`port-regression`) — the comparison RFC-0001 requires before a fragment is removed; `options` forwards to the gate under test, needed because `check-frontmatter` cannot be compared under its `skill` schema without it (Plan-013). The remaining eleven fragments stay shell until an ops composes them. |
@@ -165,21 +165,30 @@ file holds the operator's preferences, and neither should restate the other. Nea
 `settings` merges one level deep so a repo overriding one module's settings does not discard the home
 file's settings for every other module.
 
-**Each directory holds two files, layered, not one.** `vibeops.config.local.*` is clone-local and
-gitignored; `vibeops.config.*` is committed. Both contribute and the local one wins per key, so a
-committed config ships fully populated while a clone overrides only what is true of that machine. The pair
+**Each directory holds three files, layered, not one.** `vibeops.config.*` is committed;
+`vibeops.config.local.*` is the operator's, clone-local and gitignored; **`vibeops.config.local.json` is
+the machine's** — the only config file this tooling itself writes, where `harness sync` records what it
+promulgated, and parsed rather than imported. All three contribute, nearest first, so a committed config
+ships fully populated while a clone overrides only what is true of that machine. The trio
 repeats at every level, which is what gives the home directory the personal-override file this section
-used to describe with no mechanism behind it. **The directory walk still outranks the pair** — a nearer
+used to describe with no mechanism behind it. **The directory walk still outranks the trio** — a nearer
 committed file beats a farther local one, asserted by a test because inverting it yields a cascade that
 still looks correct while a stale home file governs every repository. `loadOne()` therefore returns every
 match in a directory rather than the first, which is the thing to preserve if it is ever refactored:
 returning the first makes a local file *replace* the committed one it exists to layer over
 ([ADR-0014](../project/adr/0014-clone-local-configuration-layers-rather-than-replaces.md)).
 
+**The state file is a third layer, not a fourth name in the local half**, and that is not a filing
+preference: within a half the first match wins, so a clone holding both it and a `vibeops.config.local.ts`
+would silently lose one of them — the machine's state or the operator's overrides, depending on the order
+chosen, with no error either way.
+
 `harness.applied` lives there — which version of each record type was **promulgated** into this clone, not
 what any artifact was written against, which is that artifact's own frontmatter. Absence is a state and is
-never zero, and unlike `settings` it merges nearest-wins **whole**: a half-inherited map would answer for a
-repository it was never applied to.
+never zero, and unlike `settings` **the map** merges nearest-wins whole: a half-inherited one would answer
+for a repository it was never applied to. `harness.boundary` and `harness.source` beside it layer per key
+like everything else — the whole-key rule was written when `applied` was the only entry, and keeping it
+there would have had the machine's state file discard an operator's declared `source`.
 
 `.ts` is loaded by dynamic `import()` and relies on Node's native type stripping (**≥22.18**), so a
 config file costs no dependency and no build step. `.mjs` and `.js` work identically.

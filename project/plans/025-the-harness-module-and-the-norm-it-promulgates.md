@@ -211,11 +211,15 @@ conversation, and each spawns its own dossier when it starts.
       live sibling checkout) and `disabled-declared` (every `disabled:` entry names a reason, never a
       boolean).
       Task: the-harness-noun-and-the-source-it-reads-from.md (closed dossier — `git show 38104edaa41754c4bb754271f97449acbe1b3f64:project/tasks/the-harness-noun-and-the-source-it-reads-from.md`)
-- [ ] **Track 5 — `sync`: isolated working tree, branch, tag.** Promulgation as designed above, including
-      the in-place mode and its clean-tree requirement. At the end a repository can be brought to a version
-      of the norm without its working tree being disturbed, and the result is inspectable as an ordinary
-      branch before anyone merges it. **It must verify what it staged rather than trust an exit code** — an
-      ignored new path stages as nothing and says so only in a hint.
+- [x] **Track 5 — `sync`: isolated working tree, branch, tag.** Promulgation as designed above. At the end
+      a repository can be brought to a version of the norm without its working tree being disturbed, and
+      the result is inspectable as an ordinary branch before anyone merges it. **It must verify what it
+      staged rather than trust an exit code** — an ignored new path stages as nothing and says so only in a
+      hint. Shipped with `harness resolve`, which this plan left unwritten pending Plan-027 Track 1.
+      **The in-place mode was not built**, and that is a cut rather than an omission: it exists in the
+      design only for "when isolation is unwanted", nobody has wanted it yet, and it is the one mode that
+      needs a clean-tree check and a prompt — machinery whose first user should be a real need.
+      Task: [tasks/promulgation-a-branch-a-tag-and-a-boundary.md](../tasks/promulgation-a-branch-a-tag-and-a-boundary.md)
 - [ ] **Track 6 — The audit's judging half becomes a skill that calls the audit's measuring half.** Retire
       the hand-run audit's measurement steps in favour of the verbs from Track 4, leaving the skill only
       what genuinely needs a model: placing components on the guide/sensor grid, recognising an instruction
@@ -247,6 +251,41 @@ conversation, and each spawns its own dossier when it starts.
 <!-- ===== LIVING SECTIONS — maintained during the work, not written at the end ===== -->
 
 ## Decision Log
+
+- Decision: A promulgation that meets a newer ownership declaration refuses only the paths whose class
+  **widened**, and the consent that clears them is recorded in the clone as `harness.boundary`.
+  Rationale: this closes the last of this plan's open questions. Only `seed → norm` (and `repo →`
+  anything) gives this tooling authority it did not have — every other move reduces what it may do and
+  needs no permission, so refusing those too would block a repository on a change that made it safer.
+  Refusing the *whole run* on any version change was considered and rejected for the same reason at a
+  larger scale: most bumps only add an entry for a new path or reword a justification, and a gate that
+  blocks on those is switched off within the week. Recording consent rather than asking per run follows
+  the rule this plan already set for `applied` — the state is a version that was agreed to, never a switch
+  someone has to remember to clear.
+  Date / Author: 2026-08-14 / Danilo Borges
+
+- Decision: The state promulgation writes lives in `vibeops.config.local.json`, a **third layer** of the
+  config cascade rather than a fourth filename in its local half.
+  Rationale: the plan approved this work assuming a fourth filename, and measurement refuted it before a
+  line was written. `loadOne` takes the first match within each half, so a clone holding both that file
+  and a `vibeops.config.local.ts` would have loaded exactly one of them — the machine's state or the
+  operator's overrides, depending on the order chosen, silently either way. A separate layer composes
+  instead: the operator keeps declaring preferences in a file they own, and this one carries only what was
+  promulgated. It is JSON because it is written by a command rather than by a person, and a program
+  editing someone's TypeScript to change one key is a class of bug this repository does not need.
+  Consequence, recorded because it is easy to miss: `harness` merged nearest-wins *whole*, which was
+  correct while `applied` was its only key and became wrong the moment a machine-written file could rank
+  nearer than the one an operator declares `source` in. The whole-key rule now applies to the `applied`
+  map alone.
+  Date / Author: 2026-08-14 / Danilo Borges
+
+- Decision: `harness resolve` does not print through the record resolvers' shared formatter.
+  Rationale: that function answers "where does a record type live", in keys about directories, templates
+  and numbering; a harness resolution shares none of them. Routing this through it would produce one
+  function with two disjoint output sets selected by a discriminant — which is the coupling Plan-027
+  Track 1 removed, wearing the costume of the convergence it created. What the two verbs share is a
+  spelling convention for their output, not an implementation.
+  Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: The source/target seam merges into the `harness` noun rather than shipping as its own track.
   Rationale: it is one field on what a module is handed, it changes no observable behaviour, and it has
@@ -380,10 +419,9 @@ that is luck, not process, and it is why the Decision Log now carries a rule abo
   population is the mechanical apparatus, which is neither a record nor prose about machinery, and the
   precedent is that a detector whose population does not match its composition inherits the wrong
   exclusions in silence.
-- What promulgation does when the ownership declaration itself has changed between the version applied and
-  the version installed. The boundary is versioned like everything else, and a promulgation that reads the
-  new boundary to decide what it may overwrite in a repository that agreed to the old one is assuming
-  consent it does not have.
+
+<!-- The third question here — what promulgation does when the ownership declaration itself has changed —
+     was answered in Track 5 and moved to the Decision Log, where a settled question belongs. -->
 
 ## Related
 

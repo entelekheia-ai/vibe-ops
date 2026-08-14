@@ -14,6 +14,32 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — promulgation, and the verb that says where a harness is (Plan-025 Tracks 4–5)
+
+- **`vibe-ops harness sync`** brings a repository to the installed version of the norm **without touching
+  its working tree**: it builds a linked working tree of its own, writes only what `ownership.json`
+  classifies as owned by this tooling, commits, and stops at a branch and an annotated tag. It does not
+  merge and it does not push — merging is a judgement about timing that belongs to whoever works there,
+  and a branch is reviewable as an ordinary diff, which a direct write never is.
+- **It verifies what it staged rather than trusting an exit code.** A linked working tree shares the
+  repository's internal directory, so the clone's ignore list applies inside it, and `git add` on an
+  ignored path succeeds while staging nothing. Anything that did not reach the index is reported with the
+  ignore rule that caught it — file, line and pattern — and the run exits non-zero rather than leaving a
+  branch that looks complete.
+- **A path `ownership.json` does not classify stops the run.** Absence of an entry is not permission.
+- **A reclassification that widens what this tooling may overwrite needs consent.** `sync` refuses only
+  those paths, naming both classes and the declaration's own justification, and promulgates the rest;
+  `--accept-boundary <n>` records the agreement in the clone so later runs are silent. Narrowing needs no
+  consent — it can only reduce what this tooling may do.
+- **`vibe-ops harness resolve`** reports where a repository's harness surfaces are — rules, the
+  `.claude/rules` bridge, the commit hook, the manual entrypoint, the runner, the config files and the
+  artifact path. The bridge reading counts symlinks rather than files, because a copied rule stops
+  tracking its source and looks identical in a listing.
+- **`vibeops.config.local.json` is a third config layer**, the only one this tooling writes rather than
+  reads, holding what promulgation applied to a clone. It layers over the operator's own local file
+  instead of competing with it for the same slot, and is gitignored here and in the scaffold this plugin
+  ships.
+
 ### Fixed — a flag a verb does not accept is now refused, not ignored (Plan-027 Track 2)
 
 - **`runModule` validates flags**, in the one place the terminal and MCP both pass through. It never did:

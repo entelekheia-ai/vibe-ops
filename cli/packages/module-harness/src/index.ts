@@ -3,11 +3,13 @@
 // composed versus merely available, and what guides/sensors exist. Promulgation (`sync`) and the skill
 // split are separate tracks and are not this module's job.
 
-import { defineModule } from "@entelekheia/vibe-ops-core";
+import { defineModule, writeHarnessState } from "@entelekheia/vibe-ops-core";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
 import { buildAudit } from "./audit.ts";
+import { formatResolvedHarness, resolveHarness } from "./resolve.ts";
+import { sync } from "./sync.ts";
 
 export { behindEntries, formatBehind, shippedVersion, shippedVersions, TYPES } from "./status.ts";
 export type { BehindEntry, VersionedType } from "./status.ts";
@@ -17,6 +19,12 @@ export { buildCatalog } from "./catalog.ts";
 export type { Catalog, CatalogEntry } from "./catalog.ts";
 export { buildAudit, isScopedRule, lineCount } from "./audit.ts";
 export type { Audit, GuideEntry, RecordOverlayEntry, SensorEntry } from "./audit.ts";
+export { formatResolvedHarness, resolveHarness } from "./resolve.ts";
+export type { ResolvedHarness, Surface } from "./resolve.ts";
+export { classOf, entryFor, ownershipPath, readOwnership, widens } from "./ownership.ts";
+export type { Ownership, OwnershipClass, OwnershipEntry } from "./ownership.ts";
+export { boundaryRefusals, currentBranch, normContent, sync } from "./sync.ts";
+export type { RefusedPath, SyncOptions, SyncResult } from "./sync.ts";
 
 export default defineModule(
   {
@@ -25,15 +33,112 @@ export default defineModule(
     summary:
       "The read-only half: this repository's shape, whether the promulgated norm is current, what is composed vs. available, and what guides/sensors exist",
     needsSource: true,
+    // Its subject IS a repository, and usually not the one you are standing in — "which repositories are
+    // on version N?" is the question this module exists for. Without this the target path is accepted as
+    // a positional, silently ignored, and every verb answers about the working directory instead: right
+    // by accident for `.` and wrong for every other value, which is the exact defect this field was added
+    // to `check` to fix. No verb here takes positionals of its own, so consuming the first costs nothing.
+    repoFromFirstArg: true,
     commands: [
+      { name: "resolve", summary: "where this repository's harness surfaces are — rules, bridge, hook, runner, config" },
       { name: "shape", summary: "remote, hooks path, CI workflows, and commit churn by top-level directory" },
       { name: "status", summary: "which record types are behind the norm installed at --source" },
       { name: "catalog", summary: "gates/fragments available but not composed into any ops" },
       { name: "audit", summary: "guide and sensor inventory, with the governance overlay" },
+      {
+        name: "sync",
+        summary: "promulgate the installed norm onto a branch and a tag — never merged, never pushed",
+        // The only verb here that writes. It leaves the target's working tree untouched by building its
+        // own, but it does create a branch and move a tag, and neither is trivially undone by someone who
+        // did not expect them.
+        destructive: true,
+        flags: [
+          { name: "base", type: "string", description: "branch to cut the promulgation branch from (default: the target's current branch)" },
+          { name: "accept-boundary", type: "string", description: "agree to this ownership declaration version, recording it in this clone" },
+          { name: "dry-run", type: "boolean", description: "report what would be written and refused, touch nothing" },
+        ],
+      },
     ],
     flags: [{ name: "json", type: "boolean", description: "print the structured object instead of lines" }],
   },
   async (context) => {
+    if (context.command === "resolve") {
+      const resolved = resolveHarness(context.repoRoot, context.config);
+      if (context.flags["json"] !== true) for (const line of formatResolvedHarness(resolved)) context.log(line);
+      const missing = [resolved.rules, resolved.bridge, resolved.hook, resolved.entrypoint, resolved.runner].filter(
+        (one) => !one.present,
+      );
+      return {
+        code: 0,
+        summary:
+          missing.length === 0
+            ? "every harness surface is present"
+            : `${missing.length} harness surface(s) absent: ${missing.map((one) => one.path).join(", ")}`,
+        data: resolved,
+      };
+    }
+
+    if (context.command === "sync") {
+      if (context.sourceRoot === undefined) {
+        return {
+          code: 2,
+          summary: "no source root resolved (config.harness.source, --source, or CLAUDE_PLUGIN_ROOT) — there is no norm to promulgate",
+        };
+      }
+      const accept = context.flags["accept-boundary"];
+      const result = await sync({
+        repoRoot: context.repoRoot,
+        sourceRoot: context.sourceRoot,
+        base: typeof context.flags["base"] === "string" ? context.flags["base"] : undefined,
+        acceptBoundary: typeof accept === "string" ? Number(accept) : undefined,
+        agreedBoundary: context.config.harness?.boundary,
+        dryRun: context.flags["dry-run"] === true,
+      });
+
+      if (context.flags["json"] !== true) {
+        for (const one of result.written) context.log(`  norm     ${one}`);
+        for (const one of result.seeded) context.log(`  seeded   ${one}`);
+        for (const one of result.refused) context.log(`  REFUSED  ${one.path} (${one.was} → ${one.now}) — ${one.why}`);
+        for (const one of result.swallowed) context.log(`  SWALLOWED ${one.path} — ${one.rule}`);
+        if (result.branch !== undefined) context.log(`branch: ${result.branch}${result.tag === undefined ? "" : `  tag: ${result.tag}`}`);
+      }
+
+      // Refusals and swallowed paths both exit non-zero, for the same reason: each leaves the target in a
+      // state the caller did not ask for, and a zero here reads as "promulgated" on the one line anybody
+      // actually looks at.
+      if (result.refused.length > 0) {
+        return {
+          code: 3,
+          summary:
+            `${result.refused.length} path(s) refused — the installed declaration is ownership@${result.boundary.installed}` +
+            `${result.boundary.agreed === undefined ? "" : `, this clone agreed to ownership@${result.boundary.agreed}`}` +
+            `. Re-run with --accept-boundary ${result.boundary.installed} once the diff above is acceptable.`,
+          data: result,
+        };
+      }
+      if (result.swallowed.length > 0) {
+        return {
+          code: 3,
+          summary: `${result.swallowed.length} written path(s) never reached the index — the branch is incomplete, see the rule named for each`,
+          data: result,
+        };
+      }
+
+      // Consent and currency are recorded only on a run that actually finished one, never on a dry run.
+      if (context.flags["dry-run"] !== true && result.branch !== undefined && typeof accept === "string") {
+        await writeHarnessState(context.repoRoot, { boundary: result.boundary.installed });
+      }
+
+      return {
+        code: 0,
+        summary:
+          result.branch === undefined
+            ? `would write ${result.written.length} and seed ${result.seeded.length}`
+            : `${result.written.length} written, ${result.seeded.length} seeded on ${result.branch}${result.tag === undefined ? "" : ` (${result.tag})`} — not merged, not pushed`,
+        data: result,
+      };
+    }
+
     if (context.command === "shape") {
       const shape = repoShape(context.repoRoot);
       if (context.flags["json"] !== true) {

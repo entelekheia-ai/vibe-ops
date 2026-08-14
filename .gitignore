@@ -12,6 +12,12 @@ vibeops.config.local.ts
 vibeops.config.local.mjs
 vibeops.config.local.js
 
+# The machine's own layer, and the only config file this tooling writes rather than reads: `harness sync`
+# records here what it promulgated into this clone. Ignored for the same reason as the three above and
+# one more — it is written by a command rather than by a person, so tracking it would turn every
+# promulgation into a diff in a file the repository owns.
+vibeops.config.local.json
+
 # Gambiarra: the sibling path every repo under this workspace resolves the runner through.
 # The runner moved to cli/packages/module-check/sh/; seven repos still look for vibe-ops/scripts/.
 # Local symlink, never committed — the real fix is those repos moving to the CLI.

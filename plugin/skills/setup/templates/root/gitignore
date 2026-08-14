@@ -4,3 +4,12 @@ dist/
 *.tsbuildinfo
 .env
 .env.*
+
+# Clone-local configuration: what is true of one working tree on one machine, layered over the committed
+# vibeops.config.*. The .json is the machine's own layer — the one config file this tooling writes rather
+# than reads, where promulgation records the version of the norm it applied here. Tracking it would turn
+# every promulgation into a diff in a file this repository owns.
+vibeops.config.local.ts
+vibeops.config.local.mjs
+vibeops.config.local.js
+vibeops.config.local.json

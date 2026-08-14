@@ -26,12 +26,19 @@ function baseContext(overrides: Partial<Parameters<typeof harness.run>[0]> = {})
   };
 }
 
-test("harness declares its four verbs and needsSource", () => {
+test("harness declares its verbs and needsSource, and only the one that writes is destructive", () => {
   assert.deepEqual(
     harness.definition.commands?.map((c) => c.name),
-    ["shape", "status", "catalog", "audit"],
+    // `resolve` waited on Plan-027 Track 1 rather than being written alongside the other four: adding a
+    // fifth resolver while four had already diverged would have added the defect that plan removes.
+    ["resolve", "shape", "status", "catalog", "audit", "sync"],
   );
   assert.equal(harness.definition.needsSource, true);
+  assert.deepEqual(
+    harness.definition.commands?.filter((c) => c.destructive === true).map((c) => c.name),
+    ["sync"],
+    "five verbs read and one writes; a reading verb that asked for confirmation would teach people to skip it",
+  );
 });
 
 test("shape reports a boring, workflow-less, remote-less repository accurately", async () => {
