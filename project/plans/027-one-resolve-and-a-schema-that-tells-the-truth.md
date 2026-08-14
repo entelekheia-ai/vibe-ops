@@ -98,7 +98,7 @@ multiplies the tool count against a listing budget shared with every other insta
       `cli/packages/module-plan/`, `module-task/`, `module-log/`, `module-records/` and
       `cli/packages/records/src/format.ts`. At the end: asking where a record type lives has one
       spelling, and the per-type extras have one home.
-      Task: [tasks/one-resolve-and-the-flag-contract-it-needs.md](../tasks/one-resolve-and-the-flag-contract-it-needs.md)
+      Task: tasks/one-resolve-and-the-flag-contract-it-needs.md (closed dossier — `git show 6955ea35b94d101619c15ba1804b6cfbc78c08a7:project/tasks/one-resolve-and-the-flag-contract-it-needs.md`)
 
 - [x] **Track 2 — A schema per verb.** Decide between a discriminated schema per noun and one tool per
       verb, weighing the skill-listing budget, then replace the flag union in
@@ -109,7 +109,7 @@ multiplies the tool count against a listing budget shared with every other insta
       was added to `runModule` instead — which is where the plan's own criterion had always pointed, and
       where nothing was happening. Every advertised flag now names its verbs, and the assertion runs over
       all nine exposed modules rather than the four nouns the test file covered.
-      Task: [tasks/a-schema-that-tells-the-truth.md](../tasks/a-schema-that-tells-the-truth.md)
+      Task: tasks/a-schema-that-tells-the-truth.md (closed dossier — `git show 6955ea35b94d101619c15ba1804b6cfbc78c08a7:project/tasks/a-schema-that-tells-the-truth.md`)
 
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
@@ -210,3 +210,7 @@ multiplies the tool count against a listing budget shared with every other insta
 
 - [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md) — the cleanup pass these two were removed
   from, and where the measurement that found them is recorded.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show 6955ea35b94d101619c15ba1804b6cfbc78c08a7:project/tasks/one-resolve-and-the-flag-contract-it-needs.md`
+  - `git show 6955ea35b94d101619c15ba1804b6cfbc78c08a7:project/tasks/a-schema-that-tells-the-truth.md`
