@@ -14,6 +14,28 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — the `harness` module's read-only half (Plan-025 Track 4)
+
+- **`vibe-ops harness shape`** reports whether a repository has a remote, where its hooks live, what CI
+  workflows exist, and commit churn by top-level directory — the four facts every recommendation about
+  what a repository needs rests on.
+- **`vibe-ops harness status`** compares which record types were promulgated into a clone
+  (`config.harness.applied`) against what the installed norm currently ships, the same comparison the
+  `SessionStart` hook already made — the hook is now a caller of this verb instead of carrying its own
+  copy.
+- **`vibe-ops harness catalog`** reports every gate and shell fragment this install ships that is not
+  composed into anything — neither `check --list`'s commit-time fragments nor any of the three shipped
+  ops's own `--list`.
+- **`vibe-ops harness audit`** reports the measured inventory: guides (`AGENTS.md`/`CLAUDE.md`/`.agents/
+  rules/*.md`, with an exact line count and always-on/scoped split) and sensors (what runs at commit, what
+  runs in CI), plus a governance overlay of per-type record counts and how many are behind the current
+  template.
+- **A module may now declare `needsSource: true`** to receive `context.sourceRoot` — where the installed
+  norm lives, resolved as `config.harness.source` > `--source` > `CLAUDE_PLUGIN_ROOT` — alongside its
+  target repository. `harness status` is the first consumer.
+- **Two new gates, `runner-provenance` and `disabled-declared`**, written and tested but deliberately
+  composed into nothing yet.
+
 ### Added — a read verb, and commands that stop being silent (Plan-026)
 
 - **`vibe-ops records show <file>`** answers in one call what an agent was asking by grep: a record's

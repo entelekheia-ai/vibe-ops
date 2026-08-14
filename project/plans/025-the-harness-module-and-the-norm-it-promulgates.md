@@ -197,16 +197,19 @@ conversation, and each spawns its own dossier when it starts.
       version. At the end the hook exists, says nothing when the versions match, and says something
       specific and actionable when they do not.
       Task: the-foundation-the-harness-module-stands-on.md (closed dossier — `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`)
-- [ ] **Track 4 — The `harness` noun, and the source it needs to exist at all.** Formerly two tracks; see
-      the Decision Log for why they merged. The read-only half of the module — `resolve`, `shape`,
-      `catalog`, `audit`, `status` — together with the one contract change it rests on: a module is handed
-      a resolved **source** surface as well as its target, declared only by the modules that need it, so
-      promulgation can read the norm from where it is installed rather than from the repository it is
-      writing into. Carries the measurement traps this audit has historically fallen into — a glob that
-      matches nothing and reports zero everywhere, a count derived rather than taken — as tests rather than
-      as paragraphs asking a reader to be careful. Two detectors are surfaced and deliberately not
-      composed: one refusing a gate runner copied in rather than resolved, one requiring a disabled check
-      to name its reason.
+- [x] **Track 4 — The `harness` noun, and the source it needs to exist at all.** Formerly two tracks; see
+      the Decision Log for why they merged. Shipped: the contract change (`ModuleContext.sourceRoot`,
+      `ModuleDefinition.needsSource`, resolved by `runModule` as config `harness.source` > `--source` >
+      `CLAUDE_PLUGIN_ROOT`), and four of the module's five planned verbs — `shape`, `status`, `catalog`,
+      `audit`. `resolve` is **not written**: it stayed blocked on Plan-027's resolve consolidation, as
+      decided, and is not part of what shipped here. `status` absorbed the SessionStart hook's own
+      comparison rather than keeping a second copy. `catalog`'s "composed" reading turned out to need both
+      `check --list` and the three ops' own `--list`, not `check --list` alone, or every unported gate
+      would have read as a false gap. `audit` carries three measurement traps as tests, plus a fourth found
+      during manual verification (a shipped template copy leaking into the guide inventory). Two detectors
+      shipped and are deliberately not composed: `runner-provenance` (a gate runner snapshot outranking a
+      live sibling checkout) and `disabled-declared` (every `disabled:` entry names a reason, never a
+      boolean).
       Task: [the-harness-noun-and-the-source-it-reads-from.md](../tasks/the-harness-noun-and-the-source-it-reads-from.md)
 - [ ] **Track 5 — `sync`: isolated working tree, branch, tag.** Promulgation as designed above, including
       the in-place mode and its clean-tree requirement. At the end a repository can be brought to a version

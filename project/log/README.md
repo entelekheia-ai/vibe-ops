@@ -15,6 +15,12 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   A gate added to an ops whose `ignore` blankets its population under `"*"` reports `0 examined` and passes;
   the exclusion belongs to the entry that needs it, not to the ops.
 
+## `cli/packages/cli/src/`
+
+- [`harness-status-plugin-root-fallback-unverified.md`](harness-status-plugin-root-fallback-unverified.md) —
+  CLAUDE_PLUGIN_ROOT as an env-var fallback for the source/target seam is unverified for a Claude Code hook
+  subprocess specifically — do not drop the explicit --plugin/--source flag on the strength of it alone.
+
 ## `cli/packages/core/`
 
 - [`adding-a-second-tree-sitter-grammar-to-core.md`](adding-a-second-tree-sitter-grammar-to-core.md) — Two
@@ -28,6 +34,13 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   TypeScript emitter wrote a shape the receiving translator refuses at line 1, for its whole existence,
   while the shell producer beside it was ingested normally — emission succeeding says a file was written,
   never that anything can read it.
+
+## `cli/packages/gates/test/`
+
+- [`gate-fixture-population-check-outside-reporoot.md`](gate-fixture-population-check-outside-reporoot.md) —
+  A gate test whose fixture needs a path OUTSIDE repoRoot (e.g. repoRoot/..) must nest repoRoot inside its
+  own mkdtemp workspace, or parallel test files silently share the same parent directory and pollute each
+  other's fixtures.
 
 ## `cli/packages/records/src/`
 
