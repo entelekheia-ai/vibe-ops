@@ -22,7 +22,7 @@ import * as p from "@clack/prompts";
 import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type { ModuleCommand } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
-import { runModule, repoRootFrom } from "./run.ts";
+import { declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook, HOOK_SURFACES } from "./hook.ts";
@@ -116,11 +116,10 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     rest = tail;
   }
 
-  const declaredFlags = [
-    ...(plugin.definition.flags ?? []),
-    ...(commandDef?.flags ?? []),
-    ...(plugin.definition.needsSource === true ? [SOURCE_FLAG] : []),
-  ];
+  // The same list `runModule` validates against and `shapeFor` describes — one function, so the terminal
+  // cannot come to accept what MCP refuses, or the reverse. It was three hand-written copies of the same
+  // three lines, and only two of them ever ran on any given call.
+  const declaredFlags = declaredFlagsFor(plugin.definition, commandDef?.name);
   const options: Record<string, { type: "string" | "boolean" }> = {};
   for (const flag of declaredFlags) options[flag.name] = { type: flag.type };
 

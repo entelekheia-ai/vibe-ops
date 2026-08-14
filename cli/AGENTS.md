@@ -31,8 +31,18 @@ wrongly is wrong everywhere at once rather than in one surface nobody checks.
 is `argv[0]` from a terminal and the `command` field over MCP, and it is validated **in `runModule`** —
 not in `bin.ts` — because that is the one place both surfaces pass through. The same is true of
 `destructive`: the terminal confirms with a TTY prompt, MCP requires an explicit `confirm: true`, and
-neither may skip the gate by being the surface it is. A verb's own `flags` are merged with the module's
-and are only valid for that verb.
+neither may skip the gate by being the surface it is.
+
+**And of flags**, which was the sentence's aspiration and is now its behaviour. A verb's own `flags` merge
+with the module's and are valid for that verb only; `runModule` refuses anything else, naming the sibling
+verb that owns it, and enforces `required`. One list serves all three surfaces — `declaredFlagsFor` in
+[`packages/cli/src/run.ts`](packages/cli/src/run.ts), read by the terminal's parser, by that refusal, and
+by the MCP schema. Until Plan-027 Track 2 there was no refusal at all on the MCP path: an inapplicable
+flag was accepted, ignored and reported as success, which the tool's own schema invited by advertising
+every verb's flags for every verb. **A `choices` domain reaching the MCP schema is the union across every
+verb declaring that flag**, never one verb's — one static shape per tool cannot scope a domain, and
+publishing the narrower one makes a valid sibling call unconstructible. The same holds for `required`,
+which reaches the schema only when it is module-wide.
 
 **Positional arguments reach every surface.** `vibe-ops task close <dossier>…` is `args` in the MCP input
 schema too; a verb reachable from a terminal and from nowhere else is a bug, and there is a test per track

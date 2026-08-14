@@ -14,12 +14,15 @@ import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { buildServer } from "../src/mcp.ts";
+import { BUILTINS } from "../src/builtins.ts";
+import { loadModule } from "../src/resolve.ts";
+import { declaredFlagsFor } from "../src/run.ts";
 
 const NOUNS = ["plan", "task", "log", "records"];
 
-async function client(): Promise<Client> {
+async function client(modules: readonly string[] = NOUNS): Promise<Client> {
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-  const server = await buildServer(NOUNS);
+  const server = await buildServer(modules);
   const c = new Client({ name: "test", version: "0" });
   await Promise.all([server.connect(serverSide), c.connect(clientSide)]);
   return c;
@@ -186,9 +189,12 @@ test("Track 2 over MCP: <noun> resolve answers with the resolved record", async 
   const records = await call(c, "records", { repo, command: "resolve", type: "adr" });
   assert.equal(records.exitCode, 0, records.text);
 
-  // Plan-027 Track 1, over MCP: `plan` and `task` were reachable here as well as under their own nouns.
-  // The loop above is what must keep working; this is what must stop, and it must stop by naming where
-  // the answer moved rather than by reporting an unknown value.
+  // Plan-027 Track 1 removed `plan` and `task` from what `records resolve` answers for. The redirect it
+  // answers with has to survive over MCP too, and whether it does turns on a detail of Track 2: the
+  // `--type` enum is the UNION across every verb declaring the flag, because `records list` still takes
+  // all four. Publishing `resolve`'s narrower domain instead would have had the transport refuse the
+  // value with a schema error before the module ran — which reads as "no such value" rather than as
+  // "that moved", and is how a rename is experienced as a break.
   for (const [type, noun] of [["plan", "plan resolve"], ["task", "task resolve"]] as const) {
     const gone = await call(c, "records", { repo, command: "resolve", type });
     assert.equal(gone.exitCode, 2, `records resolve --type ${type} must not still answer`);
@@ -375,4 +381,81 @@ test("Track 5 over MCP: plan guard reads positionals, and records list answers p
   const listed = await call(c, "records", { repo, command: "list", type: "plan" });
   assert.equal(listed.exitCode, 0, listed.text);
   assert.equal((listed.data as unknown[]).length, 2, "both plans, whatever their closure state");
+});
+
+// ── Plan-027 Track 2 ────────────────────────────────────────────────────────────────────────────────
+// The criterion this plan set for itself was that no tool advertises an argument its command rejects.
+// It was vacuous when written, because `runModule` rejected no flag at all — so the assertion has to
+// prove the rejection exists, not merely that the schema is narrow. It cannot be narrow: one static
+// shape per tool means every verb's flags are published for every verb, and passing a discriminated
+// union instead publishes an EMPTY schema (measured 2026-08-14 against the SDK this repo depends on).
+//
+// Over all nine exposed modules, not the four nouns the rest of this file uses. The harness module and
+// the three ops were never covered here, and `harness` is the only one carrying `needsSource`.
+test("every advertised flag is either declared for the verb, or refused by name when it is not", async () => {
+  const c = await client(BUILTINS);
+  const repo = await fixture();
+  const tools = (await c.listTools()).tools;
+
+  assert.deepEqual(tools.map((t) => t.name).sort(), [...BUILTINS].sort(), "every exposed module is a tool");
+
+  const reserved = new Set(["repo", "command", "args", "confirm"]);
+  let refusalsChecked = 0;
+
+  for (const name of BUILTINS) {
+    const { definition } = await loadModule(name);
+    const tool = tools.find((t) => t.name === name)!;
+    const advertised = Object.keys((tool.inputSchema as { properties?: Record<string, unknown> }).properties ?? {})
+      .filter((key) => !reserved.has(key));
+
+    for (const command of definition.commands ?? [{ name: undefined as string | undefined }]) {
+      const declared = new Set(declaredFlagsFor(definition, command.name).map((f) => f.name));
+
+      for (const flag of advertised) {
+        if (declared.has(flag)) continue;
+
+        // Advertised for the tool, invalid for THIS verb — the exact call the union invites. It must be
+        // refused, and the refusal must name the flag, so a caller is not left to diff two lists.
+        const spec = (definition.commands ?? []).flatMap((c) => c.flags ?? []).find((f) => f.name === flag);
+        const result = await call(c, name, {
+          repo,
+          ...(command.name === undefined ? {} : { command: command.name }),
+          confirm: true,
+          [flag]: spec?.type === "boolean" ? true : (spec?.choices?.[0] ?? "x"),
+        });
+        assert.equal(result.exitCode, 2, `${name} ${command.name ?? ""} accepted --${flag}, which it does not declare`);
+        assert.match(String(result.summary), new RegExp(`--${flag}`), `the refusal must name --${flag}`);
+        refusalsChecked += 1;
+      }
+    }
+  }
+
+  // Guards the guard: if the union ever stopped over-advertising, this test would pass by examining
+  // nothing, and would keep passing after the rejection was deleted.
+  assert.ok(refusalsChecked > 0, "no over-advertised flag was exercised — this assertion proved nothing");
+});
+
+// The collision above is the one this file caught by failing, so it gets its own assertion rather than
+// being left to the general sweep. `records` declares `--type` twice with different domains and different
+// wording; the published property has to serve both verbs at once.
+test("a flag two verbs declare with different domains publishes the union, and says which wording is whose", async () => {
+  const tools = (await (await client()).listTools()).tools;
+  const type = (tools.find((t) => t.name === "records")!.inputSchema as {
+    properties: Record<string, { description?: string; enum?: string[] }>;
+  }).properties["type"]!;
+
+  assert.deepEqual(
+    [...(type.enum ?? [])].sort(),
+    ["adr", "plan", "rfc", "task"],
+    "the union, not one verb's domain — publishing `resolve`'s made `records list --type plan` unconstructible",
+  );
+  assert.match(type.description ?? "", /\[resolve\]/);
+  assert.match(type.description ?? "", /\[list\]/, "both wordings, each beside the verbs that mean it");
+  assert.match(type.description ?? "", /required for: resolve, list/);
+
+  const properties = (tools.find((t) => t.name === "records")!.inputSchema as { required?: string[] });
+  assert.ok(
+    !(properties.required ?? []).includes("type"),
+    "a scoped requirement must not reach the shared shape — records census takes no type and must stay reachable",
+  );
 });

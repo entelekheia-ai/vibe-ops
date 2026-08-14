@@ -14,6 +14,24 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — a flag a verb does not accept is now refused, not ignored (Plan-027 Track 2)
+
+- **`runModule` validates flags**, in the one place the terminal and MCP both pass through. It never did:
+  its whole flag handling applied module-level defaults and copied whatever arrived, so over MCP an
+  inapplicable flag was accepted, ignored, and reported as success. The refusal names the sibling verb
+  that owns the flag — `plan status has no flag --from — it belongs to plan file` — because the tool's own
+  schema is what invited the call.
+- **A `required` flag is enforced, and a verb's own `default` is applied.** Only module-level defaults
+  reached a module before, so a verb could declare one and never receive it.
+- **Every flag in an MCP tool's schema says which verbs accept it.** One static shape per tool means the
+  union is unavoidable while there is one tool per noun; what was avoidable was the union being silent
+  about it. A flag declaring `choices` is published as an enum, **unioned across every verb that declares
+  it** — publishing one verb's narrower domain made a valid sibling call unconstructible, which a test
+  caught rather than a reader.
+- **`vibe-ops --source` on a module that never declared `needsSource` is refused** instead of silently
+  dropped, and the MCP suggestion hook now reads flag arity from the verb it parsed rather than from every
+  verb, which could swallow a positional as a sibling flag's value.
+
 ### Changed — one spelling per record type (Plan-027 Track 1)
 
 - **`vibe-ops records resolve` answers for `adr` and `rfc` only.** `plan` and `task` were reachable both

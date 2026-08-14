@@ -100,10 +100,16 @@ multiplies the tool count against a listing budget shared with every other insta
       spelling, and the per-type extras have one home.
       Task: [tasks/one-resolve-and-the-flag-contract-it-needs.md](../tasks/one-resolve-and-the-flag-contract-it-needs.md)
 
-- [ ] **Track 2 — A schema per verb.** Decide between a discriminated schema per noun and one tool per
+- [x] **Track 2 — A schema per verb.** Decide between a discriminated schema per noun and one tool per
       verb, weighing the skill-listing budget, then replace the flag union in
       `cli/packages/cli/src/mcp.ts`. At the end: no tool advertises an argument its command rejects,
-      and `cli/packages/cli/test/mcp-nouns.test.ts` asserts it. Task: to be opened.
+      and `cli/packages/cli/test/mcp-nouns.test.ts` asserts it.
+      **Landed differently from the design, and the Decision Log says why**: the union in `mcp.ts` is the
+      SDK's constraint and could not be replaced, so the flag union stays and the *rejection* it lacked
+      was added to `runModule` instead — which is where the plan's own criterion had always pointed, and
+      where nothing was happening. Every advertised flag now names its verbs, and the assertion runs over
+      all nine exposed modules rather than the four nouns the test file covered.
+      Task: [tasks/a-schema-that-tells-the-truth.md](../tasks/a-schema-that-tells-the-truth.md)
 
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
@@ -119,6 +125,41 @@ multiplies the tool count against a listing budget shared with every other insta
 ---
 
 ## Decision Log
+
+- Decision: One tool per noun, made honest by rejection — not a discriminated schema per noun, and not
+  one tool per verb.
+  Rationale: this plan offered two options and measurement removed the first. A discriminated union
+  passed as the MCP tool's input schema publishes `{"type":"object","properties":{}}` — an empty schema,
+  measured 2026-08-14 — because the SDK's shape extraction understands object schemas and raw shapes and
+  a union is neither. The low-level server API does publish arbitrary JSON Schema verbatim, per-verb
+  branches included, but validates nothing: an argument the schema forbade reached the handler in the
+  same measurement. One tool per verb was costed and rejected: 22 verbs plus 4 flat modules is 26 tools
+  against a listing budget shared with every installed plugin, and it invalidates the
+  `<prefix>__<noun>` + `command:` pattern eight shipped skill files document. What is left is the union
+  schema, which is the SDK's constraint rather than a choice, plus the thing that was actually missing.
+  Date / Author: 2026-08-14 / Danilo Borges
+
+- Decision: The rejection lives in `runModule`, and this plan's own success criterion was vacuous until
+  it did.
+  Rationale: the criterion reads "no flag that `runModule` would reject for that command" — and
+  `runModule` rejected no flag at all. Its flag handling was a defaults loop and an `Object.assign`, with
+  a comment above it asserting the opposite. Rejection existed only on the terminal path. So narrowing
+  the schema alone would have satisfied the criterion on paper while leaving MCP accepting inapplicable
+  flags and reporting success. `runModule` is where it belongs for the reason already recorded for the
+  command and the destructive gate: it is the one place both surfaces pass through.
+  Date / Author: 2026-08-14 / Danilo Borges
+
+- Decision: A `choices` domain published in an MCP schema is the union across every verb declaring the
+  flag, and a `required` flag is marked required only when it is module-wide.
+  Rationale: found by a test, not by reasoning, and it is the same constraint twice. `records` declares
+  `--type` on two verbs with different domains; publishing `resolve`'s narrower one made
+  `records list --type plan` — a valid call — unconstructible, refused by the transport with a schema
+  error. The requirement has the identical shape: `--type` is required by `resolve` and `list` while
+  `census` must run without it, so marking the property mandatory would have made `census` unreachable.
+  One static shape per tool cannot scope either, so the schema may only describe what SOME verb accepts
+  and the per-verb narrowing belongs to `runModule` and the module. This also keeps the retirement
+  message from Track 1 reachable over MCP, which the narrow enum had swallowed.
+  Date / Author: 2026-08-14 / Danilo Borges
 
 - Decision: The noun is the spelling. `records resolve` answers for `adr` and `rfc` — the two record
   types with no noun of their own — and no longer for `plan` or `task`. `list`, `census` and `show` keep

@@ -2,8 +2,16 @@
 // behaves identically on both — the only difference is the `surface` it is told about and where its
 // log lines go.
 
-import { createEmitter, loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
-import type { ModuleContext, ModulePlugin, ModuleResult, Surface, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
+import { createEmitter, loadConfig, settingsFor, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
+import type {
+  ModuleContext,
+  ModuleDefinition,
+  ModuleFlag,
+  ModulePlugin,
+  ModuleResult,
+  Surface,
+  VibeOpsConfig,
+} from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -22,6 +30,29 @@ export interface RunOptions {
    * input. Absent on a destructive command, the run is refused rather than performed.
    */
   readonly confirmed?: boolean;
+}
+
+/**
+ * Every flag valid for one dispatched verb: the module's own, plus that verb's, plus `--source` when the
+ * module asked for a source root. The terminal builds the same list in `bin.ts` to parse against; this is
+ * the copy MCP goes through, and the two must agree or one surface accepts what the other refuses.
+ */
+export function declaredFlagsFor(definition: ModuleDefinition, command: string | undefined): readonly ModuleFlag[] {
+  const commandDef = definition.commands?.find((c) => c.name === command);
+  return [
+    ...(definition.flags ?? []),
+    ...(commandDef?.flags ?? []),
+    ...(definition.needsSource === true ? [SOURCE_FLAG] : []),
+  ];
+}
+
+/**
+ * Which OTHER verb declares this flag, if any. It is the useful half of the refusal: the union schema
+ * invites exactly this call, so "--from belongs to plan file" is the answer a caller needs, while
+ * "valid: --json" alone leaves them guessing where the flag they read about went.
+ */
+function verbDeclaring(definition: ModuleDefinition, name: string): string | undefined {
+  return definition.commands?.find((c) => (c.flags ?? []).some((f) => f.name === name))?.name;
 }
 
 export function repoRootFrom(cwd: string): string {
@@ -66,6 +97,38 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     }
   }
 
+  // Flags are validated here for the same reason the command above is, and it took until Plan-027 Track 2
+  // to notice they were not. The terminal parses with `strict: true` against exactly this set, so it has
+  // always refused an inapplicable flag; MCP passed one straight through to be ignored and reported as
+  // success, because one static schema per tool means every verb's flags are advertised for every verb.
+  // A caller that reads the schema is therefore INVITED to send a flag the verb has no use for, which is
+  // why silently dropping it is the wrong answer.
+  //
+  // Before the destructive gate, deliberately: a malformed call has not asked to run anything, and
+  // offering it a confirmation prompt first answers the wrong question.
+  const declaredFlags = declaredFlagsFor(plugin.definition, command);
+  const declaredByName = new Map(declaredFlags.map((flag) => [flag.name, flag]));
+  const verb = command === undefined ? plugin.definition.id : `${plugin.definition.id} ${command}`;
+  const accepted = declaredFlags.length === 0 ? "it accepts none" : `valid: ${declaredFlags.map((f) => `--${f.name}`).join(", ")}`;
+
+  for (const name of Object.keys(flags)) {
+    if (declaredByName.has(name)) continue;
+    const elsewhere = verbDeclaring(plugin.definition, name);
+    return {
+      code: 2,
+      summary:
+        elsewhere === undefined
+          ? `${verb} has no flag --${name} — ${accepted}`
+          : `${verb} has no flag --${name} — it belongs to ${plugin.definition.id} ${elsewhere}`,
+    };
+  }
+
+  for (const flag of declaredFlags) {
+    if (flag.required === true && flags[flag.name] === undefined) {
+      return { code: 2, summary: `${verb} needs --${flag.name} — ${flag.description}` };
+    }
+  }
+
   // A destructive run under MCP has no terminal to prompt at, and a caller that never saw a prompt has
   // not consented to anything. The terminal's own confirmation is a TTY prompt and is passed in as
   // `confirmed`; MCP's is an explicit `confirm: true` in the tool input. Neither surface may skip it by
@@ -90,10 +153,12 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
   const remainingArgs = takesRepoArg ? args.slice(1) : args;
   const { config } = await loadConfig(repoRoot);
 
-  // Defaults come from the definition, so a module reads context.flags without re-deriving them and
-  // a flag it never declared cannot silently arrive.
+  // Defaults come from the definition, so a module reads context.flags without re-deriving them — and
+  // now from the DISPATCHED VERB's declaration as well as the module's. Only module-level defaults were
+  // applied before, so a verb could declare one and never receive it: a silently wrong value rather than
+  // an error, which is the harder half of the same defect the rejection above fixes.
   const resolved: Record<string, string | boolean> = {};
-  for (const flag of plugin.definition.flags ?? []) {
+  for (const flag of declaredFlags) {
     if (flag.default !== undefined) resolved[flag.name] = flag.default;
   }
   Object.assign(resolved, flags);
