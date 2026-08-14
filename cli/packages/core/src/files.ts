@@ -127,6 +127,72 @@ export function expandTemplateToken(
 }
 
 /**
+ * The directories a record type is searched in, in order. Irregular by type — plural for some, a
+ * different stem for others — so unlike templates it cannot be generated from a prefix list, and the
+ * four the tooling ships are named. Exported because `@entelekheia/vibe-ops-records` builds its own
+ * candidate map from this rather than restating it.
+ */
+export const RECORD_DIRS: Readonly<Record<string, readonly string[]>> = {
+  adr: ["project/adr", "adr", "docs/adr"],
+  rfc: ["project/rfc", "project/rfcs", "rfc", "rfcs", "docs/rfc"],
+  plan: ["project/plans", "plans", "docs/plans"],
+  task: ["project/tasks", "tasks"],
+};
+
+/**
+ * Where a type's records could be, in search order. A type the map does not name — `log`, `research`,
+ * and any type a repository brings — gets the generic convention, which is what makes a custom type
+ * resolvable without this map growing an entry for it.
+ */
+export function recordDirCandidates(type: string): readonly string[] {
+  return RECORD_DIRS[type] ?? [`project/${type}`, type, `docs/${type}`];
+}
+
+const RECORDS_TOKEN = /<records:([a-z][a-z0-9-]*)>/g;
+
+/**
+ * `<records:<type>>` expands to where that type's records actually live — declared `records.dirs` first,
+ * then the first candidate that exists, then the first candidate.
+ *
+ * A declared directory is used **even when it does not exist**, deliberately. The records resolver throws
+ * there, which is right for a verb about to write; here it would abort a whole gate run over a
+ * misconfiguration, so the entry examines zero files against the path the repository named — visible in
+ * the report, and attributable to the declaration rather than to a search that quietly went elsewhere.
+ */
+export function expandRecordsToken(value: string, repoRoot: string, records: RecordsConfig | undefined): string {
+  if (!RECORDS_TOKEN.test(value)) {
+    RECORDS_TOKEN.lastIndex = 0;
+    return value;
+  }
+  RECORDS_TOKEN.lastIndex = 0;
+  return value.replace(RECORDS_TOKEN, (_match, type: string) => {
+    const declared = records?.dirs?.[type as RecordType];
+    if (declared !== undefined) return declared;
+    const candidates = recordDirCandidates(type);
+    return candidates.find((candidate) => existsSync(path.join(repoRoot, candidate))) ?? candidates[0]!;
+  });
+}
+
+/**
+ * Every token an ops expands, in one place, applied to `paths` and to `options` alike.
+ *
+ * One expander for both is the point: `paths` was expanded and `options` was not, so the same text meant
+ * two different things depending on which field it sat in, and nothing type-checked either.
+ */
+export function expandTokens(
+  value: string,
+  repoRoot: string,
+  pluginDir: string,
+  records: RecordsConfig | undefined,
+): string {
+  return expandRecordsToken(
+    expandTemplateToken(expandPluginToken(value, repoRoot, pluginDir), repoRoot, pluginDir, records),
+    repoRoot,
+    records,
+  );
+}
+
+/**
  * Every token an ops expands in a gate's free-form `options`, applied to string values only.
  *
  * `paths` was expanded and `options` was not, which made a path inside `options` a different kind of
@@ -143,10 +209,7 @@ export function expandOptionTokens(
 ): Readonly<Record<string, unknown>> {
   const expanded: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(options)) {
-    expanded[key] =
-      typeof value === "string"
-        ? expandTemplateToken(expandPluginToken(value, repoRoot, pluginDir), repoRoot, pluginDir, records)
-        : value;
+    expanded[key] = typeof value === "string" ? expandTokens(value, repoRoot, pluginDir, records) : value;
   }
   return expanded;
 }

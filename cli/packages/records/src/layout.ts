@@ -4,14 +4,16 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { templateCandidates } from "@entelekheia/vibe-ops-core";
+import { recordDirCandidates, templateCandidates } from "@entelekheia/vibe-ops-core";
 import type { RecordType, RecordsConfig } from "@entelekheia/vibe-ops-core";
 
+/** Built from core's own list, for the same reason CANDIDATE_TEMPLATES is: the `<records:<type>>` token
+ *  an ops expands and this resolver must agree, and two search orders drift invisibly. */
 export const CANDIDATE_DIRS: Readonly<Record<RecordType, readonly string[]>> = {
-  adr: ["project/adr", "adr", "docs/adr"],
-  rfc: ["project/rfc", "project/rfcs", "rfc", "rfcs", "docs/rfc"],
-  plan: ["project/plans", "plans", "docs/plans"],
-  task: ["project/tasks", "tasks"],
+  adr: recordDirCandidates("adr"),
+  rfc: recordDirCandidates("rfc"),
+  plan: recordDirCandidates("plan"),
+  task: recordDirCandidates("task"),
 };
 
 /** Built from core's own list rather than restated: the `<template:<type>>` token an ops expands and this

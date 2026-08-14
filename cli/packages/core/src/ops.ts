@@ -44,7 +44,7 @@ import { createEmitter, UndeclaredObservationError } from "./emit.ts";
 import {
   excludeByGlobs,
   expandOptionTokens,
-  expandPluginToken,
+  expandTokens,
   filterByGlobs,
   resolveArtifactDir,
   resolvePluginDir,
@@ -56,6 +56,7 @@ import { loadGate } from "./gate.ts";
 import type { GateFinding, GatePlugin } from "./gate.ts";
 import type { ModulePlugin, ModuleResult } from "./module.ts";
 import type { ModuleContext } from "./context.ts";
+import type { RecordsConfig } from "./config.ts";
 import path from "node:path";
 import { realpathSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -270,7 +271,12 @@ interface Resolved {
  * broken composition, and it must fail as one — halfway through a run, with three gates already
  * reported, it reads as the repository being broken instead.
  */
-async function resolveAll(definition: OpsDefinition, repoRoot: string, pluginDir: string): Promise<Resolved[]> {
+async function resolveAll(
+  definition: OpsDefinition,
+  repoRoot: string,
+  pluginDir: string,
+  records: RecordsConfig | undefined,
+): Promise<Resolved[]> {
   const resolved: Resolved[] = [];
   for (const entry of definition.gates) {
     const gate = await loadGate(entry.gate);
@@ -284,7 +290,7 @@ async function resolveAll(definition: OpsDefinition, repoRoot: string, pluginDir
     resolved.push({
       entry,
       gate,
-      patterns: declared.map((pattern) => expandPluginToken(pattern, repoRoot, pluginDir)),
+      patterns: declared.map((pattern) => expandTokens(pattern, repoRoot, pluginDir, records)),
     });
   }
   return resolved;
@@ -367,7 +373,7 @@ async function run(
   // One store per run, beside pluginDir — lazy, so it costs nothing on a run that never calls .get()
   // (--list, --help). No gate in this track reads it yet; Track 3 is the first consumer.
   const documents = createDocumentStore(context.repoRoot);
-  const resolved = await resolveAll(definition, context.repoRoot, pluginDir);
+  const resolved = await resolveAll(definition, context.repoRoot, pluginDir, context.config.records);
 
   if (context.flags["list"] === true) {
     const gates = resolved.map(({ entry, gate, patterns }) => ({

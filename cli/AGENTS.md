@@ -112,6 +112,12 @@ second concept.
   **`options` is expanded too, by the same ops** (`expandOptionTokens`), so a path there is no longer a
   different kind of string — the asymmetry this paragraph used to describe in prose is gone rather than
   documented. A gate that expands `<plugin>/` itself keeps working: the second pass finds no token.
+- **`<records:<type>>` resolves to where that type's records actually live** — declared `records.dirs`,
+  else the first existing candidate, else the first candidate. A type the map does not name (`log`,
+  `research`, one a repository brings) gets the generic `project/<type>` convention, which is what makes a
+  custom type resolvable without the map growing an entry. A **declared** directory is used even when it
+  does not exist: the entry then examines zero files against the path the repository named, which is
+  attributable, where a quiet fallback elsewhere is not.
 - **`<template:<type>>` in `options` resolves to where that type's template actually is** — the
   repository's `records.templates`, else the first existing candidate (`project/templates/`, `templates/`,
   `.agents/templates/`), else the plugin surface, which is what a repository whose templates *are* its

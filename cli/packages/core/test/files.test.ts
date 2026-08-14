@@ -8,7 +8,9 @@ import { realpathSync, statSync } from "node:fs";
 import {
   expandOptionTokens,
   expandPluginToken,
+  expandRecordsToken,
   expandTemplateToken,
+  expandTokens,
   filterByGlobs,
   resolveArtifactDir,
   resolvePluginDir,
@@ -144,6 +146,43 @@ test("expandOptionTokens expands both tokens, leaves non-strings alone, and is i
   assert.equal(expanded["depth"], 2, "a non-string option is passed through as it is");
   // A gate that expands <plugin>/ itself must keep working: a second pass finds no token.
   assert.deepEqual(expandOptionTokens(expanded, repoRoot, path.join(repoRoot, "plugin"), undefined), expanded);
+});
+
+// The same defect on the other field: an entry hardcoding `project/rfc/**/*.md` examines zero files in a
+// repository that keeps RFCs under a plural directory it declared in its own config — and zero examined
+// reports `ok`, which is the reading that says nothing while looking like everything is fine.
+test("<records:t> resolves to the directory the repository declared", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  assert.equal(expandRecordsToken("<records:rfc>/**/*.md", repoRoot, { dirs: { rfc: "project/rfcs" } }), "project/rfcs/**/*.md");
+});
+
+test("<records:t> searches when nothing is declared, and rfc's plural is one of the candidates", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  await mkdir(path.join(repoRoot, "project", "rfcs"), { recursive: true });
+  assert.equal(expandRecordsToken("<records:rfc>/*.md", repoRoot, undefined), "project/rfcs/*.md");
+});
+
+// A type the map does not name resolves by the generic convention, which is what lets a repository bring
+// a type of its own without this map growing an entry for it.
+test("<records:t> gives an unnamed type the generic convention", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  assert.equal(expandRecordsToken("<records:freeze-policy>/*.md", repoRoot, undefined), "project/freeze-policy/*.md");
+});
+
+// Deliberately not the search order: an entry examining zero files against the path the repository named
+// is attributable to the declaration, where a quiet fallback to somewhere else is not.
+test("a declared directory that does not exist is still used, so the report names it", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  await mkdir(path.join(repoRoot, "project", "rfc"), { recursive: true });
+  assert.equal(expandRecordsToken("<records:rfc>/*.md", repoRoot, { dirs: { rfc: "docs/proposals" } }), "docs/proposals/*.md");
+});
+
+test("expandTokens applies every token, so paths and options mean the same thing", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  const records = { dirs: { adr: "docs/adr" }, templates: { adr: "docs/adr/_template.md" } };
+  assert.equal(expandTokens("<records:adr>/*.md", repoRoot, repoRoot, records), "docs/adr/*.md");
+  assert.equal(expandTokens("<template:adr>", repoRoot, repoRoot, records), "docs/adr/_template.md");
+  assert.equal(expandTokens("<plugin>/skills/*", repoRoot, path.join(repoRoot, "plugin"), records), "plugin/skills/*");
 });
 
 test("filterByGlobs matches AGENTS.md against both a bare pattern and **/AGENTS.md", () => {
