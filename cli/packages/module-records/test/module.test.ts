@@ -13,7 +13,7 @@ test("records is a noun with verbs, like plan/task/log — and none of them is d
   // read as independent.
   assert.deepEqual(
     records.definition.commands?.map((c) => c.name),
-    ["resolve", "census", "handling", "show"],
+    ["resolve", "census", "handling", "show", "list"],
   );
   assert.deepEqual(
     records.definition.commands?.filter((c) => c.destructive === true),

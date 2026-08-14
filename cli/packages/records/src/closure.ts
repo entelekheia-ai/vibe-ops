@@ -49,6 +49,17 @@ export function closureBoxOpen(document: Document): boolean {
 }
 
 /**
+ * The same question for a plan: whether its `## Tracks` list still carries an unchecked box naming the
+ * closing command. `task guard` has asked it of dossiers since Plan-011 and nothing asked it of plans,
+ * which is how every plan shipped before 2026-08-12 came to carry the complaint — the box was left open,
+ * `plan status` reported terminal-with-an-unchecked-track forever, and the only reader was whoever
+ * eventually wondered why a shipped plan was still being reported.
+ */
+export function planClosureBoxOpen(document: Document): boolean {
+  return closureItems(document, "task_list_marker_unchecked", PLAN_CLOSURE_LINE).length > 0;
+}
+
+/**
  * The dossier's text with its closure box ticked, or `undefined` when there is no open box to tick.
  *
  * Splices `[x]` over the marker node's own byte range rather than running a substitution over the line:

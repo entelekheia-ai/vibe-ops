@@ -14,6 +14,7 @@ import {
   PlanCloseError,
   formatResolved,
   planModeGuidance,
+  planClosureBoxOpen,
   planStatusFindings,
   resolveRecord,
   RecordsConfigError,
@@ -62,6 +63,14 @@ export default defineModule(
         summary: "set the terminal status and move the plan into shipped/, keeping its number",
         destructive: true,
         flags: [{ name: "dry-run", type: "boolean", description: "say what would happen, change nothing" }],
+      },
+      {
+        // The symmetric of `task guard`, which has asked this of dossiers since Plan-011 while nothing
+        // asked it of plans. That asymmetry has a body count: every plan shipped before 2026-08-12 left
+        // its closure box open, so `plan status` reported each of them as terminal-with-an-unchecked-track
+        // indefinitely and nobody read the complaint.
+        name: "guard",
+        summary: "which of the given plans still have an unchecked closure box",
       },
     ],
     flags: [{ name: "json", type: "boolean", description: "print the structured object instead of KEY=value lines" }],
@@ -128,6 +137,25 @@ export default defineModule(
               ? `no plan in ${resolved.dir} has a Status disagreeing with its tracks`
               : `${findings.length} plan(s) in ${resolved.dir} have a Status disagreeing with their tracks`,
         data: { findings },
+      };
+    }
+
+    if (context.command === "guard") {
+      if (context.args.length === 0) {
+        return { code: 2, summary: "plan guard needs at least one plan path" };
+      }
+      const open = context.args.filter((file) => planClosureBoxOpen(documents.get(file)));
+      if (context.flags.json !== true) {
+        if (open.length === 0) context.log("no plan with an open closure box");
+        for (const file of open) context.log(`${file}: the closure box is still unchecked`);
+      }
+      return {
+        code: 0,
+        summary:
+          open.length === 0
+            ? `${context.args.length} plan(s) checked, none with an open closure box`
+            : `${open.length} of ${context.args.length} plan(s) still have an open closure box`,
+        data: { open },
       };
     }
 

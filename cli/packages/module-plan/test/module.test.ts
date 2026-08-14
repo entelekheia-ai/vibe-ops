@@ -16,10 +16,10 @@ async function scratchRepo(): Promise<string> {
   return dir;
 }
 
-test("plan declares its five verbs, and only close is destructive", () => {
+test("plan declares its six verbs, and only close is destructive", () => {
   assert.deepEqual(
     plan.definition.commands?.map((c) => c.name),
-    ["resolve", "status", "context", "file", "close"],
+    ["resolve", "status", "context", "file", "close", "guard"],
   );
   // `file` writes a new file and `close` moves an existing one — but only the second is irreversible in
   // the sense that matters: filing never overwrites, and the plan-mode source is still on disk.

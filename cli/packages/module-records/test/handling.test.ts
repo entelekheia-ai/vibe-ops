@@ -113,10 +113,16 @@ test("several records are answered in one call, each on its own terms", async ()
   assert.equal(data?.[1]?.dispatch?.kind, "behind");
 });
 
-test("handling with no path is an error, not an empty success", async () => {
+// Was an error until Plan-026 Track 5, on the grounds that no path must not be an EMPTY SUCCESS. That
+// concern stands and is asserted below — what changed is the answer, not the standard: `census` is this
+// same reading over the whole repository, so no path now means every record rather than a refusal.
+// An empty array with exit 0 would still be the defect the original test was written against.
+test("handling with no path is the census — a full answer, never an empty success", async () => {
   const repo = await fixture();
   const { result } = await run(repo, []);
 
-  assert.equal(result.code, 2);
-  assert.match(result.summary ?? "", /needs at least one record path/);
+  assert.equal(result.code, 0);
+  assert.ok(Array.isArray(result.data), "the whole-repository reading, not a refusal");
+  assert.ok((result.data as unknown[]).length > 0, "and never an empty array reported as success");
+  assert.match(result.summary, /censused/);
 });

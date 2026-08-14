@@ -339,3 +339,31 @@ test("Track 4 over MCP: records show reads a record through its positional, and 
   assert.equal(bare.exitCode, 2);
   assert.match(String(bare.summary), /at least one record path/);
 });
+
+// Plan-026 Track 5 over MCP: `plan guard` is the symmetric of `task guard` and takes the same shape of
+// input — positionals. Asserted here for the same reason its sibling is: a verb that works from a
+// terminal and nowhere else is the defect this file was written for.
+test("Track 5 over MCP: plan guard reads positionals, and records list answers per type", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-mcp-guard-"));
+  execFileSync("git", ["-C", repo, "init", "-q"]);
+  await mkdir(path.join(repo, "project", "plans"), { recursive: true });
+  const open = ["# Plan-001: Open", "", "## Tracks", "- [ ] Run `/vibe-ops:close-plan`", ""].join("\n");
+  const done = ["# Plan-002: Done", "", "## Tracks", "- [x] Run `/vibe-ops:close-plan`", ""].join("\n");
+  await writeFile(path.join(repo, "project", "plans", "001-open.md"), open);
+  await writeFile(path.join(repo, "project", "plans", "002-done.md"), done);
+
+  const c = await client();
+  const guarded = await call(c, "plan", {
+    repo,
+    command: "guard",
+    args: ["project/plans/001-open.md", "project/plans/002-done.md"],
+  });
+
+  assert.equal(guarded.exitCode, 0, guarded.text);
+  assert.deepEqual((guarded.data as { open: string[] }).open, ["project/plans/001-open.md"]);
+  assert.match(String(guarded.summary), /1 of 2/);
+
+  const listed = await call(c, "records", { repo, command: "list", type: "plan" });
+  assert.equal(listed.exitCode, 0, listed.text);
+  assert.equal((listed.data as unknown[]).length, 2, "both plans, whatever their closure state");
+});

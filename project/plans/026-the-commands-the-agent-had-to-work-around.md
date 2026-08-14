@@ -222,7 +222,7 @@ was reached by hook, by hand, or by `pre-commit`.
       `readTemplateVersion` already gives it the version. At the end: the five questions in the
       Summary are each one call. Task: to be opened.
 
-- [ ] **Track 5 — Sibling verbs stop diverging.** Touches `cli/packages/module-plan/`,
+- [x] **Track 5 — Sibling verbs stop diverging.** Touches `cli/packages/module-plan/`,
       `module-task/`, `module-log/` and `module-records/`. Add `plan guard`, the missing symmetric of
       `task guard`, for plans whose success criteria are unverified. Give `plan close` the
       `--plan`/`--summary-file` parity `task close` already has, so a plan closure has somewhere to
@@ -339,8 +339,43 @@ Then re-run the measurement that produced this plan and compare:
   symmetry worth having.
   Date / Author: 2026-08-13 / Danilo Borges
 
+- Decision: `plan close` does **not** gain `--plan`/`--summary-file`, contrary to Track 5 as written.
+  Rationale: The asymmetry with `task close` is real in the code and not real in the function. `--plan`
+  names the parent a dossier's breadcrumbs are appended to, and a plan has no parent plan.
+  `--summary-file` posts a comment to a tracking issue, and closing that issue is already the
+  `/vibe-ops:close-plan` skill's step, per this repository's own governance rule. Adding the flag would
+  put a second implementation of issue-posting in the CLI and leave the skill's copy in place. What is
+  worth keeping from the item is recorded here rather than built.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: `list` is one verb on `records` keyed by `--type`, not a fourth `list` on each noun.
+  Rationale: Writing the same verb once per noun is exactly how the four `resolve` implementations
+  diverged, which is the subject of Plan-027 Track 1. One implementation over `--type` cannot drift
+  against itself, and adding three more copies while a plan exists to remove four would be building the
+  problem the sibling plan is scheduled to solve.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: `log index --check` keeps working as a deprecated spelling of `--dry-run` rather than being
+  renamed outright.
+  Rationale: `--check` appears in a shipped `SKILL.md` and in the pre-commit recipes of repositories
+  this CLI does not control. Breaking those to tidy a flag name spends someone else's time on a
+  consistency they did not ask for; both spellings cost one line.
+  Date / Author: 2026-08-13 / Danilo Borges
+
+- Decision: `records handling` with no path now means the census, overriding a test that asserted it
+  must be an error.
+  Rationale: That test's stated concern was that no path must not be an *empty success*, and the
+  concern is right. Returning the whole-repository reading satisfies it — a full answer, not an empty
+  array with exit 0 — while removing a distinction the caller should never have had to make, since
+  `census` is the same function over the same files. The test now asserts the new contract and keeps
+  the original concern explicit.
+  Date / Author: 2026-08-13 / Danilo Borges
+
 - Decision: The `resolve` consolidation and the per-`command` MCP schema leave this plan for
-  Plan-027, Status Backlog.
+  Plan-027, Status Backlog. Track 5's "regroup the MCP tools" item goes with them.
+  Rationale: Regrouping which verb lives under which tool changes the tool surface an MCP client sees,
+  which is the same contract Plan-027 Track 2 is already opening. Splitting one decision across two
+  plans is how it gets made twice, differently.
   Rationale: Both change a public contract, and they influence each other — what `resolve` returns
   affects what a per-verb schema must declare. Neither should be decided under the momentum of a
   cleanup pass.
@@ -428,6 +463,32 @@ call `run()` directly, which is surface-agnostic, so `records show` had no cover
 until a test was added to `mcp-nouns.test.ts` — the file that exists because positionals once reached
 the terminal and nowhere else. It also asserts the summary arrives in the structured channel, since an
 MCP client renders `structuredContent` and discards the text.
+
+**Track 5 (2026-08-13).** `plan guard` exists, `records handling` with no path is the census, `list`
+answers per type, `--dry-run` is the one name for "do not write", and `records` declares `--json` once
+instead of per verb.
+
+The track was written as seven items and four of them were decided rather than built — each is in the
+Decision Log above with its reason, and the pattern is worth naming: **an asymmetry in the code is not
+automatically an asymmetry in the product.** `plan close` lacking `task close`'s flags looks like drift
+until you ask what they would do; `--plan` names a parent a plan does not have, and `--summary-file`
+duplicates a step the closing skill already owns.
+
+Two of the four are worth reading as a pair. `list` was specified as a verb on each noun and is instead
+one verb on `records` keyed by `--type`: adding three more copies of one verb, while Plan-027 exists to
+remove four copies of another, would have been building the problem the sibling plan is scheduled to
+solve. And the MCP regrouping moved to Plan-027 for the same reason — it changes the tool surface a
+client sees, which is the contract Track 2 there already opens.
+
+`records handling` with no path overrode a test that asserted it must be an error. The test's stated
+concern — no path must not be an empty success — is right and still holds: the census is a full answer,
+not an empty array with exit 0. The assertion changed; the standard did not.
+
+One thing the work caught in itself: `records list` first printed `(no Status)` for all 27 plans and
+basenames instead of paths, because `listMarkdownFiles` returns names relative to the directory it was
+handed and they were being run through `path.relative` a second time. The output looked entirely
+plausible. It was found by reading the output rather than by any test — which is the argument for
+looking at what a new command actually prints, not only at whether it exits 0.
 
 One failure in `npm test` is inherited, not caused here:
 `project/tasks/template-version-gate-resolves-wrong-templates-path.md` declares no template version, so

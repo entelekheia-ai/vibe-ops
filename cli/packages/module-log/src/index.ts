@@ -32,7 +32,15 @@ export default defineModule(
       {
         name: "index",
         summary: "regenerate the index from the entries themselves, grouped by path prefix",
-        flags: [{ name: "check", type: "boolean", description: "report drift and exit 1 instead of writing" }],
+        // `--dry-run` is the name every other verb in this CLI uses for "do not write" (`plan close`,
+        // `task close`). `--check` meant the same thing here and nowhere else. `--check` is kept as an
+        // accepted spelling rather than removed: it appears in a shipped SKILL.md and in the pre-commit
+        // recipes of repositories this CLI does not control, and breaking those to tidy a name is a cost
+        // paid by someone who did not choose it.
+        flags: [
+          { name: "dry-run", type: "boolean", description: "report drift and exit 1 instead of writing" },
+          { name: "check", type: "boolean", description: "deprecated spelling of --dry-run" },
+        ],
       },
       { name: "sweep", summary: "entries whose path: no longer resolves — retirement candidates, never deletions" },
       { name: "lint", summary: "name matches filename, kind is trap|debt, no status, a real attempted date" },
@@ -99,7 +107,7 @@ export default defineModule(
       const document = documents.get(indexFile);
       const next = logIndex(entries, preambleOf(document));
 
-      if (context.flags.check === true) {
+      if (context.flags["dry-run"] === true || context.flags.check === true) {
         const drifted = next !== document.text;
         if (context.flags.json !== true) {
           context.log(drifted ? `${indexFile} is out of date — run vibe-ops log index` : `${indexFile} is up to date`);

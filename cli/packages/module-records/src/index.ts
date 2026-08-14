@@ -18,7 +18,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
-import { formatResolved, resolveRecord, RecordsConfigError } from "@entelekheia/vibe-ops-records";
+import {
+  DEPTH,
+  formatResolved,
+  listMarkdownFiles,
+  resolveRecord,
+  RecordsConfigError,
+} from "@entelekheia/vibe-ops-records";
 import type { RecordType } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
@@ -58,19 +64,29 @@ export default defineModule(
       {
         name: "census",
         summary: "every record in this repository with the template version it declares",
-        flags: [JSON_FLAG],
       },
       {
         name: "handling",
         summary: "for the given record paths, the version each declares and the documents describing that shape",
-        flags: [JSON_FLAG],
       },
       {
         name: "show",
         summary: "one record read: status, sections, open tracks, accumulating entries, migrations owed",
-        flags: [JSON_FLAG],
+      },
+      {
+        // Declared here rather than as a fourth `list` on the three nouns. Every ops has `--list` and no
+        // noun had any way to answer "which plans exist and where do they stand" short of `census`, but
+        // writing the verb once per noun is how the four `resolve` implementations diverged in the first
+        // place (Plan-027 Track 1) — one implementation over `--type` cannot drift against itself.
+        name: "list",
+        summary: "every record of one type with its status and, for a plan, how many tracks are open",
+        flags: [{ name: "type", type: "string", description: "adr | rfc | plan | task" }],
       },
     ],
+    // Declared once at module level, as `plan`, `task` and `log` each declare theirs. It was repeated on
+    // every verb here — invisible over MCP, where the schema unions every verb's flags anyway, and
+    // visible only in the terminal's own `--help`.
+    flags: [JSON_FLAG],
   },
   async (context) => {
     // No `--type` here, and that is the point of it being its own verb: the census spans every type at
@@ -97,8 +113,28 @@ export default defineModule(
     // Also no `--type`, for the same class of reason: the type is resolved from where each file lives,
     // so asking for one would be asking the caller to assert what this verb exists to answer.
     if (context.command === "handling") {
+      // No paths means every record: `census` is this same function over the whole repository, reading
+      // the same `template-version` out of the same files, and asking which of two verbs answers a
+      // question that differs only in its population is a distinction the caller should not have to make.
+      // `census` stays as its own verb — it is named in shipped skills — but it is no longer the only
+      // way to ask.
       if (context.args.length === 0) {
-        return { code: 2, summary: "records handling needs at least one record path" };
+        let entries;
+        try {
+          entries = census(context.repoRoot, context.config, createDocumentStore(context.repoRoot));
+        } catch (error) {
+          if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+          throw error;
+        }
+        if (context.flags.json !== true) for (const line of formatCensus(entries)) context.log(line);
+        return {
+          code: 0,
+          summary:
+            entries.length === 0
+              ? "no governance records found in this repository"
+              : `${entries.length} record type(s) censused — handling with no path is the whole repository`,
+          data: entries,
+        };
       }
       const documents = createDocumentStore(context.repoRoot);
       const pluginDir = resolvePluginDir(context.repoRoot);
@@ -115,6 +151,49 @@ export default defineModule(
         for (const answer of answers) for (const line of formatHandling(answer)) context.log(line);
       }
       return { code: 0, summary: `${answers.length} record path(s) answered for`, data: answers };
+    }
+
+    if (context.command === "list") {
+      const type = context.flags.type;
+      if (typeof type !== "string" || !TYPES.includes(type as RecordType)) {
+        return { code: 2, summary: `--type must be one of ${TYPES.join(", ")}, got ${String(type)}` };
+      }
+      const documents = createDocumentStore(context.repoRoot);
+      const pluginDir = resolvePluginDir(context.repoRoot);
+      let resolved;
+      try {
+        resolved = resolveRecord(type as RecordType, context.repoRoot, context.config, documents);
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
+      if (resolved.dir === undefined) {
+        return { code: 0, summary: `no ${type} directory in this repository`, data: [] };
+      }
+      // The same depth `plan status` sweeps, so a shipped plan is listed rather than quietly missing —
+      // "which plans exist" includes the ones that are done.
+      // `listMarkdownFiles` returns paths relative to the directory it was handed, not absolute ones —
+      // so the repository-relative path is that name joined back onto `resolved.dir`. Getting this wrong
+      // produced a listing that looked right and reported `(no Status)` for every record, because each
+      // path resolved to nothing and an unparseable document has no header table.
+      const files = listMarkdownFiles(path.join(context.repoRoot, resolved.dir), DEPTH[type as RecordType]).map(
+        (name) => `${resolved.dir}/${name}`,
+      );
+      const rows = files.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents));
+      if (context.flags.json !== true) {
+        for (const row of rows) {
+          const tracks = row.tracks === undefined ? "" : `  ${row.tracks.open}/${row.tracks.total} open`;
+          context.log(`${(row.status ?? "(no Status)").padEnd(14)} ${row.file}${tracks}`);
+        }
+      }
+      return {
+        code: 0,
+        summary:
+          rows.length === 0
+            ? `no ${type} records in ${resolved.dir}`
+            : `${rows.length} ${type} record(s) in ${resolved.dir}`,
+        data: rows,
+      };
     }
 
     if (context.command === "show") {
