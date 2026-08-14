@@ -210,7 +210,7 @@ conversation, and each spawns its own dossier when it starts.
       shipped and are deliberately not composed: `runner-provenance` (a gate runner snapshot outranking a
       live sibling checkout) and `disabled-declared` (every `disabled:` entry names a reason, never a
       boolean).
-      Task: [the-harness-noun-and-the-source-it-reads-from.md](../tasks/the-harness-noun-and-the-source-it-reads-from.md)
+      Task: the-harness-noun-and-the-source-it-reads-from.md (closed dossier — `git show 38104edaa41754c4bb754271f97449acbe1b3f64:project/tasks/the-harness-noun-and-the-source-it-reads-from.md`)
 - [ ] **Track 5 — `sync`: isolated working tree, branch, tag.** Promulgation as designed above, including
       the in-place mode and its clean-tree requirement. At the end a repository can be brought to a version
       of the norm without its working tree being disturbed, and the result is inspectable as an ordinary
@@ -396,3 +396,6 @@ that is luck, not process, and it is why the Decision Log now carries a rule abo
 
 - Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
   - `git show e2f1e1bc0eac1b62624f3ab7379eb1dc70659fcd:project/tasks/the-foundation-the-harness-module-stands-on.md`
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show 38104edaa41754c4bb754271f97449acbe1b3f64:project/tasks/the-harness-noun-and-the-source-it-reads-from.md`
