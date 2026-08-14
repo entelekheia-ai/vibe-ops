@@ -1,0 +1,19 @@
+{
+  "name": "@entelekheia/vibe-ops-module-harness",
+  "version": "0.0.1",
+  "description": "vibe-ops harness — the read-only half: what shape this repository is in, whether the promulgated norm is current, what is composed versus available, and what guides/sensors exist",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": { "node": ">=22.18" },
+  "dependencies": {
+    "@entelekheia/vibe-ops-core": "^0.0.1",
+    "@entelekheia/vibe-ops-records": "^0.0.1"
+  },
+  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+}

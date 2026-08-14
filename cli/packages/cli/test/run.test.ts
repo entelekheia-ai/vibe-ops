@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { defineModule } from "@entelekheia/vibe-ops-core";
-import { runModule } from "../src/run.ts";
+import { runModule, resolveSourceRoot } from "../src/run.ts";
 
 const twoVerbs = defineModule(
   {
@@ -96,4 +96,36 @@ test("a module NOT declaring repoFromFirstArg keeps its positionals — a dossie
   const result = await runModule(baseOptions({ plugin: fileScoped, args: ["project/tasks/whatever.md"] }));
   const data = result.data as { args: readonly string[] };
   assert.deepEqual(data.args, ["project/tasks/whatever.md"]);
+});
+
+// `resolveSourceRoot` — most-intentional wins: declared config, then the flag on this invocation, then
+// the environment variable the hook wiring already provides. Each tier must win over every tier below it
+// on its own, independent of whichever lower tiers also happen to be present.
+
+test("resolveSourceRoot: config beats flag beats env — highest tier present wins regardless of the others", () => {
+  const env = { CLAUDE_PLUGIN_ROOT: "/env/root" };
+  assert.equal(resolveSourceRoot({ harness: { source: "/config/root" } }, "/flag/root", env), "/config/root");
+  assert.equal(resolveSourceRoot({}, "/flag/root", env), "/flag/root");
+  assert.equal(resolveSourceRoot({}, undefined, env), "/env/root");
+  assert.equal(resolveSourceRoot({}, undefined, {}), undefined, "no tier resolves — undefined, not a guess");
+});
+
+const sourceAware = defineModule(
+  { id: "source-aware", version: "0.0.1", summary: "a throwaway module that reads sourceRoot", needsSource: true },
+  async (context) => ({ code: 0, summary: "ran", data: { sourceRoot: context.sourceRoot } }),
+);
+
+const sourceBlind = defineModule(
+  { id: "source-blind", version: "0.0.1", summary: "a throwaway module that never declared needsSource" },
+  async (context) => ({ code: 0, summary: "ran", data: { sourceRoot: context.sourceRoot } }),
+);
+
+test("runModule resolves sourceRoot onto context only for a needsSource module, from the --source flag", async () => {
+  const result = await runModule(baseOptions({ plugin: sourceAware, flags: { source: "/flag/root" } }));
+  assert.deepEqual(result.data, { sourceRoot: "/flag/root" });
+});
+
+test("runModule leaves sourceRoot undefined for a module that did not declare needsSource, even with --source passed", async () => {
+  const result = await runModule(baseOptions({ plugin: sourceBlind, flags: { source: "/flag/root" } }));
+  assert.deepEqual(result.data, { sourceRoot: undefined });
 });

@@ -1,4 +1,4 @@
-export { defineModule } from "./module.ts";
+export { defineModule, SOURCE_FLAG } from "./module.ts";
 export type { ModuleCommand, ModuleDefinition, ModuleFlag, ModulePlugin, ModuleResult } from "./module.ts";
 export type { ModuleContext, Surface } from "./context.ts";
 export { loadConfig, searchPath, settingsFor } from "./config.ts";

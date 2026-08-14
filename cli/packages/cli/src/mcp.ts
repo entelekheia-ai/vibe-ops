@@ -10,6 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type { ModulePlugin } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
 import { runModule } from "./run.ts";
@@ -50,7 +51,11 @@ function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
   // an MCP input schema is one static shape per tool, not one per enum value, so a flag valid only
   // for one verb still appears for the others; the module itself rejects a flag its dispatched verb
   // does not use, the same way the terminal does.
-  const allFlags = [...(plugin.definition.flags ?? []), ...(commands ?? []).flatMap((c) => c.flags ?? [])];
+  const allFlags = [
+    ...(plugin.definition.flags ?? []),
+    ...(commands ?? []).flatMap((c) => c.flags ?? []),
+    ...(plugin.definition.needsSource === true ? [SOURCE_FLAG] : []),
+  ];
   const seen = new Set<string>();
   for (const flag of allFlags) {
     if (seen.has(flag.name)) continue;

@@ -3,7 +3,7 @@
 // log lines go.
 
 import { createEmitter, loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
-import type { ModuleContext, ModulePlugin, ModuleResult, Surface } from "@entelekheia/vibe-ops-core";
+import type { ModuleContext, ModulePlugin, ModuleResult, Surface, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -28,6 +28,21 @@ export function repoRootFrom(cwd: string): string {
   const result = spawnSync("git", ["-C", cwd, "rev-parse", "--show-toplevel"], { encoding: "utf8" });
   const found = (result.stdout ?? "").trim();
   return found === "" ? path.resolve(cwd) : found;
+}
+
+/**
+ * Where the installed norm lives, for a `needsSource` module. Most-intentional wins: a repository or
+ * operator that declared `harness.source` in config outranks the `--source` flag on this one invocation,
+ * which in turn outranks `CLAUDE_PLUGIN_ROOT` — the implicit fallback the hook wiring already provides.
+ * `undefined` when none of the three resolve; a module reading `context.sourceRoot` must treat that as
+ * "nothing to compare against", not as an error.
+ */
+export function resolveSourceRoot(
+  config: VibeOpsConfig,
+  flagValue: string | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  return config.harness?.source ?? flagValue ?? env["CLAUDE_PLUGIN_ROOT"];
 }
 
 export async function runModule(options: RunOptions): Promise<ModuleResult> {
@@ -97,6 +112,13 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
         })
       : undefined;
 
+  // Only for a module that asked for it — the same opt-in shape `emits` already has. `flags.source` is
+  // read raw here, before defaults are applied above, because there is no sensible default for it.
+  const sourceRoot =
+    plugin.definition.needsSource === true
+      ? resolveSourceRoot(config, typeof flags["source"] === "string" ? flags["source"] : undefined)
+      : undefined;
+
   const context: ModuleContext = {
     repoRoot,
     flags: resolved,
@@ -105,6 +127,7 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     config,
     settings: settingsFor(config, plugin.definition.id),
     surface,
+    sourceRoot,
     emit,
     log: sink,
     warn: (message) => sink(`warning: ${message}`),

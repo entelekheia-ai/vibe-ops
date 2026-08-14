@@ -19,7 +19,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
-import { loadConfig } from "@entelekheia/vibe-ops-core";
+import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type { ModuleCommand } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
 import { runModule, repoRootFrom } from "./run.ts";
@@ -76,7 +76,8 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
   // caller types to orient itself reads as a mistake.
   if (argv.includes("--help") || argv.includes("-h")) {
     const verbLine = commands === undefined ? [] : [`  ${plugin.definition.id} <${commands.map((c) => c.name).join("|")}>`];
-    const flagLines = [...(plugin.definition.flags ?? [])].map((f) => `  --${f.name.padEnd(12)} ${f.description}`);
+    const ownFlags = [...(plugin.definition.flags ?? []), ...(plugin.definition.needsSource === true ? [SOURCE_FLAG] : [])];
+    const flagLines = ownFlags.map((f) => `  --${f.name.padEnd(12)} ${f.description}`);
     const commandLines = (commands ?? []).flatMap((c) => [
       `  ${c.name.padEnd(10)} ${c.summary}`,
       ...(c.flags ?? []).map((f) => `      --${f.name.padEnd(12)} ${f.description}`),
@@ -115,7 +116,11 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     rest = tail;
   }
 
-  const declaredFlags = [...(plugin.definition.flags ?? []), ...(commandDef?.flags ?? [])];
+  const declaredFlags = [
+    ...(plugin.definition.flags ?? []),
+    ...(commandDef?.flags ?? []),
+    ...(plugin.definition.needsSource === true ? [SOURCE_FLAG] : []),
+  ];
   const options: Record<string, { type: "string" | "boolean" }> = {};
   for (const flag of declaredFlags) options[flag.name] = { type: flag.type };
 

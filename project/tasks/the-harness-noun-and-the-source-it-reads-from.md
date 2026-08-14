@@ -137,13 +137,13 @@ exclusions fails in silence.
 
 ## Implementation order
 
-- [ ] P0 — Item 1: add the source field and its resolution. **Delegable**: may touch the context type, its
+- [x] P0 — Item 1: add the source field and its resolution. **Delegable**: may touch the context type, its
       resolution in the CLI, and their tests; must not change how the target root is resolved; returns the
       diff and a passing run.
-- [ ] P0 — Item 1: collapse the session hook's explicit path argument onto the new seam, keeping its
+- [x] P0 — Item 1: collapse the session hook's explicit path argument onto the new seam, keeping its
       fail-open behaviour and its silence tests green.
-- [ ] P0 — Item 2: `harness shape`, with the no-remote case asserted by a fixture.
-- [ ] P0 — Item 3: `harness status`, reusing the hook's comparison rather than copying it.
+- [x] P0 — Item 2: `harness shape`, with the no-remote case asserted by a fixture.
+- [x] P0 — Item 3: `harness status`, reusing the hook's comparison rather than copying it.
 - [ ] P1 — Item 4: `harness catalog`, reading the composed set from the existing report.
 - [ ] P1 — Item 5: `harness audit`. **Not delegable** — what counts as a guide, and what its cost means,
       is the judgement this plan exists to make; a subagent returns a plausible inventory that drifts.
@@ -155,8 +155,15 @@ exclusions fails in silence.
 
 <!-- Filled while the work happens. An entry written from memory at the end is worthless. -->
 
-- Observation: …
-  Evidence: …
+- Observation: `CLAUDE_PLUGIN_ROOT` as an environment variable — the seam's tier 3 — cannot be trusted as
+  the *only* way the session hook learns where the norm is installed.
+  Evidence: `plugin/references/harness-pair.md:130` states `${CLAUDE_PLUGIN_ROOT}` is "usually unset" for
+  a process this plugin spawns, citing `resolve_runner()`'s own header — measured for the shell runner's
+  invocation path, not this hook's, but no equivalent measurement exists for the SessionStart hook either.
+  Resolution: `harness-status.ts` keeps its `--plugin <dir>` flag (unchanged in `hooks.json`) and passes it
+  into `resolveSourceRoot` as the flag tier, so tier 3 is an added fallback rather than the only path —
+  the hook does not regress if the env var turns out to be unset in practice. Tier 3 is unverified for
+  this specific invocation path and should not be relied on alone until it is.
 
 ## Closure
 

@@ -76,6 +76,13 @@ export interface RecordsConfig {
  */
 export interface HarnessConfig {
   readonly applied?: Partial<Record<RecordType | "log", number>>;
+  /**
+   * Where this repository's norm comes from — the root a `needsSource` module reads templates and
+   * ownership declarations from. Highest-priority tier of the three the CLI resolves (declared config,
+   * then `--source`, then `CLAUDE_PLUGIN_ROOT`): a repository or operator that has said so explicitly
+   * outranks an invocation flag or an environment variable set by the surrounding hook wiring.
+   */
+  readonly source?: string;
 }
 
 export interface VibeOpsConfig {

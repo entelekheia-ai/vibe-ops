@@ -97,7 +97,25 @@ export interface ModuleDefinition {
    * (`task close <dossier>…`) must not set it.
    */
   readonly repoFromFirstArg?: boolean;
+  /**
+   * That this module reads from the installed norm, not only from the repository it acts on, and needs
+   * `context.sourceRoot` resolved. Set by a module comparing the target against what is installed —
+   * `harness status` is the first. Absent means `sourceRoot` is never populated, even if a `--source`
+   * flag or `CLAUDE_PLUGIN_ROOT` happen to be present, the same opt-in shape `emits` already has.
+   */
+  readonly needsSource?: boolean;
 }
+
+/**
+ * The `--source` flag every `needsSource` module gets, without declaring it itself. One definition so the
+ * terminal's parser, its `--help` output, and the MCP tool schema describe the same flag rather than three
+ * hand-written copies drifting apart.
+ */
+export const SOURCE_FLAG: ModuleFlag = {
+  name: "source",
+  type: "string",
+  description: "Root of the installed norm to compare against. Falls back to config.harness.source, then CLAUDE_PLUGIN_ROOT.",
+};
 
 export interface ModulePlugin {
   readonly definition: ModuleDefinition;

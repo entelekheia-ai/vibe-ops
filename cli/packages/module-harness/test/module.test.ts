@@ -1,0 +1,71 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import harness from "../src/index.ts";
+
+async function gitRepo(): Promise<string> {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-module-"));
+  spawnSync("git", ["-C", repoRoot, "init", "-q"]);
+  return repoRoot;
+}
+
+function baseContext(overrides: Partial<Parameters<typeof harness.run>[0]> = {}): Parameters<typeof harness.run>[0] {
+  return {
+    repoRoot: "",
+    flags: {},
+    args: [],
+    config: {},
+    settings: undefined,
+    surface: "cli",
+    log: () => {},
+    warn: () => {},
+    ...overrides,
+  };
+}
+
+test("harness declares its four verbs and needsSource", () => {
+  assert.deepEqual(
+    harness.definition.commands?.map((c) => c.name),
+    ["shape", "status", "catalog", "audit"],
+  );
+  assert.equal(harness.definition.needsSource, true);
+});
+
+test("shape reports a boring, workflow-less, remote-less repository accurately", async () => {
+  const repoRoot = await gitRepo();
+  const result = await harness.run(baseContext({ repoRoot, command: "shape" }));
+  assert.equal(result.code, 0);
+  const data = result.data as { hasRemote: boolean; workflowFiles: readonly string[] };
+  assert.equal(data.hasRemote, false);
+  assert.deepEqual(data.workflowFiles, []);
+});
+
+test("status: no sourceRoot resolved reports nothing to compare against, not an error", async () => {
+  const repoRoot = await gitRepo();
+  const result = await harness.run(baseContext({ repoRoot, command: "status" }));
+  assert.equal(result.code, 0);
+  assert.deepEqual((result.data as { behind: readonly unknown[] }).behind, []);
+});
+
+test("status: sourceRoot present but this clone was never promulgated to — silent, not zero", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  const result = await harness.run(baseContext({ repoRoot, command: "status", sourceRoot }));
+  assert.equal(result.code, 0);
+  assert.match(result.summary, /never been promulgated/);
+});
+
+test("status: a type behind the installed norm is reported", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  await mkdir(path.join(sourceRoot, "templates"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "templates", "plan.md"), "---\nvibe-ops-template: plan@3\n---\n");
+  const result = await harness.run(
+    baseContext({ repoRoot, command: "status", sourceRoot, config: { harness: { applied: { plan: 2 } } } }),
+  );
+  assert.equal(result.code, 0);
+  assert.deepEqual((result.data as { behind: readonly unknown[] }).behind, [{ type: "plan", applied: 2, shipped: 3 }]);
+});
