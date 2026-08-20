@@ -1,0 +1,98 @@
+---
+vibe-ops-template: plan@3
+---
+
+<!--
+ Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ https://www.apache.org/licenses/LICENSE-2.0
+-->
+
+# Plan-032: The ownership verb, and the configuration it writes
+
+| Field | Value |
+|---|---|
+| Status | Backlog |
+| Created | 2026-08-20 |
+| Author | Danilo Borges |
+| Depends on | [Plan-031](031-ownership-fragments-and-the-shaped-class.md) |
+| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) |
+
+> **This is a deliberate stub, not an unfinished plan.** RFC-0003 scoped this work out on purpose: the
+> model works with a hand-written declaration, and the verb cannot be specified without settling whether
+> the committed configuration stays executable or becomes a serialised form a tool can edit safely — a
+> repository-wide question that must not be decided on the strength of one verb. The RFC that settles the
+> configuration format is this plan's first deliverable, and the tracks below are placeholders until it
+> is accepted.
+
+---
+
+## Summary
+
+Plan-031 leaves the ownership declaration readable everywhere and writable only by hand. This plan adds
+the surface: an `ownership` noun whose reads return the effective class with its origin and whose write
+touches only the repository's own layer — after an RFC settles what that layer is serialised as. The shape
+to follow is the one RFC-0003 already names: a read returns the effective value, a read with origins says
+where each came from, a write names the layer it touches. It is its own noun, not a verb group under the
+module that promulgates — four actors read the declaration, and promulgation is only one of them.
+
+## Goals
+
+*Placeholders until the format RFC is accepted; refine then.*
+
+- The format RFC: whether the committed configuration gains a serialised member a tool may edit, and what
+  the cascade's committed half accepts. Written and accepted before any verb code.
+- `ownership get <path>` / `ownership list --show-origin` over Plan-031's composition.
+- `ownership set <glob> <class> --reason` writing the repository's layer only, refusing a widening by
+  naming the fragment it would override, refusing a bare class without a reason.
+
+## Scope
+
+### In scope
+
+The format RFC; the three verbs; nothing else.
+
+### Out of scope
+
+- Everything Plan-031 ships — the verb consumes it.
+- Any write to another package's fragment: the repository's layer is the only writable one.
+
+## Design
+
+*Not yet designed — pending the format RFC. The constraints it must honour are recorded in RFC-0003
+("Reading and writing the declaration is derived work") and are not restated here.*
+
+## Tracks
+
+- [ ] **Track 1 — The configuration-format RFC.** Drafted, reviewed, accepted.
+- [ ] **Track 2 — The verbs.** *Placeholder; specified after Track 1.*
+- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+      issue closed. The plan file itself is kept.
+
+## Success criteria
+
+*Not yet defined — set with Track 1's RFC.*
+
+---
+
+## Decision Log
+
+- Decision: This plan stays a stub until its format RFC exists; no track is refined before it.
+  Rationale: specifying the verb first would decide the format implicitly, which is the exact failure
+  RFC-0003's scope decision exists to prevent.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+## Outcomes & Retrospective
+
+(No outcomes yet.)
+
+---
+
+## Related
+
+- [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the scope decision that created this
+  plan, and the constraints the verb must honour.

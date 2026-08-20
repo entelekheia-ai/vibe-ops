@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) |
+| Related | [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) · absorbed by [Plan-031](031-ownership-fragments-and-the-shaped-class.md) Track 3, which closes this plan as its acceptance run |
 
 ---
 
