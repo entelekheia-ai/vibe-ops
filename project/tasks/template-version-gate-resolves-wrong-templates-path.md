@@ -1,3 +1,7 @@
+---
+vibe-ops-template: task@3
+---
+
 # Task: The template-version gate resolves the wrong templates/ path in a flat consumer repo
 
 | Field | Value |
@@ -67,10 +71,26 @@ regression.
 
 ## Implementation order
 
-- [ ] P0 — Decide which side moves: `ops-governance`'s template path, or `setup repo`'s write location
-- [ ] P0 — Apply the fix in `packages/ops-governance/src/index.ts` (or the setup skill's Step 2)
-- [ ] P0 — Add a flat-repo-shaped fixture to the gate/ops test suite so this regresses loudly next time
-- [ ] P1 — `vibe-ops governance --verbose` against each consumer repo; record what newly surfaces
+- [x] P0 — Decide which side moves: **neither.** Both options in item 1 were rejected and a third was
+      taken — a token expanded by the ops from the repository's own `records.templates` declaration.
+      Recorded as [ADR-0017](../adr/0017-a-composition-names-a-location-by-token-not-by-path.md) with the
+      rejected alternatives.
+- [x] P0 — Applied as `<template:<type>>` in the six `template-version` entries, plus
+      `expandTemplateToken`/`expandOptionTokens` in `cli/packages/core/src/files.ts`. `options` is now
+      expanded exactly as `paths` always was.
+- [x] P0 — The same defect on the directory side was fixed in the same pass: `<records:<type>>` replaced
+      ten literal `project/<dir>/` paths, so `records.dirs` finally reaches what examines.
+- [x] P0 — Regression tests added in `cli/packages/core/test/files.test.ts`, each confirmed to fail
+      without its fix.
+- [x] P1 — Verified against a consumer repository: the six `template-version` entries went from `SKIP` to
+      examining, and the RFC entries from `0 examined` to 25. The summary moved from `13 gates, 0 failed`
+      to `13 gates, 3 failed, 9 warned`. Of the new findings, one is a real defect (a record missing
+      `Created` and `Author`) and two are non-records living in a record directory, which that repository
+      resolves with the `ignore` declaration it already uses for another gate.
+
+**Divergence from the plan of record:** item 1 offered two options and predicted the first was "smaller
+and more localized". Neither was taken. Both hardcode a layout guess in the place the first guess was
+already wrong, and neither consults the declaration the repository had already made.
 
 ## Surprises & Discoveries
 
@@ -100,4 +120,4 @@ regression.
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.
