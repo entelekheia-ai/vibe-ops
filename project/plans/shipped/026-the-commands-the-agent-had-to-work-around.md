@@ -471,7 +471,7 @@ level.
 
 Two defects predate this work, were confirmed against a clean checkout, and are untouched: two typecheck
 errors in `cli/packages/core/test/` (`config.test.ts:103`, `ops.test.ts:113`), and
-`project/tasks/template-version-gate-resolves-wrong-templates-path.md` carrying no
+the `template-version-gate-resolves-wrong-templates-path` dossier (closed 2026-08-20; `git show 7dffec8:project/tasks/template-version-gate-resolves-wrong-templates-path.md`) carrying no
 `vibe-ops-template` stamp, which is the single failing test in a suite of 396. That dossier's own subject
 — the `template-version` gate reading `<plugin>/templates/` while `setup` writes `project/templates/` —
 is also untouched and still live.
@@ -635,7 +635,7 @@ on it) and that monitors do not exist at all (they do — in the *plugins* refer
 which is where it looked). Neither error would have been visible from the answer alone.
 
 One failure in `npm test` is inherited, not caused here:
-`project/tasks/template-version-gate-resolves-wrong-templates-path.md` declares no template version, so
+the `template-version-gate-resolves-wrong-templates-path` dossier (closed 2026-08-20; `git show 7dffec8:project/tasks/template-version-gate-resolves-wrong-templates-path.md`) declares no template version, so
 `template-version-undeclared` fails against this repository's own checkout. Stamping it is a migration
 action and belongs to `/vibe-ops:migrate`, not to this track.
 
