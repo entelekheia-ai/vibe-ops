@@ -1,5 +1,5 @@
 ---
-vibe-ops-reference: authoring-style@1
+vibe-ops-reference: authoring-style@2
 ---
 
 # Authoring style — how a generated document is written
@@ -26,6 +26,30 @@ An instruction file is read as guidance, so hedged prose reads as optional.
 Two properties make a line worth its space: it is **specific** (a command, a path, a name — not a
 sentiment) and it is **falsifiable** (a reader can check it against the repo and find it wrong). A line
 nobody can prove wrong is a line nobody can maintain.
+
+## Direct and literal
+
+Plain, literal language is an accessibility feature, not a stylistic preference: it keeps a document
+readable for neurodivergent readers, non-native speakers, and anyone skimming under pressure — and
+experts prefer it too
+([NN/g](https://www.nngroup.com/articles/plain-language-experts/);
+[W3C COGA](https://www.w3.org/TR/coga-usable/)).
+
+- **State every claim positively, never as the negation of its opposite.** Litotes and
+  negation-as-emphasis ("not optional", "no small task", a heading shaped "X is not Y") make the reader
+  compute the assertion instead of reading it. Write "required", "a large task", "X becomes Z". Factual
+  negation stays when the negation *is* the finding ("the endpoint does not support batch"). Double
+  negatives are always out
+  ([W3C COGA, Avoid Double Negatives](https://www.w3.org/TR/coga-usable/#avoid-double-negatives-or-nested-clauses-pattern)).
+- **Literal over figurative.** Irony and sarcasm read as their surface meaning to part of every audience,
+  and a committed document has no tone of voice to correct them
+  ([W3C COGA, Use Literal Language](https://www.w3.org/TR/coga-usable/#use-literal-language-pattern)).
+  One licensed exception: a light, pointed touch on a finding that is itself a reversal — a measurement
+  contradicting its own documentation. The literal statement must still stand beside it, and the default
+  count per document is zero.
+- **Short sentences, one idea each, active voice.** Split anything past ~25 words with nested clauses.
+- **Define or drop uncommon terms.** No invented vocabulary; an unavoidable coinage is defined at first
+  use ([W3C COGA, Use Clear Words](https://www.w3.org/TR/coga-usable/#use-clear-words-pattern)).
 
 ## A map, not a narrative
 

@@ -14,6 +14,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — `authoring-style` gains a "Direct and literal" section (`authoring-style@2`)
+
+- **`plugin/references/authoring-style.md` moves to `@2`**: every claim is stated positively (litotes and
+  negation-as-emphasis are out, double negatives always), language is literal by default with one licensed
+  pointed exception for a finding that is itself a reversal, sentences stay short and active, and uncommon
+  terms are defined or dropped. Grounded in plain-language and cognitive-accessibility guidance
+  ([NN/g](https://www.nngroup.com/articles/plain-language-experts/),
+  [W3C COGA](https://www.w3.org/TR/coga-usable/)); applies to every skill that writes prose into a target
+  repository.
+
 ### Changed — the harness audit is a mode of `/vibe-ops:setup`, and stops composing shell (Plan-025 Track 6)
 
 - **`/vibe-ops:setup harness audit` is the assessment**, rather than a separate skill. Its survey calls
