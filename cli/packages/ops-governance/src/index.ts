@@ -22,16 +22,81 @@
 // one nobody reads.
 
 import { defineOps } from "@entelekheia/vibe-ops-core";
+import type { OpsGateEntry } from "@entelekheia/vibe-ops-core";
+
+/**
+ * The entries that restate a type's own `schema.required`, exported so this package's test can hold each
+ * one to `plugin/types/<t>/type.json` — the same reason `ops-self` exports its fixture notes: an
+ * assertion written against a copy of the object cannot prove anything about the object.
+ *
+ * TEMPORARY BY CONSTRUCTION (Plan-030 Track 2). The restatement exists only until Track 3 derives these
+ * entries from the installed units; the literals, this export and that test are deleted together.
+ */
+export const RESTATED_TYPE_ENTRIES: readonly OpsGateEntry[] = [
+  {
+    gate: "record-header",
+    label: "record-header-adr",
+    options: { type: "adr", required: ["Status", "Date", "Deciders"] },
+    paths: ["<records:adr>/*.md"],
+  },
+  {
+    gate: "record-header",
+    label: "record-header-plan",
+    options: { type: "plan", required: ["Status", "Created", "Author"] },
+    paths: ["<records:plan>/*.md"],
+  },
+  {
+    gate: "record-header",
+    label: "record-header-rfc",
+    options: { type: "rfc", required: ["Status", "Created", "Author"] },
+    paths: ["<records:rfc>/**/*.md"],
+  },
+  {
+    gate: "record-header",
+    label: "record-header-task",
+    options: { type: "task", required: ["Status", "Created", "Author", "Issue"] },
+    paths: ["<records:task>/*.md"],
+  },
+  // `log` carries its fields in YAML frontmatter rather than a header table, which is why it has no
+  // `record-header` entry and is not missing one — a second carrier, not an absent facet. Its ten real
+  // entries all declare all six keys, so this lands green rather than as a declared backlog.
+  {
+    gate: "record-frontmatter",
+    label: "record-frontmatter-log",
+    options: { type: "log", required: ["name", "description", "kind", "path", "attempted", "source"] },
+    paths: ["<records:log>/*.md"],
+    // A log entry missing four of the six. The decoy beside it is complete: a gate reporting on every
+    // file it examined would fire on both, and only one of them is a finding.
+    fixture: {
+      expect: ["record-frontmatter-log"],
+      files: {
+        "project/log/incomplete.md": "---\nname: incomplete\ndescription: one line\n---\n\n# x\n",
+        "project/log/complete.md": [
+          "---",
+          "name: complete",
+          "description: one line",
+          "kind: trap",
+          'path:\n  - "src/**"',
+          "attempted: 2026-08-20",
+          "source: a commit",
+          "---",
+          "",
+          "# x",
+          "",
+        ].join("\n"),
+      },
+    },
+  },
+];
 
 export default defineOps({
   id: "governance",
   version: "0.0.1",
   summary: "The governance surface: records, links and archival references",
   gates: [
-    { gate: "record-header", label: "record-header-adr", options: { schema: "adr" }, paths: ["<records:adr>/*.md"] },
-    { gate: "record-header", label: "record-header-plan", options: { schema: "plan" }, paths: ["<records:plan>/*.md"] },
-    { gate: "record-header", label: "record-header-rfc", options: { schema: "rfc" }, paths: ["<records:rfc>/**/*.md"] },
-    { gate: "record-header", label: "record-header-task", options: { schema: "task" }, paths: ["<records:task>/*.md"] },
+    // The five entries that restate their type's own `schema.required` — see the constant above,
+    // and the test that holds each one to `plugin/types/index.json` while the restatement lasts.
+    ...RESTATED_TYPE_ENTRIES,
     // Emits: a record's declared version is a series worth watching — the population grows, versions
     // move, and what is still behind is exactly the reading Plan-012 exists to produce.
     {

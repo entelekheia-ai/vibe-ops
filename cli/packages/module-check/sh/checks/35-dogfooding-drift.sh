@@ -83,6 +83,7 @@ check_dogfooding_drift() {
     "plugin/templates/task.md::skills/setup/templates/project/templates/task.md" \
     "plugin/templates/adr.md::skills/setup/templates/project/templates/adr.md" \
     "plugin/templates/rfc.md::skills/setup/templates/project/templates/rfc.md" \
+    "plugin/templates/log.md::skills/setup/templates/project/templates/log.md" \
     ".agents/rules/governance.md::skills/setup/templates/agents/rules/governance.md" \
     "GOVERNANCE.md::skills/setup/templates/root/GOVERNANCE.md" \
   ; do

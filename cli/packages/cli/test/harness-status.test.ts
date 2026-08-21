@@ -23,16 +23,14 @@ async function gitRepo(): Promise<string> {
   return repoRoot;
 }
 
-/** A plugin directory shipping the versions given, in the same `templates/<type>.md` layout the real one uses. */
+/** A plugin directory shipping the versions given, in the `types/index.json` layout `shippedVersion()`
+ *  now reads (Plan-030 Track 1). */
 async function pluginDir(versions: Readonly<Record<string, number>>): Promise<string> {
   const dir = await mkdtemp(path.join(tmpdir(), "vibeops-plugin-"));
-  await mkdir(path.join(dir, "templates"), { recursive: true });
-  for (const [type, version] of Object.entries(versions)) {
-    await writeFile(
-      path.join(dir, "templates", `${type}.md`),
-      `---\nvibe-ops-template: ${type}@${version}\n---\n\n# ${type}\n`,
-    );
-  }
+  await mkdir(path.join(dir, "types"), { recursive: true });
+  const index: Record<string, { version: number }> = {};
+  for (const [type, version] of Object.entries(versions)) index[type] = { version };
+  await writeFile(path.join(dir, "types", "index.json"), JSON.stringify(index));
   return dir;
 }
 

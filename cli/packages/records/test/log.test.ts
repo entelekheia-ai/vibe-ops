@@ -197,3 +197,36 @@ test("index: the row carries the entry's own description, wrapped, not a paraphr
   assert.equal(text, long);
   for (const line of row.split("\n")) assert.ok(line.length <= 110, `line too long: ${line}`);
 });
+
+// Plan-030 Track 2. A block scalar's header is syntax, not value: without stripping it the description
+// travels as `>- the actual sentence` into the generated index and into every hook that injects one.
+// Found by `project/log/README.md` rendering exactly that, on a real entry.
+test("readFrontmatter strips a block scalar's header rather than folding it into the value", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-frontmatter-"));
+  const file = "entry.md";
+  await writeFile(
+    path.join(repo, file),
+    ["---", "name: x", "description: >-", "  first line", "  second line", "kind: trap", "---", "", "# x", ""].join("\n"),
+  );
+  const frontmatter = readFrontmatter(createDocumentStore(repo).get(file));
+  assert.equal(frontmatter?.scalars.get("description"), "first line second line");
+  assert.deepEqual(frontmatter?.keys, ["name", "description", "kind"]);
+});
+
+// A leading backtick is a RESERVED INDICATOR in YAML — a plain scalar may not start with one, so the
+// parse dies at that line and every key below it is silently dropped. That is what took four keys off a
+// real log entry and kept it out of the index entirely.
+test("a plain scalar opening with a backtick breaks the parse — the block form is what carries it", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-frontmatter-"));
+  await writeFile(
+    path.join(repo, "broken.md"),
+    ["---", "name: x", "description: `code` leads", "kind: trap", "---", "", "# x", ""].join("\n"),
+  );
+  await writeFile(
+    path.join(repo, "fixed.md"),
+    ["---", "name: x", "description: >-", "  `code` leads", "kind: trap", "---", "", "# x", ""].join("\n"),
+  );
+  const store = createDocumentStore(repo);
+  assert.ok(!readFrontmatter(store.get("broken.md"))!.keys.includes("kind"), "the parse stops at the backtick");
+  assert.ok(readFrontmatter(store.get("fixed.md"))!.keys.includes("kind"), "the block form parses through");
+});

@@ -1,0 +1,11 @@
+{
+  "type": "plan",
+  "template": "../../templates/plan.md",
+  "authoring": "../../references/records/plan.md",
+  "migrations": "../../skills/migrate/migrations",
+  "schema": { "carrier": "table", "required": ["Status", "Created", "Author"] },
+  "numbered": true,
+  "pad": 3,
+  "depth": 2,
+  "dirs": ["project/plans", "plans", "docs/plans"]
+}

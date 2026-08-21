@@ -85,8 +85,8 @@ test("catalog dispatches to buildCatalog and reports the shape", async () => {
 test("status: a type behind the installed norm is reported", async () => {
   const repoRoot = await gitRepo();
   const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
-  await mkdir(path.join(sourceRoot, "templates"), { recursive: true });
-  await writeFile(path.join(sourceRoot, "templates", "plan.md"), "---\nvibe-ops-template: plan@3\n---\n");
+  await mkdir(path.join(sourceRoot, "types"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "types", "index.json"), JSON.stringify({ plan: { version: 3 } }));
   const result = await harness.run(
     baseContext({ repoRoot, command: "status", sourceRoot, config: { harness: { applied: { plan: 2 } } } }),
   );

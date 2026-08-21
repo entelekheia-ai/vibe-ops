@@ -1,7 +1,10 @@
 ---
 vibe-ops-template: log@2
 name: asking-resolveplugindir-where-the-tool-keeps-its-own-files
-description: `resolvePluginDir` answers "where is the TARGET's plugin surface", so using it to locate files the tooling ships — templates, migration notes — resolves to the target's root in a flat repo, where nothing writes; the failure is a silent SKIP or a blocking `unhandled`, never an error.
+description: >-
+  `resolvePluginDir` answers "where is the TARGET's plugin surface", so using it to locate files
+  the tooling ships — templates, migration notes — resolves to the target's root in a flat repo,
+  where nothing writes; the failure is a silent SKIP or a blocking `unhandled`, never an error.
 kind: trap
 path:
   - "cli/packages/core/src/files.ts"

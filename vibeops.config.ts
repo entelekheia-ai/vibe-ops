@@ -44,6 +44,10 @@ export default {
         // entries and carries no version of its own, so scoping it in would report a permanent finding
         // nobody can close — the shape of a check people learn to ignore.
         "template-version-log": ["project/log/README.md", "project/log/RETIRED.md"],
+        // The same two files, for the same reason, against the entry that reads their frontmatter keys
+        // rather than their version. Two entries over one directory need the exclusion each — `ignore`
+        // is keyed by label and additive, never inherited from a sibling.
+        "record-frontmatter-log": ["project/log/README.md", "project/log/RETIRED.md"],
       },
       // Research is deliberately outside the versioning scheme: the type has no template of its own and
       // its shape is not settled (Plan-012). Declared and disabled rather than left out of the

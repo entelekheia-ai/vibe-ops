@@ -8,7 +8,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate-type-index": "node scripts/generate-type-index.ts"
   },
   "engines": { "node": ">=22.18" },
   "dependencies": { "@entelekheia/vibe-ops-core": "^0.0.1" },

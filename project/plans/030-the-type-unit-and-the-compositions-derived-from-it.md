@@ -26,18 +26,20 @@ vibe-ops-template: plan@3
 
 ## Summary
 
-A record type's data facets — template, authoring rules, migration notes, declared directory and header
-schema — live today in three unrelated plugin directories and two CLI packages, found by five different
-conventions. This plan gathers them into **one per-type unit** that a package ships and a root resolves,
-and makes the governance ops **derive** its entries from installed type declarations instead of
-hand-writing ten literal entries for six types. It also draws the boundary RFC-0003 needs and the
+A record type's data facets — template, authoring rules, migration notes, numbering and header schema —
+live today in four unrelated plugin directories and two CLI packages, found by six different conventions,
+one of which is a second copy of the template kept in step by hand. This plan gives a type **one
+declaration** that a package ships and a root resolves, and makes the governance ops **derive** its
+entries from installed type declarations instead of hand-writing ten literal ones. It also draws the
+boundary RFC-0003 needs and the
 2026-08-14 architecture research measured: each ops declares who it serves, so what adoption composes into
 a target repository stops including entries that only make sense here.
 
 ## Goals
 
-- One resolvable unit per type holding its data facets, shipped by a package, found through a root list
-  (installed norm first, repository second) — the shape the migration notes already have, generalised.
+- One resolvable unit per type declaring its data facets, shipped by a package, found through a root list
+  (repository first, installed norm second — the order `migrationsDir()` already implements) — the shape
+  the migration notes already have, generalised.
 - `ops-governance`'s per-type entries (`record-header-<t>`, `template-version-<t>`) are generated from the
   installed types, so a new type gets both entries without an edit here.
 - Every ops declares its audience (portable vs this-repository-only); `fragment-parity` leaves the
@@ -49,8 +51,9 @@ a target repository stops including entries that only make sense here.
 
 ### In scope
 
-The unit's layout and resolver; deriving `ops-governance` entries; the audience field on ops; moving the
-three prose facets of the four shipped types into their units.
+The manifest and its resolver; the header schema as data; deriving `ops-governance` entries; the one
+mechanism for what a type duplicates today (the `setup` copy, the per-type skill) and the move it enables;
+the audience field on ops.
 
 ### Out of scope
 
@@ -70,27 +73,74 @@ facets need the same property. Today they are scattered:
 | Facet | Today | Convention |
 |---|---|---|
 | template | `plugin/templates/<t>.md` | flat directory |
-| authoring rules | `plugin/references/records/<t>.md` | flat directory, different root |
+| the same template, again | `plugin/skills/setup/templates/project/templates/<t>.md` | a second copy, held in step by `35-dogfooding-drift.sh` |
+| authoring rules | `plugin/references/records/<t>.md` | flat directory, different root, **own version axis** (`vibe-ops-reference: records/<t>@N`) |
 | migration notes | `plugin/skills/migrate/migrations/<t>-A-to-B.md` | name-encoded jumps |
-| directory / pad / depth / status chain | `cli/packages/records/src/layout.ts`, `status.ts` | TypeScript constants |
-| header schema | `cli/packages/gates/src/record-header/` | TypeScript, keyed by `options.schema` |
+| pad / depth / candidate dirs | `cli/packages/records/src/layout.ts` | TypeScript constants |
+| header schema | `cli/packages/gates/src/record-header/`, `check-frontmatter/` | TypeScript, keyed by `options.schema` |
 
-The unit gathers them under one folder per type (working layout below; the track settles names), resolved
-through a root list the same way config cascades — nearest declaration wins, absence falls through:
+Two facets a first reading expects here are deliberately absent. **The status chain is not one:**
+`plan-fields.ts` reads it from the resolved template's own `Status lifecycle:` marker, falling back to the
+repository's governance rule, so the number already has an authority and a second one would contradict it.
+**Nor is "the records directory":** `layout.ts` holds a *search order in a target repository*, which
+`records.dirs` overrides — where a type is defined and where its artefacts live are different questions,
+and merging them is what made an earlier draft of this table read as if a type owned a directory.
 
-```text
-<root>/types/<name>/
-  template.md            # carries its own vibe-ops-template stamp
-  authoring.md           # what /new loads for this type
-  migrations/<a>-to-<b>.md
-  type.json              # dir, pad, depth, status chain, header schema — data, not code
+**The unit is a manifest, not a folder.** A path in this repository is load-bearing rather than an
+address: the authoring rules declare their version *as their path* and a check matches the two, a
+migration note's type is parsed out of its filename, `template-heading-drift` attributes dropped sections
+by that same prefix, and the drift check pairs each template with its second copy. A manifest declaring
+where each facet already sits costs none of that, and a package shipping a self-contained folder declares
+that geometry just as well:
+
+```json
+// <root>/types/<name>/type.json — data, never executable
+{
+  "type": "adr",
+  "template": "../../templates/adr.md",
+  "authoring": "../../references/records/adr.md",
+  "migrations": "../../skills/migrate/migrations",
+  "schema": { "carrier": "table", "required": ["Status", "Date", "Deciders"] },
+  "numbered": true, "pad": 4, "depth": 1,
+  "dirs": ["project/adr", "adr", "docs/adr"]
+}
 ```
 
+**Moving this repository's own five types into self-contained folders is Track 4**, taken up once the
+unit is proven — the declaration and the reorganisation are independent, and only the second carries risk.
+
+**Two authorities, because there are two populations.** The norm's own facets are generated, so the CLI
+reads a generated index shipped inside the plugin tree itself — `plugin/types/index.json`, never an npm
+package's `dist/`. (`sourceRoot`, the one thing this index has to serve, means the installed plugin tree
+throughout this codebase — `shippedVersion()` already reads `sourceRoot/templates/<type>.md`, never a
+`dist/` path — and no package here generates data into `dist/` today; both npm `exports` maps are closed
+besides.) A target repository has no build, so its artefacts' own headers are the authority there. That
+split is the pair `vibe-ops harness status` already compares, and it is why resolution runs repository
+first.
+
 **Deriving the ops entries** replaces this hand-kept block in `cli/packages/ops-governance/src/index.ts`:
-ten literal entries for six types, each new type costing two more. Derived, an entry pair
-(`record-header-<t>` with the unit's schema, `template-version-<t>` with `<template:<t>>`) is emitted per
-installed type. RFC-0001's doctrine is unchanged — the ops still owns population and emission; what
-changes is where the entry list comes from.
+ten literal entries, each new type costing more. Derived, each installed type emits a
+`template-version-<t>` entry against its own template, plus the entry its `schema.carrier` calls for —
+`record-header-<t>` for a `table` carrier, `record-frontmatter-<t>` for a `frontmatter` one.
+RFC-0001's doctrine is unchanged: the ops still owns population and emission; what changes is where the
+entry list comes from.
+
+**The entries are not a uniform pair, and the carrier is why.** `log` carries `name`, `description`,
+`kind`, `path`, `attempted` and `source` in YAML frontmatter rather than a `| Field | Value |` table, so
+its absence from the `record-header` entries is a second carrier and not a missing facet. Each carrier
+maps 1:1 onto its own gate — `table` to `record-header`, `frontmatter` to `record-frontmatter`, the
+symmetric sibling Track 2 adds. **`check-frontmatter` is not that gate and is never made into it**: its
+three schemas are not field lists but per-schema logic, its population is the instruction surface rather
+than records, and two `fragment-parity` entries pin it to the shell fragments it is being compared
+against. `research` is the genuine irregularity — it has no template, borrows `<template:plan>`, and sits
+disabled in `vibeops.config.ts`. It entered by mistake and is **removed rather than modelled**; the
+freeze-status type it was standing in for arrives from `dot-agent` already conforming.
+
+So the composed output changes by exactly two entries, both declared in advance, and they land in
+different tracks: `log` gains the frontmatter entry it never had **in Track 2**, where the gate that
+serves it is written and proved against the ten real entries under `project/log/`;
+`template-version-research` disappears **in Track 3**. Everything else is byte-identical, and a difference
+outside those two is a defect.
 
 **The audience boundary** is the 2026-08-14 research finding made mechanical: 9 of 17 shell fragments and
 several composed entries only make sense in a repository that publishes a Claude Code plugin, and today
@@ -100,25 +150,55 @@ installs is filtered by it.
 
 ```mermaid
 flowchart LR
-    P["installed packages"] --> D["type declarations"]
-    D --> G["derived entries:<br/>record-header-&lt;t&gt;<br/>template-version-&lt;t&gt;"]
-    G --> O["ops-governance<br/>(portable)"]
+    R["target repository"] --> U["type declaration<br/>(repository first)"]
+    P["installed packages"] --> U
+    U --> V["template-version-&lt;t&gt;<br/>always"]
+    U --> C{"schema.carrier"}
+    C -- table --> H["record-header-&lt;t&gt;"]
+    C -- frontmatter --> F["record-frontmatter-&lt;t&gt;"]
+    V --> O["ops-governance<br/>(portable)"]
+    H --> O
+    F --> O
     X["fragment-parity,<br/>ops-self entries"] --> I["internal audience —<br/>never composed into a target"]
 ```
 
 ## Tracks
 
-- [ ] **Track 1 — The unit and its resolver.** Layout settled, the four shipped types' prose facets moved
-  in (with backwards-compatible reads from the old paths during the move), resolution through the root
-  list. Exists at the end: `records resolve --type adr` answers from the unit. Acceptance: existing tests
-  green; a fixture unit in a temp root resolves.
+- [ ] **Track 1 — The unit and its resolver.** The manifest schema, the resolver over the two roots, one
+  unit per shipped type pointing at where its facets already sit, and the generated index that is the
+  norm's authority. **Nothing moves.** Exists at the end: a fixture unit in a temp root resolves every
+  facet. Acceptance: existing tests green; the fixture resolves; `vibe-ops governance .` output unchanged,
+  because Track 1 composes nothing.
   Task: [tasks/type-unit-and-resolution-roots.md](../tasks/type-unit-and-resolution-roots.md)
-- [ ] **Track 2 — Entries derived from installed types.** `ops-governance` builds its per-type entries
-  from the declarations. Exists at the end: a fixture type gains both entries with no edit to this
-  repository. Acceptance: `vibe-ops governance .` output identical for the shipped types before/after
-  (diffed), plus the fixture case.
+- [ ] **Track 2 — The header schema becomes data.** `record-header` takes its required-field list from
+  `options` instead of a closed union of four literals it throws outside of, and `options.schema` becomes
+  `options.type` because it now names a type rather than selecting a schema. The `frontmatter` carrier
+  gets `record-frontmatter`, a symmetric sibling — **not** an extension of `check-frontmatter`, whose
+  schemas are logic rather than field lists and which two `fragment-parity` entries pin in place. `log`'s
+  entry is composed here, where the gate serving it can be proved against ten real records rather than a
+  fixture alone. Exists at the end: a type the tooling ships nowhere gets a header entry with no gate
+  edit. Acceptance: `governance` output diffed before/after differs only by the added
+  `record-frontmatter-log` entry; a gate test with an invented type produces `record-header-<that type>`.
+  Task: [tasks/header-schema-becomes-data.md](../tasks/header-schema-becomes-data.md)
+- [ ] **Track 3 — Entries derived from installed types.** `ops-governance` builds its per-type entries
+  from the declarations, keyed by carrier; the `required` literals Track 2 wrote into those entries — and
+  the guard holding them to the manifests — are deleted together, because the derivation supersedes both.
+  The `research` entry is deleted rather than derived. **The structural change this cannot avoid:**
+  `OpsDefinition.gates` is a static array today, read once at `defineOps` time for the emit-id check and
+  iterated per run, so an entry list computed from the repository being run against needs that field to
+  become a function of it. Exists at the end: a fixture type gains its entries with no edit to this
+  repository. Acceptance: `vibe-ops governance .` output diffed before/after, differing only by the
+  removed `research` entry (`log`'s landed in Track 2), plus the fixture case.
   Task: [tasks/ops-entries-derived-from-type-data.md](../tasks/ops-entries-derived-from-type-data.md)
-- [ ] **Track 3 — The audience boundary.** `audience` declared on ops and entries; `fragment-parity` out
+- [ ] **Track 4 — What the unit derives, and the move.** One generation mechanism for both artefacts a
+  type duplicates today: the `setup` template copy and the per-type `/new-<t>` skill, whose `paths:`
+  frontmatter is the only reason those skills exist separately. Generated at build for this plugin's own
+  types, at adoption into the target repository's `.claude/skills/` for a type an external package brings
+  — a package cannot inject a `SKILL.md` into this plugin. The five shipped types move into
+  self-contained folders here, once there is something proven to move them into. Exists at the end:
+  `35-dogfooding-drift.sh`'s pair list is empty because nothing is duplicated by hand.
+  Task: (to be written)
+- [ ] **Track 5 — The audience boundary.** `audience` declared on ops and entries; `fragment-parity` out
   of the portable composition; `ops-self` marked internal; what adoption/consumers see is filtered.
   Exists at the end: composing "portable only" over a plugin-less fixture repo yields no
   plugin-shaped SKIPs. Acceptance: the before/after SKIP count on such a fixture.
@@ -130,7 +210,13 @@ flowchart LR
 
 - A fixture package's type is usable end to end — `/new` creates from its template and authoring rules,
   the governance ops examines it, `/migrate` applies its notes — with zero edits to this repository.
-- `vibe-ops governance .` findings for the four shipped types are byte-identical before and after Track 2.
+- `vibe-ops governance .` findings for the shipped types are byte-identical across Tracks 2 and 3, except
+  the two differences Design declares in advance and assigns to a track each: `log`'s frontmatter entry
+  gained in Track 2, `research` removed in Track 3.
+- No gate holds a list of the types this repository ships. Passing an invented type name and a field list
+  to `record-header` or `record-frontmatter` produces findings under that name, with nothing edited here.
+- Nothing that a type owns is written twice by hand: `35-dogfooding-drift.sh` has no pair left to compare,
+  and adding a type adds no file to `plugin/skills/`.
 - A repository that publishes no plugin, composed with portable audience only, reports no entry that can
   only skip there.
 
@@ -145,6 +231,97 @@ flowchart LR
   them re-opens it unrecorded.
   Date / Author: 2026-08-20 / Danilo Borges
 
+- Decision: The unit is a manifest declaring where each facet sits, not a folder the facets move into.
+  The five shipped types stay where they are until Track 4.
+  Rationale: four mechanisms read a facet's path as meaning rather than as an address — the authoring
+  rules' version *is* their path under `references/` and a check matches the two, a note's type is parsed
+  from its filename, `template-heading-drift` attributes dropped sections by that prefix, and the drift
+  check pairs each template with a second copy. Moving first would put all four inside the track that was
+  supposed to only define the unit.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: Resolution is repository first, installed norm second.
+  Rationale: it is the order `migrationsDir()` already implements and `records.dirs` already practises,
+  and this tooling does not run continuously — norm-first would impose a shape at the moment somebody
+  updated an unrelated package.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: No version dimension in the unit's path. Old shapes are reconstructed from the migration
+  chain, never stored as copies.
+  Rationale: carrying versions serves *creating* an artefact at an old version, which nothing needs; the
+  chain already serves *reading and migrating* one, which is the case that exists. It is the split
+  between Rails/Flyway-style migration chains and Rust-edition/Kubernetes-style multi-version carry, and
+  this tooling only needs the first. The honest cost: `template-heading-drift` keeps reconstructing the
+  old shape from the notes' tables rather than diffing against a stored template.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: The header schema is typed by carrier (`table` or `frontmatter`), not a bare field list.
+  Rationale: `log` declares its required fields in YAML frontmatter, so its absence from the
+  `record-header` entries is a second carrier rather than a missing facet — and a bare list would have
+  derived an entry for a gate that cannot read it. The carrier is also what keeps Track 3's byte-identical
+  criterion satisfiable.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: `research` is deleted rather than modelled. The freeze-status type it stood in for arrives
+  from `dot-agent` conforming to the unit.
+  Rationale: it entered by mistake, has no template of its own, and every generalisation built to
+  accommodate it would be a permanent shape carrying a temporary error.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: the generated index (Track 1, item 5) is shipped inside the plugin tree
+  (`plugin/types/index.json`), not an npm package's `dist/`, correcting this Design section's earlier
+  "shipped in `dist`" wording.
+  Rationale: measured while planning Track 1's execution — `shippedVersion()`, the one reader this index
+  has to serve, takes `sourceRoot`, which means the installed plugin tree everywhere else in this
+  codebase (it already reads `sourceRoot/templates/<type>.md`, never a `dist/` path); no package here
+  writes generated data into `dist/` today (plain `tsc`, no bundler, no prebuild hook in any of the 13
+  packages); and both npm packages' `exports` maps are closed, so a `dist/*.json` would not even be
+  reachable. `dist` was the wrong word for what this Design section meant by "the norm's own facets have
+  a build" — the plugin tree, not an npm package, is what gets distributed.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: the index's drift check is a **gate** composed into `ops-self`, not a shell fragment under
+  `module-check/sh/checks/`.
+  Rationale: it was first written as `36-type-index-drift.sh`, on a misreading of `cli/AGENTS.md`'s "the
+  checks are shell and stay shell" — a sentence that protects the existing seventeen fragments from being
+  rewritten, and says nothing about where a NEW detector belongs. RFC-0001 already answers that: gate plus
+  ops entry is the unit, and the direction of travel is one way. The port is strictly better, which is the
+  evidence the misreading cost something: as a gate it declares `fixable` and `--fix type-index-drift`
+  regenerates the index, it names which type drifted rather than only that the file did, and it rebuilds
+  through the same `buildTypeIndex` the generator calls instead of re-deriving a subset of fields in `jq`
+  that would silently stop covering any key the index later gains. `cli/AGENTS.md` was corrected so the
+  sentence cannot be read that way again.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: the `frontmatter` carrier gets its own gate, `record-frontmatter`, and `check-frontmatter` is
+  never made into it.
+  Rationale: measured while elaborating Track 2. `check-frontmatter`'s three schemas are not required-field
+  lists — the only presence check is `description`, identical for all three, and everything else is
+  per-schema logic (a line heuristic for an unquoted value containing `": "`, a three-key forbidden list
+  for `agent`, an enum on `isolation`). Its population is the instruction surface, not records. And two
+  `fragment-parity` entries compare it against `40-frontmatter.sh` and `45-skill-frontmatter.sh`, so its
+  behaviour is pinned until those fragments retire — the comparison RFC-0001 requires. A symmetric sibling
+  keeps each carrier mapping onto exactly one gate and leaves that comparison untouched.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: `record-header`'s `options.schema` is renamed `options.type`; the finding rule and the entry
+  label stay `record-header-<type>`.
+  Rationale: with the field list arriving as data the option names a record type rather than selecting a
+  schema, and the distinction earns its keep — `schema` selects behaviour, which is what `check-frontmatter`
+  genuinely does. The rule and label are held fixed deliberately: `ignore`, `disabled` and `--fix` key on
+  the label, `level` keys on the rule first, and the emitted artifact uses both, so changing either would
+  silently unbind repository configuration from the entries it names.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: in Track 2 the entries carry their `required` list literally, guarded by a test that holds it
+  to `plugin/types/index.json`; Track 3 deletes the literals and the guard together.
+  Rationale: the alternative — the ops naming the manifest path and the gate reading it, as
+  `template-version` does with `options.template` — removes the duplication outright, but Track 3 already
+  resolves the unit to build the entry list, so the gate would re-read a file the ops just read and the
+  path form would be thrown away. The literal is the shape the derivation produces. The duplication it
+  creates is real, so it is closed by a mechanical guard rather than by intending to get to Track 3.
+  Date / Author: 2026-08-20 / Danilo Borges
+
 ## Outcomes & Retrospective
 
 (No outcomes yet — filled at each major track completion and at the end.)
@@ -153,10 +330,20 @@ flowchart LR
 
 ## Open questions
 
-- Whether `plugin/templates/` can be fully vacated or must keep reading copies for artifacts that predate
-  the move (the stamp-in-HTML-comment population `plugin/AGENTS.md` documents).
+- Whether `plugin/templates/` can be fully vacated in Track 4 or must keep reading copies for artifacts
+  that predate the move (the stamp-in-HTML-comment population `plugin/AGENTS.md` documents).
 - Whether an entry-level audience is needed at all, or the ops-level field covers every real case — decide
-  from the actual classification pass in Track 3, not in advance.
+  from the actual classification pass in Track 5, not in advance.
+- **A promulgation hash, for [Plan-031](031-ownership-fragments-and-the-shaped-class.md).** `harness.applied`
+  records a *version* per type, which answers "is this behind?" and cannot answer "was this edited?".
+  Recording a hash of what was written would let a `norm` path be overwritten knowing whether anything is
+  being destroyed. It belongs with the ownership fragments rather than here, and is raised now so 031 is
+  not written without it.
+- **`harness.applied` is clone-local and should not be.** It lives in `vibeops.config.local.json`, which is
+  git-ignored, so two clones of one repository can hold different target versions with neither detectably
+  wrong. Moving it to a committed file must not move it into `vibeops.config.ts` — that file is
+  hand-written and executable, and the tooling editing someone's TypeScript is the bug class the local
+  JSON exists to avoid. A committed *state* file is the shape; it blocks nothing in this plan.
 
 ## Related
 

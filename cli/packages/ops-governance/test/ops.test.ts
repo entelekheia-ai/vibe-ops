@@ -7,7 +7,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import ops from "../src/index.ts";
+import ops, { RESTATED_TYPE_ENTRIES } from "../src/index.ts";
 import { loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext } from "@entelekheia/vibe-ops-core";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
@@ -55,6 +55,7 @@ test("--list composes every entry, in order: the record-header schemas, the temp
       "record-header-plan",
       "record-header-rfc",
       "record-header-task",
+      "record-frontmatter-log",
       "template-version-adr",
       "template-version-plan",
       "template-version-rfc",
@@ -157,4 +158,36 @@ test("against this repository's own checkout — records behind their template w
     logs.some((line) => line.includes("SKIP  [template-version-research]")),
     "research is excluded by a stated reason, never by silence",
   );
+});
+
+// THE GUARD THAT MAKES THE DUPLICATION SAFE, and it is temporary by construction (Plan-030 Track 2).
+// Each entry restates the `required` list its type's manifest already declares, because Track 3 has not
+// yet derived these entries from the installed units. Until it does, a manifest edited without its entry
+// — or the reverse — would diverge in silence: both files stay individually well-formed, and the gate
+// keeps reporting against whichever list it was handed. Track 3 deletes the literals and this test in
+// the same change.
+//
+// Asserted against the exported entries themselves rather than against `--list` output, which carries no
+// options: a copy of the object could not prove anything about the object.
+test("every entry's required list still agrees with the type unit it restates", async () => {
+  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
+  const { readFileSync } = await import("node:fs");
+  const index = JSON.parse(readFileSync(path.join(repoRoot, "plugin", "types", "index.json"), "utf8")) as Record<
+    string,
+    { schema: { required: readonly string[] } }
+  >;
+
+  assert.ok(RESTATED_TYPE_ENTRIES.length > 0, "there are entries carrying a restated field list");
+  for (const entry of RESTATED_TYPE_ENTRIES) {
+    const type = entry.options?.["type"] as string | undefined;
+    assert.ok(type !== undefined, `${entry.label} declares no options.type`);
+    const declared = index[type]?.schema.required;
+    assert.ok(declared !== undefined, `plugin/types/index.json has no entry for "${type}"`);
+    assert.deepEqual(
+      entry.options?.["required"],
+      declared,
+      `${entry.label} restates a field list that plugin/types/${type}/type.json no longer declares`,
+    );
+    assert.equal(entry.label, `${entry.gate}-${type}`, "label and rule must coincide — config keys on both");
+  }
 });

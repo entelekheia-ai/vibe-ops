@@ -13,21 +13,28 @@ export const TYPES = ["adr", "rfc", "plan", "task", "log"] as const;
 export type VersionedType = (typeof TYPES)[number];
 
 /**
- * The version a shipped template declares, from its own `vibe-ops-template: <type>@<n>` frontmatter — the
- * same line /migrate reads. Matched against the type being asked for rather than accepted from any
- * `<word>@<n>`: a template that was copied from its neighbour and kept the source's token would otherwise
- * report a version belonging to a different document, which is the failure mode that looks like an answer.
+ * The version a shipped type ships, read from `<sourceRoot>/types/index.json` — Plan-030 Track 1. That
+ * file is generated from every `types/<name>/type.json` and each template's own `vibe-ops-template: <type>@<n>`
+ * frontmatter (`cli/packages/records/scripts/generate-type-index.ts`), never hand-edited, so this no
+ * longer reads a template file directly. `undefined` when `sourceRoot` predates the index (an older
+ * install shipping no `types/` at all), when the index has no entry for `type`, or when it declares no
+ * version — a missing answer, never a guessed one, matching every other reader in this codebase.
  */
 export async function shippedVersion(sourceRoot: string, type: VersionedType): Promise<number | undefined> {
   let text: string;
   try {
-    text = await readFile(path.join(sourceRoot, "templates", `${type}.md`), "utf8");
+    text = await readFile(path.join(sourceRoot, "types", "index.json"), "utf8");
   } catch {
     return undefined;
   }
-  const match = new RegExp(`^vibe-ops-template: ${type}@(\\d+)$`, "m").exec(text);
-  if (match?.[1] === undefined) return undefined;
-  return Number.parseInt(match[1], 10);
+  let index: Partial<Record<string, { version?: unknown }>>;
+  try {
+    index = JSON.parse(text) as Partial<Record<string, { version?: unknown }>>;
+  } catch {
+    return undefined;
+  }
+  const version = index[type]?.version;
+  return typeof version === "number" ? version : undefined;
 }
 
 export interface BehindEntry {

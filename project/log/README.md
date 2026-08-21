@@ -30,6 +30,10 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 
 ## `cli/packages/core/src/`
 
+- [`asking-resolveplugindir-where-the-tool-keeps-its-own-files.md`](asking-resolveplugindir-where-the-tool-keeps-its-own-files.md) —
+  `resolvePluginDir` answers "where is the TARGET's plugin surface", so using it to locate files the tooling
+  ships — templates, migration notes — resolves to the target's root in a flat repo, where nothing writes;
+  the failure is a silent SKIP or a blocking `unhandled`, never an error.
 - [`emitting-an-observation-nothing-can-read.md`](emitting-an-observation-nothing-can-read.md) — The
   TypeScript emitter wrote a shape the receiving translator refuses at line 1, for its whole existence,
   while the shell producer beside it was ingested normally — emission succeeding says a file was written,

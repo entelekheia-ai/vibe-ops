@@ -17,13 +17,18 @@ function git(cwd: string, args: readonly string[]): string {
   return (result.stdout ?? "").trim();
 }
 
-/** An installed norm: the templates promulgation would write, and the declaration that classifies them. */
+/** An installed norm: the templates promulgation would write, the generated index `shippedVersions()`
+ *  reads their version from (Plan-030 Track 1), and the declaration that classifies them. */
 async function source(version = 1): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), "vibeops-norm-"));
   await mkdir(path.join(root, "templates"), { recursive: true });
+  const index: Record<string, { version: number }> = {};
   for (const type of ["adr", "plan"]) {
     await writeFile(path.join(root, "templates", `${type}.md`), `---\nvibe-ops-template: ${type}@3\n---\n\n# ${type}\n`);
+    index[type] = { version: 3 };
   }
+  await mkdir(path.join(root, "types"), { recursive: true });
+  await writeFile(path.join(root, "types", "index.json"), JSON.stringify(index));
   await writeFile(
     path.join(root, "ownership.json"),
     JSON.stringify({

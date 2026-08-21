@@ -33,6 +33,21 @@ function fold(text: string): string {
     .join(" ");
 }
 
+/**
+ * A BLOCK scalar's header is syntax, not value — `>-`, `|`, `|+`, `>2-` all introduce the lines below
+ * rather than being part of them. The node's text carries it, so folding without stripping it first
+ * prepends `>-` to the description, which then travels into the generated index and into every hook that
+ * injects one. Caught by `project/log/README.md` rendering it that way (Plan-030 Track 2).
+ *
+ * Distinct from the multi-line PLAIN scalar this file was written for, where continuation lines are bare
+ * indentation and there is no header to remove.
+ */
+const BLOCK_SCALAR_HEADER = /^[|>][+-]?\d*[+-]?[ \t]*\r?\n/;
+
+function stripBlockScalarHeader(text: string): string {
+  return text.replace(BLOCK_SCALAR_HEADER, "");
+}
+
 function unquote(text: string): string {
   return text.replace(/^["']/, "").replace(/["']$/, "");
 }
@@ -78,7 +93,7 @@ export function readFrontmatter(document: Document): Frontmatter | undefined {
       );
       continue;
     }
-    scalars.set(name, unquote(fold(value.text)));
+    scalars.set(name, unquote(fold(stripBlockScalarHeader(value.text))));
   }
 
   return { keys, scalars, lists };

@@ -140,5 +140,52 @@ export default defineOps({
       // fired on every `**dropped**` row would produce two findings where one is correct.
       fixture: { expect: ["unstated-destination"], files: UNSTATED_DESTINATION_NOTES },
     },
+    {
+      // `types/index.json` is this repository stating what types it ships and at what version — a claim
+      // about its own machinery, checked against the units that machinery is actually built from. That
+      // is this ops's subject exactly, and it is why the entry is here rather than in `governance`,
+      // whose every entry is scoped to a record DIRECTORY: the index is not a record and lives in none.
+      gate: "type-index-drift",
+      // The gate discovers its own population from `pluginDir` (like `bridge`), so this names the
+      // subject for a reader rather than scoping the run.
+      paths: ["<plugin>/types/index.json"],
+      // A unit whose committed index disagrees with it on one field. The type resolves, the index is
+      // valid JSON, and only the version is wrong — a fixture missing the index entirely would pass
+      // against a gate that merely checked the file exists.
+      fixture: {
+        expect: ["type-index-stale"],
+        files: {
+          "types/adr/type.json": JSON.stringify(
+            {
+              type: "adr",
+              template: "../../templates/adr.md",
+              authoring: "../../references/records/adr.md",
+              migrations: "../../skills/migrate/migrations",
+              schema: { carrier: "table", required: ["Status"] },
+            },
+            null,
+            2,
+          ),
+          "templates/adr.md": "---\nvibe-ops-template: adr@7\n---\n\n# ADR\n",
+          "types/index.json": `${JSON.stringify(
+            {
+              adr: {
+                version: 2,
+                template: "templates/adr.md",
+                authoring: "references/records/adr.md",
+                migrations: "skills/migrate/migrations",
+                schema: { carrier: "table", required: ["Status"] },
+                numbered: true,
+                pad: 3,
+                depth: 1,
+                dirs: ["project/adr", "adr", "docs/adr"],
+              },
+            },
+            null,
+            2,
+          )}\n`,
+        },
+      },
+    },
   ],
 });
