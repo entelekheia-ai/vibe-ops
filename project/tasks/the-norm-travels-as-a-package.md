@@ -48,13 +48,37 @@ ops depends on resolves from `node_modules`, needs no change to core, and answer
 that it resolves identically from a checkout and from an installed package. That is the shape to copy, not
 to invent.
 
+**The package is not pure data, and that is the point.** A header has a FORMAT, and the TypeScript that
+reads that format is coupled to it: `plan-fields.ts` looks for the plan template's own
+`Status lifecycle:` marker and its `===== LIVING SECTIONS` fence, `status.ts` counts the checkboxes under
+`## Tracks`, `close.ts` reads a task dossier's shape, `log.ts` reads a log entry's frontmatter contract.
+Change the template and that code changes with it. Shipping the template in one package and its reader in
+another would put a version boundary through the middle of one fact. So the package carries both — and
+what stays in `records` is what does not reference any particular template.
+
+**One package for the five shipped types, not five packages.** RFC-0003's own identifier is
+`npm/@scope/governance-policies@0.1#policy@2` — the package name is plural and the type is selected
+inside it with a fragment, so a package shipping several types is the modelled case rather than an
+exception. The two version marks stay independent exactly as the RFC requires: `@0.1` versions the
+package, `@2` versions one type's shape.
+
+**In two parts**, because the split is what makes each verifiable:
+
+| Part | What moves | What proves it |
+|---|---|---|
+| 1 | the data — `types/`, `templates/`, `references/records/`, `migrations/` — and the readers resolving package-first | the npm-only install resolves the shipped types |
+| 2 | the coupled TypeScript — `plan-*.ts`, `status.ts`, `close.ts`, `log.ts` — 1333 lines, 46% of `records` | `records` holds nothing that names a particular template |
+
+Nothing in `plugin/` is deleted in either part. The package becomes the canonical copy; the plugin tree
+stays a resolving fallback until Track 5 decides what to vacate.
+
 ## Work items
 
 Every `Why` below was run before it was written, per `references/records/task.md`.
 
 | # | Priority | Item | Why (measured) | Effort |
 |---|---|---|---|---|
-| 1 | P0 | Settle which package publishes the norm, and its layout *(design)* | The choice is between a new `@entelekheia/vibe-ops-types` and widening `records`. `records` already holds the readers (`type-unit.ts`, `type-index.ts`) and every consumer depends on it; a separate package keeps data and code on separate release cadences, which is the split RFC-0003 draws between the package version and the type version. Not delegable. | M |
+| 1 | P0 | `@entelekheia/vibe-ops-types` — one package, five types, data plus the code coupled to it | Settled above rather than left open: `records` is 2866 lines and 1333 of them (46%) name a particular template — `plan-*.ts` and `status.ts` 563, `close.ts` 311, `log.ts` 251, `layout.ts`'s four-type maps 208. That code cannot version separately from the template it reads. | M |
 | 2 | P0 | The package ships `types/`, `templates/`, `references/records/` and `migrations/`, resolved `import.meta.url`-relative | `grep '"files"'` across all thirteen packages returns `["dist"]` everywhere but `core`, which adds `queries`. `grammars.ts` is the one working precedent for reading shipped data out of an installed package. | M |
 | 3 | P0 | A norm resolver: the package first, `sourceRoot` second, repository override still winning | `resolveSourceRoot` is `config.harness.source ?? --source ?? CLAUDE_PLUGIN_ROOT` — three names for a plugin tree. Keeping it as a fallback is what lets a repository pin an older norm, and what stops this from breaking the installs that work today. | M |
 | 4 | P0 | `resolveTypeUnit` gains the package root; `shippedVersion` and `migrationsDir` follow | These are the three readers of the norm that exist. `migrationsDir()` in `module-plan` is repository-first-then-source today and keeps that order with a third root appended. | M |
@@ -64,9 +88,6 @@ Every `Why` below was run before it was written, per `references/records/task.md
 
 ### Notes for the implementation pass
 
-- **`plugin/templates/` is not deleted in this track.** Vacating it is what Track 5 decides, once the
-  package is the canonical copy and the `setup` skill's second copy has somewhere to come from. This
-  track makes the package authoritative; the plugin tree stays a working fallback.
 - The `vibe-ops-reference: records/<t>@N` declarations keep their names. Their name is their path under
   `references/`, and the package ships that same relative layout — so `55-references-completeness.sh`
   keeps matching, and no recorded reference version changes.
@@ -78,10 +99,18 @@ Every `Why` below was run before it was written, per `references/records/task.md
 
 ## Implementation order
 
-- [ ] P0 — item 1, the package and its layout (not delegable — it is the correction's whole shape)
+**Part 1 — the data ships and resolves.**
+
+- [ ] P0 — item 1, the package and its layout
 - [ ] P0 — items 2–4, shipping the data and the three readers that consume it
 - [ ] P1 — items 5–6, the skills and promulgation
 - [ ] P1 — item 7, the npm-only acceptance
+
+**Part 2 — the coupled code follows** (its own pass, once Part 1 is green): `plan-fields.ts`,
+`plan-file.ts`, `plan-lifecycle.ts`, `status.ts`, `close.ts` and `log.ts` move to the package beside the
+templates they read; `records` keeps only what names no particular template. The noun modules
+(`module-plan`, `module-task`, `module-log` — 624 lines) follow the same seam and are decided there, not
+here.
 
 ## Surprises & Discoveries
 
