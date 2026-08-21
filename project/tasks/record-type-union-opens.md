@@ -20,7 +20,7 @@ vibe-ops-template: task@3
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
-| Plan | [plans/029-a-record-type-becomes-a-resolved-name.md](../plans/029-a-record-type-becomes-a-resolved-name.md), Track 1 |
+| Plan | [plans/029-a-record-type-becomes-a-resolved-name.md](../plans/shipped/029-a-record-type-becomes-a-resolved-name.md), Track 1 |
 
 ---
 

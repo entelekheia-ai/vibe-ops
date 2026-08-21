@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) |
-| Related | [Plan-030](030-the-type-unit-and-the-compositions-derived-from-it.md) · [Plan-031](031-ownership-fragments-and-the-shaped-class.md) |
+| Depends on | [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) |
+| Related | [Plan-030](../030-the-type-unit-and-the-compositions-derived-from-it.md) · [Plan-031](../031-ownership-fragments-and-the-shaped-class.md) |
 
 ---
 
@@ -57,9 +57,9 @@ flow from them; the `types` config key; the package scan and its finding.
 ### Out of scope
 
 - What a package's type declaration *contains* — the per-type unit (template, authoring rules, migration
-  notes) is [Plan-030](030-the-type-unit-and-the-compositions-derived-from-it.md). This plan only needs
+  notes) is [Plan-030](../030-the-type-unit-and-the-compositions-derived-from-it.md). This plan only needs
   the *marker* that lets the scan enumerate claimants.
-- Ownership classes and the `shaped` class — [Plan-031](031-ownership-fragments-and-the-shaped-class.md).
+- Ownership classes and the `shaped` class — [Plan-031](../031-ownership-fragments-and-the-shaped-class.md).
 - Any verb that writes configuration — deferred by RFC-0003's own scope decision.
 
 ## Design
@@ -104,13 +104,13 @@ is a second place to forget.
   `npm run typecheck && npm test` green from a clean build (`rm -rf cli/packages/*/dist` first — an
   incremental build cannot see cross-package staleness, per `cli/AGENTS.md`), plus a fixture repo with a
   custom type name in `records.dirs` resolving through `<records:policy>`.
-  Task: [tasks/record-type-union-opens.md](../tasks/record-type-union-opens.md)
+  Task: [tasks/record-type-union-opens.md](../../tasks/record-type-union-opens.md)
 - [x] **Track 2 — The scan and the binding table.** The package marker, the enumeration, the
   one/none/many rule, and `types` in `VibeOpsConfig`. Exists at the end: two fixture packages both
   declaring `policy` produce the finding naming both; adding the `types` line resolves it. Acceptance: the
   fixture scenario as a test, and the finding visible in `vibe-ops check`-style output.
-  Task: [tasks/type-scan-and-binding-table.md](../tasks/type-scan-and-binding-table.md)
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+  Task: [tasks/type-scan-and-binding-table.md](../../tasks/type-scan-and-binding-table.md)
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -229,7 +229,7 @@ did.
 
 ## Related
 
-- [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the model this implements (its
+- [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the model this implements (its
   Implementation Notes 1–3).
 - Commits `a4d01e7` and `50ad03e` — the `<template:<type>>` / `<records:<type>>` tokens whose generic
   fallback (`project/<type>`) this plan's open union finally lets a repository reach on purpose.

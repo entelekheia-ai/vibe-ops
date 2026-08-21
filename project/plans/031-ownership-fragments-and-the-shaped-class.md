@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [Plan-029](029-a-record-type-becomes-a-resolved-name.md) |
+| Depends on | [Plan-029](./shipped/029-a-record-type-becomes-a-resolved-name.md) |
 | Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md) (absorbed by Track 3) |
 
 ---
