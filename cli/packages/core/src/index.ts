@@ -3,7 +3,7 @@ export type { ModuleCommand, ModuleDefinition, ModuleFlag, ModulePlugin, ModuleR
 export type { ModuleContext, Surface } from "./context.ts";
 export { loadConfig, searchPath, settingsFor, statePath, writeHarnessState } from "./config.ts";
 export type { HarnessConfig } from "./config.ts";
-export type { LoadedConfig, RecordsConfig, RecordType, VibeOpsConfig } from "./config.ts";
+export type { LoadedConfig, RecordsConfig, RecordType, TypesConfig, VibeOpsConfig } from "./config.ts";
 export { createEmitter, UndeclaredObservationError } from "./emit.ts";
 export type { Emitter, EmitterOptions, Observation } from "./emit.ts";
 export { defineGate, gateSpecifierFor, loadGate, GATE_PREFIX } from "./gate.ts";
@@ -42,3 +42,5 @@ export type { Document, DocumentStore } from "./document.ts";
 export type { Layer, UncoveredLayer } from "./injections.ts";
 export { describedText, lineAt, proseText, walkLayersWithHostPositions } from "./position.ts";
 export type { HostPositionedLayer } from "./position.ts";
+export { resolveTypeName, scanTypePackages, typesDeclaredBy } from "./type-scan.ts";
+export type { TypeClaimant, TypeResolution } from "./type-scan.ts";

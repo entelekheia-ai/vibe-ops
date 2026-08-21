@@ -92,6 +92,23 @@ export interface RecordsConfig {
 }
 
 /**
+ * Which installed package governs a type name, declared ONLY where the scan alone is ambiguous — the
+ * same doctrine as `records.dirs`, which an ordinary repository never writes either.
+ *
+ * Keyed by the LOCAL short name, and that is the point rather than a convenience. A fully qualified name
+ * in every stamp would let two packages each manage "their own" `policy` in one repository without
+ * either being detectably wrong, which is the governance failure the binding exists to prevent. One
+ * short name admits one owner, and changing owner is a line somebody edits in review.
+ *
+ * The value is the governing package's name. A binding that resolves to nothing is USED ANYWAY: the
+ * caller examines zero files against the name the repository chose, which is visible and attributable,
+ * where quietly falling back to another claimant is neither.
+ */
+export interface TypesConfig {
+  readonly [localName: string]: string;
+}
+
+/**
  * Which version of each record type was PROMULGATED into this clone — not which version any given
  * artifact was written against, which is what that artifact's own `vibe-ops-template:` line says. The two
  * answer different questions and diverge exactly when something has not been migrated yet, which is the
@@ -133,6 +150,8 @@ export interface HarnessConfig {
 }
 
 export interface VibeOpsConfig {
+  /** Which package governs a type name, where the scan alone cannot say. See `TypesConfig`. */
+  readonly types?: TypesConfig;
   /** Module ids to treat as enabled without an explicit flag. */
   readonly modules?: readonly string[];
   /** See `HarnessConfig`. Written by promulgation, read by the session hook; absent until either runs. */
@@ -233,6 +252,11 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     artifactDir: nearer.artifactDir ?? further.artifactDir,
     settings: { ...further.settings, ...nearer.settings },
     records,
+    // Per key, like `records.dirs` rather than whole like `harness.applied`: two bindings naming two
+    // different types are independent facts, so a home file binding one must not be discarded by a repo
+    // binding another. Whole-key would make the nearer file's silence about a type an answer.
+    types:
+      nearer.types === undefined && further.types === undefined ? undefined : { ...further.types, ...nearer.types },
     // `applied` wins WHOLE, deliberately unlike `settings` and `records`: merging per record type would
     // let a map written for one repository answer for another one further down the path, and "this clone
     // is on plan@3" is a fact about a single working tree, where a half-inherited answer is worse than

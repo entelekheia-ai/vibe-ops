@@ -105,7 +105,7 @@ is a second place to forget.
   incremental build cannot see cross-package staleness, per `cli/AGENTS.md`), plus a fixture repo with a
   custom type name in `records.dirs` resolving through `<records:policy>`.
   Task: [tasks/record-type-union-opens.md](../tasks/record-type-union-opens.md)
-- [ ] **Track 2 — The scan and the binding table.** The package marker, the enumeration, the
+- [x] **Track 2 — The scan and the binding table.** The package marker, the enumeration, the
   one/none/many rule, and `types` in `VibeOpsConfig`. Exists at the end: two fixture packages both
   declaring `policy` produce the finding naming both; adding the `types` line resolves it. Acceptance: the
   fixture scenario as a test, and the finding visible in `vibe-ops check`-style output.
