@@ -3,7 +3,17 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { computeNumbering, findAuthority, findDir, findTemplate, listMarkdownBasenames } from "../src/layout.ts";
+import {
+  computeNumbering,
+  depthFor,
+  dirCandidatesFor,
+  findAuthority,
+  findDir,
+  findTemplate,
+  listMarkdownBasenames,
+  padFor,
+  templateCandidatesFor,
+} from "../src/layout.ts";
 import { RecordsConfigError } from "../src/layout.ts";
 
 async function scratchRepo(): Promise<string> {
@@ -116,4 +126,27 @@ test("computeNumbering: a wider existing number widens the pad for the next one 
 
 test("computeNumbering: records exist but none matches NNN-slug.md — unknown, not a confidently wrong guess", () => {
   assert.deepEqual(computeNumbering(["DA01-02-slug.md"], 3), { pad: 3, existing: 1, next: { unknown: true } });
+});
+
+// Plan-029 Track 1: the four shipped types are DEFAULTS now, not the definition. Every accessor has to
+// answer for a name nobody declared, and the fallbacks match what a type unit's manifest defaults to —
+// so a type resolved from a package and a type resolved by convention answer alike.
+test("the accessors answer for a type the tooling ships nowhere, at the manifest's own defaults", () => {
+  assert.equal(padFor("adr"), 4, "a shipped type keeps its declared width");
+  assert.equal(padFor("policy"), 3, "an unknown type gets the type unit's default");
+  assert.equal(depthFor("rfc"), 2, "rfc archives into a subfolder and keeps its number");
+  assert.equal(depthFor("policy"), 1, "the safe direction — a deeper sweep would count an archived record twice");
+  assert.deepEqual(dirCandidatesFor("policy"), ["project/policy", "policy", "docs/policy"]);
+  assert.deepEqual(templateCandidatesFor("policy"), [
+    "project/templates/policy.md",
+    "templates/policy.md",
+    ".agents/templates/policy.md",
+  ]);
+});
+
+// `log` was outside the closed maps, so every caller carried `type === "log" ? 1 : DEPTH[type]` by hand.
+// The fallback answers it now, and the three hand-written workarounds are gone.
+test("log resolves through the same accessors that used to need a special case", () => {
+  assert.equal(depthFor("log"), 1);
+  assert.equal(padFor("log"), 3);
 });

@@ -7,9 +7,16 @@ import path from "node:path";
 import { recordDirCandidates, templateCandidates } from "@entelekheia/vibe-ops-core";
 import type { RecordType, RecordsConfig } from "@entelekheia/vibe-ops-core";
 
+// THE FOUR ARE DEFAULTS, NOT THE DEFINITION (Plan-029 Track 1). `RecordType` is an open name, so every
+// lookup below has to answer for a name this tooling never heard of. The maps stay — they are what the
+// shipped four actually declare — and each is read through an accessor that falls back to the generic
+// convention rather than returning `undefined` into a caller that cannot use one. The fallbacks are the
+// same values a type unit's manifest defaults to (`pad` 3, `depth` 1), so a type resolved from a package
+// and a type resolved by convention answer alike.
+
 /** Built from core's own list, for the same reason CANDIDATE_TEMPLATES is: the `<records:<type>>` token
  *  an ops expands and this resolver must agree, and two search orders drift invisibly. */
-export const CANDIDATE_DIRS: Readonly<Record<RecordType, readonly string[]>> = {
+export const CANDIDATE_DIRS: Readonly<Record<string, readonly string[]>> = {
   adr: recordDirCandidates("adr"),
   rfc: recordDirCandidates("rfc"),
   plan: recordDirCandidates("plan"),
@@ -18,14 +25,14 @@ export const CANDIDATE_DIRS: Readonly<Record<RecordType, readonly string[]>> = {
 
 /** Built from core's own list rather than restated: the `<template:<type>>` token an ops expands and this
  *  resolver must agree, and two copies of a search order drift invisibly — both answers look like a path. */
-export const CANDIDATE_TEMPLATES: Readonly<Record<RecordType, readonly string[]>> = {
+export const CANDIDATE_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   adr: templateCandidates("adr"),
   rfc: templateCandidates("rfc"),
   plan: templateCandidates("plan"),
   task: templateCandidates("task"),
 };
 
-export const DEFAULT_PAD: Readonly<Record<RecordType, number>> = { adr: 4, rfc: 4, plan: 3, task: 3 };
+export const DEFAULT_PAD: Readonly<Record<string, number>> = { adr: 4, rfc: 4, plan: 3, task: 3 };
 
 /**
  * How deep a record type's directory is searched for existing `.md` files, counting only the
@@ -33,7 +40,29 @@ export const DEFAULT_PAD: Readonly<Record<RecordType, number>> = { adr: 4, rfc: 
  * subfolder and must keep owning its number — Plan-011 Track 6 gives `plan` the same depth for the
  * same reason, once `project/plans/shipped/` exists; until then this matches the shell exactly.
  */
-export const DEPTH: Readonly<Record<RecordType, number>> = { adr: 1, rfc: 2, plan: 2, task: 1 };
+export const DEPTH: Readonly<Record<string, number>> = { adr: 1, rfc: 2, plan: 2, task: 1 };
+
+/** Where `type`'s records could be — the shipped default when there is one, else the generic convention
+ *  core already answers with, which is what makes a contributed type resolvable with no map entry. */
+export function dirCandidatesFor(type: RecordType): readonly string[] {
+  return CANDIDATE_DIRS[type] ?? recordDirCandidates(type);
+}
+
+/** Where `type`'s template could be, on the same rule. */
+export function templateCandidatesFor(type: RecordType): readonly string[] {
+  return CANDIDATE_TEMPLATES[type] ?? templateCandidates(type);
+}
+
+/** A type's zero-padding width. 3 for a type nobody declared — a type unit's own default. */
+export function padFor(type: RecordType): number {
+  return DEFAULT_PAD[type] ?? 3;
+}
+
+/** How deep to sweep a type's directory. 1 for a type nobody declared — a type unit's own default, and
+ *  the safe direction: a deeper sweep would count an archived record twice. */
+export function depthFor(type: RecordType): number {
+  return DEPTH[type] ?? 1;
+}
 
 /** Thrown when a declared `records.dirs`/`records.templates` entry does not resolve — never silently
  *  falls back to the search order, which would trade one silent wrong answer for another. */
@@ -53,7 +82,7 @@ export function findDir(repoRoot: string, type: RecordType, config: RecordsConfi
     }
     return { dir: declared };
   }
-  for (const candidate of CANDIDATE_DIRS[type]) {
+  for (const candidate of dirCandidatesFor(type)) {
     if (existsSync(path.join(repoRoot, candidate))) return { dir: candidate };
   }
   return {};
@@ -74,7 +103,7 @@ export function findTemplate(repoRoot: string, type: RecordType, config: Records
     }
     return { template: declared, source: "config" };
   }
-  for (const candidate of CANDIDATE_TEMPLATES[type]) {
+  for (const candidate of templateCandidatesFor(type)) {
     if (existsSync(path.join(repoRoot, candidate))) return { template: candidate, source: "search" };
   }
   return {};

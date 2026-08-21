@@ -16,7 +16,7 @@ vibe-ops-template: task@3
 
 | Field | Value |
 |---|---|
-| Status | Planned |
+| Status | Done |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
@@ -68,16 +68,34 @@ resolution through `<records:policy>` and appearance in `records census`.
 
 ## Implementation order
 
-- [ ] P0 — Item 1 (not delegable: the branded-vs-plain decision is the one judgment here)
-- [ ] P0 — Item 2 (delegable under contract: mechanical retype, old behaviour byte-identical for the
+- [x] P0 — Item 1 (not delegable: the branded-vs-plain decision is the one judgment here)
+- [x] P0 — Item 2 (delegable under contract: mechanical retype, old behaviour byte-identical for the
       shipped four, `rm -rf cli/packages/*/dist && npm run build && npm test` green — the clean build is
       mandatory, incremental builds hide cross-package staleness)
-- [ ] P1 — Item 3 (delegable: fixture per the plan's acceptance wording)
+- [x] P1 — Item 3 (delegable: fixture per the plan's acceptance wording)
 
 ## Surprises & Discoveries
 
-- Observation: …
-  Evidence: …
+- Observation: The union's blast radius was a third of what the plan estimated, and the plan was not
+  wrong — it measured a different thing.
+  Evidence: the plan says "24 files mention the type `plan`", which counts mentions of the STRING. The
+  type `RecordType` itself is named in **12 source files and one test**, and opening it broke exactly
+  **seven call sites**, all the same shape: `CANDIDATE_DIRS[type]`, `DEFAULT_PAD[type]`, `DEPTH[type]` —
+  map lookups that could now miss. Nothing else needed a retype, because `layout.ts` already built its
+  candidate maps from core's generic functions (the split the plan predicted was half-done).
+
+- Observation: Opening the union deleted three hand-written workarounds rather than creating work.
+  Evidence: `RecordType | "log"` appeared in `core/src/config.ts` (`harness.applied`),
+  `module-records/src/census.ts` (`CensusType`) and `records/src/resolve.ts` — `log` has a template and a
+  directory but was not a member, so every map keyed by the union needed it bolted on. `census.ts` also
+  carried `type === "log" ? 1 : DEPTH[type]` at a call site for the same reason. All four are gone: the
+  fallback answers `log` like any other name.
+
+- Observation: The branded-vs-plain decision resolved itself once the question was asked precisely.
+  Evidence: a brand protects against passing an arbitrary string where a domain value belongs. Here every
+  type name arrives from outside the type system — a config key, a directory name, a frontmatter stamp, a
+  package declaration — so a brand would put a cast at each of those boundaries and protect against
+  nothing. Plain `string` under the same alias name, so the signatures still say what they mean.
 
 ## Closure
 

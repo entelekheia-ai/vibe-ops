@@ -9,7 +9,7 @@ import path from "node:path";
 import type { Document, DocumentStore } from "@entelekheia/vibe-ops-core";
 import type Parser from "tree-sitter";
 import { findHeaderTable, valueOf } from "./header-table.ts";
-import { DEPTH, listMarkdownFiles } from "./layout.ts";
+import { depthFor, listMarkdownFiles } from "./layout.ts";
 
 export interface PlanStatusFinding {
   readonly file: string;
@@ -83,7 +83,7 @@ export function planStatusFindings(
   // DEPTH["plan"] rather than 1: a shipped plan moves into `shipped/` and keeps its number, so the
   // coherence read has to still see it — a plan that vanished from this sweep on the day it shipped
   // would look coherent by having stopped being read.
-  for (const relative of listMarkdownFiles(path.join(repoRoot, dir), DEPTH.plan)) {
+  for (const relative of listMarkdownFiles(path.join(repoRoot, dir), depthFor("plan"))) {
     const file = `${dir}/${relative}`;
     const document = documents.get(file);
     if (document.tree === undefined) continue;

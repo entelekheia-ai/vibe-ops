@@ -57,8 +57,24 @@ const LOCAL_FILENAME_COUNT = 3;
  */
 const STATE_FILENAME = "vibeops.config.local.json";
 
-/** The four governance record types `@entelekheia/vibe-ops-records` resolves. */
-export type RecordType = "adr" | "rfc" | "plan" | "task";
+/**
+ * A record type, by name. **An open name, not a union** (Plan-029 Track 1): a repository may keep an
+ * artifact this tooling does not ship, and a package may contribute one, so `records: { dirs: { policy:
+ * … } }` has to type-check. It did not — the closed union of four literals was the single compile-time
+ * wall, and RFC-0003's whole model stops at it.
+ *
+ * PLAIN `string`, NOT A BRANDED ONE, and that is a decision rather than a shortcut. A brand protects
+ * against passing an arbitrary string where a domain value belongs; here an arbitrary string IS a valid
+ * type name, and every name arrives from outside the type system anyway — a config key, a directory
+ * name, a frontmatter stamp, a package's declaration. Branding would put a cast at every one of those
+ * boundaries and buy nothing back.
+ *
+ * The alias keeps its name so the signatures that read `RecordType` still say what they mean. The four
+ * this tooling ships are no longer the definition of what a type CAN be; they are the defaults
+ * `@entelekheia/vibe-ops-records` consults for those four names, with a generic convention answering for
+ * every other (`recordDirCandidates`/`templateCandidates` in `files.ts`).
+ */
+export type RecordType = string;
 
 /**
  * Overrides the built-in search order `@entelekheia/vibe-ops-records` uses to find a record type's
@@ -90,7 +106,7 @@ export interface RecordsConfig {
  * signal earns being ignored.
  */
 export interface HarnessConfig {
-  readonly applied?: Partial<Record<RecordType | "log", number>>;
+  readonly applied?: Partial<Record<RecordType, number>>;
   /**
    * Which version of the ownership declaration this clone has agreed to — the boundary between what
    * promulgation may overwrite and what belongs to the repository.

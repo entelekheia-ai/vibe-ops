@@ -7,12 +7,12 @@ import path from "node:path";
 import type { DocumentStore, RecordsConfig, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import {
   computeNumbering,
-  DEFAULT_PAD,
-  DEPTH,
+  depthFor,
   findAuthority,
   findDir,
   findTemplate,
   listMarkdownBasenames,
+  padFor,
   type NextNumber,
 } from "./layout.ts";
 import { githubAuth, githubRemote, type GithubAuth } from "./github.ts";
@@ -115,12 +115,12 @@ export function resolveRecord(
   const { template, source: templateSource } = findTemplate(repoRoot, type, recordsConfig);
   const authority = findAuthority(repoRoot, dir);
 
-  const defaultPad = DEFAULT_PAD[type];
+  const defaultPad = padFor(type);
   let pad = defaultPad;
   let existing = 0;
   let next: NextNumber = "1".padStart(defaultPad, "0");
   if (dir !== undefined) {
-    const basenames = listMarkdownBasenames(path.join(repoRoot, dir), DEPTH[type]);
+    const basenames = listMarkdownBasenames(path.join(repoRoot, dir), depthFor(type));
     const numbering = computeNumbering(basenames, defaultPad);
     pad = numbering.pad;
     existing = numbering.existing;

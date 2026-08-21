@@ -17,7 +17,7 @@
 import path from "node:path";
 import type { DocumentStore, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import {
-  DEPTH,
+  depthFor,
   findLogDir,
   listMarkdownFiles,
   NOT_A_RECORD,
@@ -86,7 +86,7 @@ export function census(
         ? findLogDir(repoRoot)
         : resolveRecord(type, repoRoot, config, documents).dir;
     if (dir === undefined) continue;
-    const found = read(documents, repoRoot, dir, type, type === "log" ? 1 : DEPTH[type]);
+    const found = read(documents, repoRoot, dir, type, depthFor(type));
     found.sort((a, b) => a.file.localeCompare(b.file));
     entries.push(...found);
   }

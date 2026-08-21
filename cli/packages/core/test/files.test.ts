@@ -190,3 +190,25 @@ test("filterByGlobs matches AGENTS.md against both a bare pattern and **/AGENTS.
   assert.deepEqual(filterByGlobs(files, ["**/AGENTS.md"]), ["AGENTS.md", "cli/AGENTS.md"]);
   assert.deepEqual(filterByGlobs(files, ["AGENTS.md"]), ["AGENTS.md"]);
 });
+
+// PLAN-029 TRACK 1'S ACCEPTANCE, and the reason the union was opened at all: a repository keeping an
+// artifact this tooling does not ship must be able to SAY SO. Before this, `records: { dirs: { policy:
+// … } }` was a compile error — the closed union of four literals was the single wall RFC-0003's whole
+// model stopped at. The tokens were already generic (commits a4d01e7/50ad03e); only the config was not.
+test("a type the tooling ships nowhere flows from config through both tokens", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  await mkdir(path.join(repoRoot, "project", "policy"), { recursive: true });
+  const records = { dirs: { policy: "project/policy" }, templates: { policy: "project/policy/_template.md" } };
+
+  assert.equal(expandTokens("<records:policy>/*.md", repoRoot, repoRoot, records), "project/policy/*.md");
+  assert.equal(expandTokens("<template:policy>", repoRoot, repoRoot, records), "project/policy/_template.md");
+});
+
+// Declaring nothing must still resolve, or a contributed type would need a config line to exist at all.
+// `project/<type>` is the generic convention core has always answered with; opening the union is what
+// finally lets a repository reach it on purpose.
+test("an undeclared type falls back to the generic convention rather than to nothing", async () => {
+  const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-files-"));
+  await mkdir(path.join(repoRoot, "project", "policy"), { recursive: true });
+  assert.equal(expandRecordsToken("<records:policy>/*.md", repoRoot, undefined), "project/policy/*.md");
+});

@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
 import {
-  DEPTH,
+  depthFor,
   formatResolved,
   listMarkdownFiles,
   resolveRecord,
@@ -235,7 +235,7 @@ export default defineModule(
       // so the repository-relative path is that name joined back onto `resolved.dir`. Getting this wrong
       // produced a listing that looked right and reported `(no Status)` for every record, because each
       // path resolved to nothing and an unparseable document has no header table.
-      const files = listMarkdownFiles(path.join(context.repoRoot, resolved.dir), DEPTH[type]).map(
+      const files = listMarkdownFiles(path.join(context.repoRoot, resolved.dir), depthFor(type)).map(
         (name) => `${resolved.dir}/${name}`,
       );
       // Resolved before the records are read: an unknown field name is the caller's typo, and reporting it

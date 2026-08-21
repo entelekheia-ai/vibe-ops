@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Depends on | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) |
@@ -98,7 +98,7 @@ is a second place to forget.
 
 ## Tracks
 
-- [ ] **Track 1 — Open the union.** `RecordType` becomes `string` (or a branded name type), the shipped
+- [x] **Track 1 — Open the union.** `RecordType` becomes `string` (or a branded name type), the shipped
   four become data, and every consumer compiles and passes with the shipped types unaffected. Exists at
   the end: a repository config naming `policy` type-checks and flows to the tokens. Acceptance:
   `npm run typecheck && npm test` green from a clean build (`rm -rf cli/packages/*/dist` first — an
