@@ -134,6 +134,36 @@ is a second place to forget.
   half is small and drift-prone.
   Date / Author: 2026-08-20 / Danilo Borges
 
+- Decision: `RecordType` becomes plain `string` under the same alias name, not a branded type.
+  Rationale: the plan left this open at the keyboard, and asking it precisely answered it. A brand
+  protects against passing an arbitrary string where a domain value belongs; here every type name arrives
+  from OUTSIDE the type system — a config key, a directory name, a frontmatter stamp, a package's
+  declaration — so a brand would place a cast at each of those boundaries and protect against nothing.
+  Keeping the alias name means the twelve files naming `RecordType` still say what they mean.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: the scan's marker is `"vibeOps": { "types": "types" }` — a manifest field pointing at a
+  DIRECTORY, not a list of type names.
+  Rationale: the manifest field has precedent inside this same package, where `grammars.ts` reads a
+  grammar's own `"tree-sitter"` array out of its `package.json`. The directory rather than a name list is
+  the load-bearing half: a list beside the directory is a second copy of the same fact, which is exactly
+  the drift `type-index-drift` was written to catch. One source, and `typesDeclaredBy` reads it.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: `config.types` merges per key, like `records.dirs`, rather than whole like `harness.applied`.
+  Rationale: decided with the cascade's own tests open, as the dossier asked. Two bindings naming two
+  different types are independent facts, so a home file binding one must not be discarded by a repository
+  binding another — whole-key would make the nearer file's SILENCE about a type into an answer.
+  `harness.applied` wins whole for the opposite reason: it is a fact about one working tree.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: where a resolution finding lands is left to each caller, not fixed here.
+  Rationale: the dossier asked whether it should go to the channel `check` uses. `resolveTypeName`
+  returns the reason as data (`unresolved`) and throws nothing, so an ops can report it as a finding and
+  a verb as a line. Choosing one now would impose that caller's shape on every other, and the ambiguity
+  case has no consumer yet to argue from.
+  Date / Author: 2026-08-20 / Danilo Borges
+
 ## Outcomes & Retrospective
 
 (No outcomes yet — filled at each major track completion and at the end.)
