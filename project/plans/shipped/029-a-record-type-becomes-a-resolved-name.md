@@ -104,12 +104,12 @@ is a second place to forget.
   `npm run typecheck && npm test` green from a clean build (`rm -rf cli/packages/*/dist` first — an
   incremental build cannot see cross-package staleness, per `cli/AGENTS.md`), plus a fixture repo with a
   custom type name in `records.dirs` resolving through `<records:policy>`.
-  Task: [tasks/record-type-union-opens.md](../../tasks/record-type-union-opens.md)
+  Task: tasks/record-type-union-opens.md (closed dossier — `git show 02d513fbf49392b5973f3993403ae7185a1022dc:project/tasks/record-type-union-opens.md`)
 - [x] **Track 2 — The scan and the binding table.** The package marker, the enumeration, the
   one/none/many rule, and `types` in `VibeOpsConfig`. Exists at the end: two fixture packages both
   declaring `policy` produce the finding naming both; adding the `types` line resolves it. Acceptance: the
   fixture scenario as a test, and the finding visible in `vibe-ops check`-style output.
-  Task: [tasks/type-scan-and-binding-table.md](../../tasks/type-scan-and-binding-table.md)
+  Task: tasks/type-scan-and-binding-table.md (closed dossier — `git show 02d513fbf49392b5973f3993403ae7185a1022dc:project/tasks/type-scan-and-binding-table.md`)
 - [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
@@ -247,3 +247,7 @@ did.
   Implementation Notes 1–3).
 - Commits `a4d01e7` and `50ad03e` — the `<template:<type>>` / `<records:<type>>` tokens whose generic
   fallback (`project/<type>`) this plan's open union finally lets a repository reach on purpose.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show 02d513fbf49392b5973f3993403ae7185a1022dc:project/tasks/record-type-union-opens.md`
+  - `git show 02d513fbf49392b5973f3993403ae7185a1022dc:project/tasks/type-scan-and-binding-table.md`
