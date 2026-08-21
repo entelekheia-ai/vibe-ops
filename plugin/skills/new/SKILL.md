@@ -34,8 +34,11 @@ mode. An existing record is advanced through its own lifecycle, never re-scaffol
 
 ## Step 0 — Resolve the repo, in one call
 
-**One record type, one spelling.** Two of the four have a noun of their own and are resolved through it;
-the other two have no noun, and `records` is where they are answered.
+**One record type, one spelling.** A type with a noun of its own is resolved through that noun;
+everything else is answered by `records` — the shipped types that have no noun, and **a type this tooling
+ships nowhere**, which resolves once the repository declares its directory or an installed package
+declares the type. Its *layout* answers; its authoring rules arrive with the type's own package, so a
+contributed type has none until then and Step 1 says so rather than inventing them.
 
 ```bash
 vibe-ops plan resolve                 # plan
