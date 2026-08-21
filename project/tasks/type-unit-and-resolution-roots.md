@@ -90,7 +90,7 @@ manifest, so a unit is relocatable as a whole:
 **`schema.carrier` is what keeps `log` inside the model.** `log` declares `name`, `description`,
 `kind`, `path`, `attempted` and `source` in YAML frontmatter, never in a `| Field | Value |`
 table — so its absence from `ops-governance`'s `record-header` entries is a second carrier, not a
-missing facet. Deriving entries (Track 3) keys off the carrier, which is what bounds the composed
+missing facet. Deriving entries (Track 4) keys off the carrier, which is what bounds the composed
 output's change to the two entries the plan declares in advance rather than leaving it open.
 
 ## Work items

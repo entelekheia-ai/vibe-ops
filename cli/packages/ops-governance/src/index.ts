@@ -29,7 +29,7 @@ import type { OpsGateEntry } from "@entelekheia/vibe-ops-core";
  * one to `plugin/types/<t>/type.json` — the same reason `ops-self` exports its fixture notes: an
  * assertion written against a copy of the object cannot prove anything about the object.
  *
- * TEMPORARY BY CONSTRUCTION (Plan-030 Track 2). The restatement exists only until Track 3 derives these
+ * TEMPORARY BY CONSTRUCTION (Plan-030 Track 2). The restatement exists only until Track 4 derives these
  * entries from the installed units; the literals, this export and that test are deleted together.
  */
 export const RESTATED_TYPE_ENTRIES: readonly OpsGateEntry[] = [

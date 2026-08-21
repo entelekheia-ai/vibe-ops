@@ -20,7 +20,7 @@ vibe-ops-template: task@3
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
-| Plan | [plans/030-the-type-unit-and-the-compositions-derived-from-it.md](../plans/030-the-type-unit-and-the-compositions-derived-from-it.md), Track 2 |
+| Plan | [plans/030-the-type-unit-and-the-compositions-derived-from-it.md](../plans/030-the-type-unit-and-the-compositions-derived-from-it.md), Track 4 |
 
 > **DRAFT — refine before execution.** Depends on the sibling dossier's unit layout being settled.
 > The open design question here: whether derivation happens at composition-load time inside
@@ -31,7 +31,7 @@ vibe-ops-template: task@3
 
 ## Context
 
-Plan-030 Track 2. `cli/packages/ops-governance/src/index.ts` hand-keeps ten per-type entries for six types
+Plan-030 Track 4. `cli/packages/ops-governance/src/index.ts` hand-keeps ten per-type entries for six types
 (verified count, this file, 2026-08-19: four `record-header-*` + six `template-version-*`); each new type
 costs two more edits here. With type units resolvable, the pair (`record-header-<t>` with the unit's
 schema, `template-version-<t>` with `<template:<t>>`) is derivable per installed type. Acceptance is

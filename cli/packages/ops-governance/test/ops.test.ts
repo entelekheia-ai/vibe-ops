@@ -161,10 +161,10 @@ test("against this repository's own checkout — records behind their template w
 });
 
 // THE GUARD THAT MAKES THE DUPLICATION SAFE, and it is temporary by construction (Plan-030 Track 2).
-// Each entry restates the `required` list its type's manifest already declares, because Track 3 has not
+// Each entry restates the `required` list its type's manifest already declares, because Track 4 has not
 // yet derived these entries from the installed units. Until it does, a manifest edited without its entry
 // — or the reverse — would diverge in silence: both files stay individually well-formed, and the gate
-// keeps reporting against whichever list it was handed. Track 3 deletes the literals and this test in
+// keeps reporting against whichever list it was handed. Track 4 deletes the literals and this test in
 // the same change.
 //
 // Asserted against the exported entries themselves rather than against `--list` output, which carries no

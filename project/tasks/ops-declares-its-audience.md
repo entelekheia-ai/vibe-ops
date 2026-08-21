@@ -20,13 +20,13 @@ vibe-ops-template: task@3
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
-| Plan | [plans/030-the-type-unit-and-the-compositions-derived-from-it.md](../plans/030-the-type-unit-and-the-compositions-derived-from-it.md), Track 3 |
+| Plan | [plans/030-the-type-unit-and-the-compositions-derived-from-it.md](../plans/030-the-type-unit-and-the-compositions-derived-from-it.md), Track 6 |
 
 ---
 
 ## Context
 
-Plan-030 Track 3. Measured 2026-08-14 and restated in the plan: 9 of the 17 shell fragments and several
+Plan-030 Track 6. Measured 2026-08-14 and restated in the plan: 9 of the 17 shell fragments and several
 composed entries apply only to a repository that publishes a Claude Code plugin; on a real run over a
 repository that publishes none, 12 of 17 reported SKIP and the summary was indistinguishable from a full
 run. Nothing today distinguishes portable detection from this-repository-only detection — the maintainer

@@ -106,17 +106,21 @@ that geometry just as well:
 }
 ```
 
-**Moving this repository's own five types into self-contained folders is Track 4**, taken up once the
+**Moving this repository's own five types into self-contained folders is Track 5**, taken up once the
 unit is proven — the declaration and the reorganisation are independent, and only the second carries risk.
 
 **Two authorities, because there are two populations.** The norm's own facets are generated, so the CLI
-reads a generated index shipped inside the plugin tree itself — `plugin/types/index.json`, never an npm
-package's `dist/`. (`sourceRoot`, the one thing this index has to serve, means the installed plugin tree
-throughout this codebase — `shippedVersion()` already reads `sourceRoot/templates/<type>.md`, never a
-`dist/` path — and no package here generates data into `dist/` today; both npm `exports` maps are closed
-besides.) A target repository has no build, so its artefacts' own headers are the authority there. That
-split is the pair `vibe-ops harness status` already compares, and it is why resolution runs repository
-first.
+reads a generated index rather than walking files; a target repository has no build, so its artefacts' own
+headers are the authority there. That split is the pair `vibe-ops harness status` already compares, and it
+is why resolution runs repository first.
+
+**Where the norm's half of that pair LIVES is what Track 3 corrects.** Tracks 1 and 2 put it in the plugin
+tree (`plugin/types/index.json`), because `sourceRoot` — the only path to the norm the CLI has —
+resolves to a plugin tree in all three of its forms. RFC-0003 had already decided otherwise: the
+resolution protocol is npm. The measured consequence of the current placement is that an npm-only install
+has no norm at all, and the precedent for fixing it is in this workspace already — `core` ships `queries/`
+beside `dist/` and resolves it relative to `import.meta.url`, working identically from a checkout and from
+an installed package.
 
 **Deriving the ops entries** replaces this hand-kept block in `cli/packages/ops-governance/src/index.ts`:
 ten literal entries, each new type costing more. Derived, each installed type emits a
@@ -139,7 +143,7 @@ freeze-status type it was standing in for arrives from `dot-agent` already confo
 So the composed output changes by exactly two entries, both declared in advance, and they land in
 different tracks: `log` gains the frontmatter entry it never had **in Track 2**, where the gate that
 serves it is written and proved against the ten real entries under `project/log/`;
-`template-version-research` disappears **in Track 3**. Everything else is byte-identical, and a difference
+`template-version-research` disappears **in Track 4**. Everything else is byte-identical, and a difference
 outside those two is a defect.
 
 **The audience boundary** is the 2026-08-14 research finding made mechanical: 9 of 17 shell fragments and
@@ -180,17 +184,29 @@ flowchart LR
   edit. Acceptance: `governance` output diffed before/after differs only by the added
   `record-frontmatter-log` entry; a gate test with an invented type produces `record-header-<that type>`.
   Task: [tasks/header-schema-becomes-data.md](../tasks/header-schema-becomes-data.md)
-- [ ] **Track 3 — Entries derived from installed types.** `ops-governance` builds its per-type entries
+- [ ] **Track 3 — The norm travels as an npm package.** A course correction, and it comes from RFC-0003's
+  own words: *"the resolution protocol is therefore npm, and a type's identity is the package that ships
+  it."* Today no package publishes anything but `dist` (plus `core`'s `queries`), so every type unit,
+  template, authoring rule and migration note lives only in the Claude plugin tree — and `sourceRoot` is
+  `harness.source ?? --source ?? CLAUDE_PLUGIN_ROOT`, all three naming a plugin tree. **Install the npm CLI
+  alone and there is no norm at all**: no templates, no notes, no types, so `migrate` finds nothing,
+  `harness status` is mute and promulgation cannot run. Tracks 1 and 2 built on the plugin tree because
+  that is where `sourceRoot` points, which is consistent with the machinery and divergent from the
+  protocol. Exists at the end: `vibe-ops governance` resolves the shipped types in a repository with the
+  npm CLI and no plugin installed. Acceptance: that case, plus the plugin keeping only what drives the
+  CLI.
+  Task: [tasks/the-norm-travels-as-a-package.md](../tasks/the-norm-travels-as-a-package.md)
+- [ ] **Track 4 — Entries derived from installed types.** `ops-governance` builds its per-type entries
   from the declarations, keyed by carrier; the `required` literals Track 2 wrote into those entries — and
   the guard holding them to the manifests — are deleted together, because the derivation supersedes both.
-  The `research` entry is deleted rather than derived. **The structural change this cannot avoid:**
+  The `research` entry is deleted rather than derived. **The structural change this no longer needs:**
   `OpsDefinition.gates` is a static array today, read once at `defineOps` time for the emit-id check and
   iterated per run, so an entry list computed from the repository being run against needs that field to
   become a function of it. Exists at the end: a fixture type gains its entries with no edit to this
   repository. Acceptance: `vibe-ops governance .` output diffed before/after, differing only by the
   removed `research` entry (`log`'s landed in Track 2), plus the fixture case.
   Task: [tasks/ops-entries-derived-from-type-data.md](../tasks/ops-entries-derived-from-type-data.md)
-- [ ] **Track 4 — What the unit derives, and the move.** One generation mechanism for both artefacts a
+- [ ] **Track 5 — What the unit derives, and the move.** One generation mechanism for both artefacts a
   type duplicates today: the `setup` template copy and the per-type `/new-<t>` skill, whose `paths:`
   frontmatter is the only reason those skills exist separately. Generated at build for this plugin's own
   types, at adoption into the target repository's `.claude/skills/` for a type an external package brings
@@ -198,7 +214,7 @@ flowchart LR
   self-contained folders here, once there is something proven to move them into. Exists at the end:
   `35-dogfooding-drift.sh`'s pair list is empty because nothing is duplicated by hand.
   Task: (to be written)
-- [ ] **Track 5 — The audience boundary.** `audience` declared on ops and entries; `fragment-parity` out
+- [ ] **Track 6 — The audience boundary.** `audience` declared on ops and entries; `fragment-parity` out
   of the portable composition; `ops-self` marked internal; what adoption/consumers see is filtered.
   Exists at the end: composing "portable only" over a plugin-less fixture repo yields no
   plugin-shaped SKIPs. Acceptance: the before/after SKIP count on such a fixture.
@@ -212,7 +228,7 @@ flowchart LR
   the governance ops examines it, `/migrate` applies its notes — with zero edits to this repository.
 - `vibe-ops governance .` findings for the shipped types are byte-identical across Tracks 2 and 3, except
   the two differences Design declares in advance and assigns to a track each: `log`'s frontmatter entry
-  gained in Track 2, `research` removed in Track 3.
+  gained in Track 2, `research` removed in Track 4.
 - No gate holds a list of the types this repository ships. Passing an invented type name and a field list
   to `record-header` or `record-frontmatter` produces findings under that name, with nothing edited here.
 - Nothing that a type owns is written twice by hand: `35-dogfooding-drift.sh` has no pair left to compare,
@@ -232,7 +248,7 @@ flowchart LR
   Date / Author: 2026-08-20 / Danilo Borges
 
 - Decision: The unit is a manifest declaring where each facet sits, not a folder the facets move into.
-  The five shipped types stay where they are until Track 4.
+  The five shipped types stay where they are until Track 5.
   Rationale: four mechanisms read a facet's path as meaning rather than as an address — the authoring
   rules' version *is* their path under `references/` and a check matches the two, a note's type is parsed
   from its filename, `template-heading-drift` attributes dropped sections by that prefix, and the drift
@@ -314,7 +330,7 @@ flowchart LR
   Date / Author: 2026-08-20 / Danilo Borges
 
 - Decision: in Track 2 the entries carry their `required` list literally, guarded by a test that holds it
-  to `plugin/types/index.json`; Track 3 deletes the literals and the guard together.
+  to `plugin/types/index.json`; Track 4 deletes the literals and the guard together.
   Rationale: the alternative — the ops naming the manifest path and the gate reading it, as
   `template-version` does with `options.template` — removes the duplication outright, but Track 3 already
   resolves the unit to build the entry list, so the gate would re-read a file the ops just read and the
@@ -330,10 +346,11 @@ flowchart LR
 
 ## Open questions
 
-- Whether `plugin/templates/` can be fully vacated in Track 4 or must keep reading copies for artifacts
-  that predate the move (the stamp-in-HTML-comment population `plugin/AGENTS.md` documents).
+- Whether `plugin/templates/` can be fully vacated, now that Track 3 moves the norm into a package —
+  what remains open is only whether reading copies must stay for artifacts predating the move (the
+  stamp-in-HTML-comment population `plugin/AGENTS.md` documents), not where the canonical copy lives.
 - Whether an entry-level audience is needed at all, or the ops-level field covers every real case — decide
-  from the actual classification pass in Track 5, not in advance.
+  from the actual classification pass in Track 6, not in advance.
 - **A promulgation hash, for [Plan-031](031-ownership-fragments-and-the-shaped-class.md).** `harness.applied`
   records a *version* per type, which answers "is this behind?" and cannot answer "was this edited?".
   Recording a hash of what was written would let a `norm` path be overwritten knowing whether anything is
