@@ -361,6 +361,32 @@ breaks `npm run build`. Recreate it only together with its first source file.
   creates is real, so it is closed by a mechanical guard rather than by intending to get to Track 3.
   Date / Author: 2026-08-20 / Danilo Borges
 
+- Decision: the norm ships as an **npm package**, and this became **Track 3** rather than later work —
+  Tracks 1 and 2 built on the plugin tree, so it corrects the footing the remaining tracks stand on.
+  Rationale: RFC-0003 already decided the protocol ("the resolution protocol is therefore npm, and a
+  type's identity is the package that ships it"); placing the units in `plugin/types/` diverged from it.
+  Measured: no package publishes anything but `dist` (plus `core`'s `queries`), and `resolveSourceRoot` is
+  `harness.source ?? --source ?? CLAUDE_PLUGIN_ROOT` — three names for a plugin tree — so an npm-only
+  install has no templates, no migration notes and no types at all. It also **supersedes the answer this
+  plan had recorded for Track 4**: giving `defineOps` a `needsSource` passthrough would read the norm from
+  a plugin tree, which is exactly the install that has none. A package the ops depends on resolves from
+  `node_modules`, needs no core change, and answers where `needsSource` could not.
+  Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: the type package carries **the code coupled to its data**, not data alone; and one package
+  ships the five types rather than five packages.
+  Rationale: a header has a FORMAT, and the TypeScript reading it is coupled to that format —
+  `plan-fields.ts` looks for the plan template's own `Status lifecycle:` marker and its living-sections
+  fence, `status.ts` counts the checkboxes under `## Tracks`, `close.ts` reads a dossier's shape,
+  `log.ts` reads a log entry's frontmatter contract. Shipping a template in one package and its reader in
+  another would put a version boundary through the middle of one fact. Measured: 1333 of `records/src`'s
+  2866 lines (46%) name a particular template. One package because RFC-0003's own identifier is
+  `npm/@scope/governance-policies@0.1#policy@2` — plural, type selected by a fragment — so a package
+  shipping several types is the modelled case; the resolver must still handle `governance-plan#plan` and
+  `dot-agent-freeze#freeze-policy`, which is what the scan does. **Recorded here rather than only in the
+  Track 3 dossier, which is deleted at closure.**
+  Date / Author: 2026-08-21 / Danilo Borges
+
 ## Outcomes & Retrospective
 
 (No outcomes yet — filled at each major track completion and at the end.)
