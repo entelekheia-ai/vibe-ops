@@ -99,4 +99,4 @@ resolution through `<records:policy>` and appearance in `records census`.
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.
