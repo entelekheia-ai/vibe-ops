@@ -98,6 +98,7 @@ Every `Why` below was run before it was written, per `references/records/task.md
   `frontmatter.ts` with `stripBlockScalarHeader`, and pinned by two tests in `records/test/log.test.ts`:
   one for the header, one asserting the backtick case breaks a plain scalar and survives the block form.
   Worth routing at closure — any repository writing `>-` in frontmatter hit this silently.
+  > Promoted to learning on 2026-08-21
 
 ## Closure
 

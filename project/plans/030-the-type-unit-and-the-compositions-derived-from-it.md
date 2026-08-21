@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Depends on | [Plan-029](./shipped/029-a-record-type-becomes-a-resolved-name.md) |
@@ -166,15 +166,38 @@ flowchart LR
     X["fragment-parity,<br/>ops-self entries"] --> I["internal audience —<br/>never composed into a target"]
 ```
 
+## Read these first
+
+Written 2026-08-21, before a compaction, because the session that produced Tracks 1–3 is about to be
+discarded and a compacted session trusts the retelling rather than re-exploring. In order, each with why:
+
+1. **[ADR-0018](../adr/0018-a-package-declares-its-types-by-pointing-at-a-directory.md)** — what a package
+   publishes to declare a type, and the two shapes rejected. Track 3 implements this contract; everything
+   below is downstream of it.
+2. **[Plan-029, shipped](shipped/029-a-record-type-becomes-a-resolved-name.md)** — the dependency this
+   plan declares, now closed. Its retrospective carries what its two success criteria actually cost, and
+   one blocked promotion. `RecordType` is an open name and the package scan exists *because of it*.
+3. **`cli/packages/core/src/type-scan.ts`** — the scan Track 3 resolves the norm package through. Its
+   header states the one/none/many rule and why it never imports.
+4. **`cli/packages/records/src/type-unit.ts` and `type-index.ts`** — what a type unit IS and how the
+   generated index is built. Track 3 moves both to the package; nothing about their shape changes.
+5. **[tasks/the-norm-travels-as-a-package.md](../tasks/the-norm-travels-as-a-package.md)** — Track 3's
+   dossier, split into two parts, with the measurement that motivates it: an npm-only install has no norm
+   at all.
+
+**The one thing not written down anywhere else:** Track 3's Part 1 was about to begin and the package was
+scaffolded and then removed, deliberately — `cli/packages/*` is the workspace glob, so an empty `src/`
+breaks `npm run build`. Recreate it only together with its first source file.
+
 ## Tracks
 
-- [ ] **Track 1 — The unit and its resolver.** The manifest schema, the resolver over the two roots, one
+- [x] **Track 1 — The unit and its resolver.** The manifest schema, the resolver over the two roots, one
   unit per shipped type pointing at where its facets already sit, and the generated index that is the
   norm's authority. **Nothing moves.** Exists at the end: a fixture unit in a temp root resolves every
   facet. Acceptance: existing tests green; the fixture resolves; `vibe-ops governance .` output unchanged,
   because Track 1 composes nothing.
   Task: [tasks/type-unit-and-resolution-roots.md](../tasks/type-unit-and-resolution-roots.md)
-- [ ] **Track 2 — The header schema becomes data.** `record-header` takes its required-field list from
+- [x] **Track 2 — The header schema becomes data.** `record-header` takes its required-field list from
   `options` instead of a closed union of four literals it throws outside of, and `options.schema` becomes
   `options.type` because it now names a type rather than selecting a schema. The `frontmatter` carrier
   gets `record-frontmatter`, a symmetric sibling — **not** an extension of `check-frontmatter`, whose
