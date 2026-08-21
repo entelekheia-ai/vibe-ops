@@ -165,3 +165,25 @@ test("show refuses with a reason rather than reporting on nothing", async () => 
   assert.equal(result.code, 2);
   assert.match(result.summary, /at least one record path/);
 });
+
+// A CONTRIBUTED TYPE AND A TYPO ARE THE SAME STRING (Plan-029, found at closure). Opening the union
+// tempted a gate of "anything outside the shipped list passes", which would have let `--type wat` resolve
+// against `project/wat` by convention and report a confident empty answer. The question is not whether a
+// name is unknown but whether anything DECLARED it — the repository through `records.dirs`, or an
+// installed package through the scan. Both are on purpose; a misspelling is neither.
+test("a type the repository declared resolves; a misspelling beside it still fails", async () => {
+  const { mkdtemp, mkdir } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const nodePath = (await import("node:path")).default;
+  const repoRoot = await mkdtemp(nodePath.join(tmpdir(), "vibeops-contributed-"));
+  await mkdir(nodePath.join(repoRoot, "project", "policy"), { recursive: true });
+  const config = { records: { dirs: { policy: "project/policy" } } };
+  const base = { repoRoot, command: "resolve", args: [], config, settings: undefined, surface: "cli" as const, log: () => {}, warn: () => {} };
+
+  const declared = await records.run({ ...base, flags: { type: "policy" } });
+  assert.equal(declared.code, 0, "a declared type is a declaration somebody made on purpose");
+
+  const typo = await records.run({ ...base, flags: { type: "polcy" } });
+  assert.equal(typo.code, 2, "one letter off is not a contributed type");
+  assert.match(typo.summary ?? "", /adr, rfc/);
+});

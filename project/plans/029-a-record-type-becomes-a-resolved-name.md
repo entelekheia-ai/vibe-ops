@@ -166,7 +166,64 @@ is a second place to forget.
 
 ## Outcomes & Retrospective
 
-(No outcomes yet — filled at each major track completion and at the end.)
+Both tracks shipped. Against the plan's own Goals and Success criteria, one at a time.
+
+### The goals
+
+**"A type name outside the shipped four is representable end to end."** Met, but *end to end* was doing
+more work than it looked. Config, both tokens and the layout resolver were reachable after Track 1, and
+the plan's Design section had predicted exactly that — the four-keyed maps become shipped defaults with a
+generic fallback. What the Design did not name, and what closure caught, is that two surfaces were not
+data at all but **gates on input**: `records census` iterated five hardcoded names, and `gateType` in
+`module-records` measured `--type` against a closed allowlist. A contributed type type-checked, expanded
+through its tokens, resolved its directory — and was then invisible to the census and refused by the
+verb. Both are fixed and pinned by tests; see the criterion below.
+
+**"`types` exists in `VibeOpsConfig`."** Met, and the cascade question the dossier left open was decided
+against the cascade's own tests rather than by taste: per key, like `records.dirs`, because two bindings
+naming two different types are independent facts.
+
+**"The scan enumerates installed packages … one/none/many."** Met, with eight fixtures covering the
+general shape rather than only this repository's: `@scope/governance-policies` claiming two types beside
+`dot-agent-freeze` claiming one, the two-claimant refusal naming both, and the declared-but-unresolvable
+binding that must not fall back.
+
+**"The four shipped types keep working with zero configuration."** Met: 500 tests green from a clean
+build, the governance ops unchanged.
+
+### The success criteria
+
+| Criterion | Verdict |
+|---|---|
+| A fixture repository declaring an unshipped type type-checks, resolves through the tokens, **and appears in `records census`** | **Not met when first checked** — the first two clauses passed and the third failed silently, because `census` iterated five hardcoded names and `gateType` measured `--type` against a closed allowlist. Both fixed during closure and pinned by tests; met now. |
+| Two claimants produce a finding naming both; the binding resolves it; an unresolvable binding does not fall back | Met as unit behaviour. **The "reports zero examined" half is a prediction, not a result** — no caller consumes the resolution yet, so nothing counts anything. It is honest to say the rule is implemented and the reporting is unexercised. |
+| Every repository using the shipped four needs no config change | Met for this repository (500/500, governance identical). **Not run against an adopted repository** — none was to hand, and saying so is better than implying a run that did not happen. |
+
+### What the closure itself taught
+
+Step 0 of `/close-plan` earned its place. Two of three success criteria were partly unmet at the moment
+the plan looked finished — every track checked, every test green, the work genuinely done. A criterion
+naming a *surface* (`records census`) rather than a *capability* is what caught it: the capability was
+there and the surface did not use it.
+
+The plan's estimate of its own blast radius was three times the reality, and the plan was not wrong — it
+measured a different thing. "24 files mention the type `plan`" counts mentions of the string; the type
+itself was named in twelve source files and broke seven call sites. Worth carrying: an estimate of "how
+big is this change" made by grepping a *value* overstates a change to its *type*.
+
+Opening the union removed more code than it added. `RecordType | "log"` existed in three places and a
+`type === "log" ? 1 : DEPTH[type]` in a fourth, all because `log` had a template and a directory but was
+not a union member.
+
+**A contributed type and a typo are the same string**, and closure is where that became concrete. The
+first fix to the refused verb was "anything outside the shipped list passes" — which promptly let
+`--type wat` through, caught by a test that had been asserting the old closed vocabulary. The right gate
+is not *is this name unknown* but *did anything DECLARE it*: the repository through `records.dirs`, or an
+installed package through the scan Track 2 had just built. Both are declarations somebody made on
+purpose; a misspelling is neither. The scan is consulted last and only for a name nothing else explains,
+because it walks `node_modules` and a verb that paid for that every time would be paying for the rare
+case. This is the first consumer of Track 2's scan, and it arrived by accident an hour after the scan
+did.
 
 ---
 

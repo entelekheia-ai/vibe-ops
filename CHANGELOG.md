@@ -14,6 +14,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — a record type is a resolved name, not a closed union (Plan-029)
+
+- **`RecordType` opens.** It was `"adr" | "rfc" | "plan" | "task"`, and `RecordsConfig` keyed both its
+  maps by it, so a repository keeping an artifact this tooling does not ship could not say so —
+  `records: { dirs: { policy: … } }` was a compile error. It is now an open name; the four shipped types
+  become the defaults consulted for those four, with the generic `project/<type>` convention answering
+  for every other.
+- **`vibe-ops records resolve --type <t>` and `records census` see a contributed type.** A type the
+  repository declares a directory for, or an installed package declares, resolves and is censused. A
+  misspelling still fails naming the valid set — the gate asks whether anything *declared* the name, not
+  whether the name is unknown.
+- **The type scan.** A package declares types with `"vibeOps": { "types": "<dir>" }` in its
+  `package.json`; the scan walks `node_modules` upward and never imports, so learning that a package
+  declares a type does not run its code. One claimant resolves, none reports absence, two or more names
+  every claimant and says how to break the tie.
+- **`types` in `vibeops.config.ts`** binds a local type name to the package that governs it, for the
+  ambiguous case only. It merges per key across the cascade, like `records.dirs`.
+
+
 ### Changed — `authoring-style` gains a "Direct and literal" section (`authoring-style@2`)
 
 - **`plugin/references/authoring-style.md` moves to `@2`**: every claim is stated positively (litotes and

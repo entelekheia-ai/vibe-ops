@@ -18,7 +18,13 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { createDocumentStore, defineModule, resolvePluginDir } from "@entelekheia/vibe-ops-core";
+import {
+  createDocumentStore,
+  defineModule,
+  resolvePluginDir,
+  scanTypePackages,
+  typesDeclaredBy,
+} from "@entelekheia/vibe-ops-core";
 import {
   depthFor,
   formatResolved,
@@ -26,7 +32,7 @@ import {
   resolveRecord,
   RecordsConfigError,
 } from "@entelekheia/vibe-ops-records";
-import type { ModuleResult, RecordType } from "@entelekheia/vibe-ops-core";
+import type { ModuleResult, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
@@ -45,10 +51,20 @@ const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
 const RESOLVE_TYPES: readonly RecordType[] = ["adr", "rfc"];
 
 /** Where a type that used to resolve here resolves now — named in the refusal, so a removal reads as a rename. */
-const RESOLVES_UNDER: Partial<Record<RecordType, string>> = {
+const RESOLVES_UNDER: Partial<Record<string, string>> = {
   plan: "vibe-ops plan resolve",
   task: "vibe-ops task resolve",
 };
+
+/** Every type this repository declared a directory for — a declaration somebody made on purpose, which
+ *  is what separates a contributed type from a misspelling. */
+function declaredTypes(config: VibeOpsConfig | undefined): readonly string[] {
+  return Object.keys(config?.records?.dirs ?? {});
+}
+
+/** The names this tooling itself ships. A name outside it is contributed, and `gateType` lets it through
+ *  rather than measuring it against a vocabulary that no longer closes. */
+const ORDER_SHIPPED: readonly string[] = ["adr", "rfc", "plan", "task", "log"];
 
 /**
  * The one `--type` gate. It was written twice, byte-identical, back when both verbs took the same four
@@ -59,8 +75,24 @@ const RESOLVES_UNDER: Partial<Record<RecordType, string>> = {
 function gateType(
   value: string | boolean | undefined,
   allowed: readonly RecordType[],
+  declared?: readonly string[],
+  repoRoot?: string,
 ): { readonly type: RecordType } | { readonly failure: ModuleResult } {
   if (typeof value === "string" && allowed.includes(value as RecordType)) return { type: value as RecordType };
+  // A CONTRIBUTED TYPE AND A TYPO ARE THE SAME STRING, so the question cannot be "is this outside the
+  // shipped list" — that would let `--type wat` resolve against `project/wat` by convention and report a
+  // confident empty answer. It is "does anything DECLARE this": the repository, through `records.dirs`,
+  // or an installed package, through the scan (Plan-029 Track 2). Both are declarations somebody made on
+  // purpose; a misspelling is neither, and still fails naming the set.
+  //
+  // The scan is consulted LAST and only for a name nothing else explains — it walks `node_modules`, and
+  // a verb that pays for that on every invocation would be paying for the rare case.
+  if (typeof value === "string" && value !== "" && RESOLVES_UNDER[value] === undefined && !ORDER_SHIPPED.includes(value)) {
+    if (declared?.includes(value) === true) return { type: value };
+    if (repoRoot !== undefined && scanTypePackages(repoRoot).some((claimant) => typesDeclaredBy(claimant).includes(value))) {
+      return { type: value };
+    }
+  }
   const elsewhere = typeof value === "string" ? RESOLVES_UNDER[value as RecordType] : undefined;
   return {
     failure: {
@@ -214,7 +246,7 @@ export default defineModule(
     }
 
     if (context.command === "list") {
-      const gated = gateType(context.flags.type, TYPES);
+      const gated = gateType(context.flags.type, TYPES, declaredTypes(context.config), context.repoRoot);
       if ("failure" in gated) return gated.failure;
       const type = gated.type;
       const documents = createDocumentStore(context.repoRoot);
@@ -307,7 +339,7 @@ export default defineModule(
     }
 
     if (context.command === "resolve") {
-      const gated = gateType(context.flags.type, RESOLVE_TYPES);
+      const gated = gateType(context.flags.type, RESOLVE_TYPES, declaredTypes(context.config), context.repoRoot);
       if ("failure" in gated) return gated.failure;
       const type = gated.type;
 

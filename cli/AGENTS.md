@@ -121,7 +121,7 @@ second concept.
 - **`<template:<type>>` in `options` resolves to where that type's template actually is** — the
   repository's `records.templates`, else the first existing candidate (`project/templates/`, `templates/`,
   `.agents/templates/`), else the plugin surface, which is what a repository whose templates *are* its
-  distributable needs and what `log` requires, since `RecordType` cannot name it. `<plugin>/templates/…`
+  distributable needs. `<plugin>/templates/…`
   was the literal before, and in a flat repo it resolved to the repository root — a path `setup repo`
   never writes, so `template-version` was inert in **every** repository this tooling scaffolds and said
   `SKIP`. The search order has one copy, in core; `packages/records/` builds its candidate map from it.
