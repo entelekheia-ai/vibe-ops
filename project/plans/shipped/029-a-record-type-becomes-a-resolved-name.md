@@ -199,6 +199,20 @@ build, the governance ops unchanged.
 | Two claimants produce a finding naming both; the binding resolves it; an unresolvable binding does not fall back | Met as unit behaviour. **The "reports zero examined" half is a prediction, not a result** — no caller consumes the resolution yet, so nothing counts anything. It is honest to say the rule is implemented and the reporting is unexercised. |
 | Every repository using the shipped four needs no config change | Met for this repository (500/500, governance identical). **Not run against an adopted repository** — none was to hand, and saying so is better than implying a run that did not happen. |
 
+### One promotion is blocked, and this is where it is written down
+
+**"An estimate of *how big is this change* made by grepping a value overstates a change to its type."**
+It survives the promotion test — it would burn a fresh agent more than once, it is not discoverable by
+reading code, and nothing enforces it — and it holds beyond this repository, which puts its surface at
+the workspace-level learnings tier. **This repository has no `project/learnings/`**, so the promotion
+cannot land from here.
+
+Recorded rather than dropped: the fact is stated in this retrospective, which is permanent, and
+`/route-learnings` at the workspace root is what unblocks it. Everything else the two dossiers held was
+either discharged into the code comment where someone meets the question, promoted to
+[ADR-0018](../../adr/0018-a-package-declares-its-types-by-pointing-at-a-directory.md), or dropped out
+loud as a one-time outcome.
+
 ### What the closure itself taught
 
 Step 0 of `/close-plan` earned its place. Two of three success criteria were partly unmet at the moment
