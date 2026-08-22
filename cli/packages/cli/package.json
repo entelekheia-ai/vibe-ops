@@ -18,7 +18,7 @@
     "@entelekheia/vibe-ops-core": "^0.0.1",
     "@entelekheia/vibe-ops-module-check": "^0.0.1",
     "@entelekheia/vibe-ops-module-harness": "^0.0.1",
-    "@entelekheia/vibe-ops-records": "^0.0.1",
+    "@entelekheia/governance-base": "^0.0.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.25.0"
   },

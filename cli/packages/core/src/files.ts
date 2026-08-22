@@ -74,7 +74,7 @@ export function expandPluginToken(pattern: string, repoRoot: string, pluginDir: 
 
 /**
  * The directories a record type's template is searched in, nearest convention first. Exported because
- * `@entelekheia/vibe-ops-records` builds its own candidate map from this list rather than restating it —
+ * `@entelekheia/governance-base` builds its own candidate map from this list rather than restating it —
  * two search orders would drift, and a drift here is invisible from either side because both answers look
  * like a template path.
  */
@@ -129,7 +129,7 @@ export function expandTemplateToken(
 /**
  * The directories a record type is searched in, in order. Irregular by type — plural for some, a
  * different stem for others — so unlike templates it cannot be generated from a prefix list, and the
- * four the tooling ships are named. Exported because `@entelekheia/vibe-ops-records` builds its own
+ * four the tooling ships are named. Exported because `@entelekheia/governance-base` builds its own
  * candidate map from this rather than restating it.
  */
 export const RECORD_DIRS: Readonly<Record<string, readonly string[]>> = {

@@ -3,7 +3,7 @@
 // added, a template's version bumped, or a manifest's template path changed, each without regenerating,
 // leaves both files individually well-formed and disagreeing.
 //
-// IT REBUILDS RATHER THAN COMPARING FIELDS. `buildTypeIndex` in @entelekheia/vibe-ops-records is what
+// IT REBUILDS RATHER THAN COMPARING FIELDS. `buildTypeIndex` in @entelekheia/governance-base is what
 // the generator itself calls, so this gate asks the only question that cannot go stale: would
 // regenerating produce these bytes? A field-by-field comparison would have to be extended every time
 // the index gains a key, and the extension it did not get is invisible — it reports clean.
@@ -18,7 +18,7 @@
 
 import { defineGate } from "@entelekheia/vibe-ops-core";
 import type { GateFinding, GateFix } from "@entelekheia/vibe-ops-core";
-import { buildTypeIndex, serialiseTypeIndex, typeIndexPath } from "@entelekheia/vibe-ops-records";
+import { buildTypeIndex, serialiseTypeIndex, typeIndexPath } from "@entelekheia/governance-base";
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";

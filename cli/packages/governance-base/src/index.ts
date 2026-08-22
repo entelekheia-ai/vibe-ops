@@ -1,3 +1,5 @@
+export { defineGovernance } from "./define-governance.ts";
+export type { DefineGovernanceOptions, GovernancePlugin } from "./define-governance.ts";
 export { resolveRecord } from "./resolve.ts";
 export type { ResolvedLocation, ResolvedRecord } from "./resolve.ts";
 export { formatResolved } from "./format.ts";

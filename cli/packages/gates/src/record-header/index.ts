@@ -6,7 +6,7 @@
 // rather than the load-bearing-ness of the field.
 //
 // THE HEADER TABLE IS THE FIRST `pipe_table` REACHED BEFORE THE FIRST LEVEL-2 HEADING — `findHeaderTable`
-// and `keysOf` live in @entelekheia/vibe-ops-records (Plan-011 Track 2), the one definition of where a
+// and `keysOf` live in @entelekheia/governance-base (Plan-011 Track 2), the one definition of where a
 // record's header is, shared with the action side that reads the same table's VALUES. Measured exact
 // over this repository's own 28 tracked records (21 hits, 7 correct misses, 0 misfires; see
 // project/tasks/004-the-governance-ops.md, item 3) — the naive reading instead grabs a CONTENT table in
@@ -33,7 +33,7 @@
 
 import { defineGate, lineAt } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import { findHeaderTable, keysOf } from "@entelekheia/vibe-ops-records";
+import { findHeaderTable, keysOf } from "@entelekheia/governance-base";
 
 interface RecordHeaderOptions {
   /** The record type this entry examines. Names the finding's rule; never validated against a list. */

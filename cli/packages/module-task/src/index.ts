@@ -16,7 +16,7 @@ import {
   RecordsConfigError,
   routingPolicy,
   TaskCloseError,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 
 /**
  * Where `/vibe-ops:migrate` keeps its notes. The dispatch reads the same evidence the migrate skill

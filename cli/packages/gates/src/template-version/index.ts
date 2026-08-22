@@ -37,7 +37,7 @@
 
 import { defineGate, expandPluginToken } from "@entelekheia/vibe-ops-core";
 import type { Document, GateFinding } from "@entelekheia/vibe-ops-core";
-import { compareVersions, findHeaderTable, readTemplateVersion, valueOf } from "@entelekheia/vibe-ops-records";
+import { compareVersions, findHeaderTable, readTemplateVersion, valueOf } from "@entelekheia/governance-base";
 
 interface TemplateVersionOptions {
   /**

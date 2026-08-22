@@ -20,7 +20,7 @@ import {
   trackCheckboxes,
   valueOf,
   type Heading,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 import { handlingFor } from "./handling.ts";
 import type { CensusType } from "./census.ts";
 

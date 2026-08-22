@@ -1,7 +1,7 @@
 {
-  "name": "@entelekheia/vibe-ops-records",
+  "name": "@entelekheia/governance-base",
   "version": "0.0.1",
-  "description": "Where a governance record type lives, its template, its next number — read once, in TypeScript",
+  "description": "The reusable governance components: where a record type lives, its template, its next number — and the defineGovernance sugar a per-artifact package is built from",
   "type": "module",
   "license": "Apache-2.0",
   "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },

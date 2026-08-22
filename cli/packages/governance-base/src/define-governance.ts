@@ -1,0 +1,116 @@
+// The sugar a per-artifact governance package is built from — Plan-033, ADR-0019.
+//
+// ONE ARTIFACT, ONE GOVERNANCE PACKAGE, and behaviour equal across artifacts is written HERE, once.
+// `governance-adr`'s whole src/ is one call to this function; `governance-plan` passes its own verbs
+// and its own `run` on top. Without this layer every equal-behaviour governance would carry a copy of
+// the same resolve verb, and the copies would drift — the exact failure the base layer exists to remove.
+//
+// THE RETURNED PLUGIN CARRIES THE PACKAGE'S ROOT AND ITS PARSED UNIT. Activation is the repository's
+// `vibeops.config` (the config is the registry), so the CLI learns a governance package by importing
+// it — and one import must answer BOTH halves: the verbs (a ModulePlugin like any other) and the data
+// (where the template, authoring rules and migration notes are). Stamping the root and unit here is
+// what makes that one import sufficient, and it is the seam the proxy's later increments extend —
+// skill snippets, hook configuration — as further keys on this same options bag, no reshaping.
+//
+// THE OPTIONS BAG IS DELIBERATELY OPEN-ENDED IN DESIGN, CLOSED IN CODE. New capabilities arrive as new
+// optional fields; nothing here is variadic or dynamic, so a governance package that declares itself
+// wrongly fails at load, the same argument defineModule already makes.
+
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { createDocumentStore, defineModule } from "@entelekheia/vibe-ops-core";
+import type {
+  ModuleCommand,
+  ModuleContext,
+  ModuleFlag,
+  ModulePlugin,
+  ModuleResult,
+} from "@entelekheia/vibe-ops-core";
+import { formatResolved } from "./format.ts";
+import { RecordsConfigError } from "./layout.ts";
+import { resolveRecord } from "./resolve.ts";
+import { parseTypeUnit } from "./type-unit.ts";
+import type { TypeUnit } from "./type-unit.ts";
+
+/** A governance module: a ModulePlugin that also answers where its data is. */
+export interface GovernancePlugin extends ModulePlugin {
+  /** Absolute path to the package root — the directory holding `type.json` and the facet dirs. */
+  readonly root: string;
+  /** The parsed `type.json`, facet paths still package-relative; resolve against `root`. */
+  readonly unit: TypeUnit;
+}
+
+export interface DefineGovernanceOptions {
+  /**
+   * The package's own root. A caller computes it from its `import.meta.url` — one level up from
+   * `src/` or `dist/`, the same depth either way — because an installed package sits wherever npm put
+   * it and nothing else can know.
+   */
+  readonly root: string;
+  readonly version: string;
+  /** Overrides the derived one-liner. */
+  readonly summary?: string;
+  /** Verbs beyond the standard set. Appended, so the standard verbs cannot be shadowed by accident. */
+  readonly commands?: readonly ModuleCommand[];
+  readonly flags?: readonly ModuleFlag[];
+  readonly emits?: readonly string[];
+  readonly destructive?: boolean;
+  readonly needsSource?: boolean;
+  /**
+   * The package's own dispatch, for the verbs it added. Receives `base` — the standard verbs'
+   * implementation — and delegates to it for anything it does not handle, so a governance never
+   * re-implements a standard verb to keep it working.
+   */
+  readonly run?: (
+    context: ModuleContext,
+    base: (context: ModuleContext) => Promise<ModuleResult>,
+  ) => Promise<ModuleResult>;
+}
+
+/** The verbs every governance has, before its package adds any. */
+const STANDARD_COMMANDS: readonly ModuleCommand[] = [
+  { name: "resolve", summary: "directory, template and next number for this record type" },
+];
+
+/**
+ * Builds a governance module from the package's own `type.json` plus whatever the package adds.
+ * The module id IS the unit's type — `vibe-ops <type> …` — which is what keeps settings keys, MCP tool
+ * names and skills stable when a type's serving package changes.
+ */
+export function defineGovernance(options: DefineGovernanceOptions): GovernancePlugin {
+  const manifestFile = path.join(options.root, "type.json");
+  const unit = parseTypeUnit(readFileSync(manifestFile, "utf8"), manifestFile);
+
+  const base = async (context: ModuleContext): Promise<ModuleResult> => {
+    if (context.command === "resolve") {
+      const documents = createDocumentStore(context.repoRoot);
+      try {
+        const resolved = resolveRecord(unit.type, context.repoRoot, context.config, documents);
+        if (context.surface === "cli" && context.flags["json"] !== true) {
+          for (const line of formatResolved(resolved)) context.log(line);
+        }
+        return { code: 0, summary: `${unit.type} resolved`, data: resolved };
+      } catch (error) {
+        if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
+        throw error;
+      }
+    }
+    return { code: 2, summary: `${unit.type} has no command "${context.command ?? ""}"` };
+  };
+
+  const plugin = defineModule(
+    {
+      id: unit.type,
+      version: options.version,
+      summary: options.summary ?? `The ${unit.type} record type: its layout, template and rules`,
+      ...(options.flags === undefined ? {} : { flags: options.flags }),
+      commands: [...STANDARD_COMMANDS, ...(options.commands ?? [])],
+      ...(options.emits === undefined ? {} : { emits: options.emits }),
+      ...(options.destructive === undefined ? {} : { destructive: options.destructive }),
+      ...(options.needsSource === undefined ? {} : { needsSource: options.needsSource }),
+    },
+    async (context) => (options.run === undefined ? base(context) : options.run(context, base)),
+  );
+
+  return { ...plugin, root: options.root, unit };
+}

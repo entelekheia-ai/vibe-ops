@@ -9,7 +9,7 @@
 
 import path from "node:path";
 import { createDocumentStore, loadConfig } from "@entelekheia/vibe-ops-core";
-import { planStatusFindings, RecordsConfigError, resolveRecord } from "@entelekheia/vibe-ops-records";
+import { planStatusFindings, RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
 import { repoRootFrom } from "./run.ts";
 
 interface PostToolUsePayload {

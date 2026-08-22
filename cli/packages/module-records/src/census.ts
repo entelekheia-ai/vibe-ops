@@ -23,7 +23,7 @@ import {
   NOT_A_RECORD,
   readTemplateVersion,
   resolveRecord,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 
 /** The four numbered types plus `log`, which has no number and so no `RecordType` of its own. */
 export type CensusType = RecordType | "log";

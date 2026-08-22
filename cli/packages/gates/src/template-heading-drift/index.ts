@@ -36,7 +36,7 @@ import {
   walkLayersWithHostPositions,
 } from "@entelekheia/vibe-ops-core";
 import type { Document, GateFinding } from "@entelekheia/vibe-ops-core";
-import { droppedSections, livingSectionsFromTemplate, readMigrationNotes } from "@entelekheia/vibe-ops-records";
+import { droppedSections, livingSectionsFromTemplate, readMigrationNotes } from "@entelekheia/governance-base";
 import path from "node:path";
 import type Parser from "tree-sitter";
 

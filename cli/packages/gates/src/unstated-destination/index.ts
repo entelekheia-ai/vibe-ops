@@ -26,7 +26,7 @@
 
 import { defineGate, describedText, lineAt } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import { droppedSections } from "@entelekheia/vibe-ops-records";
+import { droppedSections } from "@entelekheia/governance-base";
 
 export default defineGate(
   {

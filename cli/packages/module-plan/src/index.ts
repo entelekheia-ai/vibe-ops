@@ -19,8 +19,8 @@ import {
   resolveRecord,
   RecordsConfigError,
   routingPolicy,
-} from "@entelekheia/vibe-ops-records";
-import type { Dispatch, PlanStatusFinding } from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
+import type { Dispatch, PlanStatusFinding } from "@entelekheia/governance-base";
 
 /** The approved plan arrives on stdin when `--from` is absent — the shape a hook hands it over in. */
 async function readAll(stream: NodeJS.ReadableStream): Promise<string> {

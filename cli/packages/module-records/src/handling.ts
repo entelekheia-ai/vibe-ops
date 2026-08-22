@@ -32,7 +32,7 @@ import {
   resolveRecord,
   type DeclaredVersion,
   type Dispatch,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 import type { CensusType } from "./census.ts";
 
 export interface Handling {

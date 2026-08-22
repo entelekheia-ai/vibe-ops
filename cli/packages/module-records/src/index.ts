@@ -31,7 +31,7 @@ import {
   listMarkdownFiles,
   resolveRecord,
   RecordsConfigError,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 import type { ModuleResult, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";

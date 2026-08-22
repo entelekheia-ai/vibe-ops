@@ -17,8 +17,8 @@ import {
   logSweep,
   preambleOf,
   readLogEntries,
-} from "@entelekheia/vibe-ops-records";
-import type { ResolvedLocation } from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
+import type { ResolvedLocation } from "@entelekheia/governance-base";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 

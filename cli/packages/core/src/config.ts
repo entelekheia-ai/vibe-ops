@@ -71,13 +71,13 @@ const STATE_FILENAME = "vibeops.config.local.json";
  *
  * The alias keeps its name so the signatures that read `RecordType` still say what they mean. The four
  * this tooling ships are no longer the definition of what a type CAN be; they are the defaults
- * `@entelekheia/vibe-ops-records` consults for those four names, with a generic convention answering for
+ * `@entelekheia/governance-base` consults for those four names, with a generic convention answering for
  * every other (`recordDirCandidates`/`templateCandidates` in `files.ts`).
  */
 export type RecordType = string;
 
 /**
- * Overrides the built-in search order `@entelekheia/vibe-ops-records` uses to find a record type's
+ * Overrides the built-in search order `@entelekheia/governance-base` uses to find a record type's
  * directory and template. Top-level rather than a `settings` slice: `plan`, `task` and `log` all read
  * through the one resolver, and a per-module slice would be three copies of the same answer.
  *

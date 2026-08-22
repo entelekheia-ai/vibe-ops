@@ -158,7 +158,7 @@ behaves identically under MCP and under a terminal.
 | [`@entelekheia/vibe-ops-agents-md`](packages/ops-agents-md/) | The first ops: the instruction surface, composed from `vibe-ops-gates` |
 | [`@entelekheia/vibe-ops-governance`](packages/ops-governance/) | The second ops: adr/plan/rfc/task header tables, links, and archival breadcrumbs |
 | [`@entelekheia/vibe-ops-self`](packages/ops-self/) | The third ops: the prose describing this repository's own machinery, which `governance` excludes |
-| [`@entelekheia/vibe-ops-records`](packages/records/) | The governance record library the noun modules share — layout, numbering, lifecycles, closure |
+| [`@entelekheia/governance-base`](packages/governance-base/) | The reusable governance components the noun modules share — layout, numbering, lifecycles, closure, the `defineGovernance` sugar |
 | [`@entelekheia/vibe-ops-module-plan`](packages/module-plan/) · [`-task`](packages/module-task/) · [`-log`](packages/module-log/) | The three governance nouns, one package each |
 | [`@entelekheia/vibe-ops-module-records`](packages/module-records/) | The two record types with no noun of their own — `adr` and `rfc` |
 | [`@entelekheia/vibe-ops-module-harness`](packages/module-harness/) | What a repository's harness is, and promulgating the norm into it |
