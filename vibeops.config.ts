@@ -53,7 +53,15 @@ export default {
         // The plans directory gained an index of its own (the roadmap, Plan-033's closure) — an index,
         // not a record, same reasoning as the log READMEs above, one exclusion per entry over the dir.
         "record-header-plan": ["project/plans/README.md"],
-        "template-version-plan": ["project/plans/README.md"],
+        // THE SHIPPED CORPUS KEEPS THE SHAPE IT WAS WRITTEN IN (maintainer decision, 2026-08-22,
+        // Plan-017's open question answered against its own assumption): delivered records are never
+        // migrated — that corpus only grows, so migrating it is a treadmill — and are therefore
+        // exempt from version reporting. The archival directories leave this entry's population; a
+        // LIVING record behind its template still warns, which is the honest reading of open work.
+        "template-version-plan": ["project/plans/README.md", "project/plans/shipped/**"],
+        // The same policy for the RFC lifecycle's archival halves — frozen on arrival by the
+        // governance rule, so a version gap there is a fact about history, not a debt.
+        "template-version-rfc": ["project/rfc/implemented/**", "project/rfc/rejected/**"],
       },
       // Research needs no disablement any more: the per-type entries are derived from the activated
       // governances (Plan-034), and no governance package serves research — the type entered the old

@@ -55,5 +55,5 @@ their gates replaced is easier once 035 has classified every fragment's audience
 
 ## Everything else
 
-The plans outside this chain — 004, 008, 015–023, 028 — are unaffected by it and keep their own order.
+The plans outside this chain — 008, 015–023, 028 — are unaffected by it and keep their own order. (004 closed 2026-08-22 as overtaken — the research-skill capability shipped outside this repository; 008 is open with its own goals unmet, and is the one record deliberately left at `plan@0.1` until its work finishes.)
 `vibe-ops plan status` is the coherence check; `vibe-ops records list --type plan` is the roll call.

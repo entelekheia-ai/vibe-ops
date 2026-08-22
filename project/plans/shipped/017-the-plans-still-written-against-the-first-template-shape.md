@@ -16,10 +16,10 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | Shipped |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) · absorbed by [Plan-031](031-ownership-fragments-and-the-shaped-class.md) Track 3, which closes this plan as its acceptance run |
+| Related | [Plan-014](./014-the-prose-that-describes-a-template-is-checked-against-it.md) · absorbed by [Plan-031](../031-ownership-fragments-and-the-shaped-class.md) Track 3, which closes this plan as its acceptance run |
 
 ---
 
@@ -108,25 +108,23 @@ proceed regardless; the plan is not held hostage by one row of the table.
 
 ## Tracks
 
-- [ ] **Track 1 — Route the six closed plans.** Seventy-seven entries across eight files, of which these
-      six hold the bulk. Each entry gets a destination or an explicit drop, recorded as it is decided
-      rather than reconstructed at the end. At the end each of the six has an empty discoveries section
-      and nothing has been lost. Acceptance: the count of entries routed plus entries dropped equals the
-      count that existed, and the drops are listed rather than implied.
-- [ ] **Track 2 — Decide the fate of the plan whose subject was delivered elsewhere.** Its three tracks
-      are unchecked, its success criteria were never written, and the capability it describes exists
-      today outside this repository in a form that went beyond what it scoped. Either it closes as
-      overtaken, with the reason recorded, or it is rescoped to the part that genuinely remains here. At
-      the end it is one or the other and not a backlog item nobody reads. Acceptance: its status is
-      terminal or its scope names only work that is still real.
-- [ ] **Track 3 — Apply both jumps.** The mechanical half, once the routing is done: sections deleted,
-      stamps moved into frontmatter at the first byte, nothing else touched. At the end the diff for each
-      file shows only the stamp move and the removal of sections emptied in Track 1. Acceptance: no file
-      gains or loses content beyond that.
-- [ ] **Track 4 — Confirm the reporting closes.** The governance run is the thing that has been carrying
-      this debt visibly. At the end it reports nothing behind. Acceptance: the count of records reported
-      behind on their version is zero, and it was non-zero before.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, and the check for
+- [x] ~~**Track 1 — Route the six closed plans.**~~ *(Cut — reversed by the shipped-corpus policy in
+      the Decision Log: no section is emptied and the six files stay as written. The routing ANALYSIS was
+      still performed over all 40 extracted discovery entries, and its finding stands: the overwhelming
+      majority were already discharged into surfaces the entries themselves name — ADRs, references,
+      checks, skill steps; three were promoted to the workspace's learnings by Plan-005's own routing
+      pass; Plan-007's four were routed at its own closure; and exactly two prescriptions were homeless
+      and are now written — the rename-criterion rule into the plan type's `authoring.md`, the
+      never-narrate-the-product's-origin rule into `authoring-style.md`.)*
+- [x] **Track 2 — Decide the fate of the plan whose subject was delivered elsewhere.** Done: Plan-004
+      closed as overtaken — the capability shipped outside this repository, beyond this plan's scope;
+      what would reopen a residue here is recorded in its retrospective.
+- [x] ~~**Track 3 — Apply both jumps.**~~ *(Applied to exactly one record: Plan-004, migrated at its own
+      closure — the opportunistic case the policy prescribes. The six shipped plans keep their shape.)*
+- [x] ~~**Track 4 — Confirm the reporting closes.**~~ *(Closes by exemption, not migration: the archival
+      directories left the `template-version` population, and the run now reports exactly one record
+      behind — Plan-008, open, whose warning is the opportunistic trigger working as designed.)*
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, and the check for
       whether the routing done here makes any existing written instruction redundant. The plan file
       itself is kept.
 
@@ -185,9 +183,50 @@ Run from the repository root:
   a subagent returns plausibly and wrongly.
   Date / Author: 2026-08-13 / Danilo Borges
 
+- Decision: the shipped corpus is never migrated, and this reverses the plan's own assumption — the
+  open question is answered by the maintainer against it. A terminal record keeps the shape it was
+  written in and leaves the version-reporting population (an `ignore` in `vibeops.config.ts`, the
+  archival directories); a living record migrates opportunistically, at the moment it is already being
+  edited, with the `template-version-behind` warning as the trigger. Encoded as governance: the
+  lifecycle rule (both copies — this repository's and the setup template's) and the migrate skill.
+  Rationale: maintainer, 2026-08-22, mid-execution — "normalmente não vou migrar o que já foi
+  entregue, pois isso é um corpus que só cresce; o que foi shipped fica. os que estão a fazer podem
+  migrar de forma oportunista, conforme forem editados." A corpus that only grows makes every
+  migration campaign an eternal treadmill; and the sections an old shape carried are part of what a
+  delivered record was. The six shipped plans' in-flight migration edits were reverted uncommitted.
+  Date / Author: 2026-08-22 / Danilo Borges
+
+- Decision: the in-progress plan (008) is excluded from this migration outright, not merely "until its
+  closure has run" — and the zero-behind success criterion is recorded as wrong by one.
+  Rationale: the exclusion was premised on "its work has shipped and only its closure ceremony remains".
+  Read at execution (2026-08-22), the plan's own record refutes that premise: its 2026-08-13
+  re-measurement found two of five goals unmet, the noise rate risen, and states "the plan does not
+  close on this result". A record that refuses to close cannot be migrated either — the first jump
+  requires routing its living sections, which are the working record of work still happening. The one
+  `template-version-behind` warning it leaves is the honest reading of an unfinished plan, not residue
+  of this migration.
+  Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
+
 ## Outcomes & Retrospective
 
-*Not yet started.*
+**2026-08-22 — closed with its central assumption reversed, which is the outcome worth keeping.** This
+plan assumed the eight old-shape plans should be migrated and asked, in its own Open questions, whether
+a closed plan should be migrated at all — flagging the assumption as worth challenging before Track 3.
+Challenged at exactly that point, it fell: the maintainer's policy is that the delivered corpus keeps
+the shape it was written in, and only living records migrate, opportunistically, when edited anyway.
+
+Against the goals: (1) "no plan declares an older version" — false by design now; the shipped corpus
+legitimately declares the shapes it was written against, exempt from reporting. (2) Routing — analysis
+done over all 40 entries (ledger in Track 1's note); nothing evaporated because nothing was deleted.
+(3) Plan-004 — closed as overtaken. (4) Zero behind — the run reports one, Plan-008, which is open work
+honestly reported; its own 2026-08-13 re-measurement says its goals are unmet and it does not close, so
+it migrates when its work resumes.
+
+**Both success criteria that predicted section deletion were wrong**, in the direction this repository's
+own governance predicted: "the sections being deleted are part of what that record was" — the argument
+the Open question recorded against migration — won. The lasting outputs are the policy itself (the
+lifecycle rule, both copies; the migrate skill's opening; the config exemption), two authoring rules
+that had no home, and Plan-004's closure.
 
 ---
 
@@ -201,5 +240,5 @@ Run from the repository root:
 
 ## Related
 
-- [Plan-014](./shipped/014-the-prose-that-describes-a-template-is-checked-against-it.md) — the prose that describes
+- [Plan-014](./014-the-prose-that-describes-a-template-is-checked-against-it.md) — the prose that describes
   these templates, which went stale in the same jump and is corrected there rather than here.

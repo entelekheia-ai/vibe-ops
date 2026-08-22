@@ -23,6 +23,14 @@ done its whole job by then, and what it would otherwise leave behind is a laptop
 permanent, possibly public document. A plan written by hand carries the same obligation — delete the row
 once the file is in place.
 
+## Success criteria that survive contact
+
+**A rename criterion phrased as "the old name appears nowhere" is almost always wrong.** A rename nobody
+is told about is not finished, so the release note naming the old name is required output, and the grep
+criterion then fails on the very file the rename obliges — allow exactly the announcement, and phrase the
+criterion that way from the start. (Measured on this repository's own first retrofit, where the criterion
+and the changelog it mandated contradicted each other within one track.)
+
 ## The exposure contract, and why a plan is the record most exposed to it
 
 Everything in

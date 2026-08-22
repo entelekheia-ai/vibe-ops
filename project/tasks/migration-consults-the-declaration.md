@@ -16,11 +16,11 @@ vibe-ops-template: task@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Done |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
-| Plan | [plans/031-ownership-fragments-and-the-shaped-class.md](../plans/031-ownership-fragments-and-the-shaped-class.md), Track 3 — absorbs [Plan-017](../plans/017-the-plans-still-written-against-the-first-template-shape.md) |
+| Plan | [plans/031-ownership-fragments-and-the-shaped-class.md](../plans/031-ownership-fragments-and-the-shaped-class.md), Track 3 — absorbs [Plan-017](../plans/shipped/017-the-plans-still-written-against-the-first-template-shape.md) |
 
 ---
 
@@ -71,14 +71,22 @@ reviewed section by section for content preservation; suite green.
   survey found present: `repo` reported and untouched, `seed` only-when-absent grounded in the
   declaration, `shaped` never rewritten by adoption. The check stays with the skill, never the
   scaffolder — its contract is that nothing is left for it to decide.
-- [ ] P0 — item 2 (**not delegable** — permanent records, reviewed by the maintainer)
-- [ ] P0 — item 3 (mechanical)
-- [ ] P1 — item 4 (ceremony)
+- [x] P0 — item 2 — reshaped by the maintainer's shipped-corpus policy (2026-08-22): the corpus run
+  does not happen; the one real migration is Plan-004's, at its own closure, both jumps, content intact.
+- [x] P0 — item 3 — `governance .` reports exactly one behind (Plan-008, open by its own measurement);
+  the archival corpus is exempt by config; suite and 17 checks green.
+- [x] P1 — item 4 — Plan-017 closed as Shipped, its central assumption reversed and recorded.
 
 ## Surprises & Discoveries
 
-- Observation: …
-  Evidence: …
+- Observation: the premise this dossier inherited from Plan-017 — that Plan-008 only awaited its closure
+  ceremony — was refuted by Plan-008's own record, read at execution: its 2026-08-13 re-measurement
+  found two of five goals unmet and states "the plan does not close on this result".
+  Evidence: Plan-008, Progress entry of 2026-08-13 and the Outcomes reading it points at.
+- Observation: the migration note's hardest half (route-then-empty) was made moot for terminal records
+  by a policy decision taken exactly at the point Plan-017's Open question asked for it — before
+  Track 3, not after.
+  Evidence: Plan-017's Decision Log entry of 2026-08-22 quoting the maintainer's direction.
 
 ## Closure
 

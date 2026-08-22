@@ -103,6 +103,11 @@ one sits inside, a personal-memory slug, or a pointer to a private companion doc
 in the file instead. The link is one-directional: personal notes may point at a repository file; a
 repository file never points back.
 
+The same rule one level up: **never narrate the product's origin inside the product.** A skill that opens
+with the private circumstances that produced it — "two repos in this workspace hand-rolled two license
+schemes" — leaks nothing greppable and is still unreadable to anyone outside that workspace, stating as
+this-product's-history what is a general failure mode. Describe the failure mode, not its instance.
+
 That is the summary. The contract itself — what may cross, what the excluded half is written as instead,
 which section of each artifact actually leaks, and which three shapes a guard catches — is
 [`exposure-contract.md`](exposure-contract.md). It governs every record this plugin writes, not only the

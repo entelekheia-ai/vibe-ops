@@ -11,6 +11,13 @@ Templates are versioned so that **migration happens per artifact, not per plugin
 workspace in one sitting, and a repo half-converted by a plugin-wide flag is worse than one where each file
 says which shape it was written against.
 
+**And per artifact means opportunistic, never a campaign.** A record with a terminal status — a shipped
+plan, an implemented or rejected RFC, anything archival — is **never migrated**: that corpus only grows,
+so migrating it is an eternal treadmill, and its old shape is part of what the record was. A **living**
+record migrates at the moment it is being edited anyway; the `template-version-behind` warning on an open
+record is the trigger, and it goes silent when the record reaches its archival directory. A request to
+"migrate everything" is answered by migrating the living records only, and saying so.
+
 **Kind:** target-state — convergent and idempotent. Running it on an artifact already at the current
 version does nothing. `audit` reports without writing.
 

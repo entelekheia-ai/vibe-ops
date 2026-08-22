@@ -20,7 +20,7 @@ vibe-ops-template: plan@3
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Depends on | [Plan-033](./shipped/033-one-artifact-one-governance.md) |
-| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md) (absorbed by Track 3) |
+| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) (absorbed by Track 3) |
 
 ---
 
@@ -52,7 +52,7 @@ adoption start consulting the declaration, which today only promulgation reads.
   reason, refused when it would widen; the composition applies narrowings as the last layer.
 - Migration and adoption consult the composed declaration before writing, as promulgation already does.
 - This repository's own records, still stamped against old template versions, are migrated under the new
-  class — which closes [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md).
+  class — which closes [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md).
 
 ## Scope
 
@@ -134,15 +134,16 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
   class. Exists at the end: a fixture
   artifact with a locally added section migrates and keeps it; a `repo`-classed file is refused with the
   class named. Task: [tasks/shaped-class-and-reclassification.md](../tasks/shaped-class-and-reclassification.md)
-- [ ] **Track 2 — Fragments and composition.** Enumeration of installed fragments, per-path origin, the
+- [x] **Track 2 — Fragments and composition.** Enumeration of installed fragments, per-path origin, the
   double-claim finding, and the hand-written narrowing applied last and refused when widening. Exists at
   the end: two fixture fragments claiming one path produce the finding naming both; a narrowing in config
   changes the effective class.
   Task: [tasks/ownership-fragments-and-composition.md](../tasks/ownership-fragments-and-composition.md)
-- [ ] **Track 3 — The declaration consulted, proven on this repository.** Adoption checks classes before
-  writing; then `/vibe-ops:migrate` runs over this repository's own backlog of old-stamp records as the
-  acceptance test of `shaped` — the run that closes Plan-017. Exists at the end: this repository's records
-  carry current stamps, their content intact.
+- [x] **Track 3 — The declaration consulted, proven on this repository.** Adoption checks classes before
+  writing; the corpus-wide migration run was reversed by the shipped-corpus policy (Decision Log), so the
+  acceptance of `shaped` on a real record became Plan-004's single opportunistic migration at its own
+  closure — structure moved across both jumps, every word of content intact, `records handling`
+  reporting `ownership: shaped` throughout. Plan-017 closed, its assumption reversed.
   Task: [tasks/migration-consults-the-declaration.md](../tasks/migration-consults-the-declaration.md)
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Plan-017's closure rides Track 3.
@@ -178,6 +179,15 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
   past what any fragment declared. Tool-written config stays gated on Plan-032's format RFC.
   Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
 
+- Decision: Track 3's acceptance run shrank from the eight-record corpus to one record (Plan-004),
+  because the maintainer's shipped-corpus policy landed mid-track: terminal records are never migrated;
+  living ones migrate opportunistically when edited. The success criterion "no template-version-behind
+  after Track 3's migration run" is met by exemption for the archival corpus and deliberately unmet for
+  the one open old-shape record (Plan-008), whose warning is the policy's own trigger.
+  Rationale: recorded in full in Plan-017's Decision Log and retrospective — this entry exists so this
+  plan's acceptance reads correctly on its own.
+  Date / Author: 2026-08-22 / Danilo Borges
+
 - Decision: Delegation split — fixture construction and the mechanical reclassification edits are
   delegable under closed contracts; the semantics of `shaped` (what migration may touch), the composition
   rules, and the acceptance migration over this repository's real records are not.
@@ -187,12 +197,26 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
 
 ## Outcomes & Retrospective
 
-(No outcomes yet — filled at each major track completion and at the end.)
+**2026-08-22 — all three tracks in one day, the third reshaped mid-flight by policy.** Against the goals:
+`shaped` exists with the authority order as its semantics, the record directories reclassified in the
+fragments of the governances that own them (the widening carried by the version bump, as designed);
+composition keeps per-path origin, reports double claims naming both claimants, and the repository's
+`ownership` narrowings apply last — refused with the blocking fragment named when they would widen;
+migration and adoption both consult (`records handling` answers `ownership: <class>` for any path; the
+migrate and setup skills refuse per class); and the acceptance on real records became Plan-004's single
+opportunistic migration — content intact, structure moved — after the shipped-corpus policy reversed the
+corpus run (Plan-017 closed carrying that reversal as its outcome).
+
+**Criterion amended in flight:** "no `template-version-behind` after Track 3's migration run" — the
+archival corpus is exempt by policy; the one remaining warning (Plan-008, open, goals unmet by its own
+measurement) is the opportunistic trigger doing its job. **Open, inherited:** the `ownership` verb
+surface and every tool-written config value — Plan-032, gated on its format RFC, now with the narrowing
+layer real and serialisable as its first concrete input.
 
 ---
 
 ## Related
 
 - [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — Implementation Notes 4–6.
-- [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md) — absorbed: its whole scope
+- [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) — absorbed: its whole scope
   is Track 3's acceptance run.

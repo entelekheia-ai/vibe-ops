@@ -1,6 +1,6 @@
 # Research — what a research document must carry that a later reader cannot reconstruct
 
-Feeds [Plan-004](../plans/004-new-research-skill.md), and answers the two questions that plan left open:
+Feeds [Plan-004](../plans/shipped/004-new-research-skill.md), and answers the two questions that plan left open:
 whether research is numbered or dated, and whether it has a lifecycle at all.
 
 Re-read when three investigations have been written under the shape proposed here. Until then the central

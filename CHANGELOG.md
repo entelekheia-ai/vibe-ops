@@ -498,7 +498,7 @@ it, which is what turns a stamp into routing.
   "only counts as delivered once a release is cut" rule is suspended rather than quietly ignored. The rule
   itself is kept beside it, because it comes back the moment releasing does. `claude plugin validate
   . --strict` is named as the first-party check `check-agents-md.sh` sits on top of rather than replaces.
-- **[Plan-004](project/plans/004-new-research-skill.md) — both Open questions closed.** Research is
+- **[Plan-004](./project/plans/shipped/004-new-research-skill.md) — both Open questions closed.** Research is
   **dated**, not numbered, where it is written and named by topic where it is published, so the skill's
   discovery step looks for neither a prefix nor a next number. And research **has** a lifecycle: write-once
   with the supersession banner as its single legal edit, plus an index status of

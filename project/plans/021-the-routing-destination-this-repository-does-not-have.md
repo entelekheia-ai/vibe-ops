@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-13 |
 | Author | Danilo Borges |
-| Related | [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md) |
+| Related | [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) |
 
 ---
 
@@ -153,5 +153,5 @@ Run from the repository root:
 
 ## Related
 
-- [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md) — blocked on the same row
+- [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) — blocked on the same row
   for the subset of entries that route to it.

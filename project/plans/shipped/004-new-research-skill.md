@@ -1,5 +1,6 @@
-<!-- vibe-ops-template plan@0.1 — KEEP THIS LINE. /vibe-ops:migrate reads it to find artifacts written
-     against an older template. Removing it makes this file invisible to migration. -->
+---
+vibe-ops-template: plan@3
+---
 
 <!--
  Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
@@ -15,10 +16,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | Shipped |
 | Created | 2026-07-30 |
 | Author | Danilo Borges |
-| Related | [Plan-003](./shipped/003-readme-presentation.md) — produced the research file this plan generalises from · [Research — what a research document must carry](../research/research-document-format.md), which answers both Open questions below |
+| Related | [Plan-003](./003-readme-presentation.md) — produced the research file this plan generalises from · [Research — what a research document must carry](../../research/research-document-format.md), which answers both Open questions below |
 
 > **This is a placeholder, deliberately thin.** It exists so the idea is not lost, not because the design
 > is settled. The tracks below are a sketch; expect them to change once the maintainer explores the shape
@@ -63,7 +64,7 @@ artifact type — ADR, RFC, plan, task — is scaffolded from the target reposit
 ## Design
 
 The working reference is
-[`project/research/readme-presentation-practices.md`](../research/readme-presentation-practices.md), which
+[`project/research/readme-presentation-practices.md`](../../research/readme-presentation-practices.md), which
 was written by hand during Plan-003 and turned out to have a structure worth reusing. Its load-bearing
 element is the attribution block near the top, which makes the boundary between borrowed and original
 work **mechanical rather than remembered**: because every external claim is linked at first use, anything
@@ -74,7 +75,7 @@ Its second useful property is a section that states where our measurement contra
 rather than quietly averaging the two. A template that only offers "findings" invites agreement.
 
 **Since 2026-08-04 the design is no longer only this file.**
-[`project/research/research-document-format.md`](../research/research-document-format.md) surveys what
+[`project/research/research-document-format.md`](../../research/research-document-format.md) surveys what
 published standards contribute — ICD 203 on separating fact from assumption from judgment and confidence
 from likelihood, PRISMA-S on recording a search as run, the spike-template convention of answering the
 question at the top, and the research-repository literature on index legibility — and audits a corpus of
@@ -90,42 +91,24 @@ lifecycle: write-once with exactly one legal edit, the supersession banner, plus
 
 ## Tracks
 
-Sketch only.
+Sketch only; all three cut at closure — see `Outcomes & Retrospective`.
 
-1. **Template.** Write `research.md` with the attribution block, the "what this feeds" line, and section
-   stubs for published sources, our own measurements, contradictions, and our conclusions.
-2. **Skill.** `skills/new-research/SKILL.md`, modelled on `new-adr`, with the same discovery-first
-   behaviour and the same refusal to invent a structure when no template is found.
-3. **Wiring.** Add to `repo-setup`'s copy list, the `AGENTS.md` skill table, and the README skill table.
+- [x] ~~**Track 1 — Template.** Write `research.md` with the attribution block, the "what this feeds"
+      line, and section stubs for published sources, our own measurements, contradictions, and our
+      conclusions.~~ *(Cut — overtaken: the format shipped outside this repository.)*
+- [x] ~~**Track 2 — Skill.** `skills/new-research/SKILL.md`, modelled on `new-adr`, with the same
+      discovery-first behaviour and the same refusal to invent a structure when no template is found.~~
+      *(Cut — overtaken.)*
+- [x] ~~**Track 3 — Wiring.** Add to `repo-setup`'s copy list, the `AGENTS.md` skill table, and the
+      README skill table.~~ *(Cut — overtaken; and under ADR-0019 a new record type ships as a
+      governance package, not a scaffold copy, so this wiring no longer describes how a type arrives.)*
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
 
 ## Success criteria
 
 *Not yet defined — pending the design questions above.*
 
 ---
-
-## Progress
-
-- [ ] Track 1 — template.
-- [ ] Track 2 — skill.
-- [ ] Track 3 — wiring.
-
-## Surprises & Discoveries
-
-- Observation: Three of the sections this template will require had already been invented by hand — each
-  in exactly one document, none surviving into the next one written.
-  Evidence: In the audited corpus, one document titled a section "(measured, not read)", which is ICD 203's
-  fact-versus-assumption distinction reinvented; one invented a "traces of the experiment" section, which
-  is PRISMA-S's method record; one invented a "does not repeat <sibling>" pointer, which is how two
-  investigations on one subject avoid reading as one contradicting itself. A convention independently
-  reinvented three times and lost three times is a need of the genre, not a matter of taste — and it is the
-  strongest argument for templating this artifact type at all.
-
-- Observation: The problem was not the shape of the document, which is what this plan assumed.
-  Evidence: Hand-written research that dates itself and separates a private from a public layer already
-  beat every generic spike template surveyed. What was missing was that a reader could not tell what a
-  document concluded, how firmly, or when the conclusion dies — three things only the author can supply,
-  and none of which a section reordering fixes.
 
 ## Decision Log
 
@@ -162,14 +145,29 @@ Sketch only.
 
 ## Outcomes & Retrospective
 
-<!-- Filled at each track completion and at the end. -->
+**2026-08-22 — closed as overtaken; nothing here shipped, and that is the outcome.** The capability this
+plan sketched was delivered outside this repository, beyond this plan's own scope: a research skill now
+exists at the maintainer's workspace level carrying exactly the four fields the Decision Log settled (the
+answer at the top, expiry as an observable event, the method as run, the rejected candidates with their
+reopeners), the dated-not-numbered naming, the write-once lifecycle with the supersession banner as the
+single legal edit, an index whose rows carry the conclusion and a status — plus a private/public
+two-layer split this plan never scoped. The two discoveries recorded here (the genre's thrice-reinvented
+sections; the realisation that the gap was signalling, and never document shape) are discharged into that
+delivered design — they are its rationale, embodied.
+
+What this plan scoped for THIS repository — a `research.md` template copied by the scaffold and a plugin
+skill — was never built, and the ground moved under it: since ADR-0019 a record type arrives as a
+governance package activated by config, not as a scaffold copy, and this repository deliberately leaves
+research outside the versioning scheme. **What would reopen it:** a decision to serve research as a
+governance package (`governance-research`), which would be a new plan against the current architecture,
+inheriting this Decision Log's four settled decisions as its starting constraints.
 
 ---
 
 ## Open questions
 
 Both original questions are **closed** as of 2026-08-04, by
-[`research-document-format.md`](../research/research-document-format.md) and the Decision Log entries above.
+[`research-document-format.md`](../../research/research-document-format.md) and the Decision Log entries above.
 
 - ~~Are research documents numbered like ADRs and plans, or named by topic as the two existing ones are?~~
   Closed: dated where written, by topic where published.

@@ -23,6 +23,15 @@ differently — a different number from any package's semver, which answers a di
 version into it, and never keep a second copy anywhere.** A record declaring no version is reported as
 *unknown*, never resolved to the oldest known shape.
 
+**When a record migrates is a policy, not a campaign** (maintainer decision, 2026-08-22). A record with a
+terminal status — a shipped plan, an implemented or rejected RFC, anything in an archival directory —
+**MUST** keep the shape it was written in: the delivered corpus only grows, so migrating it is an eternal
+treadmill, and the sections an old shape carried are part of what that record was. A **living** record
+**SHOULD** be migrated opportunistically, at the moment it is already being edited — the
+`template-version-behind` warning on an open record is that trigger, and it goes silent when the record
+reaches its archival directory. The exception: a record about to be closed **MAY** ship at its old shape
+when migrating it would entangle two ceremonies. A corpus-wide migration pass **MUST NOT** be run.
+
 **A migration note that changes a template's sections MUST also state what a document *describing* that
 shape now says.** The records are not the only population, and `template-heading-drift` reads the note to
 fail any document asserting a record carries a section its template no longer has, or stating the wrong
