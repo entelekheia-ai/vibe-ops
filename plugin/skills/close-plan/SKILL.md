@@ -56,6 +56,11 @@ Read the plan in full, then check it against what it promised:
 The `plan` tool with `{ command: "status" }` — or `vibe-ops plan status` from a terminal.
 
 - **Every track is checked, or the unchecked ones are explicitly cut — not silently dropped.**
+  **A cut track is TICKED as well as struck**, and that is not bookkeeping: `plan status` reads the
+  boxes, so a terminal plan carrying an unticked box reports as incoherent forever, with no way to say
+  "this one was cut" in the only field it reads. Strike the text, tick the box, and let the plan's own
+  prose carry that the track was superseded rather than done. Measured 2026-08-22 closing a plan whose
+  last four tracks were superseded mid-flight.
 - **Every `Success criteria` item was actually run.** Run it now if the output is not recorded. A
   criterion nobody executed is a prediction, not a result.
 

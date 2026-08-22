@@ -72,6 +72,30 @@ population and emission; only where the entry list comes from changes. Labels an
 governances through the same map every other reader uses (ADR-0019); a bound-but-uninstalled type
 yields a finding, never a silent gap.
 
+## Read these first
+
+Written 2026-08-22 at closure of Plan-033, so a session starting cold does not re-derive coordinates.
+
+1. **`cli/packages/ops-governance/src/index.ts`** — `RESTATED_TYPE_ENTRIES` is the block to delete: four
+   `record-header` entries plus `record-frontmatter-log`, each carrying a literal `required` copied from
+   a `type.json`. The six `template-version` entries follow it, each with `options.template:
+   "<template:<t>>"`. `template-version-research` is the one to delete outright — it sits disabled in
+   `vibeops.config.ts` with its reason.
+2. **`cli/packages/ops-governance/test/ops.test.ts`**, test *"every entry's required list still agrees
+   with the type unit it restates"* — the guard holding the literals to
+   `cli/packages/governance-<type>/type.json`. It dies with them, in the same change.
+3. **`cli/packages/core/src/governance-map.ts`** — `effectiveGovernanceBindings` and
+   `activateGovernance` are the readers to derive from; `activatedTemplatePaths` shows the pattern of
+   walking every bound type once per run. Activation is cached per process.
+4. **`cli/packages/core/src/ops.ts`** — `OpsDefinition.gates` is a static array read at `defineOps`
+   time (the emit-id check) **and** iterated per run. Making the list a function of the repository
+   touches both readers; that is the one structural change this plan cannot avoid.
+5. **`cli/packages/core/src/module.ts`**, `defineModule`'s validation — the precedent for "a definition
+   that describes itself wrongly fails at load", which the `.json` loader must keep.
+
+**Measured, do not re-measure:** the three ops' entry lists contain zero functions — fixtures are string
+maps — so the collection is already data. Verified 2026-08-22 by reading all three sources.
+
 ## Tracks
 
 - [ ] **Track 1 — Entries derived from the activated governances.** `OpsDefinition.gates` becomes

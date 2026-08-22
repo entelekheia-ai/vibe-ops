@@ -107,6 +107,25 @@ Consulting, for migration, means: refuse to restructure a file whose effective c
 proceed on `shaped` and `norm`. For adoption it means: what `setup` writes is checked against the classes
 it lands in, instead of written blind — the first-contact actor stops being the one that never asks.
 
+## Read these first
+
+Written 2026-08-22 at closure of Plan-033, so a session starting cold does not re-derive coordinates.
+
+1. **`cli/packages/harness/src/ownership.ts`** — `composedOwnership()` is the function this plan
+   generalises. It reads the harness's own `ownership.json` (the base half, 21 entries) plus each
+   activated governance's fragment, concatenating `paths` and taking `version = max`. **Per-path origin
+   is exactly what it discards**, and the double-claim finding is what it cannot report today.
+   `classOf`/`entryFor` already return "last match wins"; `widens` already encodes the authority order.
+2. **`cli/packages/governance-<t>/ownership.json`** — one entry each, `project/templates/<t>.md` as
+   `norm`. This is where a record directory's `shaped` class lands: in the fragment of the type that
+   owns it, never in the base half.
+3. **`cli/packages/harness/src/sync.ts`** — the one writer, and the one-norm rule it enforces: a pinned
+   tree carrying its own `ownership.json` is used **whole**, never blended with fragments. Any narrowing
+   layer must respect that seam.
+4. **Plan-017's debt is visible right now**: `vibe-ops governance .` reports eight
+   `template-version-behind` warnings, all plans still stamped `plan@0.1`. That is Track 3's acceptance
+   corpus — the migration run that closes Plan-017.
+
 ## Tracks
 
 - [ ] **Track 1 — The `shaped` class.** Vocabulary, reclassification of the record directories in each

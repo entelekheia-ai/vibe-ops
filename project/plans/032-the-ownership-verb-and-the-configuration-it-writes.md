@@ -79,6 +79,22 @@ The format RFC; the three verbs; nothing else.
 *Not yet designed — pending the format RFC. The constraints it must honour are recorded in RFC-0003
 ("Reading and writing the declaration is derived work") and are not restated here.*
 
+## Read these first
+
+Written 2026-08-22, when this plan's scope widened to every tool-written committed value.
+
+1. **`cli/packages/core/src/config.ts`** — the three-file-per-directory cascade, and `writeHarnessState`,
+   **the only thing in this tooling that writes configuration today**. It writes
+   `vibeops.config.local.json`, parsed rather than imported, precisely to avoid editing someone's
+   executable TypeScript. That constraint is the RFC's starting point, not a detail.
+2. **The three writers this format must serve**, all currently blocked on it: the ownership narrowing
+   (Plan-031), the `types` bindings a governance install/update writes (ADR-0019 — activation is the
+   config, so writing a binding IS installing a governance), and a committed home for
+   `harness.applied`, which is clone-local today so two clones of one repository can disagree with
+   neither detectably wrong.
+3. **`plugin/skills/setup/SKILL.md`** and the adopt/migrate skills — the verbs that must carry
+   install/update. The maintainer's direction (2026-08-22) is explicit: no new install noun.
+
 ## Tracks
 
 - [ ] **Track 1 — The configuration-format RFC.** Drafted, reviewed, accepted.

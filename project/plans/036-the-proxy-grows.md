@@ -61,6 +61,19 @@ kept as one file so the pieces are found together.
 - The ops work — [Plan-034](034-the-ops-become-data-and-the-governances-feed-them.md) /
   [Plan-035](035-the-audience-boundary.md).
 
+## Read these first
+
+1. **`cli/packages/governance-base/src/define-governance.ts`** — the options bag every increment here
+   extends, born with one open-ended contract for exactly this. `STANDARD_COMMANDS` is where a
+   per-noun authoring verb joins; a package's own command replaces a standard one of the same name.
+2. **`cli/packages/module-check/sh/checks/35-dogfooding-drift.sh`** — its `pair` list is the debt Track 1
+   erases: five templates held in step by hand between `cli/packages/governance-<t>/templates/` and
+   `plugin/skills/setup/templates/project/templates/`. The standing success criterion is that this list
+   is empty.
+3. **`cli/packages/module-records/src/index.ts`**, the `norm` verb — the proxy's first increment,
+   shipped. Every later one is the same shape: the plugin asks the CLI, the CLI asks the activated
+   governance.
+
 ## Tracks
 
 - [ ] **Track 1 — Snippets and the generated setup copies.** (refine at pick-up)
