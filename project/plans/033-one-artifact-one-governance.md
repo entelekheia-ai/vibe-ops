@@ -214,3 +214,6 @@ and correct; what lands in targets is still `skills/setup/templates/`, already c
   the header schema as data) shipped and stand; Tracks 3–6 superseded here.
 - [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — the topology and
   activation decision; supersedes ADR-0018.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show 15e2796da58ba3984df1021c10caf0c3fe83c706:project/tasks/the-norm-travels-as-a-package.md`

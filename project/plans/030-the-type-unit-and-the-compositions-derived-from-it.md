@@ -186,7 +186,7 @@ discarded and a compacted session trusts the retelling rather than re-exploring.
    header states the one/none/many rule and why it never imports.
 4. **`cli/packages/records/src/type-unit.ts` and `type-index.ts`** — what a type unit IS and how the
    generated index is built. Track 3 moves both to the package; nothing about their shape changes.
-5. **[tasks/the-norm-travels-as-a-package.md](../tasks/the-norm-travels-as-a-package.md)** — Track 3's
+5. **tasks/the-norm-travels-as-a-package.md (closed dossier — `git show 15e2796da58ba3984df1021c10caf0c3fe83c706:project/tasks/the-norm-travels-as-a-package.md`)** — Track 3's
    dossier, split into two parts, with the measurement that motivates it: an npm-only install has no norm
    at all.
 
@@ -230,7 +230,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   protocol. Exists at the end: `vibe-ops governance` resolves the shipped types in a repository with the
   npm CLI and no plugin installed. Acceptance: that case, plus the plugin keeping only what drives the
   CLI.
-  Task: [tasks/the-norm-travels-as-a-package.md](../tasks/the-norm-travels-as-a-package.md) (rewritten as
+  Task: tasks/the-norm-travels-as-a-package.md (closed dossier — `git show 15e2796da58ba3984df1021c10caf0c3fe83c706:project/tasks/the-norm-travels-as-a-package.md`) (rewritten as
   Plan-033's dossier)
 - [ ] ~~**Track 4 — Entries derived from installed types.**~~ `ops-governance` builds its per-type entries
   from the declarations, keyed by carrier; the `required` literals Track 2 wrote into those entries — and
