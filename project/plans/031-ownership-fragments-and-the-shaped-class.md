@@ -168,6 +168,16 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
   module-records.
   Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
 
+- Decision: the repository's narrowing layer is a top-level `ownership` key in `vibeops.config.ts`,
+  hand-written only; and a narrowing on a conflicted or claimed match is refused only when it would
+  widen past the HIGHEST-authority identical-match claimant.
+  Rationale: four actors read the boundary, so the key does not belong under one reader's `harness.*`
+  — the argument RFC-0003 makes for the verb being its own noun. Identical-match comparison covers the
+  case that exists while leaving overlapping-but-unequal globs unresolved, as the RFC defers them; and
+  resolving a conflict to either claimant's class is a resolution, not a grab — refusal starts only
+  past what any fragment declared. Tool-written config stays gated on Plan-032's format RFC.
+  Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
+
 - Decision: Delegation split — fixture construction and the mechanical reclassification edits are
   delegable under closed contracts; the semantics of `shaped` (what migration may touch), the composition
   rules, and the acceptance migration over this repository's real records are not.

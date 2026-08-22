@@ -24,7 +24,7 @@ export type { ResolvedHarness, Surface } from "./resolve.ts";
 // The ownership declaration and its composition — readable by any actor that must consult the
 // boundary before acting (Plan-031): promulgation already does, migration's handling report now does.
 export { classOf, composedOwnership, entryFor, ownershipPath, readOwnership, widens } from "./ownership.ts";
-export type { Ownership, OwnershipClass, OwnershipEntry } from "./ownership.ts";
+export type { ComposedBoundary, ComposedEntry, DoubleClaim, Ownership, OwnershipClass, OwnershipEntry, RefusedNarrowing } from "./ownership.ts";
 export { boundaryRefusals, currentBranch, normContent, sync } from "./sync.ts";
 export type { RefusedPath, SyncOptions, SyncResult } from "./sync.ts";
 

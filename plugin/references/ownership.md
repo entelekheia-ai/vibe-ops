@@ -63,6 +63,21 @@ the first repository that diverges on purpose.
 
 Reading sameness as authority would have inverted both.
 
+## Fragments, and the repository's own layer
+
+The composition (Plan-031) keeps each entry's **origin** — the harness base, a governance package, or
+the repository — and treats fragments as **peers, never precedence**: one match claimed by two
+fragments with different classes is a **conflict**, reported naming both claimants, and a conflicted
+path is refused by every writer until it is resolved. Only the repository resolves it, with an entry in
+its own layer.
+
+That layer is `ownership` in `vibeops.config.ts` — hand-written `{ match, class, reason }` entries,
+applied **last**, always toward less tooling authority. A narrowing is refused, naming what stopped it,
+when it would **widen** past the highest class any fragment declared for that match, when its class is
+not in the vocabulary, or when it carries no reason — a reclassification is a ledger entry, and a bare
+class is not one. (Tool-written configuration is a separate question, owned by Plan-032's format RFC;
+this layer is the operator's.)
+
 ## The two rules that are not about classification
 
 **A path with no matching entry is not permission.** Absence means the declaration has not been extended,

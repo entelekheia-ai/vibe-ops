@@ -28,6 +28,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { classOf, composedOwnership, entryFor, ownershipPath, readOwnership, widens } from "./ownership.ts";
+import type { ComposedBoundary, DoubleClaim } from "./ownership.ts";
 import type { Ownership, OwnershipClass } from "./ownership.ts";
 import { activateGovernance, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
 import { shippedVersionsFromPackages, shippedVersionsFromPinned } from "./status.ts";
@@ -191,7 +192,25 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   const seeded: string[] = [];
   const unclassified: string[] = [];
 
+  // A doubly-claimed path has no single answer, and last-match-wins inside classOf would be exactly
+  // the silent precedence RFC-0003 forbids between peer fragments — so a conflicted path is refused
+  // naming both claimants, until a repository ownership entry resolves it. A pinned tree is one norm
+  // whole and carries no conflicts by construction.
+  const conflicts: readonly DoubleClaim[] =
+    "conflicts" in installed ? (installed as ComposedBoundary).conflicts : [];
+
   for (const [file] of content) {
+    const conflict = conflicts.find((claim) => path.matchesGlob(file, claim.match));
+    if (conflict !== undefined) {
+      const claimants = conflict.claimants.map((c) => `${c.class} by ${c.origin}`).join(", ");
+      refused.push({
+        path: file,
+        was: conflict.claimants[0]!.class,
+        now: conflict.claimants[conflict.claimants.length - 1]!.class,
+        why: `claimed ${claimants} — peers, never precedence; resolve it with a repository ownership entry on "${conflict.match}"`,
+      });
+      continue;
+    }
     const declared = classOf(installed, file);
     // Absence is not permission. Reported, never written, and never defaulted to the safest-looking class.
     if (declared === undefined) unclassified.push(file);

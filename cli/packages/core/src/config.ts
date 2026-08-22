@@ -149,9 +149,25 @@ export interface HarnessConfig {
   readonly source?: string;
 }
 
+/**
+ * One hand-written reclassification of a path in the composed ownership boundary (Plan-031) — always
+ * toward LESS tooling authority, applied as the composition's last layer. `class` is a string here
+ * because core does not know the class vocabulary (the harness owns it and validates on composition);
+ * `reason` is required by that validation — a bare class is refused, a reclassification is a ledger
+ * entry. Written by the operator; no tool writes this key (tool-written configuration is Plan-032's
+ * format RFC).
+ */
+export interface OwnershipNarrowing {
+  readonly match: string;
+  readonly class: string;
+  readonly reason: string;
+}
+
 export interface VibeOpsConfig {
   /** Which package governs a type name, where the scan alone cannot say. See `TypesConfig`. */
   readonly types?: TypesConfig;
+  /** The repository's own layer of the ownership boundary. See `OwnershipNarrowing`. */
+  readonly ownership?: readonly OwnershipNarrowing[];
   /** Module ids to treat as enabled without an explicit flag. */
   readonly modules?: readonly string[];
   /** See `HarnessConfig`. Written by promulgation, read by the session hook; absent until either runs. */
@@ -257,6 +273,12 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     // binding another. Whole-key would make the nearer file's silence about a type an answer.
     types:
       nearer.types === undefined && further.types === undefined ? undefined : { ...further.types, ...nearer.types },
+    // Concatenated, further first: narrowings are last-match-wins inside the composition, so the nearer
+    // file's entry lands later and prevails over a home-directory one for the same match.
+    ownership:
+      nearer.ownership === undefined && further.ownership === undefined
+        ? undefined
+        : [...(further.ownership ?? []), ...(nearer.ownership ?? [])],
     // `applied` wins WHOLE, deliberately unlike `settings` and `records`: merging per record type would
     // let a map written for one repository answer for another one further down the path, and "this clone
     // is on plan@3" is a fact about a single working tree, where a half-inherited answer is worse than

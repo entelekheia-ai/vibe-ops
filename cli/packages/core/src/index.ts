@@ -3,7 +3,7 @@ export type { ModuleCommand, ModuleDefinition, ModuleFlag, ModulePlugin, ModuleR
 export type { ModuleContext, Surface } from "./context.ts";
 export { loadConfig, searchPath, settingsFor, statePath, writeHarnessState } from "./config.ts";
 export type { HarnessConfig } from "./config.ts";
-export type { LoadedConfig, RecordsConfig, RecordType, TypesConfig, VibeOpsConfig } from "./config.ts";
+export type { LoadedConfig, OwnershipNarrowing, RecordsConfig, RecordType, TypesConfig, VibeOpsConfig } from "./config.ts";
 export { activateGovernance, activatedTemplatePaths, DEFAULT_GOVERNANCE_BINDINGS, effectiveGovernanceBindings } from "./governance-map.ts";
 export type { ActivatedGovernance, GovernanceBinding } from "./governance-map.ts";
 export { createEmitter, UndeclaredObservationError } from "./emit.ts";

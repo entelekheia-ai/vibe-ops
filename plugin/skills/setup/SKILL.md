@@ -100,6 +100,14 @@ Confirm the plan (shape + names + path) before writing.
 
 Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates`.
 
+**Consult the ownership boundary before writing over anything that exists** (Plan-031). For every
+destination the Step 0 survey found already present, ask `vibe-ops records handling <path>…` — it
+reports `ownership: <class>` for any path, records or not. A destination whose class is `repo` is
+reported and left untouched, whatever the survey concluded; `seed` is written only when absent, which
+the survey already enforces and the declaration now grounds; `shaped` belongs to migration, so adoption
+may create its skeleton but never rewrites a file that exists there. This check is yours, never the
+scaffolder's — its contract is that nothing is left for it to decide.
+
 **Steps 2 and 3 are dispatched to the `vibe-ops:scaffolder` agent**, once the plan is confirmed. Hand it
 the target path, the copy list below resolved for the shape chosen in Step 1, the substitution table from
 Step 3, and — per destination — what the Step 0 survey decided about anything already there. Nothing is

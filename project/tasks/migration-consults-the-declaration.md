@@ -16,7 +16,7 @@ vibe-ops-template: task@3
 
 | Field | Value |
 |---|---|
-| Status | Planned |
+| Status | In Progress |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
@@ -66,7 +66,11 @@ reviewed section by section for content preservation; suite green.
 
 ## Implementation order
 
-- [ ] P0 — item 1 (survey delegable; the class-check wording is not)
+- [x] P0 — item 1 — setup Step 2 now consults `vibe-ops records handling <path>…` (which since
+  Track 1 answers `ownership: <class>` for ANY path, records or not) before writing over anything the
+  survey found present: `repo` reported and untouched, `seed` only-when-absent grounded in the
+  declaration, `shaped` never rewritten by adoption. The check stays with the skill, never the
+  scaffolder — its contract is that nothing is left for it to decide.
 - [ ] P0 — item 2 (**not delegable** — permanent records, reviewed by the maintainer)
 - [ ] P0 — item 3 (mechanical)
 - [ ] P1 — item 4 (ceremony)

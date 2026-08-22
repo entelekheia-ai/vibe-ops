@@ -16,17 +16,18 @@ vibe-ops-template: task@3
 
 | Field | Value |
 |---|---|
-| Status | Planned |
+| Status | Done |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
 | Plan | [plans/031-ownership-fragments-and-the-shaped-class.md](../plans/031-ownership-fragments-and-the-shaped-class.md), Track 2 |
 
-> **DRAFT — refine before execution.** The composition rules are settled by RFC-0003 (peers, double-claim
-> is a finding, origin kept per path, narrowing last and refused when widening). Undesigned: where the
-> repository's hand-written narrowing lives in `VibeOpsConfig` (a `harness.ownership` key? its own
-> top-level?), and how fragment enumeration composes with Plan-029's type scan — one walk or two. Refine
-> with both files open.
+> **Refined 2026-08-22, at execution.** The two open questions closed: the narrowing lives in a
+> top-level `ownership` key of `VibeOpsConfig` (four actors read the boundary and promulgation is only
+> one — the same argument that makes Plan-032's verb its own noun; `harness.*` would tie it to one
+> reader), hand-written, `{match, class, reason}`, concatenated further-then-nearer across the cascade
+> so the nearer file's entry prevails under last-match-wins. And enumeration is ONE walk: the activated
+> bindings (ADR-0019) — Plan-029's scan left the resolution path before this track started.
 
 ---
 
@@ -50,8 +51,15 @@ The items below are the known skeleton; the refinement pass rewrites them with v
 
 ## Implementation order
 
-- [ ] P0 — refinement pass (not delegable)
-- [ ] remaining order set at refinement
+- [x] P0 — refinement pass (not delegable)
+- [x] P0 — item 1: top-level `ownership` key (see banner)
+- [x] P0 — item 2: `composedOwnership` → `ComposedBoundary` (origin per entry; version = max)
+- [x] P0 — item 3: conflicts on identical matches with differing classes; narrowing applied last,
+  refused when it would widen past the highest-authority identical-match claimant (naming that
+  fragment), when the class is unknown, or when the reason is missing; `sync` refuses a conflicted
+  path naming both claimants — last-match-wins would be silent precedence between peers
+- [x] P1 — item 4: fixtures — `cli/packages/harness/test/ownership.test.ts`, the plan's three success
+  scenarios plus the bare-class/unknown-class refusals (delegated under a closed contract; verified)
 
 ## Surprises & Discoveries
 
