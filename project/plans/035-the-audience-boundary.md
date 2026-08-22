@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-22 |
 | Author | Danilo Borges |
-| Depends on | [Plan-034](034-the-ops-become-data-and-the-governances-feed-them.md) |
+| Depends on | [Plan-034](./shipped/034-the-ops-become-data-and-the-governances-feed-them.md) |
 | Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) |
 
 ---

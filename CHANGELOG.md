@@ -14,6 +14,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — the ops become data, and the governances feed them (Plan-034)
+
+- **Derived per-type entries.** `ops-governance` no longer hand-writes its `record-header`,
+  `record-frontmatter` and `template-version` entries: a `derives` declaration computes them per run
+  from the repository's activated governances, `required` read from each package's own `type.json`.
+  Binding a sixth governance package makes its entries appear with no ops edit. A bound package that
+  does not resolve reports as a SKIP naming it. The `template-version-research` entry is deleted — no
+  package serves the type, which entered the old list by mistake.
+- **`ops.json` is the collection's canonical form.** All three shipped ops moved; each `src/index.ts`
+  is typing sugar over the new `parseOpsDefinition`, which fails at load naming the file and field —
+  including on an unknown key, so a typo cannot compose silently. Fixtures for the derived schema
+  entries are synthesised from the schema, taking `governance` self-test coverage from one fixture to
+  five.
+
 ### Changed — one artifact, one governance package; the norm leaves the plugin tree (Plan-033, ADR-0019)
 
 - **Five governance packages.** `@entelekheia/governance-{adr,rfc,plan,task,log}`, each the sole home of
@@ -59,7 +73,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   every claimant and says how to break the tie.
 - **`types` in `vibeops.config.ts`** binds a local type name to the package that governs it, for the
   ambiguous case only. It merges per key across the cascade, like `records.dirs`.
-
 
 ### Changed — `authoring-style` gains a "Direct and literal" section (`authoring-style@2`)
 

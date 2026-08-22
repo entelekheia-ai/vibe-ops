@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-22 |
 | Author | Danilo Borges |
-| Depends on | [Plan-033](./shipped/033-one-artifact-one-governance.md) |
-| Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) · [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) |
+| Depends on | [Plan-033](./033-one-artifact-one-governance.md) |
+| Related | [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) · [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) |
 
 ---
 
@@ -60,7 +60,7 @@ the repository being run against; the literals' and guard's deletion; the resear
 
 ### Out of scope
 
-- The audience boundary (`portable`/`internal`) — [Plan-035](035-the-audience-boundary.md).
+- The audience boundary (`portable`/`internal`) — [Plan-035](../035-the-audience-boundary.md).
 - A governance package shipping its own *gate* (executable code) — still deferred by RFC-0003.
 - npm publication of the packages (raised in Open questions; owned by the release train, not here).
 
@@ -98,12 +98,12 @@ maps — so the collection is already data. Verified 2026-08-22 by reading all t
 
 ## Tracks
 
-- [ ] **Track 1 — Entries derived from the activated governances.** `OpsDefinition.gates` becomes
+- [x] **Track 1 — Entries derived from the activated governances.** `OpsDefinition.gates` becomes
   computable; the ten literals and the guard test go. Acceptance: `vibe-ops governance .` diffed
   before/after differs only by the removed `research` entry; the fixture-package case.
-- [ ] **Track 2 — The canonical `.json` collection.** `defineOps` loads it; the three ops move; TS
+- [x] **Track 2 — The canonical `.json` collection.** `defineOps` loads it; the three ops move; TS
   stays as sugar. Acceptance: byte-identical `--list` and run output for all three ops.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
 
 ## Success criteria
 
@@ -122,9 +122,55 @@ maps — so the collection is already data. Verified 2026-08-22 by reading all t
   derivation closes; the data form must carry the rule, so the two designs constrain each other.
   Date / Author: 2026-08-22 / Danilo Borges
 
+- Decision: derived globs come from the unit's `depth`, accepting one output deviation —
+  `record-header-plan` now covers `shipped/` (17→36 examined, zero new findings).
+  Rationale: the hand-written list held `*.md` for plan and `**/*.md` for rfc at equal declared depth,
+  an asymmetry no data field carries; deriving it faithfully would mean inventing a field to preserve
+  what reads as an accident, and shipped plans keep their headers, so checking them is correct.
+  Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
+
+- Decision: a bound-but-unresolved governance package reports as a SKIP naming the package, not as a
+  finding.
+  Rationale: the Design paragraph said "finding", but a repository that deliberately narrows its
+  bindings would then fail or warn on every run for a declared choice; SKIP-with-reason is this
+  repository's own ledger idiom for declared-off (the disabled entries), and it is a statement in the
+  report where silence was the failure being prevented.
+  Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
+
 ## Outcomes & Retrospective
 
-(No outcomes yet.)
+**2026-08-22 — both tracks landed in one pass** (commits `9cec0a4`, `9a665a7`, after `4360940` fixed a
+pre-existing red the roadmap index had caused). Against the goals, one by one:
+
+- **Derived entries**: shipped as designed — `derives: ["record-schema", "template-version"]` computed
+  per run in `ops-derive.ts`, `required` read from each activated package's `type.json`. The literals,
+  their export and the guard test deleted together. The Design's "yields a finding" for a
+  bound-but-unresolved package landed as a SKIP naming it (Decision Log — the report's ledger channel,
+  not a permanent warning on a declared narrowing).
+- **`template-version-research` deleted**, with its disabled ledger entry in `vibeops.config.ts` — the
+  one declared output difference, confirmed in the before/after diff.
+- **`ops.json` canonical**: `parseOpsDefinition` in core (fails at load naming file and field; unknown
+  keys refused), all three ops moved, `src/index.ts` reduced to sugar plus narrative. Byte-identical
+  `--verbose` and `--list` for all three against pre-conversion baselines.
+- **The fixture-package acceptance**: a test binds a sixth type (`note`) by absolute path and asserts
+  `record-header-note` and `template-version-note` compose with zero edits here. Registry-independent,
+  as required.
+
+**The prediction that was wrong, in which direction**: the Scope said `OpsDefinition.gates` "becomes
+computable from the repository" — the landing kept `gates` static and added `derives` beside it, with
+the emit-id check split (define time over the static half, per run over the full list). Smaller change
+than predicted: no consumer of a static composition was touched at all.
+
+**Not planned, gained**: fixtures for the derived schema entries are synthesised from the schema
+itself, so `governance --self-test` coverage went from one hand-written fixture (log) to all five
+derived entries. And one deliberate deviation from byte-identical, recorded in the Decision Log:
+`record-header-plan`'s glob now derives from the unit's `depth`, so `shipped/` entered its population
+(17→36 examined, zero findings).
+
+**Cut**: nothing.
+
+**Open, inherited**: npm publication of the packages (Open questions) — unchanged, owned by the
+release train. Plan-035 is unblocked: the `audience` field can now be born in the `.json` form.
 
 ---
 
