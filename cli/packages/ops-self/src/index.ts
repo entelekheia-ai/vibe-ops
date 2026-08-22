@@ -1,5 +1,8 @@
 // vibe-ops self — what this repository CLAIMS ABOUT ITSELF, checked against what it is.
 //
+// THE COLLECTION IS `ops.json`, AND THIS FILE IS ITS TYPING SUGAR (Plan-034 Track 2). The data form
+// is canonical, and what follows is the narrative the JSON cannot carry.
+//
 // WHY THIS IS NOT PART OF `governance`, which is the question a reader will have. `governance` asks "is
 // this record well formed?" and every one of its entries is scoped to a record directory. The entries
 // here ask the near-complement: "does the prose describing our own machinery still match the machinery?"
@@ -22,127 +25,46 @@
 // and a renamed section, where the old name is forbidden and the new one required in the same places.
 // Both share this population and this exclusion list, which is what makes this a composition rather
 // than a package built around one detector.
+//
+// TEMPLATE-HEADING-DRIFT. `.agents/` IS NAMED EXPLICITLY because `**/*.md` does not reach a
+// dot-directory, and the rule that governs work inside `project/` is one of the six documents this gate
+// exists to correct. Left implicit it reports a clean sweep over everything except the file that matters
+// most. Since Plan-033 each type's notes and template live in its own governance package. The gate takes
+// ONE migrations directory, so the notes are listed per package in `options.migrations`; until the gate
+// takes several, the plan package's directory carries the only notes that record dropped sections today.
+// A note that drops a section, a template that no longer has it, and a rule asserting records still carry
+// it — the three files whose disagreement is the whole defect, in the smallest tree that can hold them.
+// `<plugin>/` resolves to the fixture root, so a run pointed at the real plugin surface fails here
+// instead of passing on the wrong corpus.
+//
+// UNSTATED-DESTINATION. The notes are prose about this repository's own machinery too — and the one
+// kind whose reader is a migration about to move somebody's content. Population is the notes themselves,
+// not the documents describing them, which is what separates this from the template-heading-drift entry
+// above: that one reads the notes as its authority, this one reads them as its subject. Two notes, and
+// the second is the point. A fixture carrying only the violation passes whether or not the gate
+// distinguishes anything: the decoy drops a section AND routes it, so a gate that fired on every
+// `**dropped**` row would produce two findings where one is correct. The two notes `unstated-destination`
+// is proven on are exported because the fixture runner asserts only that the expected rule fired — which
+// a gate firing on every `**dropped**` row would also satisfy. The other direction, that the decoy stays
+// silent, is asserted in this package's test against this object, so the fixture and the assertion cannot
+// drift into describing different notes. Since Plan-034 this export and the fixture cannot drift because
+// the fixture is read from ops.json's own `fixture.files` object.
 
-import { defineOps } from "@entelekheia/vibe-ops-core";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { defineOps, parseOpsDefinition } from "@entelekheia/vibe-ops-core";
+
+const collection = new URL("../ops.json", import.meta.url);
+const definition = parseOpsDefinition(readFileSync(collection, "utf8"), fileURLToPath(collection));
 
 /**
  * The two notes `unstated-destination` is proven on, exported because the fixture runner asserts only
  * that the expected rule fired — which a gate firing on every `**dropped**` row would also satisfy. The
  * other direction, that the decoy stays silent, is asserted in this package's test against **this**
- * object, so the fixture and the assertion cannot drift into describing different notes.
+ * object, so the fixture and the assertion cannot drift into describing different notes. Since Plan-034
+ * it is read from ops.json's own fixture, so the export and the fixture cannot drift.
  */
-export const UNSTATED_DESTINATION_NOTES: Readonly<Record<string, string>> = {
-  // Drops a section and never mentions it again: the finding.
-  "notes/plan-0.1-to-0.2.md": [
-    "# plan 0.1 → 0.2",
-    "",
-    "| Section | 0.1 | 0.2 |",
-    "|---|---|---|",
-    "| `## Progress` | step-level checklist | **dropped** |",
-    "",
-    "## What it costs an existing artifact",
-    "",
-    "The header table gains a row. Nothing else changes.",
-    "",
-  ].join("\n"),
-  // The decoy: drops a section AND routes it. A gate that read the table alone would accuse this one.
-  "notes/task-0.1-to-0.2.md": [
-    "# task 0.1 → 0.2",
-    "",
-    "| Section | 0.1 | 0.2 |",
-    "|---|---|---|",
-    "| `## Surprises & Discoveries` | living section | **dropped** |",
-    "",
-    "## What it costs an existing artifact",
-    "",
-    "Every entry under `Surprises & Discoveries` is routed by the promotion test before the",
-    "dossier is deleted; an entry that survives it lands in the repository's own learnings.",
-    "",
-  ].join("\n"),
-};
+export const UNSTATED_DESTINATION_NOTES: Readonly<Record<string, string>> =
+  definition.gates.find((entry) => entry.gate === "unstated-destination")!.fixture!.files;
 
-export default defineOps({
-  id: "self",
-  version: "0.0.1",
-  summary: "What this repository claims about itself, checked against what it is",
-  gates: [
-    {
-      gate: "template-heading-drift",
-      // `.agents/` IS NAMED EXPLICITLY because `**/*.md` does not reach a dot-directory, and the rule
-      // that governs work inside `project/` is one of the six documents this gate exists to correct.
-      // Left implicit it reports a clean sweep over everything except the file that matters most.
-      paths: ["**/*.md", ".agents/**/*.md"],
-      // Since Plan-033 each type's notes and template live in its own governance package. The gate
-      // takes ONE migrations directory, so the notes are listed per package below in `migrationsList`;
-      // until the gate takes several, the plan package's directory carries the only notes that record
-      // dropped sections today.
-      options: {
-        migrations: "cli/packages/governance-plan/migrations",
-        templates: {
-          adr: "cli/packages/governance-adr/templates/adr.md",
-          log: "cli/packages/governance-log/templates/log.md",
-          plan: "cli/packages/governance-plan/templates/plan.md",
-          rfc: "cli/packages/governance-rfc/templates/rfc.md",
-          task: "cli/packages/governance-task/templates/task.md",
-        },
-      },
-      emits: true,
-      // A note that drops a section, a template that no longer has it, and a rule asserting records
-      // still carry it — the three files whose disagreement is the whole defect, in the smallest tree
-      // that can hold them. `<plugin>/` resolves to the fixture root, so a run pointed at the real
-      // plugin surface fails here instead of passing on the wrong corpus.
-      fixture: {
-        options: {
-          migrations: "<plugin>/migrations",
-          templates: { plan: "<plugin>/templates/plan.md" },
-        },
-        expect: ["template-heading-drift-named", "template-heading-drift-count"],
-        files: {
-          "migrations/plan-0.1-to-0.2.md": [
-            "# plan 0.1 → 0.2",
-            "",
-            "| Section | 0.1 | 0.2 |",
-            "|---|---|---|",
-            "| `## Progress` | step-level checklist | **dropped** |",
-            "| Living sections | four | two |",
-            "",
-          ].join("\n"),
-          "templates/plan.md": [
-            "---",
-            "vibe-ops-template: plan@3",
-            "---",
-            "",
-            "# Plan-NNN",
-            "",
-            "<!-- ===== LIVING SECTIONS ===== -->",
-            "",
-            "## Decision Log",
-            "",
-            "## Outcomes & Retrospective",
-            "",
-            "<!-- ===== END LIVING SECTIONS ===== -->",
-            "",
-          ].join("\n"),
-          "rule.md": [
-            "### Plan (`project/plans/`)",
-            "",
-            "Four sections are living and are maintained while the work happens: `Progress` is one.",
-            "",
-          ].join("\n"),
-        },
-      },
-    },
-    {
-      // The notes are prose about this repository's own machinery too — and the one kind whose reader
-      // is a migration about to move somebody's content. Population is the notes themselves, not the
-      // documents describing them, which is what separates this from the entry above: that one reads
-      // the notes as its authority, this one reads them as its subject.
-      gate: "unstated-destination",
-      paths: ["cli/packages/governance-*/migrations/*.md"],
-      // Two notes, and the second is the point. A fixture carrying only the violation passes whether or
-      // not the gate distinguishes anything: the decoy drops a section AND routes it, so a gate that
-      // fired on every `**dropped**` row would produce two findings where one is correct.
-      fixture: { expect: ["unstated-destination"], files: UNSTATED_DESTINATION_NOTES },
-    },
-  ],
-});
+export default defineOps(definition);
