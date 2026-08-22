@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [Plan-031](031-ownership-fragments-and-the-shaped-class.md) |
+| Depends on | [Plan-031](./shipped/031-ownership-fragments-and-the-shaped-class.md) |
 | Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) |
 
 > **This is a deliberate stub, not an unfinished plan.** RFC-0003 scoped this work out on purpose: the

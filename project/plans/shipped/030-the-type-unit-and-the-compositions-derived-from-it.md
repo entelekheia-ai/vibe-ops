@@ -57,7 +57,7 @@ the audience field on ops.
 
 ### Out of scope
 
-- Ownership classes travelling with the unit — [Plan-031](../031-ownership-fragments-and-the-shaped-class.md).
+- Ownership classes travelling with the unit — [Plan-031](./031-ownership-fragments-and-the-shaped-class.md).
 - A type shipping its own gate or verb (executable code from outside) — deferred by RFC-0003, reopens
   only with a real external consumer.
 - Adoption (`setup repo`) composing type declarations instead of its fixed skeleton — recorded as an open
@@ -437,7 +437,7 @@ and rejected on the way.
   stamp-in-HTML-comment population `plugin/AGENTS.md` documents), not where the canonical copy lives.
 - Whether an entry-level audience is needed at all, or the ops-level field covers every real case — decide
   from the actual classification pass in Track 6, not in advance.
-- **A promulgation hash, for [Plan-031](../031-ownership-fragments-and-the-shaped-class.md).** `harness.applied`
+- **A promulgation hash, for [Plan-031](./031-ownership-fragments-and-the-shaped-class.md).** `harness.applied`
   records a *version* per type, which answers "is this behind?" and cannot answer "was this edited?".
   Recording a hash of what was written would let a `norm` path be overwritten knowing whether anything is
   being destroyed. It belongs with the ownership fragments rather than here, and is raised now so 031 is

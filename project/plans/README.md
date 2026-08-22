@@ -26,8 +26,8 @@ pluggable unit. Three plans shipped it; four carry what is left.
 | 033 | one artifact, one governance package | Shipped | — |
 | 034 | [the ops become data, and the governances feed them](./shipped/034-the-ops-become-data-and-the-governances-feed-them.md) | Backlog | nothing |
 | 035 | [the audience boundary](035-the-audience-boundary.md) | Backlog | nothing (034 shipped) |
-| 031 | [ownership fragments, and the shaped class](031-ownership-fragments-and-the-shaped-class.md) | Backlog | nothing |
-| 032 | [the ownership verb, and the configuration it writes](032-the-ownership-verb-and-the-configuration-it-writes.md) | Backlog | 031 |
+| 031 | [ownership fragments, and the shaped class](./shipped/031-ownership-fragments-and-the-shaped-class.md) | Backlog | nothing |
+| 032 | [the ownership verb, and the configuration it writes](032-the-ownership-verb-and-the-configuration-it-writes.md) | Backlog | nothing (031 shipped) |
 | 036 | [the proxy grows](036-the-proxy-grows.md) | Backlog | nothing (opportunistic) |
 
 ## Suggested attack order
@@ -35,19 +35,19 @@ pluggable unit. Three plans shipped it; four carry what is left.
 **Plan-034 shipped 2026-08-22** — the derivation and the `.json` collection landed; the chain's claim
 is proven (adding a type is "publish a package, add one config key"). What follows is renumbered.
 
-**1. Plan-031 — the shaped class.** Next because it converts standing debt into a closed record: eight
-plans in this repository are still stamped `plan@0.1` and warn on every `governance` run, and Track 3's
-migration over them is what closes Plan-017 as well. It needs nothing from 034.
+**Plan-031 shipped 2026-08-22** — the shaped class, composition with origin and the repository's
+narrowings landed; Plan-017 closed alongside it, its migration assumption reversed by the shipped-corpus
+policy (terminal records keep their shape; living ones migrate opportunistically when edited).
 
-**2. Plan-035 — the audience boundary.** While the `.json` collection is fresh — the
+**1. Plan-035 — the audience boundary.** While the `.json` collection is fresh — the
 field is meant to be born in the data form rather than added to the TypeScript shape and migrated later.
 
-**3. Plan-032 — the configuration format RFC.** The largest unknown, and now the gate on three separate
+**2. Plan-032 — the configuration format RFC.** The largest unknown, and now the gate on three separate
 capabilities (ownership narrowing, governance install/update, a committed `harness.applied`). Worth
 attacking only after 031 has produced a real narrowing to serialise; starting earlier means designing a
 format for one hypothetical writer.
 
-**4. Plan-036 — the proxy grows.** Opportunistic throughout: each track is small and independent, and
+**3. Plan-036 — the proxy grows.** Opportunistic throughout: each track is small and independent, and
 Track 1 (package-exported snippets) is what finally empties `35-dogfooding-drift.sh`'s pair list.
 
 **Then** [Plan-022](022-retiring-a-shell-fragment-its-port-has-replaced.md) — retiring shell fragments

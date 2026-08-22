@@ -14,6 +14,24 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — the `shaped` ownership class, composition with origin, and the repository's narrowings (Plan-031)
+
+- **`shaped`** joins the ownership vocabulary — the tooling owns a record's *structure* (migration may
+  restructure it per a recorded note), the repository owns every word of its *content*, permanently.
+  Authority orders `norm > shaped > seed > repo`; the record directories moved `repo → shaped` in each
+  governance package's own fragment. `records handling` now reports `ownership: <class>` for any path,
+  and the migrate and setup skills consult it before touching a file.
+- **Composition keeps each entry's origin** and reports a path claimed by two fragments with different
+  classes as a conflict naming both — peers, never precedence; `harness sync` refuses a conflicted path.
+  A repository narrows a class by hand via a top-level `ownership` key in `vibeops.config.ts`
+  (`{match, class, reason}`), applied last and refused, naming the blocking fragment, when it would widen.
+
+### Changed — migration is opportunistic; the shipped corpus keeps its shape
+
+- A record with a terminal status is **never migrated** and leaves the version-reporting population; a
+  living record migrates when it is being edited anyway, with `template-version-behind` as the trigger.
+  Encoded in the lifecycle rule (shipped template included) and the migrate skill.
+
 ### Changed — the ops become data, and the governances feed them (Plan-034)
 
 - **Derived per-type entries.** `ops-governance` no longer hand-writes its `record-header`,

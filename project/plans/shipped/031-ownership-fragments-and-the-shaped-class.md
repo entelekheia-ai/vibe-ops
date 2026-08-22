@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [Plan-033](./shipped/033-one-artifact-one-governance.md) |
-| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) (absorbed by Track 3) |
+| Depends on | [Plan-033](./033-one-artifact-one-governance.md) |
+| Related | [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [Plan-017](./017-the-plans-still-written-against-the-first-template-shape.md) (absorbed by Track 3) |
 
 ---
 
@@ -52,7 +52,7 @@ adoption start consulting the declaration, which today only promulgation reads.
   reason, refused when it would widen; the composition applies narrowings as the last layer.
 - Migration and adoption consult the composed declaration before writing, as promulgation already does.
 - This repository's own records, still stamped against old template versions, are migrated under the new
-  class — which closes [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md).
+  class — which closes [Plan-017](./017-the-plans-still-written-against-the-first-template-shape.md).
 
 ## Scope
 
@@ -64,7 +64,7 @@ narrowing, hand-written; migration/adoption reading the declaration; the accepta
 ### Out of scope
 
 - The `ownership` verb surface (`get`/`list`/`set`) and the configuration-format question it drags in —
-  [Plan-032](032-the-ownership-verb-and-the-configuration-it-writes.md), per RFC-0003's scope decision.
+  [Plan-032](../032-the-ownership-verb-and-the-configuration-it-writes.md), per RFC-0003's scope decision.
 - Overlapping-but-unequal glob claims — deliberately unresolved in RFC-0003 until a real overlap exists;
   identical claims conflict, and that covers the case that exists.
 
@@ -145,7 +145,7 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
   closure — structure moved across both jumps, every word of content intact, `records handling`
   reporting `ownership: shaped` throughout. Plan-017 closed, its assumption reversed.
   Task: tasks/migration-consults-the-declaration.md (closed dossier — `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/migration-consults-the-declaration.md`)
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Plan-017's closure rides Track 3.
 
 ## Success criteria
@@ -217,8 +217,8 @@ layer real and serialisable as its first concrete input.
 
 ## Related
 
-- [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — Implementation Notes 4–6.
-- [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) — absorbed: its whole scope
+- [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — Implementation Notes 4–6.
+- [Plan-017](./017-the-plans-still-written-against-the-first-template-shape.md) — absorbed: its whole scope
   is Track 3's acceptance run.
 
 - Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
