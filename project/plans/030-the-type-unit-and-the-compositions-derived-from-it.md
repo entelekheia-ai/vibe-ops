@@ -201,7 +201,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   norm's authority. **Nothing moves.** Exists at the end: a fixture unit in a temp root resolves every
   facet. Acceptance: existing tests green; the fixture resolves; `vibe-ops governance .` output unchanged,
   because Track 1 composes nothing.
-  Task: [tasks/type-unit-and-resolution-roots.md](../tasks/type-unit-and-resolution-roots.md)
+  Task: tasks/type-unit-and-resolution-roots.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/type-unit-and-resolution-roots.md`)
 - [x] **Track 2 — The header schema becomes data.** `record-header` takes its required-field list from
   `options` instead of a closed union of four literals it throws outside of, and `options.schema` becomes
   `options.type` because it now names a type rather than selecting a schema. The `frontmatter` carrier
@@ -211,7 +211,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   fixture alone. Exists at the end: a type the tooling ships nowhere gets a header entry with no gate
   edit. Acceptance: `governance` output diffed before/after differs only by the added
   `record-frontmatter-log` entry; a gate test with an invented type produces `record-header-<that type>`.
-  Task: [tasks/header-schema-becomes-data.md](../tasks/header-schema-becomes-data.md)
+  Task: tasks/header-schema-becomes-data.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/header-schema-becomes-data.md`)
 > **Tracks 3–6 are superseded by [Plan-033](033-one-artifact-one-governance.md)** (2026-08-22). Their
 > problem statements stand — the npm-only install still has no norm, the entries are still hand-written,
 > the audience boundary is still undrawn — but the architecture answering them changed mid-execution of
@@ -241,7 +241,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   become a function of it. Exists at the end: a fixture type gains its entries with no edit to this
   repository. Acceptance: `vibe-ops governance .` output diffed before/after, differing only by the
   removed `research` entry (`log`'s landed in Track 2), plus the fixture case.
-  Task: [tasks/ops-entries-derived-from-type-data.md](../tasks/ops-entries-derived-from-type-data.md)
+  Task: tasks/ops-entries-derived-from-type-data.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/ops-entries-derived-from-type-data.md`)
 - [ ] ~~**Track 5 — What the unit derives, and the move.**~~ One generation mechanism for both artefacts a
   type duplicates today: the `setup` template copy and the per-type `/new-<t>` skill, whose `paths:`
   frontmatter is the only reason those skills exist separately. Generated at build for this plugin's own
@@ -254,7 +254,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   of the portable composition; `ops-self` marked internal; what adoption/consumers see is filtered.
   Exists at the end: composing "portable only" over a plugin-less fixture repo yields no
   plugin-shaped SKIPs. Acceptance: the before/after SKIP count on such a fixture.
-  Task: [tasks/ops-declares-its-audience.md](../tasks/ops-declares-its-audience.md)
+  Task: tasks/ops-declares-its-audience.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/ops-declares-its-audience.md`)
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
@@ -452,3 +452,9 @@ and rejected on the way.
   ships as data" half. The measurements behind Track 3 (12 of 15 gates hold no repository knowledge; 9 of
   17 fragments apply only to a plugin-publishing repository) are restated where used, so this plan stands
   alone.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/type-unit-and-resolution-roots.md`
+  - `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/header-schema-becomes-data.md`
+  - `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/ops-entries-derived-from-type-data.md`
+  - `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/ops-declares-its-audience.md`
