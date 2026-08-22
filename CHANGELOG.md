@@ -14,6 +14,34 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — one artifact, one governance package; the norm leaves the plugin tree (Plan-033, ADR-0019)
+
+- **Five governance packages.** `@entelekheia/governance-{adr,rfc,plan,task,log}`, each the sole home of
+  its artifact's `type.json`, template, authoring rules, migration notes and an `ownership.json`
+  fragment — plus the TypeScript coupled to its format. `plugin/` ships **no** templates,
+  `references/records/`, migration notes, `types/` or `ownership.json` any more: an npm-only install now
+  carries the whole norm, which it previously did not at all.
+- **The layering.** `@entelekheia/governance-base` (ex `vibe-ops-records`) is the reusable component
+  layer, and its `defineGovernance` sugar is what a per-artifact package is built from — `governance-adr`
+  is one call. `module-plan`, `module-task` and `module-log` are gone; their verbs live in their
+  governance packages, **ids unchanged** (`vibe-ops plan status` works as before). `module-harness` is
+  internalized as `@entelekheia/vibe-ops-harness`, a CLI-internal module with no governance of its own.
+- **Activation is the config.** The effective governance map — shipped defaults overlaid per key by
+  `config.types`, values in RFC-0003's `pkg#type` form — routes the nouns and resolves the data. The
+  Plan-029 `node_modules` scan and ADR-0018's manifest marker leave the resolution path (ADR-0019
+  supersedes ADR-0018); under an explicit binding the scan's ambiguity case cannot arise.
+- **`vibe-ops records norm --type <t> --facet template|authoring|migrations [--print]`** — the proxy
+  verb the plugin's skills now read the norm through, resolved repository → activated package → pinned
+  tree (`harness.source` → `--source` → `CLAUDE_PLUGIN_ROOT`, both historic layouts). `/migrate`, `/new`,
+  `/new-log` and `/new-migration` no longer name any plugin path for norm data.
+- **Promulgation composes its boundary.** `harness sync` reads the base `ownership.json` the harness
+  package carries plus each activated governance's fragment; a pinned tree's declaration is used whole,
+  never blended. `harness status` reads shipped versions from the activated packages' own templates, so
+  it answers on an npm-only install.
+- **Deleted:** the aggregated `types/index.json`, its generator, the `type-index-drift` gate and the
+  `type-scan` — with each manifest beside its facets and versions read from the template at use time,
+  there is nothing left to drift, and nothing left to scan.
+
 ### Added — a record type is a resolved name, not a closed union (Plan-029)
 
 - **`RecordType` opens.** It was `"adr" | "rfc" | "plan" | "task"`, and `RecordsConfig` keyed both its

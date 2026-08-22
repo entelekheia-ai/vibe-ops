@@ -58,28 +58,41 @@ Facts measured before the work, which the steps below rely on:
 - [x] Step 0 — reset: the `governance-policies` commit dropped, tree restored.
 - [x] Step 1 — records first: Plan-033, ADR-0019 (supersedes ADR-0018), Plan-030 tracks 3–6 marked
       superseded, this dossier rewritten.
-- [ ] Step 2 — `records` → `governance-base`, imports updated, `defineGovernance` added, foundation
+- [x] Step 2 — `records` → `governance-base`, imports updated, `defineGovernance` added, foundation
       order fixed. Clean build + tests green.
-- [ ] Step 3 — five `governance-<t>` packages; data moved out of `plugin/` (templates, authoring,
+- [x] Step 3 — five `governance-<t>` packages; data moved out of `plugin/` (templates, authoring,
       migrations split per type, `type.json` re-rooted); ownership fragments split; aggregate-index
       machinery (index.json, `type-index.ts`, generator, `type-index-drift` gate + `ops-self` entry)
       deleted. `self .` differs from baseline only by the deleted gate line.
-- [ ] Step 4 — the collapse: plan/task/log sources + module verbs into their governances;
+- [x] Step 4 — the collapse: plan/task/log sources + module verbs into their governances;
       `module-plan`/`module-task`/`module-log` deleted; CLI routes bare nouns through the effective
       map (shipped defaults ⊕ `config.types`). Noun regression against this repository.
-- [ ] Step 5 — `module-harness` → `harness`; base ownership fragment; `sync`/`status` compose from the
+- [x] Step 5 — `module-harness` → `harness`; base ownership fragment; `sync`/`status` compose from the
       activated governances.
-- [ ] Step 6 — facet resolution threaded (`resolveTypeUnit`, one `migrationsDir`,
+- [x] Step 6 — facet resolution threaded (`resolveTypeUnit`, one `migrationsDir`,
       `expandTemplateToken`); `records norm --type <t> --facet … [--print]` with tests. npm-only
       acceptance: pack + install into an empty repo, no plugin, `CLAUDE_PLUGIN_ROOT` unset.
-- [ ] Step 7 — skills (`migrate`, `new`, `new-log`, `new-migration`) read/write via the CLI; checks
+- [x] Step 7 — skills (`migrate`, `new`, `new-log`, `new-migration`) read/write via the CLI; checks
       35/55/80 retargeted; `cli/AGENTS.md`, `plugin/AGENTS.md`, `README.md`, `CHANGELOG.md`.
       `governance .` byte-identical to baseline; 17 shell checks green.
 
 ## Surprises & Discoveries
 
-- Observation: …
-  Evidence: …
+- Observation: a stray `vibeops.config.local.mjs` at `/private/tmp` polluted the npm-only acceptance —
+  the config cascade walks from the repo root toward the home directory, and a temp-dir fixture some
+  earlier test run leaked sat on that path, making a virgin repo report `harness.applied`.
+  Evidence: `harness status` in the scratch install reported "2 behind" with no config anywhere in the
+  repo; `cat /private/tmp/vibeops.config.local.mjs` showed `applied: { adr: 1, plan: 2 }`. Removing it
+  restored "never promulgated". Incidentally proved the shipped versions come from the activated
+  packages. Worth a guard the day a test writes its fixture config to `tmpdir()` itself again.
+- Observation: `expandTemplateToken`'s repository-first order is what kept `governance .` byte-identical
+  through the move — the repo's `records.templates` declaration answered before the new activated-package
+  candidate ever fired, so this repository's own runs never depended on activation.
+  Evidence: the step-3 diff against the pre-change baseline: population deltas only (+ADR-0019, +Plan-033).
+- Observation: two functions had to move DOWN into the base, against the collapse's direction, because
+  generic consumers read them: `findLogDir` (module-records census) and `trackCheckboxes`
+  (`records show` projects open tracks). The seam is "who reads it", never "whose artifact is it about".
+  Evidence: the collapse's first build broke on exactly these two imports and nothing else.
 
 ## Closure
 

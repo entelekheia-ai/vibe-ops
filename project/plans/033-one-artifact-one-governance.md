@@ -105,25 +105,25 @@ version read from the template at use time, there is nothing left to drift.
 
 ## Tracks
 
-- [ ] **Track 1 — The base layer.** `records` → `governance-base` (`@entelekheia/governance-base`),
+- [x] **Track 1 — The base layer.** `records` → `governance-base` (`@entelekheia/governance-base`),
   imports updated, `defineGovernance` added, foundation build order adjusted. Exists at the end: clean
   build and full tests green under the new name.
-- [ ] **Track 2 — Five governance packages.** Scaffolds plus the data moves out of `plugin/`
+- [x] **Track 2 — Five governance packages.** Scaffolds plus the data moves out of `plugin/`
   (templates, authoring, migrations split per type, `type.json` re-rooted), ownership split into
   fragments, aggregate-index machinery deleted. adr/rfc sugar-complete. Acceptance: `vibe-ops self .`
   differs from the baseline only by the deleted `type-index-drift` line.
-- [ ] **Track 3 — The collapse.** plan/task/log coupled sources and module verbs move into their
+- [x] **Track 3 — The collapse.** plan/task/log coupled sources and module verbs move into their
   governances; `module-plan`/`module-task`/`module-log` deleted; the CLI routes bare nouns through the
   effective map. Acceptance: noun regression — `plan resolve/status`, `task resolve`, `log lint`,
   `records census/handling/show` byte-identical to before.
-- [ ] **Track 4 — Harness internalized.** `module-harness` → `harness`
+- [x] **Track 4 — Harness internalized.** `module-harness` → `harness`
   (`@entelekheia/vibe-ops-harness`); base ownership fragment lives there; `sync` composes norm content
   and ownership from the activated governances; `status` reads versions from their templates.
-- [ ] **Track 5 — Resolution and `records norm`.** The map-driven facet resolution threaded through
+- [x] **Track 5 — Resolution and `records norm`.** The map-driven facet resolution threaded through
   `resolveTypeUnit`, `migrationsDir` (one copy, per-type), `expandTemplateToken`; the `norm` verb with
   tests. Acceptance: the npm-only install case — pack, install into an empty repo, no plugin,
   `CLAUDE_PLUGIN_ROOT` unset; `records norm --type adr`, `plan resolve`, `harness status` all answer.
-- [ ] **Track 6 — Skills, checks, docs.** `migrate`/`new`/`new-log` read via `vibe-ops records norm`;
+- [x] **Track 6 — Skills, checks, docs.** `migrate`/`new`/`new-log` read via `vibe-ops records norm`;
   `new-migration` writes into the type's governance package; checks 35/55/80 retarget;
   `cli/AGENTS.md`, `plugin/AGENTS.md`, `README.md`, `CHANGELOG.md`. Acceptance:
   `vibe-ops governance .` byte-identical to the pre-change baseline; 17 shell checks green.
@@ -182,7 +182,19 @@ version read from the template at use time, there is nothing left to drift.
 
 ## Outcomes & Retrospective
 
-(No outcomes yet — filled at each major track completion and at the end.)
+**2026-08-22 — all six tracks landed in one pass** (five commits on `plan-025-harness-foundation`).
+Against the goals: the five packages exist and are the sole homes of their artifacts' data and verbs;
+the three modules are deleted with ids unchanged; adr/rfc are one sugared call each; the harness is
+CLI-internal and promulgates a composed boundary; the npm-only acceptance ran green in a scratch install
+with `CLAUDE_PLUGIN_ROOT` unset (`records norm`, `plan resolve`, `harness status` all answered from the
+packages). `governance .` stayed byte-identical through every step; `self .` differs only by the deleted
+`type-index-drift` line; 495/495 tests, 17/17 shell checks.
+
+Two seams deliberately did not move, and are the measured start of a later pass: `plan-fields.ts` (the
+base resolver reads the status chain and living sections through it) and `closure.ts` (plan and task
+read their closure boxes through one file). Check `80-template-attribution` was NOT extended to the
+governance packages' templates — the attribution in the canonical, npm-published copies is the author's
+and correct; what lands in targets is still `skills/setup/templates/`, already covered.
 
 ---
 
