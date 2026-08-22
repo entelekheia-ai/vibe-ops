@@ -58,15 +58,18 @@ export default { settings: { governance: { level: { "template-version-behind": "
 
 ## 4. Upgrading the tooling itself
 
-The plugin is installed as a **copy** into a version-keyed cache, so a newer clone does not become a newer
-install on its own. Under the current version freeze the copy made on install day runs forever. See
-[install and verify](install-and-verify.md) §3 — the two commands are `uninstall` + `install` to re-copy,
-or `claude --plugin-dir` to bypass the cache entirely.
+**The norm travels with the npm packages** (Plan-033): the templates, authoring rules and migration
+notes a repository is measured against come from the `@entelekheia/governance-<type>` packages the CLI
+resolves — so upgrading the norm is upgrading those packages, not the Claude plugin. The plugin carries
+the skills and is installed as a **copy** into a version-keyed cache, so a newer clone does not become a
+newer install on its own; see [install and verify](install-and-verify.md) §3 — `uninstall` + `install`
+to re-copy, or `claude --plugin-dir` to bypass the cache entirely.
 
-The CLI is different: `npm link` points at your working tree, so a rebuild is live.
+From this workspace, `npm link` points the CLI at the working tree, so a rebuild is live — packages and
+norm together:
 
 ```bash
-npm run build     # the linked CLI now runs the new code
+npm run build     # the linked CLI now runs the new code, and the new norm
 ```
 
 ## 5. When a repository has a real backlog

@@ -79,26 +79,30 @@ git rev-parse HEAD
 grep -o '"gitCommitSha": *"[^"]*"' ~/.claude/plugins/installed_plugins.json
 ```
 
-## 4. Point the CLI at a norm
+## 4. Where the norm comes from
 
 Anything that compares a repository against the installed norm — `vibe-ops harness status`, `sync`, and
-the `SessionStart` hook — needs to know where that norm is. The plugin's hook wiring sets
-`CLAUDE_PLUGIN_ROOT` for you, so in a Claude Code session this is already answered. From a bare terminal
-it is not:
+the `SessionStart` hook — reads it from the **activated governance packages**
+(`@entelekheia/governance-<type>`), which travel with the CLI (Plan-033, ADR-0019). Installing the CLI is
+installing the norm; nothing extra to point at, from a Claude Code session or a bare terminal alike.
+
+A repository can **pin an older tree instead**, and the pin wins over the bundled packages — that is what
+a pin is for:
 
 ```bash
-vibe-ops harness status . --source <path-to-this-clone>/plugin
+vibe-ops harness status . --source <path-to-an-older-clone>/plugin
 ```
 
-If you do this often, declare it once instead, in a `vibeops.config.local.ts` beside the repository or in
-your home directory:
+or once, in a `vibeops.config.local.ts` beside the repository or in your home directory:
 
 ```ts
-export default { harness: { source: "/absolute/path/to/vibe-ops/plugin" } };
+export default { harness: { source: "/absolute/path/to/pinned/plugin" } };
 ```
 
-None of the three tiers resolving is **not an error** — `status` will tell you there is nothing to compare
-against, which is a different answer from "you are up to date".
+A single type can also be re-bound to another package in the committed config —
+`types: { plan: "@scope/pkg#plan" }` — the config is the registry. Nothing resolving at all is **not an
+error**: `status` says there is nothing to compare against, which is a different answer from "you are up
+to date".
 
 ## Troubleshooting
 

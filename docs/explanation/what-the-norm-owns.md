@@ -2,19 +2,25 @@
 
 Bringing a repository "up to date" is only a safe thing to offer if *up to date* has an edge. Without one
 it is a promise that may overwrite an instruction file someone spent a month shaping — and the first time
-it does, nobody runs it again. This page is that edge, in the words a person needs; the machine-readable
-declaration is [`plugin/ownership.json`](../../cli/packages/harness/ownership.json) and the rule the agent follows when
-extending it is [`plugin/references/ownership.md`](../../plugin/references/ownership.md).
+it does, nobody runs it again. This page is that edge, in the words a person needs. The machine-readable
+declaration is **composed** (Plan-033): the base half — everything the scaffold writes that belongs to no
+single artifact — is [`cli/packages/harness/ownership.json`](../../cli/packages/harness/ownership.json),
+and each activated governance package ships an `ownership.json` fragment for its own artifact (for
+example [`governance-plan`'s](../../cli/packages/governance-plan/ownership.json)). The rule the agent
+follows when extending any of them is
+[`plugin/references/ownership.md`](../../plugin/references/ownership.md).
 
 ## The vocabulary
 
 Two words get used constantly and mean specific things.
 
 **The norm** is the set of files this tooling is the author of: the governance templates, the record
-lifecycle rule, the wiring that composes the commit gate. It is *versioned* — each template declares its
-own `vibe-ops-template: <type>@<n>`, and the declaration of who-owns-what declares
-`"version"` of its own. "Which version of the norm is this repository on?" is therefore a real question
-with a real answer, which is the whole point.
+lifecycle rule, the wiring that composes the commit gate. Since Plan-033 it travels as **npm packages** —
+each record type's template, authoring rules and migration notes ship in that artifact's own
+`@entelekheia/governance-<type>` package, so an npm-only install carries the whole norm. It is
+*versioned* — each template declares its own `vibe-ops-template: <type>@<n>`, and the declaration of
+who-owns-what declares a `"version"` of its own. "Which version of the norm is this repository on?" is
+therefore a real question with a real answer, which is the whole point.
 
 **Promulgation** is the act of writing a version of the norm into a repository — `vibe-ops harness sync`.
 Not *installing*, because nothing is downloaded, and not *updating*, because it may write into a
@@ -36,7 +42,7 @@ shape whose entire value is that someone then changes it — a README, a build m
 that ships containing a placeholder telling you to fill it in. Promulgation being *safe* turns out to be
 mostly a statement about how little it overwrites.
 
-A worked example of each, from the shipped declaration:
+A worked example of each, from the shipped declarations:
 
 - `project/templates/plan.md` is **`norm`**. It declares its own version and every version jump has a
   migration note. Versioning a file is the act of claiming it.
@@ -92,5 +98,6 @@ you have agreed to — which is a record of a decision, not a dial.
 - [How to promulgate the norm into a repository](../how-to/promulgate-the-norm.md) — the recipe.
 - [How to bring a repository up to a newer norm](../how-to/upgrade-a-repository.md) — when it is already
   on an older one.
-- [`plugin/ownership.json`](../../cli/packages/harness/ownership.json) — the declaration itself, with a recorded reason
-  on every entry.
+- [`cli/packages/harness/ownership.json`](../../cli/packages/harness/ownership.json) — the base half of
+  the declaration, with a recorded reason on every entry; each governance package's `ownership.json`
+  carries its artifact's.

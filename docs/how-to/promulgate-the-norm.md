@@ -11,6 +11,12 @@ works in that repository, and a branch is reviewable as an ordinary diff, which 
 Before starting, know what the three ownership classes mean —
 [what the norm owns](../explanation/what-the-norm-owns.md). Everything below assumes that vocabulary.
 
+**Where the norm comes from.** Since Plan-033 the norm is carried by the activated governance packages
+(`@entelekheia/governance-<type>`, resolved through your `vibeops.config` `types` bindings or the shipped
+defaults) — so an npm-only install promulgates without any Claude plugin present. A repository that pins
+an older tree (`harness.source`, `--source`) is served **that tree whole**: its templates under its
+declaration, never blended with the packages, because one run promulgates one norm.
+
 ## 1. Look before you write
 
 ```bash
@@ -117,4 +123,4 @@ scaffold. There is no separate "first time" mode.
 - [What the norm owns](../explanation/what-the-norm-owns.md) — the three classes and the boundary.
 - [How to bring a repository up to a newer norm](upgrade-a-repository.md) — when records already exist and
   need migrating first.
-- [`module-harness`](../../cli/packages/harness/README.md) — every verb and flag.
+- [`harness`](../../cli/packages/harness/README.md) — every verb and flag.

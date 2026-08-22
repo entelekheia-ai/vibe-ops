@@ -12,8 +12,17 @@ docs, and a CLI that does the deterministic half — from a terminal or over MCP
 [`README.md`](../README.md).
 
 **Do I need both halves?**
-Yes. Seven of the plugin's nine hook registrations invoke `vibe-ops` by name and ship no script, so the
-plugin without the CLI fails loudly by design. [Install and verify](how-to/install-and-verify.md).
+The plugin needs the CLI: seven of its nine hook registrations invoke `vibe-ops` by name and ship no
+script, so the plugin without the CLI fails loudly by design. The CLI alone is complete since Plan-033 —
+the norm travels in its `@entelekheia/governance-<type>` packages, so an npm-only install resolves,
+examines and promulgates with no plugin present. [Install and verify](how-to/install-and-verify.md).
+
+**Where does a record type's template actually live?**
+In that artifact's own governance package — one artifact, one package
+([ADR-0019](../project/adr/0019-one-artifact-one-governance-package-activated-by-config.md)). Ask the
+CLI, never a path: `vibe-ops records norm --type plan --facet template --print`. A repository can bind a
+type to another package in `vibeops.config` (`types: { plan: "@scope/pkg#plan" }`); the config is the
+registry.
 
 **I installed it and a skill is behaving like an older version of itself.**
 Almost always the install cache. Installing *copies* the tree to a version-keyed path, and this repository
