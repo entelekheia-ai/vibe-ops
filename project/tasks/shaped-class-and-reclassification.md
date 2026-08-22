@@ -102,4 +102,4 @@ structure-changing jump keeps the section and its content; a `repo`-classed sibl
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.

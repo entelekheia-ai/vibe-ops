@@ -90,4 +90,4 @@ reviewed section by section for content preservation; suite green.
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.
