@@ -161,6 +161,6 @@ behaves identically under MCP and under a terminal.
 | [`@entelekheia/governance-base`](packages/governance-base/) | The reusable governance components the noun modules share — layout, numbering, lifecycles, closure, the `defineGovernance` sugar |
 | [`@entelekheia/governance-plan`](packages/governance-plan/) · [`-task`](packages/governance-task/) · [`-log`](packages/governance-log/) · [`-adr`](packages/governance-adr/) · [`-rfc`](packages/governance-rfc/) | One artifact, one governance package (ADR-0019): the type's data and its verbs together; adr and rfc are pure sugar |
 | [`@entelekheia/vibe-ops-module-records`](packages/module-records/) | The cross-type verbs — census, handling, show, list, and `norm`, the facet the plugin skills read |
-| [`@entelekheia/vibe-ops-module-harness`](packages/module-harness/) | What a repository's harness is, and promulgating the norm into it |
+| [`@entelekheia/vibe-ops-harness`](packages/harness/) | CLI-internal (no governance of its own): what a repository's harness is, and promulgating the norm into it |
 
 Working on them: [`AGENTS.md`](AGENTS.md).

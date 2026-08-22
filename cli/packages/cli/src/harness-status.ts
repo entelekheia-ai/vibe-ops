@@ -23,14 +23,14 @@
 // surface's own `--plugin <dir>` (its flavour of the seam's `--source`, kept under its original name so
 // `hooks.json`'s registration does not need to change), then `CLAUDE_PLUGIN_ROOT`. A directory with no
 // templates, or none of the three resolving: silence. `behindEntries`/`formatBehind`/`shippedVersions`
-// used to live here; they moved to `@entelekheia/vibe-ops-module-harness` so the `harness status` verb
+// used to live here; they moved to `@entelekheia/vibe-ops-harness` so the `harness status` verb
 // and this hook read the same comparison rather than two copies drifting apart.
 
 import { loadConfig } from "@entelekheia/vibe-ops-core";
-import { behindEntries, formatBehind, shippedVersions } from "@entelekheia/vibe-ops-module-harness";
+import { behindEntries, formatBehind, shippedVersions } from "@entelekheia/vibe-ops-harness";
 import { repoRootFrom, resolveSourceRoot } from "./run.ts";
 
-export { behindEntries, formatBehind } from "@entelekheia/vibe-ops-module-harness";
+export { behindEntries, formatBehind } from "@entelekheia/vibe-ops-harness";
 
 interface SessionStartPayload {
   readonly cwd?: string;
@@ -59,9 +59,8 @@ export async function runHarnessStatusHook(argv: readonly string[]): Promise<num
     if (config.harness?.applied === undefined) return 0;
 
     const sourceRoot = resolveSourceRoot(config, pluginArg);
-    if (sourceRoot === undefined) return 0;
 
-    const shipped = await shippedVersions(sourceRoot);
+    const shipped = await shippedVersions(config, sourceRoot);
     const behind = behindEntries(config.harness.applied, shipped);
     if (behind.length === 0) return 0;
 

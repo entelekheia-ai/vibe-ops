@@ -117,4 +117,4 @@ scaffold. There is no separate "first time" mode.
 - [What the norm owns](../explanation/what-the-norm-owns.md) — the three classes and the boundary.
 - [How to bring a repository up to a newer norm](upgrade-a-repository.md) — when records already exist and
   need migrating first.
-- [`module-harness`](../../cli/packages/module-harness/README.md) — every verb and flag.
+- [`module-harness`](../../cli/packages/harness/README.md) — every verb and flag.

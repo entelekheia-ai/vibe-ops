@@ -1,4 +1,4 @@
-# @entelekheia/vibe-ops-module-harness
+# @entelekheia/vibe-ops-harness
 
 **Which repositories are on which version of your governance norm — and one command to move them.**
 `vibe-ops harness` reads what a repository's guide-and-sensor apparatus actually is, and promulgates a

@@ -79,16 +79,13 @@ export default defineModule(
     }
 
     if (context.command === "sync") {
-      if (context.sourceRoot === undefined) {
-        return {
-          code: 2,
-          summary: "no source root resolved (config.harness.source, --source, or CLAUDE_PLUGIN_ROOT) — there is no norm to promulgate",
-        };
-      }
       const accept = context.flags["accept-boundary"];
+      // sync itself decides the norm source (a pinned tree whole, else the activated packages) and
+      // refuses with the boundary message when neither contributes — the message names the real gap.
       const result = await sync({
         repoRoot: context.repoRoot,
         sourceRoot: context.sourceRoot,
+        config: context.config,
         base: typeof context.flags["base"] === "string" ? context.flags["base"] : undefined,
         acceptBoundary: typeof accept === "string" ? Number(accept) : undefined,
         agreedBoundary: context.config.harness?.boundary,
@@ -165,13 +162,12 @@ export default defineModule(
     }
 
     if (context.command === "status") {
-      if (context.sourceRoot === undefined) {
-        return { code: 0, summary: "no source root resolved (config.harness.source, --source, or CLAUDE_PLUGIN_ROOT) — nothing to compare against", data: { behind: [] } };
-      }
       if (context.config.harness?.applied === undefined) {
         return { code: 0, summary: "this clone has never been promulgated to — nothing to compare", data: { behind: [] } };
       }
-      const shipped = await shippedVersions(context.sourceRoot);
+      // The activated governance packages answer first; a pinned tree covers a repository holding to an
+      // older norm. Both absent is still an answer: nothing ships, so nothing is behind.
+      const shipped = await shippedVersions(context.config, context.sourceRoot);
       const behind = behindEntries(context.config.harness.applied, shipped);
       if (context.flags["json"] !== true) {
         context.log(behind.length === 0 ? "up to date with the installed norm" : formatBehind(behind));

@@ -92,10 +92,13 @@ test("no --plugin, an unreadable plugin directory, and a malformed payload all f
   const repoRoot = await gitRepo();
   await writeFile(
     path.join(repoRoot, "vibeops.config.local.mjs"),
-    `export default { harness: { applied: { plan: 1 } } };`,
+    // Since Plan-033 the CLI carries its norm in the bundled governance packages, so "no --plugin" is a
+    // SERVED case, not silence — this fixture unbinds every type so the hook's fail-open half is what
+    // is being measured, not the packages the test process happens to have installed.
+    `export default { harness: { applied: { plan: 1 } }, types: { adr: "@x/none", rfc: "@x/none", plan: "@x/none", task: "@x/none", log: "@x/none" } };`,
   );
 
-  assert.equal(run(repoRoot, []).stdout, "", "no --plugin: nothing to compare against");
+  assert.equal(run(repoRoot, []).stdout, "", "no --plugin and no activatable package: nothing to compare against");
   assert.equal(run(repoRoot, ["--plugin", path.join(repoRoot, "nope")]).stdout, "", "unreadable plugin dir");
 
   const malformed = spawnSync("node", [BIN, "hook", "harness-status", "--plugin", repoRoot], {

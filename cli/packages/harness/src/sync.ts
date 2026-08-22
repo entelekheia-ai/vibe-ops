@@ -27,14 +27,21 @@ import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { classOf, entryFor, readOwnership, widens } from "./ownership.ts";
+import { classOf, composedOwnership, entryFor, ownershipPath, readOwnership, widens } from "./ownership.ts";
 import type { Ownership, OwnershipClass } from "./ownership.ts";
-import { shippedVersions } from "./status.ts";
+import { activateGovernance, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
+import { shippedVersionsFromPackages, shippedVersionsFromPinned } from "./status.ts";
 import type { VersionedType } from "./status.ts";
 
 export interface SyncOptions {
   readonly repoRoot: string;
-  readonly sourceRoot: string;
+  /**
+   * A pinned norm tree, when the repository declared one. A pin carrying its own ownership.json is used
+   * WHOLE — never blended with the activated packages, because promulgation takes one norm.
+   */
+  readonly sourceRoot?: string;
+  /** The acting repository's config — what routes the activated governance packages (ADR-0019). */
+  readonly config?: import("@entelekheia/vibe-ops-core").VibeOpsConfig;
   /** The branch the promulgation branch is cut from. Defaults to the target's current HEAD branch. */
   readonly base?: string;
   /** The boundary version the caller is agreeing to on this run. Absent means agree to nothing new. */
@@ -91,18 +98,33 @@ export function currentBranch(repoRoot: string): string {
 }
 
 /**
- * What the norm would write, as repository-relative paths mapped to their content. Read from the source's
- * own scaffold rather than invented here — this is the set the ownership declaration classifies, and a
+ * What the norm would write, as repository-relative paths mapped to their content. Read from the norm's
+ * own files rather than invented here — this is the set the ownership declaration classifies, and a
  * path it does not classify stops the run rather than being written on a guess.
+ *
+ * A pinned tree contributes its flat `templates/`; otherwise each activated governance package
+ * contributes its own template — the same one-norm decision the caller made for the boundary.
  */
-export async function normContent(sourceRoot: string): Promise<ReadonlyMap<string, string>> {
+export async function normContent(
+  config: import("@entelekheia/vibe-ops-core").VibeOpsConfig | undefined,
+  pinned: string | undefined,
+): Promise<ReadonlyMap<string, string>> {
   const content = new Map<string, string>();
-  const templates = path.join(sourceRoot, "templates");
-  if (existsSync(templates)) {
-    for (const type of ["adr", "rfc", "plan", "task", "log"]) {
-      const from = path.join(templates, `${type}.md`);
-      if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
+  if (pinned !== undefined) {
+    const templates = path.join(pinned, "templates");
+    if (existsSync(templates)) {
+      for (const type of ["adr", "rfc", "plan", "task", "log"]) {
+        const from = path.join(templates, `${type}.md`);
+        if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
+      }
     }
+    return content;
+  }
+  for (const type of Object.keys(effectiveGovernanceBindings(config))) {
+    const activated = await activateGovernance(type, config);
+    if (activated === undefined) continue;
+    const from = path.resolve(activated.root, activated.unit.template);
+    if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
   }
   return content;
 }
@@ -132,8 +154,14 @@ export function boundaryRefusals(
 
 export async function sync(options: SyncOptions): Promise<SyncResult> {
   const { repoRoot, sourceRoot, dryRun } = options;
-  const installed = await readOwnership(sourceRoot);
-  const content = await normContent(sourceRoot);
+  // ONE NORM, WHOLE: a pin that carries its own boundary is that norm; otherwise the norm is composed
+  // from the activated governance packages plus the harness's base fragment.
+  const pinned = sourceRoot !== undefined && existsSync(ownershipPath(sourceRoot)) ? sourceRoot : undefined;
+  const installed = pinned !== undefined ? await readOwnership(pinned) : await composedOwnership(options.config);
+  if (installed === undefined) {
+    throw new Error("no ownership declaration in any norm source — promulgation has no boundary to respect and will not run");
+  }
+  const content = await normContent(options.config, pinned);
 
   const boundary = { agreed: options.agreedBoundary, installed: installed.version };
 
@@ -236,7 +264,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
     // What this run actually put there, restricted to the types whose file reached the index. Without it
     // `harness status` reports a freshly promulgated repository as never promulgated to — the exact
     // question this whole mechanism exists to answer, left unanswered by the act that should answer it.
-    const shipped = await shippedVersions(sourceRoot);
+    const shipped = pinned !== undefined ? await shippedVersionsFromPinned(pinned) : await shippedVersionsFromPackages(options.config);
     const applied: Partial<Record<VersionedType, number>> = {};
     for (const [type, version] of Object.entries(shipped) as [VersionedType, number][]) {
       if (staged.has(`project/templates/${type}.md`)) applied[type] = version;

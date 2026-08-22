@@ -1,7 +1,7 @@
 {
-  "name": "@entelekheia/vibe-ops-module-harness",
+  "name": "@entelekheia/vibe-ops-harness",
   "version": "0.0.1",
-  "description": "vibe-ops harness \u2014 the read-only half: what shape this repository is in, whether the promulgated norm is current, what is composed versus available, and what guides/sensors exist",
+  "description": "The CLI-internal harness module (no governance of its own): repo shape, promulgation, the applied-version comparison \u2014 and the BASE half of the ownership boundary",
   "type": "module",
   "license": "Apache-2.0",
   "exports": {

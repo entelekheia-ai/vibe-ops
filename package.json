@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "_comment_build": "core first, explicitly. `--workspaces` runs in directory order, not dependency order, so `cli` sorts before `core`, `records` and `module-harness` and would typecheck against their stale dist and report success. A package earns a place here by being STATICALLY imported by something that sorts ahead of it; module-harness qualifies because cli/src/harness-status.ts imports it by name, unlike every other module-*, which cli only ever reaches through a dynamic import().",
-    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core && npm run build -w @entelekheia/governance-base && npm run build -w @entelekheia/governance-plan && npm run build -w @entelekheia/vibe-ops-module-harness",
+    "build:foundation": "npm run build -w @entelekheia/vibe-ops-core && npm run build -w @entelekheia/governance-base && npm run build -w @entelekheia/governance-plan && npm run build -w @entelekheia/vibe-ops-harness",
     "build": "npm run build:foundation && npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "_comment_clean": "`tsc` only ever writes; it never removes. So a renamed or deleted source leaves its old artifact in dist/ and every consumer keeps resolving it — and because most tests import ../src directly while a module loaded through its package `exports` resolves to dist/, a run can exercise the new source and the stale build at once and pass. Not folded into `build`, which stays incremental for the edit loop; folded into `pretest`, where a wrong green is the expensive outcome.",

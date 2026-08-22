@@ -14,6 +14,9 @@
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { activateGovernance, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
+import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export type OwnershipClass = "norm" | "seed" | "repo";
 
@@ -90,4 +93,47 @@ export function widens(was: OwnershipClass | undefined, now: OwnershipClass | un
   if (was === undefined || now === undefined) return false;
   const authority: Record<OwnershipClass, number> = { repo: 0, seed: 1, norm: 2 };
   return authority[now] > authority[was];
+}
+
+// One level up from src/ (or dist/) — the harness package's own root, where the BASE half of the
+// boundary ships. The same import.meta.url shape every data-carrying package here uses.
+const HARNESS_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+async function maybeReadOwnership(root: string): Promise<Ownership | undefined> {
+  try {
+    return await readOwnership(root);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The boundary composed from the packages (Plan-033): the harness's own BASE fragment — everything the
+ * scaffold writes that belongs to no single artifact — plus each activated governance's fragment for
+ * its artifact. `version` is the max across fragments, and the per-entry widening check downstream is
+ * unchanged; finer semantics are Plan-031's subject. `undefined` when nothing contributes, which the
+ * caller reports as having no norm to promulgate rather than promulgating without a boundary.
+ *
+ * DELIBERATELY NOT MIXED WITH A PINNED TREE. Promulgation takes one norm whole: a pinned tree that
+ * carries its own ownership.json is used wholesale by the caller, never blended with fragments —
+ * reading templates from one norm under another norm's permission is the exact thing this file exists
+ * to prevent.
+ */
+export async function composedOwnership(config: VibeOpsConfig | undefined): Promise<Ownership | undefined> {
+  const paths: OwnershipEntry[] = [];
+  let version = 0;
+  const base = await maybeReadOwnership(HARNESS_ROOT);
+  if (base !== undefined) {
+    version = Math.max(version, base.version);
+    paths.push(...base.paths);
+  }
+  for (const type of Object.keys(effectiveGovernanceBindings(config))) {
+    const activated = await activateGovernance(type, config);
+    if (activated === undefined) continue;
+    const fragment = await maybeReadOwnership(activated.root);
+    if (fragment === undefined) continue;
+    version = Math.max(version, fragment.version);
+    paths.push(...fragment.paths);
+  }
+  return paths.length === 0 ? undefined : { version, paths };
 }
