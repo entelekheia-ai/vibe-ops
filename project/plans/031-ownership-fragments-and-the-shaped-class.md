@@ -19,28 +19,35 @@ vibe-ops-template: plan@3
 | Status | Backlog |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [Plan-029](./shipped/029-a-record-type-becomes-a-resolved-name.md) |
+| Depends on | [Plan-033](./shipped/033-one-artifact-one-governance.md) |
 | Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [Plan-017](017-the-plans-still-written-against-the-first-template-shape.md) (absorbed by Track 3) |
 
 ---
 
+> **Updated 2026-08-22, after Plan-033.** The fragment SPLIT already happened: each governance package
+> ships an `ownership.json` fragment for its artifact and the harness carries the base half, composed at
+> `sync` by concatenation with `version = max`. What this plan still owes of its fragment story is the
+> part 033 deliberately left naive: **per-path origin, the double-claim finding, and the repository's
+> narrowing layer.** Enumeration is the activated bindings (ADR-0019), never the Plan-029 scan, which
+> left the resolution path.
+
 ## Summary
 
-`plugin/ownership.json` classes `project/{adr,rfc,plans,tasks,log,research}/**` as `repo` — *"never
+The ownership declaration classes `project/{adr,rfc,plans,tasks,log,research}/**` as `repo` — *"never
 written and never read for a decision"* — and the migrate skill writes exactly those files. Both are
 correct about their own actor, because the declaration governs promulgation and nothing else; the
 vocabulary has no word for what migration does. This plan adds that word — the **`shaped`** class, where
-the tooling owns a file's *structure* and the repository owns its *content*, permanently — turns the
-single ownership file into **one fragment per package** composed by the CLI with per-path origin, and
-gives the repository its **narrowing**: reclassifying a path toward less tooling authority, by hand, with
-a reason. Migration and adoption start consulting the declaration, which today only promulgation reads.
+the tooling owns a file's *structure* and the repository owns its *content*, permanently — completes the
+fragment composition with **per-path origin** and the double-claim finding, and gives the repository its
+**narrowing**: reclassifying a path toward less tooling authority, by hand, with a reason. Migration and
+adoption start consulting the declaration, which today only promulgation reads.
 
 ## Goals
 
 - `shaped` exists in the ownership vocabulary; the record directories are reclassified from `repo` to
   `shaped`; an artifact carrying a locally added section is still migrated and the section survives.
-- `plugin/ownership.json` is this package's *fragment*; the composition reads every installed fragment,
-  keeps each path's claimant, and reports a doubly-claimed path as a finding — peers, never precedence.
+- The composition (already reading the harness base + each activated governance's fragment) keeps each
+  path's claimant and reports a doubly-claimed path as a finding — peers, never precedence.
 - A repository can narrow a class (`norm → shaped → seed → repo`) in its committed configuration, with a
   reason, refused when it would widen; the composition applies narrowings as the last layer.
 - Migration and adoption consult the composed declaration before writing, as promulgation already does.
@@ -82,8 +89,9 @@ content to have different owners.
 Composition (full rules: RFC-0003, "Ownership arrives in fragments"): fragments from different packages
 are peers, a path claimed twice is a conflict resolved only by the repository's declaration, the composed
 view always names each claimant, and absence of any claim is not permission. The reading side lives where
-promulgation already reads the single file — `cli/packages/module-harness/src/ownership.ts` — generalised
-from one path to the enumeration Plan-029's scan provides.
+promulgation already composes the fragments — `cli/packages/harness/src/ownership.ts`
+(`composedOwnership`) — generalised from concat-and-max to per-path origin, over the activated bindings
+(ADR-0019).
 
 ```mermaid
 flowchart LR
@@ -101,8 +109,10 @@ it lands in, instead of written blind — the first-contact actor stops being th
 
 ## Tracks
 
-- [ ] **Track 1 — The `shaped` class.** Vocabulary, reclassification of the record directories in this
-  package's fragment, and migration refusing/proceeding by effective class. Exists at the end: a fixture
+- [ ] **Track 1 — The `shaped` class.** Vocabulary, reclassification of the record directories in each
+  governance package's fragment (`project/templates/<t>.md` stays `norm`; the record dirs move to
+  `shaped` in the fragment of the type that owns them), and migration refusing/proceeding by effective
+  class. Exists at the end: a fixture
   artifact with a locally added section migrates and keeps it; a `repo`-classed file is refused with the
   class named. Task: [tasks/shaped-class-and-reclassification.md](../tasks/shaped-class-and-reclassification.md)
 - [ ] **Track 2 — Fragments and composition.** Enumeration of installed fragments, per-path origin, the

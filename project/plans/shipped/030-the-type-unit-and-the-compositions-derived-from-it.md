@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [Plan-029](./shipped/029-a-record-type-becomes-a-resolved-name.md) |
-| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) |
+| Depends on | [Plan-029](./029-a-record-type-becomes-a-resolved-name.md) |
+| Related | [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) |
 
 ---
 
@@ -57,7 +57,7 @@ the audience field on ops.
 
 ### Out of scope
 
-- Ownership classes travelling with the unit — [Plan-031](031-ownership-fragments-and-the-shaped-class.md).
+- Ownership classes travelling with the unit — [Plan-031](../031-ownership-fragments-and-the-shaped-class.md).
 - A type shipping its own gate or verb (executable code from outside) — deferred by RFC-0003, reopens
   only with a real external consumer.
 - Adoption (`setup repo`) composing type declarations instead of its fixed skeleton — recorded as an open
@@ -169,17 +169,17 @@ flowchart LR
 ## Read these first
 
 > **2026-08-22:** for the architecture now being executed, start at
-> [Plan-033](033-one-artifact-one-governance.md) and
-> [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) instead — the list
+> [Plan-033](./033-one-artifact-one-governance.md) and
+> [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) instead — the list
 > below described Track 3's first cut, since superseded. Items 2–4 remain accurate for Tracks 1–2.
 
 Written 2026-08-21, before a compaction, because the session that produced Tracks 1–3 is about to be
 discarded and a compacted session trusts the retelling rather than re-exploring. In order, each with why:
 
-1. **[ADR-0018](../adr/0018-a-package-declares-its-types-by-pointing-at-a-directory.md)** — what a package
+1. **[ADR-0018](../../adr/0018-a-package-declares-its-types-by-pointing-at-a-directory.md)** — what a package
    publishes to declare a type, and the two shapes rejected. Track 3 implements this contract; everything
    below is downstream of it.
-2. **[Plan-029, shipped](shipped/029-a-record-type-becomes-a-resolved-name.md)** — the dependency this
+2. **[Plan-029, shipped](./029-a-record-type-becomes-a-resolved-name.md)** — the dependency this
    plan declares, now closed. Its retrospective carries what its two success criteria actually cost, and
    one blocked promotion. `RecordType` is an open name and the package scan exists *because of it*.
 3. **`cli/packages/core/src/type-scan.ts`** — the scan Track 3 resolves the norm package through. Its
@@ -212,14 +212,16 @@ breaks `npm run build`. Recreate it only together with its first source file.
   edit. Acceptance: `governance` output diffed before/after differs only by the added
   `record-frontmatter-log` entry; a gate test with an invented type produces `record-header-<that type>`.
   Task: tasks/header-schema-becomes-data.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/header-schema-becomes-data.md`)
-> **Tracks 3–6 are superseded by [Plan-033](033-one-artifact-one-governance.md)** (2026-08-22). Their
+> **Tracks 3–6 are superseded by [Plan-033](./033-one-artifact-one-governance.md)** (2026-08-22). Their
 > problem statements stand — the npm-only install still has no norm, the entries are still hand-written,
 > the audience boundary is still undrawn — but the architecture answering them changed mid-execution of
 > Track 3: one governance package **per artifact** (not one package for the set), the module/data split
 > collapsed, activation via `vibeops.config`. See this plan's Decision Log (2026-08-22) and ADR-0019.
-> The four tracks below are kept unticked as the record of what was planned, and are not executed here.
+> The four tracks below are struck through as cut; their boxes are ticked at closure because a cut
+> track is closed, not pending — the strikethrough and this banner, not the box, carry that they were
+> superseded rather than done.
 
-- [ ] ~~**Track 3 — The norm travels as an npm package.**~~ A course correction, and it comes from RFC-0003's
+- [x] ~~**Track 3 — The norm travels as an npm package.**~~ A course correction, and it comes from RFC-0003's
   own words: *"the resolution protocol is therefore npm, and a type's identity is the package that ships
   it."* Today no package publishes anything but `dist` (plus `core`'s `queries`), so every type unit,
   template, authoring rule and migration note lives only in the Claude plugin tree — and `sourceRoot` is
@@ -232,7 +234,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   CLI.
   Task: tasks/the-norm-travels-as-a-package.md (closed dossier — `git show 15e2796da58ba3984df1021c10caf0c3fe83c706:project/tasks/the-norm-travels-as-a-package.md`) (rewritten as
   Plan-033's dossier)
-- [ ] ~~**Track 4 — Entries derived from installed types.**~~ `ops-governance` builds its per-type entries
+- [x] ~~**Track 4 — Entries derived from installed types.**~~ `ops-governance` builds its per-type entries
   from the declarations, keyed by carrier; the `required` literals Track 2 wrote into those entries — and
   the guard holding them to the manifests — are deleted together, because the derivation supersedes both.
   The `research` entry is deleted rather than derived. **The structural change this no longer needs:**
@@ -242,7 +244,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   repository. Acceptance: `vibe-ops governance .` output diffed before/after, differing only by the
   removed `research` entry (`log`'s landed in Track 2), plus the fixture case.
   Task: tasks/ops-entries-derived-from-type-data.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/ops-entries-derived-from-type-data.md`)
-- [ ] ~~**Track 5 — What the unit derives, and the move.**~~ One generation mechanism for both artefacts a
+- [x] ~~**Track 5 — What the unit derives, and the move.**~~ One generation mechanism for both artefacts a
   type duplicates today: the `setup` template copy and the per-type `/new-<t>` skill, whose `paths:`
   frontmatter is the only reason those skills exist separately. Generated at build for this plugin's own
   types, at adoption into the target repository's `.claude/skills/` for a type an external package brings
@@ -250,12 +252,12 @@ breaks `npm run build`. Recreate it only together with its first source file.
   self-contained folders here, once there is something proven to move them into. Exists at the end:
   `35-dogfooding-drift.sh`'s pair list is empty because nothing is duplicated by hand.
   Task: (to be written)
-- [ ] ~~**Track 6 — The audience boundary.**~~ `audience` declared on ops and entries; `fragment-parity` out
+- [x] ~~**Track 6 — The audience boundary.**~~ `audience` declared on ops and entries; `fragment-parity` out
   of the portable composition; `ops-self` marked internal; what adoption/consumers see is filtered.
   Exists at the end: composing "portable only" over a plugin-less fixture repo yields no
   plugin-shaped SKIPs. Acceptance: the before/after SKIP count on such a fixture.
   Task: tasks/ops-declares-its-audience.md (closed dossier — `git show f0ffb6995888ad41171ee142dc5ec4653a57486e:project/tasks/ops-declares-its-audience.md`)
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -386,7 +388,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   `node_modules`, needs no core change, and answers where `needsSource` could not.
   Date / Author: 2026-08-20 / Danilo Borges
 
-- Decision: Tracks 3–6 are superseded by [Plan-033](033-one-artifact-one-governance.md). The norm ships
+- Decision: Tracks 3–6 are superseded by [Plan-033](./033-one-artifact-one-governance.md). The norm ships
   as **one governance package per artifact** (`governance-{adr,rfc,plan,task,log}`), activated through
   `vibeops.config`; `module-plan`/`module-task`/`module-log` collapse into their governances; the CLI is
   layered cli base → `governance-base` (sugared primitives) → governances.
@@ -396,7 +398,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   the immediately preceding decision below** (one package for five types): RFC-0003's plural identifier
   models a package that MAY ship several types, and the resolver still handles that; it does not require
   the shipped five to travel together. Recorded in
-  [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), which supersedes
+  [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md), which supersedes
   ADR-0018's scan-marker as the resolution path — activation by config replaces discovery by scan.
   Date / Author: 2026-08-22 / Danilo Borges
 
@@ -423,7 +425,7 @@ taking `type` + `required`) are in use, and everything Plan-033 builds sits on t
 superseded before execution — Track 3 was begun (one commit, dropped) and its first cut is what exposed
 the architecture the maintainer actually wants: one governance package per artifact, activated by
 config, with the modules collapsed in. The problem statements of 3–6 remain live and travel with
-[Plan-033](033-one-artifact-one-governance.md); this plan keeps the record of the shapes considered
+[Plan-033](./033-one-artifact-one-governance.md); this plan keeps the record of the shapes considered
 and rejected on the way.
 
 ---
@@ -435,7 +437,7 @@ and rejected on the way.
   stamp-in-HTML-comment population `plugin/AGENTS.md` documents), not where the canonical copy lives.
 - Whether an entry-level audience is needed at all, or the ops-level field covers every real case — decide
   from the actual classification pass in Track 6, not in advance.
-- **A promulgation hash, for [Plan-031](031-ownership-fragments-and-the-shaped-class.md).** `harness.applied`
+- **A promulgation hash, for [Plan-031](../031-ownership-fragments-and-the-shaped-class.md).** `harness.applied`
   records a *version* per type, which answers "is this behind?" and cannot answer "was this edited?".
   Recording a hash of what was written would let a `norm` path be overwritten knowing whether anything is
   being destroyed. It belongs with the ownership fragments rather than here, and is raised now so 031 is
@@ -448,7 +450,7 @@ and rejected on the way.
 
 ## Related
 
-- [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the model; this plan is its "type
+- [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the model; this plan is its "type
   ships as data" half. The measurements behind Track 3 (12 of 15 gates hold no repository knowledge; 9 of
   17 fragments apply only to a plugin-publishing repository) are restated where used, so this plan stands
   alone.

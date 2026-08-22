@@ -20,7 +20,7 @@ vibe-ops-template: plan@3
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Depends on | [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) |
-| Related | [Plan-030](../030-the-type-unit-and-the-compositions-derived-from-it.md) · [Plan-031](../031-ownership-fragments-and-the-shaped-class.md) |
+| Related | [Plan-030](./030-the-type-unit-and-the-compositions-derived-from-it.md) · [Plan-031](../031-ownership-fragments-and-the-shaped-class.md) |
 
 ---
 
@@ -57,7 +57,7 @@ flow from them; the `types` config key; the package scan and its finding.
 ### Out of scope
 
 - What a package's type declaration *contains* — the per-type unit (template, authoring rules, migration
-  notes) is [Plan-030](../030-the-type-unit-and-the-compositions-derived-from-it.md). This plan only needs
+  notes) is [Plan-030](./030-the-type-unit-and-the-compositions-derived-from-it.md). This plan only needs
   the *marker* that lets the scan enumerate claimants.
 - Ownership classes and the `shaped` class — [Plan-031](../031-ownership-fragments-and-the-shaped-class.md).
 - Any verb that writes configuration — deferred by RFC-0003's own scope decision.

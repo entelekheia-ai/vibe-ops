@@ -98,6 +98,6 @@ harness status) is assembled from several packages plus a base fragment instead 
 - [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the protocol this implements.
 - [ADR-0018](0018-a-package-declares-its-types-by-pointing-at-a-directory.md) — **superseded by this
   ADR**: the marker and the scan leave the resolution path.
-- [Plan-033](../plans/033-one-artifact-one-governance.md) — the execution.
+- [Plan-033](../plans/shipped/033-one-artifact-one-governance.md) — the execution.
 - [Plan-029](../plans/shipped/029-a-record-type-becomes-a-resolved-name.md) — the open type union and
   the `types` binding table this activation reuses.

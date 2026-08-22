@@ -28,6 +28,15 @@ vibe-ops-template: plan@3
 > repository-wide question that must not be decided on the strength of one verb. The RFC that settles the
 > configuration format is this plan's first deliverable, and the tracks below are placeholders until it
 > is accepted.
+>
+> **Widened 2026-08-22, after Plan-033.** The format RFC now owns every value a TOOL writes into the
+> committed configuration, because three askers have accumulated on the same question: the ownership
+> narrowing (this plan's original subject), the **`types` bindings** — installing or updating a
+> governance package means writing `types: { freeze: "@scope/pkg#freeze" }`, and the maintainer's
+> direction is to surface that through the EXISTING verbs (`/vibe-ops:setup`, adopt, migrate), never a
+> new install noun — and the committed home for **`harness.applied`** (today clone-local in
+> `vibeops.config.local.json`, so two clones of one repository can disagree undetectably). One format
+> decision, three writers; deciding it three times would produce three formats.
 
 ---
 
@@ -45,7 +54,11 @@ module that promulgates — four actors read the declaration, and promulgation i
 *Placeholders until the format RFC is accepted; refine then.*
 
 - The format RFC: whether the committed configuration gains a serialised member a tool may edit, and what
-  the cascade's committed half accepts. Written and accepted before any verb code.
+  the cascade's committed half accepts — covering the ownership narrowing, the `types` bindings a
+  governance install/update writes, and a committed `harness.applied`. Written and accepted before any
+  verb code.
+- Governance install/update surfaced through the existing setup/adopt/migrate verbs, writing only the
+  serialised member the RFC defines — never editing the hand-written `vibeops.config.ts`.
 - `ownership get <path>` / `ownership list --show-origin` over Plan-031's composition.
 - `ownership set <glob> <class> --reason` writing the repository's layer only, refusing a widening by
   naming the fragment it would override, refusing a bare class without a reason.
@@ -85,6 +98,15 @@ The format RFC; the three verbs; nothing else.
   Rationale: specifying the verb first would decide the format implicitly, which is the exact failure
   RFC-0003's scope decision exists to prevent.
   Date / Author: 2026-08-20 / Danilo Borges
+
+- Decision: the format RFC's scope widens to every tool-written committed value — ownership narrowings,
+  the `types` bindings, and `harness.applied`'s committed home — and governance install/update is a mode
+  of the existing setup/adopt/migrate verbs, never a new noun.
+  Rationale: maintainer direction, 2026-08-22, closing Plan-033: three writers had accumulated on one
+  undecided format, and the activation model (ADR-0019 — the config is the registry) makes writing
+  `types` the whole act of installing a governance. Deciding the format per writer would produce three
+  formats; adding an install noun would duplicate verbs that already own first-contact and upgrade.
+  Date / Author: 2026-08-22 / Danilo Borges
 
 ## Outcomes & Retrospective
 

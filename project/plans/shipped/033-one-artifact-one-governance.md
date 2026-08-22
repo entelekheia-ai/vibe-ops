@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-22 |
 | Author | Danilo Borges |
-| Supersedes | [Plan-030](030-the-type-unit-and-the-compositions-derived-from-it.md) Tracks 3–6 |
-| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) |
+| Supersedes | [Plan-030](./030-the-type-unit-and-the-compositions-derived-from-it.md) Tracks 3–6 |
+| Related | [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) · [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) |
 
 ---
 
@@ -127,7 +127,7 @@ version read from the template at use time, there is nothing left to drift.
   `new-migration` writes into the type's governance package; checks 35/55/80 retarget;
   `cli/AGENTS.md`, `plugin/AGENTS.md`, `README.md`, `CHANGELOG.md`. Acceptance:
   `vibe-ops governance .` byte-identical to the pre-change baseline; 17 shell checks green.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
 
 ## Success criteria
 
@@ -149,7 +149,7 @@ version read from the template at use time, there is nothing left to drift.
   Rationale: maintainer direction, 2026-08-22, redirecting Plan-030 Track 3 mid-execution — the
   `governance-policies` single package (one commit, since dropped) coupled five types' evolution into
   one version stream and left the module/data split (`module-plan` vs the plan data) standing.
-  Recorded in [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md).
+  Recorded in [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md).
   Date / Author: 2026-08-22 / Danilo Borges
 
 - Decision: Activation and discovery are the repository's `vibeops.config` (shipped defaults overlaid
@@ -208,11 +208,11 @@ and correct; what lands in targets is still `skills/setup/templates/`, already c
 
 ## Related
 
-- [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the model; this plan is its
+- [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the model; this plan is its
   package-topology half.
-- [Plan-030](030-the-type-unit-and-the-compositions-derived-from-it.md) — Tracks 1–2 (the type unit,
+- [Plan-030](./030-the-type-unit-and-the-compositions-derived-from-it.md) — Tracks 1–2 (the type unit,
   the header schema as data) shipped and stand; Tracks 3–6 superseded here.
-- [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — the topology and
+- [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — the topology and
   activation decision; supersedes ADR-0018.
 
 - Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):

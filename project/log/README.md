@@ -30,6 +30,10 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 
 ## `cli/packages/core/src/`
 
+- [`a-stray-config-under-tmp-reaches-every-fixture-repository.md`](a-stray-config-under-tmp-reaches-every-fixture-repository.md) —
+  A leaked vibeops.config.local.mjs sitting in /private/tmp was picked up by the config cascade of every
+  temp-dir fixture repository below it — a virgin scratch install reported harness.applied it never had, and
+  nothing looked wrong from inside the repo.
 - [`asking-resolveplugindir-where-the-tool-keeps-its-own-files.md`](asking-resolveplugindir-where-the-tool-keeps-its-own-files.md) —
   `resolvePluginDir` answers "where is the TARGET's plugin surface", so using it to locate files the tooling
   ships — templates, migration notes — resolves to the target's root in a flat repo, where nothing writes;

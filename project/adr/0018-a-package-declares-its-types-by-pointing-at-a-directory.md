@@ -94,5 +94,5 @@ Fixing one caller's shape onto every other was avoided while the ambiguity case 
 - [Plan-029](../plans/shipped/029-a-record-type-becomes-a-resolved-name.md) — Track 2, where the scan and
   the binding table were built, and whose Decision Log carries the three smaller choices made beside this
   one.
-- [Plan-030](../plans/030-the-type-unit-and-the-compositions-derived-from-it.md) — Track 3, the first
+- [Plan-030](../plans/shipped/030-the-type-unit-and-the-compositions-derived-from-it.md) — Track 3, the first
   package that will implement this field.
