@@ -16,7 +16,7 @@ vibe-ops-template: task@3
 
 | Field | Value |
 |---|---|
-| Status | Planned |
+| Status | Done |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Issue | pending |
@@ -79,15 +79,26 @@ structure-changing jump keeps the section and its content; a `repo`-classed sibl
 
 ## Implementation order
 
-- [ ] P0 — item 1 (not delegable: the ordering *is* the semantics)
-- [ ] P0 — item 2 (trivial once 1 lands)
-- [ ] P0 — item 3 (survey of consult points delegable; the refusal wording is not)
-- [ ] P0 — item 4 (delegable under the fixture contract in item 4's What)
+- [x] P0 — item 1 (not delegable: the ordering *is* the semantics)
+- [x] P0 — item 2 (trivial once 1 lands)
+- [x] P0 — item 3 (survey of consult points delegable; the refusal wording is not)
+- [x] P0 — item 4 (delegable under the fixture contract in item 4's What)
 
 ## Surprises & Discoveries
 
-- Observation: …
-  Evidence: …
+- Observation: this dossier's coordinates predated Plan-033 — `plugin/ownership.json` and
+  `module-harness` no longer exist. The reclassification landed per the plan's 2026-08-22 banner
+  instead: each record directory's `shaped` entry in the fragment of the governance that owns it
+  (version 1→2, the bump being the consent for the repo→shaped widening), and the base half kept only
+  `project/research/**` as `repo`.
+  Evidence: commit diff — five `cli/packages/governance-<t>/ownership.json` + `harness/ownership.json`.
+- Observation: item 3's "wherever the CLI's migration-adjacent verbs read stamps" resolved to ONE
+  surface: `records handling` gained `ownership: <class>` per record (boundary composed once per run),
+  and the migrate skill's Step 3 consults it — proceed on `shaped`/`norm`, refuse `repo`/`seed`/
+  `undeclared` naming the class. No new noun: the verb surface is Plan-032's, and handling was already
+  the question migration asks before acting.
+  Evidence: `cli/packages/module-records/src/handling.ts` (`Handling.ownership`),
+  `plugin/skills/migrate/SKILL.md` Step 3.
 
 ## Closure
 

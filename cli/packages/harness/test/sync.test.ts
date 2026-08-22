@@ -169,6 +169,15 @@ test("widens: only a move that gives this tooling more authority needs consent",
   assert.equal(widens("norm", "repo"), false);
   assert.equal(widens("seed", "seed"), false);
   assert.equal(widens(undefined, "norm"), false, "gaining an entry where there was none takes nothing away");
+  // The fourth class (Plan-031) slots between seed and norm — same logic, new cases, and the
+  // reclassification this repository itself performs (repo → shaped) is deliberately a widening: it
+  // grants migration structural authority, and the version bump is the consent that carries it.
+  assert.equal(widens("repo", "shaped"), true, "a record dir the tooling never touched gains structural authority");
+  assert.equal(widens("seed", "shaped"), true);
+  assert.equal(widens("shaped", "norm"), true, "content the repository owned forever becomes overwritable");
+  assert.equal(widens("norm", "shaped"), false, "giving the content back is a narrowing, applied silently");
+  assert.equal(widens("shaped", "seed"), false);
+  assert.equal(widens("shaped", "repo"), false);
 });
 
 test("classOf: the last matching entry wins, so a narrow exception can carve out of a broad claim", () => {

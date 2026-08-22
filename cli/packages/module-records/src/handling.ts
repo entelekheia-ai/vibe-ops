@@ -24,6 +24,8 @@
 
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { classOf } from "@entelekheia/vibe-ops-harness";
+import type { Ownership, OwnershipClass } from "@entelekheia/vibe-ops-harness";
 import type { Document, DocumentStore, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import { migrationsDirFor } from "@entelekheia/governance-base";
 import {
@@ -49,6 +51,13 @@ export interface Handling {
   readonly handling: readonly string[];
   /** Present only when no dispatch could be made, saying why rather than defaulting to one. */
   readonly reason?: string;
+  /**
+   * The effective ownership class of this path in the composed declaration (Plan-031), when the caller
+   * handed one in. `"undeclared"` when the declaration matches nothing — which is NOT permission: the
+   * actor consulting this (migration refuses `repo` and `seed`, proceeds on `shaped` and `norm`)
+   * treats an undeclared path as a refusal too, the same rule promulgation applies.
+   */
+  readonly ownership?: OwnershipClass | "undeclared";
 }
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
@@ -116,15 +125,18 @@ export async function handlingFor(
   config: VibeOpsConfig | undefined,
   documents: DocumentStore,
   sourceRoot?: string,
+  boundary?: Ownership,
 ): Promise<Handling> {
+  // Composed once by the caller, not per file: one handling run may cover a whole census.
+  const ownership = boundary === undefined ? {} : { ownership: classOf(boundary, file) ?? ("undeclared" as const) };
   const document = documents.get(file);
   if (document.tree === undefined) {
-    return { file, handling: [], reason: "no such file in this repository, or no grammar covers it" };
+    return { file, handling: [], reason: "no such file in this repository, or no grammar covers it", ...ownership };
   }
 
   const located = locate(file, repoRoot, config, documents);
   if (located === undefined) {
-    return { file, handling: [], reason: "not under any record directory this repository declares" };
+    return { file, handling: [], reason: "not under any record directory this repository declares", ...ownership };
   }
 
   const dispatch = dispatchRecord({
@@ -137,11 +149,19 @@ export async function handlingFor(
   const handling =
     dispatch.kind === "behind" ? dispatch.notes.map((note) => path.relative(repoRoot, note.file)) : [];
 
-  return { file, type: located.type, dispatch, handling };
+  return { file, type: located.type, dispatch, handling, ...ownership };
 }
 
 /** The terminal rendering: the answer first, then what to read, and nothing else. */
 export function formatHandling(handling: Handling): readonly string[] {
+  const lines = formatDispatch(handling);
+  if (handling.ownership === undefined) return lines;
+  // One line, because the consulting actor needs the class, not the essay: migration proceeds on
+  // `shaped` and `norm`, refuses `repo`, `seed` and `undeclared` — absence is not permission.
+  return [...lines, `  ownership: ${handling.ownership}`];
+}
+
+function formatDispatch(handling: Handling): readonly string[] {
   if (handling.reason !== undefined) return [`${handling.file}: ${handling.reason}`];
 
   const dispatch = handling.dispatch;

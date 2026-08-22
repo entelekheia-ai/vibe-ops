@@ -185,3 +185,23 @@ test("list carries the listing shape, and only --full carries show's", async () 
   assert.equal(typo.code, 2);
   assert.match(typo.summary, /unknown field\(s\) setcions/);
 });
+
+// Plan-031 Track 1: handling reports each path's effective ownership class from the composed boundary,
+// so migration consults instead of re-deciding. The classes below come from the REAL composed
+// declaration (harness base + the shipped governance fragments) — which is the point: the fixture
+// repository is exactly a target repository, and the boundary is the one every target composes.
+test("handling reports the effective ownership class — shaped for a record, repo for research, and absence is named", async () => {
+  const repo = await fixture();
+  await write(repo, "project/research/2026-01-01-note.md", "# A note\n");
+  await write(repo, "unclaimed.md", "# Nothing claims this path\n");
+  const { data, lines } = await run(repo, [
+    "project/plans/012-current.md",
+    "project/research/2026-01-01-note.md",
+    "unclaimed.md",
+  ]);
+  assert.ok(data);
+  assert.equal(data[0]!.ownership, "shaped", "a plan record: structure the tooling's, content the repository's");
+  assert.equal(data[1]!.ownership, "repo", "research: no governance serves it; never restructured");
+  assert.equal(data[2]!.ownership, "undeclared", "no entry is NOT permission — reported, never guessed");
+  assert.ok(lines.some((line) => line.includes("ownership: shaped")), lines.join("\n"));
+});

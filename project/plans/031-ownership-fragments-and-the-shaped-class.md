@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Depends on | [Plan-033](./shipped/033-one-artifact-one-governance.md) |
@@ -128,7 +128,7 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
 
 ## Tracks
 
-- [ ] **Track 1 — The `shaped` class.** Vocabulary, reclassification of the record directories in each
+- [x] **Track 1 — The `shaped` class.** Vocabulary, reclassification of the record directories in each
   governance package's fragment (`project/templates/<t>.md` stays `norm`; the record dirs move to
   `shaped` in the fragment of the type that owns them), and migration refusing/proceeding by effective
   class. Exists at the end: a fixture
@@ -158,6 +158,15 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
 ---
 
 ## Decision Log
+
+- Decision: the migration consult's mechanical surface is `records handling` (which gains
+  `ownership: <class>` per record), never a new noun; `module-records` gains a dependency on
+  `vibe-ops-harness` for the composed boundary.
+  Rationale: the ownership verb surface (`get`/`list`/`set`) is Plan-032's, gated on the format RFC;
+  handling is already the question migration asks before acting on a record, and the composed boundary
+  already lives in the harness package beside its base fragment. Acyclic: harness never imports
+  module-records.
+  Date / Author: 2026-08-22 / Claude, executing for Danilo Borges
 
 - Decision: Delegation split — fixture construction and the mechanical reclassification edits are
   delegable under closed contracts; the semantics of `shaped` (what migration may touch), the composition

@@ -2,10 +2,12 @@
 // `sync` is its first reader, which is why every rule the prose states has to become a function here
 // rather than a habit at the call site.
 //
-// Three classes, from `<sourceRoot>/ownership.json`:
-//   norm — this tooling owns it; promulgation overwrites it
-//   seed — written once when absent, never overwritten; the repository owns it from then on
-//   repo — never written, and promulgation that would touch one stops and reports
+// Four classes, from `<sourceRoot>/ownership.json`:
+//   norm   — this tooling owns it; promulgation overwrites it
+//   shaped — the tooling owns the STRUCTURE, the repository owns the CONTENT, permanently (Plan-031):
+//            migration may restructure per a recorded note; nothing may rewrite what is written under it
+//   seed   — written once when absent, never overwritten; the repository owns it from then on
+//   repo   — never written, and promulgation that would touch one stops and reports
 //
 // A PATH WITH NO MATCHING ENTRY IS NOT PERMISSION. Absence means the declaration has not been extended to
 // cover it, and the answer is to report rather than to assume — which is why `classOf` returns undefined
@@ -18,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { activateGovernance, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
-export type OwnershipClass = "norm" | "seed" | "repo";
+export type OwnershipClass = "norm" | "shaped" | "seed" | "repo";
 
 export interface OwnershipEntry {
   readonly match: string;
@@ -91,7 +93,10 @@ export function entryFor(ownership: Ownership, file: string): OwnershipEntry | u
  */
 export function widens(was: OwnershipClass | undefined, now: OwnershipClass | undefined): boolean {
   if (was === undefined || now === undefined) return false;
-  const authority: Record<OwnershipClass, number> = { repo: 0, seed: 1, norm: 2 };
+  // The order IS the semantics (Plan-031): authority strictly decreasing right to left. `shaped`
+  // sits between `seed` and `norm` — more authority than write-once (migration may restructure it
+  // forever), less than ownership of the whole file (its content is never this tooling's).
+  const authority: Record<OwnershipClass, number> = { repo: 0, seed: 1, shaped: 2, norm: 3 };
   return authority[now] > authority[was];
 }
 

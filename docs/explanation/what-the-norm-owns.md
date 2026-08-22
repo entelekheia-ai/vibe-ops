@@ -26,14 +26,15 @@ therefore a real question with a real answer, which is the whole point.
 Not *installing*, because nothing is downloaded, and not *updating*, because it may write into a
 repository that has never seen this tooling at all.
 
-## Three classes, and why there are three
+## Four classes, and why each exists
 
-Every path is one of three things. The classification lives in one file so that there is exactly one
-answer, and no second opinion gets formed at the moment something is about to be written.
+Every path is one of four things. The classification lives in the composed declaration so that there is
+exactly one answer, and no second opinion gets formed at the moment something is about to be written.
 
 | Class | Promulgation does | Your repository may |
 |---|---|---|
 | **`norm`** | overwrites it, every time | not keep a local edit — an edit here is drift to reconcile, not a preference |
+| **`shaped`** | never writes it — this class belongs to **migration**, not promulgation | own every word of the content, permanently; the tooling owns the structure and may restructure it per a recorded migration note |
 | **`seed`** | writes it once, only when absent | own it completely from the moment it exists |
 | **`repo`** | never touches it, and **stops** if it would have | own it entirely; this tooling has no opinion |
 
@@ -48,7 +49,12 @@ A worked example of each, from the shipped declarations:
   migration note. Versioning a file is the act of claiming it.
 - `AGENTS.md` is **`seed`**. It is authored once against the repository it describes and maintained by
   whoever works there; overwriting it would discard the map it exists to be.
-- `project/plans/**` is **`repo`**. The templates are the norm's; what someone wrote from them is not.
+- `project/plans/**` is **`shaped`**. The template's structure — the stamp, the header table, the
+  sections — is the tooling's, and a migration may evolve it; every word written under those headings
+  is yours and survives every migration. (It was `repo` before the class existed; `repo` had no word
+  for a file with two owners.)
+- `project/research/**` is **`repo`**. No template claims its shape; what someone wrote there is theirs
+  alone.
 
 ## Two rules that are not about classification
 

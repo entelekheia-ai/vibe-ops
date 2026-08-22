@@ -34,6 +34,7 @@ import {
 import type { ModuleResult, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
+import { composedOwnership } from "@entelekheia/vibe-ops-harness";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
 import { listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
 import type { NormFacet } from "@entelekheia/governance-base";
@@ -279,11 +280,14 @@ export default defineModule(
       }
       const documents = createDocumentStore(context.repoRoot);
       const pluginDir = resolvePluginDir(context.repoRoot);
+      // The composed boundary, once per run (Plan-031): handling reports each record's effective
+      // ownership class so the consulting actor — migration, above all — never re-decides it per file.
+      const boundary = await composedOwnership(context.config);
       let answers;
       try {
         answers = await Promise.all(
           context.args.map((file) =>
-            handlingFor(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
+            handlingFor(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot, boundary),
           ),
         );
       } catch (error) {

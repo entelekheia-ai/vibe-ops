@@ -1,5 +1,5 @@
 ---
-vibe-ops-reference: ownership@1
+vibe-ops-reference: ownership@2
 ---
 
 # Ownership — what promulgation may write, and what it must refuse
@@ -14,13 +14,19 @@ activated governance package ships an `ownership.json` fragment for its own arti
 at the call site** — a second opinion formed at the moment of writing is how a boundary erodes, and the
 whole value of the declaration is that there is exactly one answer.
 
-## The three classes
+## The four classes
 
 | Class | Promulgation | The repository |
 |---|---|---|
 | `norm` | overwrites it | may not keep a local edit; an edit here is drift to reconcile |
+| `shaped` | never writes it — this is **migration's** class, not promulgation's | owns every word of the content, permanently; the tooling owns the structure and may restructure per a recorded migration note |
 | `seed` | writes it once, when absent | owns it from the moment it exists |
 | `repo` | never touches it, and stops if it would | owns it entirely |
+
+`shaped` (Plan-031) is the class for a record: its template is versioned and its version jumps carry
+migration notes — structure the tooling claims — while everything written under the headings is the
+repository's and survives every migration. Authority orders `norm > shaped > seed > repo`, strictly:
+a move rightward is a narrowing and applies silently; a move leftward is a widening and needs consent.
 
 `seed` is the largest class and that is the point. Most of what a scaffold produces is a starting shape
 whose value is that someone then changes it — a README, a build manifest, a guardrails file that ships
@@ -31,8 +37,10 @@ statement about how little it overwrites.
 
 Ask these in order, and stop at the first that answers.
 
-1. **Does the file declare a version, or does a migration note exist for changing it?** Then it is `norm`.
-   Versioning a file is the act of claiming it; nothing else needs to be argued.
+1. **Does the file declare a version, or does a migration note exist for changing it?** Then ask who
+   owns the words: a template or mechanism whose whole content ships from the norm is `norm`; a record
+   whose stamp and headings are the template's but whose content a person wrote is `shaped`. Versioning
+   a file is the act of claiming it — the question is only how much of it is claimed.
 2. **Does the shipped copy contain a placeholder, a TODO, or an instruction to the person receiving it?**
    Then it is `seed`. A file whose shipped content asks to be replaced cannot also be a file this tooling
    overwrites.

@@ -1,8 +1,9 @@
 {
-  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the three classes is plugin/references/ownership.md.",
+  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the four classes is plugin/references/ownership.md.",
   "version": 1,
   "classes": {
     "norm": "This tooling owns it. Promulgation overwrites it, and a local edit is drift to be reconciled rather than a preference to be preserved.",
+    "shaped": "Two owners, permanently (Plan-031): the tooling owns the structure — migration may restructure it per a recorded note — and the repository owns every word of the content. Promulgation never writes here; this is migration's class.",
     "seed": "Written once when absent, never overwritten. The repository owns it from the moment it exists.",
     "repo": "Never written and never read for a decision. Promulgation that would touch one of these stops and reports."
   },
@@ -10,7 +11,7 @@
     {
       "match": ".agents/rules/governance.md",
       "class": "norm",
-      "why": "The record lifecycles, which this tooling defines. Measured 2026-08-13 as divergent in three of three repositories checked and divergent from the shipped copy \u2014 that divergence is unreconciled drift, not per-repository preference, and it is the reason this declaration is being written."
+      "why": "The record lifecycles, which this tooling defines. Measured 2026-08-13 as divergent in three of three repositories checked and divergent from the shipped copy — that divergence is unreconciled drift, not per-repository preference, and it is the reason this declaration is being written."
     },
     {
       "match": "CLAUDE.md",
@@ -50,7 +51,7 @@
     {
       "match": ".agents/rules/repo-guardrails.md",
       "class": "seed",
-      "why": "Ships with a placeholder the setup skill explicitly tells the operator to fill in or delete. Measured 2026-08-13 at 1.1K in one repository and 9.4K in another \u2014 the shipped file is a prompt, not content."
+      "why": "Ships with a placeholder the setup skill explicitly tells the operator to fill in or delete. Measured 2026-08-13 at 1.1K in one repository and 9.4K in another — the shipped file is a prompt, not content."
     },
     {
       "match": "README.md",
@@ -90,12 +91,12 @@
     {
       "match": "vibeops.config.local.ts",
       "class": "repo",
-      "why": "Clone-local and version-control-ignored. It is where the applied-version map is written, so promulgation updates that one key through the module that owns it \u2014 never by rewriting the file."
+      "why": "Clone-local and version-control-ignored. It is where the applied-version map is written, so promulgation updates that one key through the module that owns it — never by rewriting the file."
     },
     {
-      "match": "project/{adr,rfc,plans,tasks,log,research}/**",
+      "match": "project/research/**",
       "class": "repo",
-      "why": "The records themselves. The templates are the norm's; what someone wrote from them is not."
+      "why": "Investigations a person wrote; no governance package serves the type, so its class stays here in the base half. The record directories that used to share this entry moved to each type's own fragment as `shaped` (Plan-031)."
     },
     {
       "match": "scripts/checks/[0-9]*.sh",

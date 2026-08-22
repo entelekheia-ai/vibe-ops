@@ -99,6 +99,13 @@ recording what that costs an existing artifact, and inventing the migration here
 
 ## Step 3 — Apply, one artifact at a time
 
+**Consult the ownership class before touching a file** — `records handling` reports it per record as
+`ownership: <class>`. Proceed on `shaped` (the class this skill exists for: the tooling owns the
+structure, the repository owns the content) and on `norm`. **Refuse `repo`, `seed`, and `undeclared`,
+naming the class in the report** — a `repo`-classed file is one this tooling was told is not its to
+restructure, and an undeclared path is not permission, the same rule promulgation applies. The refusal
+is per file: the run continues over its siblings.
+
 **The safety property, and it outranks finishing the run:**
 
 - A section the new template drops **MUST NOT** be deleted while it still has content. Route the content
