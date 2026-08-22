@@ -50,6 +50,10 @@ export default {
         // rather than their version. Two entries over one directory need the exclusion each — `ignore`
         // is keyed by label and additive, never inherited from a sibling.
         "record-frontmatter-log": ["project/log/README.md", "project/log/RETIRED.md"],
+        // The plans directory gained an index of its own (the roadmap, Plan-033's closure) — an index,
+        // not a record, same reasoning as the log READMEs above, one exclusion per entry over the dir.
+        "record-header-plan": ["project/plans/README.md"],
+        "template-version-plan": ["project/plans/README.md"],
       },
       // Research is deliberately outside the versioning scheme: the type has no template of its own and
       // its shape is not settled (Plan-012). Declared and disabled rather than left out of the
