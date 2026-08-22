@@ -80,4 +80,4 @@ the refinement at the keyboard names the rest before editing.
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.

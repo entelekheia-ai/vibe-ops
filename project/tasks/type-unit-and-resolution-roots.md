@@ -154,4 +154,4 @@ Every `Why` below was run before it was written, per `references/records/task.md
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.
