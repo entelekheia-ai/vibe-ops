@@ -10,10 +10,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
+import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type { ModuleFlag, ModulePlugin } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
-import { runModule } from "./run.ts";
+import { repoRootFrom, runModule } from "./run.ts";
 import { createServer } from "node:http";
 
 function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
@@ -136,8 +136,11 @@ function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
 export async function buildServer(moduleNames: readonly string[]): Promise<McpServer> {
   const server = new McpServer({ name: "vibe-ops", version: "0.0.1" });
 
+  // One config read for routing the governance nouns (ADR-0019) — the server is stateless per call for
+  // everything else, and runModule re-reads the acting repository's cascade itself.
+  const { config: routingConfig } = await loadConfig(repoRootFrom(process.cwd()));
   for (const name of moduleNames) {
-    const plugin = await loadModule(name);
+    const plugin = await loadModule(name, routingConfig);
     const { id, summary } = plugin.definition;
 
     server.registerTool(

@@ -9,8 +9,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { documentFromText } from "@entelekheia/vibe-ops-core";
-import { tickPlanClosureBox } from "./closure.ts";
-import { linksToBasenames, relativeLinks, spliceLinks } from "./links.ts";
+import { tickPlanClosureBox } from "@entelekheia/governance-base";
+import { linksToBasenames, relativeLinks, spliceLinks } from "@entelekheia/governance-base";
 import type { DocumentStore } from "@entelekheia/vibe-ops-core";
 import { readPlanShape, slugFor, withoutRepositoryRow, withStatus } from "./plan-file.ts";
 

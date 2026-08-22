@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import { groupOf, logIndex, logLint, logSweep, preambleOf, readLogEntries } from "../src/log.ts";
-import { readFrontmatter } from "../src/frontmatter.ts";
+import { readFrontmatter } from "@entelekheia/governance-base";
 
 const ENTRY = (over: Partial<Record<string, string>> = {}) =>
   [

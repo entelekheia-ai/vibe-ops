@@ -14,7 +14,8 @@
 
 import { createDocumentStore, documentFromText } from "@entelekheia/vibe-ops-core";
 import { loadConfig } from "@entelekheia/vibe-ops-core";
-import { filePlan, readPlanShape, RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
+import { RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
+import { filePlan, readPlanShape } from "@entelekheia/governance-plan";
 import { existsSync } from "node:fs";
 import { repoRootFrom } from "./run.ts";
 

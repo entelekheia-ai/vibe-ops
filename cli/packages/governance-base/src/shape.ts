@@ -91,3 +91,44 @@ export function entriesUnder(document: Document, prefix: string): number | undef
   // part of that entry's evidence and is written as its own item.
   return section.descendantsOfType("list_item").length;
 }
+
+/**
+ * The `section` node (a heading with everything up to the next same-or-higher heading — the grammar
+ * groups them, so the section boundary is declared by the document rather than inferred from a blank
+ * line) whose level-2 heading reads exactly `headingText`.
+ */
+function findH2Section(root: Parser.SyntaxNode, headingText: string): Parser.SyntaxNode | undefined {
+  for (const heading of root.descendantsOfType("atx_heading")) {
+    if (!heading.children.some((child) => child.type === "atx_h2_marker")) continue;
+    const inline = heading.children.find((child) => child.type === "inline");
+    if (inline?.text.trim() === headingText) {
+      return heading.parent?.type === "section" ? heading.parent : undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Every `- [ ]`/`- [x]` under the `## Tracks` section — one checkbox per track, plus the closure line
+ * ("Run `/vibe-ops:close-plan`") the `plan@0.2` template itself adds as the section's last item.
+ *
+ * Reads the block tree, not the text: `task_list_marker_checked`/`task_list_marker_unchecked` are real
+ * node types, so a checkbox written inside a fenced example block is structurally not one of these and
+ * is never counted. That is the same distinction `markdown-link` relies on for a link inside a code
+ * span — the grammar separates them, so nothing has to strip anything first.
+ */
+export function trackCheckboxes(document: Document): { readonly total: number; readonly checked: number } {
+  const root = document.tree?.rootNode;
+  if (root === undefined) return { total: 0, checked: 0 };
+
+  const section = findH2Section(root, "Tracks");
+  if (section === undefined) return { total: 0, checked: 0 };
+
+  let total = 0;
+  let checked = 0;
+  for (const marker of section.descendantsOfType(["task_list_marker_checked", "task_list_marker_unchecked"])) {
+    total++;
+    if (marker.type === "task_list_marker_checked") checked++;
+  }
+  return { total, checked };
+}

@@ -1,17 +1,37 @@
 {
   "name": "@entelekheia/governance-task",
   "version": "0.0.1",
-  "description": "The task governance: its type declaration, template, authoring rules and migration notes — one artifact, one package (ADR-0019)",
+  "description": "The task governance: its type declaration, template, authoring rules and migration notes \u2014 one artifact, one package (ADR-0019)",
   "type": "module",
   "license": "Apache-2.0",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed — the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
-  "files": ["dist", "type.json", "templates", "migrations", "authoring.md", "ownership.json"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed \u2014 the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
+  "files": [
+    "dist",
+    "type.json",
+    "templates",
+    "migrations",
+    "authoring.md",
+    "ownership.json"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=22.18" },
-  "dependencies": { "@entelekheia/governance-base": "^0.0.1" },
-  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@entelekheia/governance-base": "^0.0.1",
+    "@entelekheia/vibe-ops-core": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
 }

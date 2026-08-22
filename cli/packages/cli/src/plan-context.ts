@@ -17,7 +17,8 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createDocumentStore, loadConfig } from "@entelekheia/vibe-ops-core";
-import { planModeGuidance, RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
+import { RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
+import { planModeGuidance } from "@entelekheia/governance-plan";
 import { repoRootFrom } from "./run.ts";
 
 interface UserPromptSubmitPayload {

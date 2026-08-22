@@ -13,22 +13,12 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import type { Document, DocumentStore } from "@entelekheia/vibe-ops-core";
 import { filterByGlobs, trackedFiles } from "@entelekheia/vibe-ops-core";
-import { readFrontmatter } from "./frontmatter.ts";
-import { listMarkdownFiles, NOT_A_RECORD } from "./layout.ts";
+import { readFrontmatter } from "@entelekheia/governance-base";
+import { listMarkdownFiles, NOT_A_RECORD } from "@entelekheia/governance-base";
 
 /** Not entries: the index this command generates, and the append-only retirement ledger. */
 const NOT_AN_ENTRY = NOT_A_RECORD;
 
-const CANDIDATE_LOG_DIRS = ["project/log", "log"] as const;
-
-/**
- * Where entries live. Its own search rather than `resolveRecord`'s, because `log` is deliberately not a
- * `RecordType`: every one of those is numbered, and a trap is addressed by the path where it recurs,
- * never by a position in a sequence — `new-log`'s Step 2 forbids calling the resolver for one at all.
- */
-export function findLogDir(repoRoot: string): string | undefined {
-  return CANDIDATE_LOG_DIRS.find((candidate) => existsSync(path.join(repoRoot, candidate)));
-}
 
 export interface LogEntry {
   readonly file: string;

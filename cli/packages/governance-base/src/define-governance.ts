@@ -50,7 +50,11 @@ export interface DefineGovernanceOptions {
   readonly version: string;
   /** Overrides the derived one-liner. */
   readonly summary?: string;
-  /** Verbs beyond the standard set. Appended, so the standard verbs cannot be shadowed by accident. */
+  /**
+   * Verbs beyond the standard set. A command sharing a standard verb's name REPLACES it — the package
+   * is saying it has more to show for that verb than the base does (plan's `resolve` reports the status
+   * chain and living sections on top of the layout) — and everything else is appended.
+   */
   readonly commands?: readonly ModuleCommand[];
   readonly flags?: readonly ModuleFlag[];
   readonly emits?: readonly string[];
@@ -98,13 +102,17 @@ export function defineGovernance(options: DefineGovernanceOptions): GovernancePl
     return { code: 2, summary: `${unit.type} has no command "${context.command ?? ""}"` };
   };
 
+  const commands = [
+    ...STANDARD_COMMANDS.filter((standard) => !(options.commands ?? []).some((own) => own.name === standard.name)),
+    ...(options.commands ?? []),
+  ];
   const plugin = defineModule(
     {
       id: unit.type,
       version: options.version,
       summary: options.summary ?? `The ${unit.type} record type: its layout, template and rules`,
       ...(options.flags === undefined ? {} : { flags: options.flags }),
-      commands: [...STANDARD_COMMANDS, ...(options.commands ?? [])],
+      commands,
       ...(options.emits === undefined ? {} : { emits: options.emits }),
       ...(options.destructive === undefined ? {} : { destructive: options.destructive }),
       ...(options.needsSource === undefined ? {} : { needsSource: options.needsSource }),

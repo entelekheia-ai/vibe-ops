@@ -20,8 +20,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import type { DocumentStore } from "@entelekheia/vibe-ops-core";
-import { tickClosureBox } from "./closure.ts";
-import { citationsToBasenames, linksToBasenames, spliceLinks } from "./links.ts";
+import { tickClosureBox } from "@entelekheia/governance-base";
+import { citationsToBasenames, linksToBasenames, spliceLinks } from "@entelekheia/governance-base";
 
 export interface TaskCloseOptions {
   readonly repoRoot: string;

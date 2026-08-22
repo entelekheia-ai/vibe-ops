@@ -13,7 +13,7 @@
 //     the author wrote them; a line rewrite reflows a table someone aligned by hand.
 
 import type { Document } from "@entelekheia/vibe-ops-core";
-import { findHeaderTable, keysOf, valueOf } from "./header-table.ts";
+import { findHeaderTable, keysOf, valueOf } from "@entelekheia/governance-base";
 
 /** What `plan file` needs to know about an approved plan before it writes anything. */
 export interface PlanShape {

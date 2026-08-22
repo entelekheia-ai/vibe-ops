@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import type { Document } from "@entelekheia/vibe-ops-core";
-import { planStatusFindings, trackCheckboxes } from "../src/status.ts";
+import { planStatusFindings } from "../src/status.ts";
+import { trackCheckboxes } from "@entelekheia/governance-base";
 
 const HEADER = (status: string) => ["# Plan-001: Title", "", "| Field | Value |", "|---|---|", `| Status | ${status} |`, ""].join("\n");
 

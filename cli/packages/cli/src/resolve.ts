@@ -1,10 +1,14 @@
 // Turning what the user typed into a module.
 //
-// Convention plus dynamic import, the same way eita resolves a trait — deliberately no registry file
-// and no manifest listing the built-ins. A registry is a second place to forget: a module that exists
+// A GOVERNANCE NOUN ROUTES THROUGH THE EFFECTIVE MAP FIRST (Plan-033, ADR-0019): shipped defaults
+// overlaid by the repository's `config.types`, so `vibe-ops plan` imports whichever package the config
+// binds — the config is the registry for the governances. Everything else keeps convention plus
+// dynamic import, the same way eita resolves a trait — deliberately no registry file and no manifest
+// listing the (non-governance) built-ins. A registry is a second place to forget: a module that exists
 // but was never added to it is invisible, and the failure looks like the module being broken.
 //
-// Four accepted forms, in the order they are tested:
+// Accepted forms, in the order they are tested:
+//   plan                   -> the package `config.types`/the defaults bind for "plan"
 //   check                  -> @entelekheia/vibe-ops-module-check   (a legacy built-in)
 //                           -> @entelekheia/vibe-ops-<name>         (a gates/ops built-in, tried next)
 //   @scope/pkg             -> @scope/pkg                            (a third party, taken verbatim)
@@ -16,7 +20,8 @@
 // a `module-`. Trying the legacy prefix first costs nothing once both fail: import() rejects fast on a
 // name that resolves to nothing installed.
 
-import type { ModulePlugin } from "@entelekheia/vibe-ops-core";
+import { effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
+import type { ModulePlugin, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export const BUILTIN_PREFIX = "@entelekheia/vibe-ops-module-";
 export const OPS_PREFIX = "@entelekheia/vibe-ops-";
@@ -35,8 +40,21 @@ async function importDefault(specifier: string): Promise<ModulePlugin | undefine
   }
 }
 
-export async function loadModule(name: string): Promise<ModulePlugin> {
+export async function loadModule(name: string, config?: VibeOpsConfig): Promise<ModulePlugin> {
   const isBare = !name.startsWith("@") && !name.startsWith(".") && !name.startsWith("/");
+
+  // The governance map outranks the conventions: a bound noun is the repository's explicit routing,
+  // and the shipped defaults make the five governances resolvable with no config at all. Falls through
+  // when the bound package is not installed, so a misconfigured binding still reports through the
+  // ordinary cannot-load path naming what was tried.
+  if (isBare) {
+    const binding = effectiveGovernanceBindings(config)[name];
+    if (binding !== undefined) {
+      const bound = await importDefault(binding.packageName);
+      if (bound !== undefined && bound.definition !== undefined && typeof bound.run === "function") return bound;
+    }
+  }
+
   const specifier = specifierFor(name);
   let plugin = await importDefault(specifier);
   let resolved = specifier;

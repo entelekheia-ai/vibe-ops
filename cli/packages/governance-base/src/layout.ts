@@ -235,3 +235,10 @@ export function computeNumbering(basenames: readonly string[], defaultPad: numbe
   const pad = last.length;
   return { pad, existing, next: zeroPad(stripLeadingZeros(last) + 1, pad) };
 }
+
+const CANDIDATE_LOG_DIRS = ["project/log", "log"] as const;
+
+/** Where a repository keeps its log entries — a layout question, so it lives here with the others. */
+export function findLogDir(repoRoot: string): string | undefined {
+  return CANDIDATE_LOG_DIRS.find((candidate) => existsSync(path.join(repoRoot, candidate)));
+}

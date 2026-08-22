@@ -6,7 +6,7 @@
 // written down.
 
 import path from "node:path";
-import type { ResolvedRecord } from "./resolve.ts";
+import type { ResolvedRecord } from "@entelekheia/governance-base";
 
 /**
  * Empty string means "say nothing" — the caller's cue not to fire, same as the shell exiting on

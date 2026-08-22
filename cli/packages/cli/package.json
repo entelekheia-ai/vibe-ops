@@ -4,14 +4,25 @@
   "description": "Run vibe-ops modules from a terminal or expose them as stateless MCP tools",
   "type": "module",
   "license": "Apache-2.0",
-  "bin": { "vibe-ops": "./dist/bin.js" },
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "files": ["dist"],
+  "bin": {
+    "vibe-ops": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && chmod +x dist/bin.js",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
     "@entelekheia/vibe-ops-agents-md": "^0.0.1",
@@ -20,7 +31,11 @@
     "@entelekheia/vibe-ops-module-harness": "^0.0.1",
     "@entelekheia/governance-base": "^0.0.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^3.25.0"
+    "zod": "^3.25.0",
+    "@entelekheia/governance-plan": "^0.0.1"
   },
-  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
 }

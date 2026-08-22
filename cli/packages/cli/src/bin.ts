@@ -68,7 +68,11 @@ async function usage(): Promise<void> {
 
 /** Flags are parsed against what the module declares, so an unknown flag is caught rather than ignored. */
 async function runNamed(name: string, argv: string[]): Promise<number> {
-  const plugin = await loadModule(name);
+  // The working directory's config is what routes a governance noun (ADR-0019). Loaded here only for
+  // routing; runModule loads the acting repository's cascade itself, which may differ when a module
+  // resolves its repo from a positional.
+  const { config: routingConfig } = await loadConfig(repoRootFrom(process.cwd()));
+  const plugin = await loadModule(name, routingConfig);
   const commands = plugin.definition.commands;
 
   // A module's own `--help`. Without it the flag reaches `parseArgs`, which rejects it as unknown and

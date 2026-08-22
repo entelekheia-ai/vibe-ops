@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { planModeGuidance } from "../src/context-text.ts";
-import type { ResolvedRecord } from "../src/resolve.ts";
+import type { ResolvedRecord } from "@entelekheia/governance-base";
 
 function baseResolved(overrides: Partial<ResolvedRecord> = {}): ResolvedRecord {
   return {
