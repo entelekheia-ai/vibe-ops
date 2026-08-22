@@ -50,6 +50,7 @@ import {
   resolvePluginDir,
   trackedFiles,
 } from "./files.ts";
+import { activatedTemplatePaths } from "./governance-map.ts";
 import { createDocumentStore } from "./document.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
@@ -373,6 +374,10 @@ async function run(
   // One store per run, beside pluginDir — lazy, so it costs nothing on a run that never calls .get()
   // (--list, --help). No gate in this track reads it yet; Track 3 is the first consumer.
   const documents = createDocumentStore(context.repoRoot);
+  // The norm's templates, for `<template:<type>>` in a repository holding no copy of its own — resolved
+  // once per run through the activation cache (ADR-0019). The repository's declared or existing copy
+  // still wins inside the expander.
+  const normTemplates = await activatedTemplatePaths(context.config);
   const resolved = await resolveAll(definition, context.repoRoot, pluginDir, context.config.records);
 
   if (context.flags["list"] === true) {
@@ -462,7 +467,7 @@ async function run(
       files: scoped,
       // Expanded here, not left to each gate: `<plugin>/` and `<template:<type>>` are facts about the
       // target's layout, which is the ops's half of the split, never the detector's.
-      options: expandOptionTokens(entry.options ?? {}, context.repoRoot, pluginDir, context.config.records),
+      options: expandOptionTokens(entry.options ?? {}, context.repoRoot, pluginDir, context.config.records, normTemplates),
       documents,
     };
     let outcome = await gate.run(gateContext);

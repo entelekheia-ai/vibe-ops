@@ -25,6 +25,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import type { Document, DocumentStore, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
+import { migrationsDirFor } from "@entelekheia/governance-base";
 import {
   dispatchRecord,
   findLogDir,
@@ -51,19 +52,6 @@ export interface Handling {
 }
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
-
-/**
- * Where `/vibe-ops:migrate` keeps its notes — the same evidence the closing verbs dispatch on, and
- * resolved the same two ways they resolve it: the target's own notes when it ships them, otherwise the
- * installed norm's. `pluginDir` answers for the *target's* plugin surface, which a consumer repository
- * does not have, and reporting `nothing describes that shape` because the note was sought in the wrong
- * tree is the diagnostic saying the opposite of the truth.
- */
-function migrationsDir(pluginDir: string, sourceRoot: string | undefined): string | undefined {
-  const local = path.join(pluginDir, "skills", "migrate", "migrations");
-  if (existsSync(local)) return local;
-  return sourceRoot === undefined ? undefined : path.join(sourceRoot, "skills", "migrate", "migrations");
-}
 
 /**
  * `log` is not a `RecordType`, so `resolveRecord` cannot locate its template. It is read through the
@@ -121,14 +109,14 @@ function locate(
  * A file under no record directory is reported as such rather than dispatched against a guessed type —
  * the same refusal as the undeclared branch, one level up.
  */
-export function handlingFor(
+export async function handlingFor(
   file: string,
   repoRoot: string,
   pluginDir: string,
   config: VibeOpsConfig | undefined,
   documents: DocumentStore,
   sourceRoot?: string,
-): Handling {
+): Promise<Handling> {
   const document = documents.get(file);
   if (document.tree === undefined) {
     return { file, handling: [], reason: "no such file in this repository, or no grammar covers it" };
@@ -142,7 +130,9 @@ export function handlingFor(
   const dispatch = dispatchRecord({
     record: document,
     current: located.current,
-    migrationsDir: migrationsDir(pluginDir, sourceRoot),
+    // Per the located TYPE, not one shared directory: since Plan-033 each type's notes travel in its
+    // own governance package, and the pinned tree keeps answering for older installs.
+    migrationsDir: await migrationsDirFor(located.type, repoRoot, config, sourceRoot),
   });
   const handling =
     dispatch.kind === "behind" ? dispatch.notes.map((note) => path.relative(repoRoot, note.file)) : [];

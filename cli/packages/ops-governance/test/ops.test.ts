@@ -172,21 +172,18 @@ test("against this repository's own checkout — records behind their template w
 test("every entry's required list still agrees with the type unit it restates", async () => {
   const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
   const { readFileSync } = await import("node:fs");
-  const index = JSON.parse(readFileSync(path.join(repoRoot, "plugin", "types", "index.json"), "utf8")) as Record<
-    string,
-    { schema: { required: readonly string[] } }
-  >;
 
   assert.ok(RESTATED_TYPE_ENTRIES.length > 0, "there are entries carrying a restated field list");
   for (const entry of RESTATED_TYPE_ENTRIES) {
     const type = entry.options?.["type"] as string | undefined;
     assert.ok(type !== undefined, `${entry.label} declares no options.type`);
-    const declared = index[type]?.schema.required;
-    assert.ok(declared !== undefined, `plugin/types/index.json has no entry for "${type}"`);
+    const manifest = path.join(repoRoot, "cli", "packages", `governance-${type}`, "type.json");
+    const declared = (JSON.parse(readFileSync(manifest, "utf8")) as { schema: { required: readonly string[] } })
+      .schema.required;
     assert.deepEqual(
       entry.options?.["required"],
       declared,
-      `${entry.label} restates a field list that plugin/types/${type}/type.json no longer declares`,
+      `${entry.label} restates a field list that governance-${type}/type.json no longer declares`,
     );
     assert.equal(entry.label, `${entry.gate}-${type}`, "label and rule must coincide — config keys on both");
   }

@@ -12,16 +12,18 @@ export default {
   // about a working tree, not a product of it, and committing them would make every run a diff.
   artifactDir: ".git/gate-artifacts",
 
-  // There is no project/templates/ here: the canonical templates ARE the distributable. Pointing the
-  // resolver at them (Plan-011 Track 2) is what makes this repository's own adr/rfc/plan/task get
-  // written from the very file it ships to every other repository — the drift 35-dogfooding-drift.sh
-  // exists to catch, closed at the source instead of caught after the fact.
+  // There is no project/templates/ here: the canonical templates ARE the distributable — since
+  // Plan-033 each lives in its artifact's own governance package. Pointing the resolver at them
+  // (Plan-011 Track 2) is what makes this repository's own records get written from the very file it
+  // ships to every other repository — the drift 35-dogfooding-drift.sh exists to catch, closed at the
+  // source instead of caught after the fact. log is declarable since Plan-029 opened the type union.
   records: {
     templates: {
-      adr: "plugin/templates/adr.md",
-      rfc: "plugin/templates/rfc.md",
-      plan: "plugin/templates/plan.md",
-      task: "plugin/templates/task.md",
+      adr: "cli/packages/governance-adr/templates/adr.md",
+      rfc: "cli/packages/governance-rfc/templates/rfc.md",
+      plan: "cli/packages/governance-plan/templates/plan.md",
+      task: "cli/packages/governance-task/templates/task.md",
+      log: "cli/packages/governance-log/templates/log.md",
     },
   },
 
@@ -68,10 +70,11 @@ export default {
         // the label rather than blanketed across the ops, because `unstated-destination` takes the same
         // notes as its SUBJECT — one path whose exclusion belongs to an entry, moved out of a default
         // that stays safe for everything else.
-        "template-heading-drift": ["plugin/skills/migrate/migrations/**"],
+        "template-heading-drift": ["cli/packages/governance-*/migrations/**"],
         "*": [
-          // A template is the authority on a shape, never a description of one. Both copies.
-          "plugin/templates/**",
+          // A template is the authority on a shape, never a description of one. Both copies — the
+          // canonical one in each governance package, and setup's scaffold copy.
+          "cli/packages/governance-*/templates/**",
           "plugin/skills/setup/templates/project/templates/**",
           // A record's own structure. Written against the template of its day and correct as it stands;
           // migrating them is a separate job with its own per-entry decisions.

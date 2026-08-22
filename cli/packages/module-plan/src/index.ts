@@ -11,6 +11,7 @@ import {
   describe,
   dispatchRecord,
   filePlan,
+  migrationsDirFor,
   PlanCloseError,
   formatResolved,
   planModeGuidance,
@@ -29,35 +30,14 @@ async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-/**
- * Where `/vibe-ops:migrate` keeps its notes. The dispatch reads the same evidence the migrate skill
- * does, so "there is handling for this version" has one answer and one place to look when it is wrong.
- *
- * TWO PLACES, IN THIS ORDER, and the second is why this is not a one-liner. `resolvePluginDir` answers
- * "where is *the target's* plugin surface", which is right for a gate scoped to `<plugin>/skills/*` and
- * wrong here: a consumer repository ships no migration notes, so it resolved to a directory that does not
- * exist and every older record reported `unhandled`. That reads as "nobody wrote a note for this shape"
- * when the note exists and was merely looked for in the wrong tree — and since `unhandled` blocks, it
- * stopped `plan close` on any record not already at the current version, in every repository but this one.
- *
- * So: the target's own notes when it has them (a repository may version its own templates), otherwise the
- * installed norm's. The notes belong to the tool, not to the repository being acted on, which is what
- * `needsSource` names — `context.sourceRoot` resolves `config.harness.source`, then `--source`, then
- * `CLAUDE_PLUGIN_ROOT`. Undefined stays undefined: no source is "nothing to compare against", not an error.
- */
-function migrationsDir(repoRoot: string, sourceRoot: string | undefined): string | undefined {
-  const local = path.join(resolvePluginDir(repoRoot), "skills", "migrate", "migrations");
-  if (existsSync(local)) return local;
-  return sourceRoot === undefined ? undefined : path.join(sourceRoot, "skills", "migrate", "migrations");
-}
-
 export default defineModule(
   {
     id: "plan",
     version: "0.0.1",
     summary: "The permanent design record: resolve its layout, check Status against its tracks",
     // The migration notes this module dispatches on belong to the installed norm, not to the repository
-    // being closed — see `migrationsDir` above. Without this, `sourceRoot` is never populated and a
+    // being closed — see `migrationsDirFor` in @entelekheia/governance-base. Without this, `sourceRoot`
+    // is never populated and a
     // consumer repository can only ever find notes it does not ship.
     needsSource: true,
     commands: [
@@ -249,7 +229,7 @@ export default defineModule(
         const dispatch = dispatchRecord({
           record: documents.get(file),
           current: resolved.templateVersion,
-          migrationsDir: migrationsDir(context.repoRoot, context.sourceRoot),
+          migrationsDir: await migrationsDirFor("plan", context.repoRoot, context.config, context.sourceRoot),
         });
         const line = describe(dispatch, file);
         // `describe` returns undefined for a current plan, and a current plan never blocks — but the two

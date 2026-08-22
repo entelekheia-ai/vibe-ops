@@ -13,7 +13,7 @@ test("records is a noun with verbs, like plan/task/log — and none of them is d
   // read as independent.
   assert.deepEqual(
     records.definition.commands?.map((c) => c.name),
-    ["resolve", "census", "handling", "show", "list"],
+    ["resolve", "norm", "census", "handling", "show", "list"],
   );
   assert.deepEqual(
     records.definition.commands?.filter((c) => c.destructive === true),
@@ -169,8 +169,8 @@ test("show refuses with a reason rather than reporting on nothing", async () => 
 // A CONTRIBUTED TYPE AND A TYPO ARE THE SAME STRING (Plan-029, found at closure). Opening the union
 // tempted a gate of "anything outside the shipped list passes", which would have let `--type wat` resolve
 // against `project/wat` by convention and report a confident empty answer. The question is not whether a
-// name is unknown but whether anything DECLARED it — the repository through `records.dirs`, or an
-// installed package through the scan. Both are on purpose; a misspelling is neither.
+// name is unknown but whether anything DECLARED it — the repository through `records.dirs` or a
+// `types` binding (ADR-0019: the config is the registry). Both are on purpose; a misspelling is neither.
 test("a type the repository declared resolves; a misspelling beside it still fails", async () => {
   const { mkdtemp, mkdir } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");

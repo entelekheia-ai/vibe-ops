@@ -108,6 +108,7 @@ export function expandTemplateToken(
   repoRoot: string,
   pluginDir: string,
   records: RecordsConfig | undefined,
+  normTemplates?: Readonly<Record<string, string>>,
 ): string {
   if (!TEMPLATE_TOKEN.test(value)) {
     TEMPLATE_TOKEN.lastIndex = 0;
@@ -117,12 +118,18 @@ export function expandTemplateToken(
   return value.replace(TEMPLATE_TOKEN, (_match, type: string) => {
     const declared = records?.templates?.[type as RecordType];
     if (declared !== undefined) return declared;
-    // The plugin surface last, and it is not decoration: a repository whose templates ARE its
-    // distributable keeps them under its plugin dir, and `log` cannot be declared in `records.templates`
-    // at all because `RecordType` does not include it. Without this candidate the log entry of the one
-    // repository shaped that way stops resolving — caught by running the composition against it.
+    // The plugin surface stays a candidate for a repository that kept templates there before Plan-033
+    // moved the norm's own copies into governance packages.
     const candidates = [...templateCandidates(type), path.join(path.relative(repoRoot, pluginDir), "templates", `${type}.md`)];
-    return candidates.find((candidate) => existsSync(path.join(repoRoot, candidate))) ?? candidates[0]!;
+    const existing = candidates.find((candidate) => existsSync(path.join(repoRoot, candidate)));
+    if (existing !== undefined) return existing;
+    // The activated governance package's template, LAST among real answers (ADR-0019): the repository's
+    // own copy — declared or found — always wins, so a promulgated repo compares against what it holds,
+    // and only a repo with no copy at all reads the norm's. Absolute, because the norm is not under
+    // repoRoot; downstream readers join relative candidates but pass an absolute path through.
+    const activated = normTemplates?.[type];
+    if (activated !== undefined) return activated;
+    return candidates[0]!;
   });
 }
 
@@ -184,9 +191,10 @@ export function expandTokens(
   repoRoot: string,
   pluginDir: string,
   records: RecordsConfig | undefined,
+  normTemplates?: Readonly<Record<string, string>>,
 ): string {
   return expandRecordsToken(
-    expandTemplateToken(expandPluginToken(value, repoRoot, pluginDir), repoRoot, pluginDir, records),
+    expandTemplateToken(expandPluginToken(value, repoRoot, pluginDir), repoRoot, pluginDir, records, normTemplates),
     repoRoot,
     records,
   );
@@ -206,10 +214,11 @@ export function expandOptionTokens(
   repoRoot: string,
   pluginDir: string,
   records: RecordsConfig | undefined,
+  normTemplates?: Readonly<Record<string, string>>,
 ): Readonly<Record<string, unknown>> {
   const expanded: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(options)) {
-    expanded[key] = typeof value === "string" ? expandTokens(value, repoRoot, pluginDir, records) : value;
+    expanded[key] = typeof value === "string" ? expandTokens(value, repoRoot, pluginDir, records, normTemplates) : value;
   }
   return expanded;
 }

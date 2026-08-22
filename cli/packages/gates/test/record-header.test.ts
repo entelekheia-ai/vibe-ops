@@ -12,7 +12,7 @@ async function repo(): Promise<string> {
 }
 
 /** The field lists the shipped types declare, restated here so the tests read as they always did. Their
- *  authority is each type's own manifest — `plugin/types/<t>/type.json` — never this map. */
+ *  authority is each type's own manifest — each governance package's `type.json` — never this map. */
 const REQUIRED: Readonly<Record<string, readonly string[]>> = {
   adr: ["Status", "Date", "Deciders"],
   plan: ["Status", "Created", "Author"],

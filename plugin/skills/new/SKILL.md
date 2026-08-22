@@ -52,10 +52,11 @@ the status chain and living sections for one, the GitHub remote and auth for the
 
 **Then read two files it named**, in this order:
 
-1. [`${CLAUDE_PLUGIN_ROOT}/references/records/<type>.md`](../../references/records/) — **the rules for
-   that record type, which are the second half of this skill.** They are not repeated here, and only the
-   matching one is ever read: four record types' rules delivered at once is four times the context for one
-   record.
+1. The type's authoring rules — **the second half of this skill.** Since Plan-033 they travel in the
+   type's own governance package, read through the CLI (never through a plugin path, which an npm-only
+   install does not have): `vibe-ops records norm --type <type> --facet authoring --print`. They are not
+   repeated here, and only the matching type's rules are ever read: every type's rules delivered at once
+   is that many times the context for one record.
 2. The path in `TPL=`, when you are about to write immediately.
 
 **A typed `/vibe-ops:new <type> …` has already resolved this**, before this skill started: `vibe-ops hook

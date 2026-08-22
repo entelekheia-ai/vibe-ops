@@ -1,10 +1,11 @@
 ---
 name: new-migration
-description: Move a template to a new version and write the migration note that comes with it — the version stamp, one note per jump under skills/migrate/migrations/, every dropped section given a destination, and every step classified mechanical or needs-a-decision. Use when changing any file under plugin/templates/, when a template changed and no note was written, or "/new-migration <type>".
+description: Move a template to a new version and write the migration note that comes with it — the version stamp, one note per jump in that type's governance package (cli/packages/governance-<type>/migrations/), every dropped section given a destination, and every step classified mechanical or needs-a-decision. Use when changing a governance template (cli/packages/governance-*/templates/*.md), when a template changed and no note was written, or "/new-migration <type>".
 argument-hint: "[template-type]"
 effort: high
 paths:
-  - "plugin/templates/*.md"
+  - "cli/packages/governance-*/templates/*.md"
+  - "**/cli/packages/governance-*/templates/*.md"
   - "**/plugin/templates/*.md"
 ---
 
@@ -31,7 +32,7 @@ from the new file alone — a section that was silently dropped is invisible in 
 what the note exists to catch.
 
 ```sh
-git diff -- plugin/templates/<type>.md
+git diff -- cli/packages/governance-<type>/templates/<type>.md
 ```
 
 List every structural change: sections added, dropped, renamed, or retyped (prose → checklist, fence →
@@ -57,7 +58,8 @@ vibe-ops-template: <type>@<version>
 
 ## Step 3 — Write the note
 
-`skills/migrate/migrations/<type>-<from>-to-<to>.md`, in this order:
+`cli/packages/governance-<type>/migrations/<type>-<from>-to-<to>.md` — the note travels in the type's
+own governance package (Plan-033) — in this order:
 
 1. **What changed in the template** — a table, old shape against new. Structure only.
 2. **What it costs an existing artifact** — for every dropped or retyped section, where its content goes.

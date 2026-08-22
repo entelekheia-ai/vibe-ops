@@ -3,7 +3,7 @@
 Bringing a repository "up to date" is only a safe thing to offer if *up to date* has an edge. Without one
 it is a promise that may overwrite an instruction file someone spent a month shaping — and the first time
 it does, nobody runs it again. This page is that edge, in the words a person needs; the machine-readable
-declaration is [`plugin/ownership.json`](../../plugin/ownership.json) and the rule the agent follows when
+declaration is [`plugin/ownership.json`](../../cli/packages/module-harness/ownership.json) and the rule the agent follows when
 extending it is [`plugin/references/ownership.md`](../../plugin/references/ownership.md).
 
 ## The vocabulary
@@ -92,5 +92,5 @@ you have agreed to — which is a record of a decision, not a dial.
 - [How to promulgate the norm into a repository](../how-to/promulgate-the-norm.md) — the recipe.
 - [How to bring a repository up to a newer norm](../how-to/upgrade-a-repository.md) — when it is already
   on an older one.
-- [`plugin/ownership.json`](../../plugin/ownership.json) — the declaration itself, with a recorded reason
+- [`plugin/ownership.json`](../../cli/packages/module-harness/ownership.json) — the declaration itself, with a recorded reason
   on every entry.

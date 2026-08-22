@@ -55,5 +55,5 @@ export type { PlanStatusFinding } from "./status.ts";
 export { planModeGuidance } from "./context-text.ts";
 export { parseTypeUnit, resolveTypeUnit, resolveTypeUnitAt } from "./type-unit.ts";
 export type { ResolvedTypeUnit, TypeUnit, TypeUnitCarrier, TypeUnitSchema } from "./type-unit.ts";
-export { buildTypeIndex, serialiseTypeIndex, typeIndexPath } from "./type-index.ts";
-export type { TypeIndex, TypeIndexEntry } from "./type-index.ts";
+export { listMigrationNotes as listNormMigrationNotes, migrationsDirFor, resolveNormFacet } from "./norm-facet.ts";
+export type { NormAnswer, NormFacet } from "./norm-facet.ts";

@@ -1,0 +1,11 @@
+{
+  "note": "This governance's fragment of the promulgation boundary \u2014 composed with the harness base declaration and every other activated governance's fragment at sync time (Plan-033, ADR-0019). Read, never re-decided at a call site.",
+  "version": 1,
+  "paths": [
+    {
+      "match": "project/templates/rfc.md",
+      "class": "norm",
+      "why": "Each declares its own version and each version jump has a migration note. This is the class's clearest case: drift here is what the applied-version map exists to detect."
+    }
+  ]
+}

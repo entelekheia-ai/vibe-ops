@@ -1,0 +1,116 @@
+{
+  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the three classes is plugin/references/ownership.md.",
+  "version": 1,
+  "classes": {
+    "norm": "This tooling owns it. Promulgation overwrites it, and a local edit is drift to be reconciled rather than a preference to be preserved.",
+    "seed": "Written once when absent, never overwritten. The repository owns it from the moment it exists.",
+    "repo": "Never written and never read for a decision. Promulgation that would touch one of these stops and reports."
+  },
+  "paths": [
+    {
+      "match": ".agents/rules/governance.md",
+      "class": "norm",
+      "why": "The record lifecycles, which this tooling defines. Measured 2026-08-13 as divergent in three of three repositories checked and divergent from the shipped copy \u2014 that divergence is unreconciled drift, not per-repository preference, and it is the reason this declaration is being written."
+    },
+    {
+      "match": "CLAUDE.md",
+      "class": "norm",
+      "why": "A mechanical import of AGENTS.md and nothing else. Byte-identical in every repository measured 2026-08-13."
+    },
+    {
+      "match": ".claude/rules/*",
+      "class": "norm",
+      "why": "Symlinks into .agents/rules/. Pure mechanism with no content of its own; a repository editing one has broken the bridge rather than expressed a preference."
+    },
+    {
+      "match": "scripts/check.sh",
+      "class": "norm",
+      "why": "The manual entrypoint to the gate. Wiring, not policy."
+    },
+    {
+      "match": "scripts/checks/_run.sh",
+      "class": "norm",
+      "why": "The runner that composes the fragments. A repository holding its own copy shadows the live one silently, which is the failure this class prevents."
+    },
+    {
+      "match": ".githooks/pre-commit",
+      "class": "norm",
+      "why": "Wiring with no check logic, resolving everything from the repository root. Measured 2026-08-13 as carrying no machine-specific path in any repository checked or in the shipped template."
+    },
+    {
+      "match": "AGENTS.md",
+      "class": "seed",
+      "why": "Authored once against the repository it describes, then maintained by whoever works there. Overwriting it would discard the map it exists to be."
+    },
+    {
+      "match": "GOVERNANCE.md",
+      "class": "seed",
+      "why": "Measured 2026-08-13 as four distinct files across four repositories. The divergence is legitimate: it is the human-facing description of one repository's governance."
+    },
+    {
+      "match": ".agents/rules/repo-guardrails.md",
+      "class": "seed",
+      "why": "Ships with a placeholder the setup skill explicitly tells the operator to fill in or delete. Measured 2026-08-13 at 1.1K in one repository and 9.4K in another \u2014 the shipped file is a prompt, not content."
+    },
+    {
+      "match": "README.md",
+      "class": "seed",
+      "why": "Presentation, owned by the repository from its first edit."
+    },
+    {
+      "match": "{.editorconfig,.gitignore}",
+      "class": "seed",
+      "why": "Formatting and exclusion preferences. Identical across repositories so far, which is not authority to overwrite the first one that diverges on purpose."
+    },
+    {
+      "match": "{package.json,tsconfig.json,tsconfig.build.json,packages/*/package.json,packages/*/tsconfig*.json}",
+      "class": "seed",
+      "why": "The build baseline. Scaffolded once; every dependency added afterwards belongs to the repository."
+    },
+    {
+      "match": ".github/workflows/check.yml",
+      "class": "seed",
+      "why": "Continuous-integration wiring the repository adapts to its own jobs and runners."
+    },
+    {
+      "match": "docs/**",
+      "class": "seed",
+      "why": "A documentation skeleton whose whole purpose is to be filled in."
+    },
+    {
+      "match": "{project/*/.gitkeep,.agents/skills/.gitkeep}",
+      "class": "seed",
+      "why": "Placeholders that let an empty directory survive. Once the directory has content they are deleted, and re-creating them would be noise."
+    },
+    {
+      "match": "vibeops.config.ts",
+      "class": "seed",
+      "why": "The repository's own declared configuration. Promulgation may create it and must never rewrite what a repository declared about itself."
+    },
+    {
+      "match": "vibeops.config.local.ts",
+      "class": "repo",
+      "why": "Clone-local and version-control-ignored. It is where the applied-version map is written, so promulgation updates that one key through the module that owns it \u2014 never by rewriting the file."
+    },
+    {
+      "match": "project/{adr,rfc,plans,tasks,log,research}/**",
+      "class": "repo",
+      "why": "The records themselves. The templates are the norm's; what someone wrote from them is not."
+    },
+    {
+      "match": "scripts/checks/[0-9]*.sh",
+      "class": "repo",
+      "why": "A repository's own gate fragments, numbered to compose alongside the built-ins. The runner is the norm's; the fragments are not."
+    },
+    {
+      "match": ".githooks/post-commit",
+      "class": "repo",
+      "why": "The declared exception. It dispatches to a pipeline this tooling's norm does not own and embeds an absolute path for that reason, which is why it stays clone-local and out of version control while its neighbour does not."
+    },
+    {
+      "match": "{src/**,test/**,packages/*/src/**,packages/*/test/**}",
+      "class": "repo",
+      "why": "The repository's code. Named explicitly so that the absence of a match is never read as permission."
+    }
+  ]
+}

@@ -103,15 +103,15 @@ const CEREMONY: Partial<Record<CensusType, "close-plan" | "close-task">> = {
   task: "close-task",
 };
 
-export function showRecord(
+export async function showRecord(
   file: string,
   repoRoot: string,
   pluginDir: string,
   config: VibeOpsConfig,
   documents: DocumentStore,
   sourceRoot?: string,
-): Shown {
-  const handling = handlingFor(file, repoRoot, pluginDir, config, documents, sourceRoot);
+): Promise<Shown> {
+  const handling = await handlingFor(file, repoRoot, pluginDir, config, documents, sourceRoot);
   const document = documents.get(file);
 
   // `findHeaderTable` takes the tree's root node, not the document — it is a reader over the block tree,

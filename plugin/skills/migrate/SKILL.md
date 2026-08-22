@@ -65,8 +65,14 @@ its numbers and the gate's agree by construction.
 **Do not hand-roll this with `rg`.** A regex over the token misses one of the two forms and counts any
 artifact that merely *discusses* versioning as declared; both failures report a plausible number.
 
-Compare each against the current template version in
-`${CLAUDE_PLUGIN_ROOT}/templates/<type>.md`. Report the counts before touching anything.
+Compare each against the current template version, read through the CLI — the norm travels as npm
+packages since Plan-033, so there is no template path inside this plugin:
+
+```bash
+vibe-ops records norm --type <type> --facet template --print
+```
+
+Report the counts before touching anything.
 
 **Delegate this whole step to the `vibe-ops:governance-auditor` agent** — the four inputs are in
 [`convergence-policy.md`](../../references/convergence-policy.md), the target state being the current
@@ -75,14 +81,16 @@ template, the unknowns kept as `(unknown)`. On `/migrate audit` that gap list is
 inline only if the agent is not in the session's listing.
 
 **Ask it for the jump chain too, and for the notes that do not exist**: per artifact, the sequence of
-versions between what it declares and the current template, and which of those jumps has no file in
-[`migrations/`](migrations/). A jump with no note stops the run (Step 2), and knowing that now costs one
+versions between what it declares and the current template, and which of those jumps has no note —
+`vibe-ops records norm --type <type> --facet migrations --print` lists every note the norm ships for that
+type. A jump with no note stops the run (Step 2), and knowing that now costs one
 line in a report you were already reading — discovering it halfway through applying notes means stopping
 with some artifacts converted and some not.
 
 ## Step 2 — Read the migration note for each jump
 
-One file per jump, in [`migrations/`](migrations/), named `<type>-<from>-to-<to>.md`. Read **only** the
+One file per jump, named `<type>-<from>-to-<to>.md`, in the directory
+`vibe-ops records norm --type <type> --facet migrations` prints. Read **only** the
 notes for jumps that this run actually needs. A multi-version jump (`0.1 → 0.3`) applies each note in
 order; there is no combined note, because a combined note is one that stops matching either jump.
 

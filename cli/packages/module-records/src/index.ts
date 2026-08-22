@@ -21,9 +21,8 @@ import path from "node:path";
 import {
   createDocumentStore,
   defineModule,
+  effectiveGovernanceBindings,
   resolvePluginDir,
-  scanTypePackages,
-  typesDeclaredBy,
 } from "@entelekheia/vibe-ops-core";
 import {
   depthFor,
@@ -36,6 +35,8 @@ import type { ModuleResult, RecordType, VibeOpsConfig } from "@entelekheia/vibe-
 import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
+import { listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
+import type { NormFacet } from "@entelekheia/governance-base";
 import type { ListField } from "./show.ts";
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
@@ -76,22 +77,18 @@ function gateType(
   value: string | boolean | undefined,
   allowed: readonly RecordType[],
   declared?: readonly string[],
-  repoRoot?: string,
+  config?: VibeOpsConfig,
 ): { readonly type: RecordType } | { readonly failure: ModuleResult } {
   if (typeof value === "string" && allowed.includes(value as RecordType)) return { type: value as RecordType };
   // A CONTRIBUTED TYPE AND A TYPO ARE THE SAME STRING, so the question cannot be "is this outside the
   // shipped list" — that would let `--type wat` resolve against `project/wat` by convention and report a
-  // confident empty answer. It is "does anything DECLARE this": the repository, through `records.dirs`,
-  // or an installed package, through the scan (Plan-029 Track 2). Both are declarations somebody made on
-  // purpose; a misspelling is neither, and still fails naming the set.
-  //
-  // The scan is consulted LAST and only for a name nothing else explains — it walks `node_modules`, and
-  // a verb that pays for that on every invocation would be paying for the rare case.
+  // confident empty answer. It is "does anything DECLARE this": the repository, through `records.dirs`
+  // or a `types` binding — the config is the registry (ADR-0019; the Plan-029 node_modules scan left
+  // the resolution path with it). Both are declarations somebody made on purpose; a misspelling is
+  // neither, and still fails naming the set.
   if (typeof value === "string" && value !== "" && RESOLVES_UNDER[value] === undefined && !ORDER_SHIPPED.includes(value)) {
     if (declared?.includes(value) === true) return { type: value };
-    if (repoRoot !== undefined && scanTypePackages(repoRoot).some((claimant) => typesDeclaredBy(claimant).includes(value))) {
-      return { type: value };
-    }
+    if (effectiveGovernanceBindings(config)[value] !== undefined) return { type: value };
   }
   const elsewhere = typeof value === "string" ? RESOLVES_UNDER[value as RecordType] : undefined;
   return {
@@ -143,6 +140,25 @@ export default defineModule(
         ],
       },
       {
+        // The proxy verb (Plan-033): the Claude plugin reads the norm's template, authoring rules and
+        // migration notes through this — never through a `${CLAUDE_PLUGIN_ROOT}` path, which an
+        // npm-only install does not have. `--type` is open: a bound contributed type answers the same
+        // way the shipped five do.
+        name: "norm",
+        summary: "where the norm's copy of a type's facet is — the file the plugin skills read",
+        flags: [
+          { name: "type", type: "string", description: "any resolvable record type", required: true },
+          {
+            name: "facet",
+            type: "string",
+            description: "which facet of the type's unit",
+            required: true,
+            choices: ["template", "authoring", "migrations"],
+          },
+          { name: "print", type: "boolean", description: "print the facet's content (for migrations: the note paths)" },
+        ],
+      },
+      {
         name: "census",
         summary: "every record in this repository with the template version it declares",
       },
@@ -183,6 +199,39 @@ export default defineModule(
   async (context) => {
     // No `--type` here, and that is the point of it being its own verb: the census spans every type at
     // once, so requiring one would be asking which type the whole-repository question is about.
+    if (context.command === "norm") {
+      const type = context.flags["type"];
+      const facet = context.flags["facet"] as NormFacet;
+      if (typeof type !== "string" || type === "") {
+        return { code: 2, summary: "norm needs --type <record type>" };
+      }
+      const answer = await resolveNormFacet(type, facet, context.repoRoot, context.config, context.sourceRoot);
+      if (answer === undefined) {
+        return {
+          code: 2,
+          summary: `nothing resolves "${type}" — no repository unit, no activated governance package, no pinned tree`,
+        };
+      }
+      if (context.flags["print"] === true && answer.exists) {
+        if (facet === "migrations") {
+          const notes = listMigrationNotes(answer.path);
+          if (context.surface === "cli") for (const note of notes) context.log(note);
+          return { code: 0, summary: `${notes.length} migration note(s) for ${type} (${answer.source})`, data: { ...answer, notes } };
+        }
+        const body = readFileSync(answer.path, "utf8");
+        if (context.surface === "cli") context.log(body);
+        return { code: 0, summary: `${type} ${facet} from ${answer.source}`, data: { ...answer, body } };
+      }
+      if (context.surface === "cli" && context.flags["json"] !== true) {
+        context.log(`${answer.path}${answer.exists ? "" : "  (does not exist)"}`);
+      }
+      return {
+        code: answer.exists ? 0 : 1,
+        summary: `${type} ${facet}: ${answer.source}${answer.exists ? "" : ", not present"}`,
+        data: answer,
+      };
+    }
+
     if (context.command === "census") {
       let entries;
       try {
@@ -232,8 +281,10 @@ export default defineModule(
       const pluginDir = resolvePluginDir(context.repoRoot);
       let answers;
       try {
-        answers = context.args.map((file) =>
-          handlingFor(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
+        answers = await Promise.all(
+          context.args.map((file) =>
+            handlingFor(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
+          ),
         );
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
@@ -246,7 +297,7 @@ export default defineModule(
     }
 
     if (context.command === "list") {
-      const gated = gateType(context.flags.type, TYPES, declaredTypes(context.config), context.repoRoot);
+      const gated = gateType(context.flags.type, TYPES, declaredTypes(context.config), context.config);
       if ("failure" in gated) return gated.failure;
       const type = gated.type;
       const documents = createDocumentStore(context.repoRoot);
@@ -293,7 +344,9 @@ export default defineModule(
         }
       }
 
-      const shown = files.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents));
+      const shown = await Promise.all(
+        files.map((file) => showRecord(file, context.repoRoot, pluginDir, context.config, documents)),
+      );
       if (context.flags.json !== true) {
         for (const row of shown) {
           const tracks = row.tracks === undefined ? "" : `  ${row.tracks.open}/${row.tracks.total} open`;
@@ -321,8 +374,10 @@ export default defineModule(
       const pluginDir = resolvePluginDir(context.repoRoot);
       let shown;
       try {
-        shown = context.args.map((file) =>
-          showRecord(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
+        shown = await Promise.all(
+          context.args.map((file) =>
+            showRecord(file, context.repoRoot, pluginDir, context.config, documents, context.sourceRoot),
+          ),
         );
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
@@ -339,7 +394,7 @@ export default defineModule(
     }
 
     if (context.command === "resolve") {
-      const gated = gateType(context.flags.type, RESOLVE_TYPES, declaredTypes(context.config), context.repoRoot);
+      const gated = gateType(context.flags.type, RESOLVE_TYPES, declaredTypes(context.config), context.config);
       if ("failure" in gated) return gated.failure;
       const type = gated.type;
 

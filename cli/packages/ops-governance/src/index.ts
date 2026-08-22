@@ -26,7 +26,7 @@ import type { OpsGateEntry } from "@entelekheia/vibe-ops-core";
 
 /**
  * The entries that restate a type's own `schema.required`, exported so this package's test can hold each
- * one to `plugin/types/<t>/type.json` — the same reason `ops-self` exports its fixture notes: an
+ * one to `that type's governance package (cli/packages/governance-<t>/type.json)` — the same reason `ops-self` exports its fixture notes: an
  * assertion written against a copy of the object cannot prove anything about the object.
  *
  * TEMPORARY BY CONSTRUCTION (Plan-030 Track 2). The restatement exists only until Track 4 derives these
@@ -95,7 +95,7 @@ export default defineOps({
   summary: "The governance surface: records, links and archival references",
   gates: [
     // The five entries that restate their type's own `schema.required` — see the constant above,
-    // and the test that holds each one to `plugin/types/index.json` while the restatement lasts.
+    // and the test that holds each one to its governance package's `type.json` while the restatement lasts.
     ...RESTATED_TYPE_ENTRIES,
     // Emits: a record's declared version is a series worth watching — the population grows, versions
     // move, and what is still behind is exactly the reading Plan-012 exists to produce.

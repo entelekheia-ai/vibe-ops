@@ -72,14 +72,18 @@ export default defineOps({
       // that governs work inside `project/` is one of the six documents this gate exists to correct.
       // Left implicit it reports a clean sweep over everything except the file that matters most.
       paths: ["**/*.md", ".agents/**/*.md"],
+      // Since Plan-033 each type's notes and template live in its own governance package. The gate
+      // takes ONE migrations directory, so the notes are listed per package below in `migrationsList`;
+      // until the gate takes several, the plan package's directory carries the only notes that record
+      // dropped sections today.
       options: {
-        migrations: "<plugin>/skills/migrate/migrations",
+        migrations: "cli/packages/governance-plan/migrations",
         templates: {
-          adr: "<plugin>/templates/adr.md",
-          log: "<plugin>/templates/log.md",
-          plan: "<plugin>/templates/plan.md",
-          rfc: "<plugin>/templates/rfc.md",
-          task: "<plugin>/templates/task.md",
+          adr: "cli/packages/governance-adr/templates/adr.md",
+          log: "cli/packages/governance-log/templates/log.md",
+          plan: "cli/packages/governance-plan/templates/plan.md",
+          rfc: "cli/packages/governance-rfc/templates/rfc.md",
+          task: "cli/packages/governance-task/templates/task.md",
         },
       },
       emits: true,
@@ -134,58 +138,11 @@ export default defineOps({
       // documents describing them, which is what separates this from the entry above: that one reads
       // the notes as its authority, this one reads them as its subject.
       gate: "unstated-destination",
-      paths: ["<plugin>/skills/migrate/migrations/*.md"],
+      paths: ["cli/packages/governance-*/migrations/*.md"],
       // Two notes, and the second is the point. A fixture carrying only the violation passes whether or
       // not the gate distinguishes anything: the decoy drops a section AND routes it, so a gate that
       // fired on every `**dropped**` row would produce two findings where one is correct.
       fixture: { expect: ["unstated-destination"], files: UNSTATED_DESTINATION_NOTES },
-    },
-    {
-      // `types/index.json` is this repository stating what types it ships and at what version — a claim
-      // about its own machinery, checked against the units that machinery is actually built from. That
-      // is this ops's subject exactly, and it is why the entry is here rather than in `governance`,
-      // whose every entry is scoped to a record DIRECTORY: the index is not a record and lives in none.
-      gate: "type-index-drift",
-      // The gate discovers its own population from `pluginDir` (like `bridge`), so this names the
-      // subject for a reader rather than scoping the run.
-      paths: ["<plugin>/types/index.json"],
-      // A unit whose committed index disagrees with it on one field. The type resolves, the index is
-      // valid JSON, and only the version is wrong — a fixture missing the index entirely would pass
-      // against a gate that merely checked the file exists.
-      fixture: {
-        expect: ["type-index-stale"],
-        files: {
-          "types/adr/type.json": JSON.stringify(
-            {
-              type: "adr",
-              template: "../../templates/adr.md",
-              authoring: "../../references/records/adr.md",
-              migrations: "../../skills/migrate/migrations",
-              schema: { carrier: "table", required: ["Status"] },
-            },
-            null,
-            2,
-          ),
-          "templates/adr.md": "---\nvibe-ops-template: adr@7\n---\n\n# ADR\n",
-          "types/index.json": `${JSON.stringify(
-            {
-              adr: {
-                version: 2,
-                template: "templates/adr.md",
-                authoring: "references/records/adr.md",
-                migrations: "skills/migrate/migrations",
-                schema: { carrier: "table", required: ["Status"] },
-                numbered: true,
-                pad: 3,
-                depth: 1,
-                dirs: ["project/adr", "adr", "docs/adr"],
-              },
-            },
-            null,
-            2,
-          )}\n`,
-        },
-      },
     },
   ],
 });

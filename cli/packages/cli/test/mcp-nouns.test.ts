@@ -444,14 +444,13 @@ test("a flag two verbs declare with different domains publishes the union, and s
     properties: Record<string, { description?: string; enum?: string[] }>;
   }).properties["type"]!;
 
-  assert.deepEqual(
-    [...(type.enum ?? [])].sort(),
-    ["adr", "plan", "rfc", "task"],
-    "the union, not one verb's domain — publishing `resolve`'s made `records list --type plan` unconstructible",
-  );
+  // `norm` (Plan-033) declares `--type` OPEN — a bound contributed type must be constructible — and an
+  // open domain unions to an open domain, so the shared shape publishes no enum at all. Publishing the
+  // closed union would have made `records norm --type freeze` unconstructible over MCP.
+  assert.equal(type.enum, undefined, "an open declaration in any verb must leave the shared shape open");
   assert.match(type.description ?? "", /\[resolve\]/);
-  assert.match(type.description ?? "", /\[list\]/, "both wordings, each beside the verbs that mean it");
-  assert.match(type.description ?? "", /required for: resolve, list/);
+  assert.match(type.description ?? "", /\[list\]/, "each wording beside the verbs that mean it");
+  assert.match(type.description ?? "", /required for: resolve, norm, list/);
 
   const properties = (tools.find((t) => t.name === "records")!.inputSchema as { required?: string[] });
   assert.ok(

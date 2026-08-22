@@ -8,7 +8,9 @@ Promulgating a version of the norm into a repository is only safe if "the norm" 
 "bring this repository up to date" is a promise that may overwrite an instruction file someone spent a
 month shaping, and the first time it does, adoption ends. This file defines the edge.
 
-The declaration itself is [`../ownership.json`](../ownership.json). **Read it. Never decide a path's class
+The declaration is **composed** since Plan-033: the base half (everything no single artifact owns) is
+[`cli/packages/module-harness/ownership.json`](../../cli/packages/module-harness/ownership.json), and each
+activated governance package ships an `ownership.json` fragment for its own artifact. **Read them. Never decide a path's class
 at the call site** — a second opinion formed at the moment of writing is how a boundary erodes, and the
 whole value of the declaration is that there is exactly one answer.
 

@@ -57,8 +57,8 @@ also the entry's `name:` field, and the two must match so a rename stays visible
 
 ## Step 4 — Fill the template
 
-Read `templates/log.md` from the target repo, falling back to
-`${CLAUDE_PLUGIN_ROOT}/templates/log.md`. **Never reproduce its structure from memory** — most of it is
+Read `templates/log.md` from the target repo, falling back to the norm's copy:
+`vibe-ops records norm --type log --facet template --print`. **Never reproduce its structure from memory** — most of it is
 HTML comments that are the specification for filling it, and this skill deliberately does not restate them.
 
 Three things the template asks for that are usually got wrong:

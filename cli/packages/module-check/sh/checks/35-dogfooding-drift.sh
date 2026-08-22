@@ -75,15 +75,15 @@ check_dogfooding_drift() {
   #
   # The two sides resolve against DIFFERENT roots, and it matters: the shipped copy always lives inside
   # the plugin ($PLUGIN_DIR), while the dogfooded copy may be repository-level (GOVERNANCE.md,
-  # .agents/rules/) or plugin-level (the templates). Hardcoding `plugin/` into both sides instead made
-  # every pair unreachable in a repository laid out flat — including this check's own self-test fixture,
-  # which is exactly where that mistake surfaced.
+  # .agents/rules/, and — since Plan-033 — each governance package's templates/ under cli/). Hardcoding
+  # `plugin/` into both sides instead made every pair unreachable in a repository laid out flat —
+  # including this check's own self-test fixture, which is exactly where that mistake surfaced.
   for pair in \
-    "plugin/templates/plan.md::skills/setup/templates/project/templates/plan.md" \
-    "plugin/templates/task.md::skills/setup/templates/project/templates/task.md" \
-    "plugin/templates/adr.md::skills/setup/templates/project/templates/adr.md" \
-    "plugin/templates/rfc.md::skills/setup/templates/project/templates/rfc.md" \
-    "plugin/templates/log.md::skills/setup/templates/project/templates/log.md" \
+    "cli/packages/governance-plan/templates/plan.md::skills/setup/templates/project/templates/plan.md" \
+    "cli/packages/governance-task/templates/task.md::skills/setup/templates/project/templates/task.md" \
+    "cli/packages/governance-adr/templates/adr.md::skills/setup/templates/project/templates/adr.md" \
+    "cli/packages/governance-rfc/templates/rfc.md::skills/setup/templates/project/templates/rfc.md" \
+    "cli/packages/governance-log/templates/log.md::skills/setup/templates/project/templates/log.md" \
     ".agents/rules/governance.md::skills/setup/templates/agents/rules/governance.md" \
     "GOVERNANCE.md::skills/setup/templates/root/GOVERNANCE.md" \
   ; do

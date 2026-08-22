@@ -39,7 +39,7 @@ test("--list composes the entries this ops owns", async () => {
   const data = result.data as { gates: readonly { label: string }[] };
   assert.deepEqual(
     data.gates.map((gate) => gate.label),
-    ["template-heading-drift", "unstated-destination", "type-index-drift"],
+    ["template-heading-drift", "unstated-destination"],
   );
 });
 
