@@ -55,13 +55,9 @@ export default {
         "record-header-plan": ["project/plans/README.md"],
         "template-version-plan": ["project/plans/README.md"],
       },
-      // Research is deliberately outside the versioning scheme: the type has no template of its own and
-      // its shape is not settled (Plan-012). Declared and disabled rather than left out of the
-      // composition, so the run reports SKIP naming the reason — an excluded population that says
-      // nothing is indistinguishable from a clean one.
-      disabled: {
-        "template-version-research": "research has no template; its shape is not settled — Plan-012",
-      },
+      // Research needs no disablement any more: the per-type entries are derived from the activated
+      // governances (Plan-034), and no governance package serves research — the type entered the old
+      // hand-written list by mistake (Plan-030's Decision Log), so nothing derives an entry for it.
     },
     self: {
       // THE PATH POLICY (Plan-014). What separates a record that HAS an old heading — legitimate, it was

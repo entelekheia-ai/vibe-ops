@@ -66,6 +66,18 @@ export interface ActivatedGovernance {
     readonly template: string;
     readonly authoring: string;
     readonly migrations: string;
+    /**
+     * The record schema and layout facts an ops derivation reads (Plan-034). Optional in the interface
+     * because core verifies only what it reads — `defineGovernance` stamps the full parsed type.json,
+     * so a package built on the sugar always carries them; a hand-rolled activation object may not,
+     * and a derivation treats their absence as "this package derives no entry", never as an error.
+     */
+    readonly schema?: {
+      readonly carrier: "table" | "frontmatter";
+      readonly required: readonly string[];
+    };
+    readonly depth?: number;
+    readonly dirs?: readonly string[];
   };
 }
 

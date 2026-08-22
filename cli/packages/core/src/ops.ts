@@ -51,6 +51,8 @@ import {
   trackedFiles,
 } from "./files.ts";
 import { activatedTemplatePaths } from "./governance-map.ts";
+import { deriveOpsEntries } from "./ops-derive.ts";
+import type { OpsDeriveRule } from "./ops-derive.ts";
 import { createDocumentStore } from "./document.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
@@ -149,7 +151,15 @@ export interface OpsDefinition {
   readonly id: string;
   readonly version: string;
   readonly summary: string;
+  /** The static entries. What every ops had before Plan-034, and still the whole list for most. */
   readonly gates: readonly OpsGateEntry[];
+  /**
+   * Named derivation rules, computed per run from the repository's activated governances (ADR-0019)
+   * and prepended to `gates` — see ops-derive.ts. This is what makes the entry list a function of the
+   * repository being run against: a repository binding a sixth governance package sees its entries
+   * appear with no edit to any ops.
+   */
+  readonly derives?: readonly OpsDeriveRule[];
 }
 
 const BARE = /^[a-z][a-z0-9-]*$/;
@@ -163,25 +173,40 @@ function labelFor(entry: OpsGateEntry): string {
   return entry.label ?? entry.gate;
 }
 
-export function defineOps(definition: OpsDefinition): ModulePlugin {
-  if (definition.gates.length === 0) {
-    throw new Error(`ops "${definition.id}" composes no gates — it would report a vacuous pass`);
-  }
+/**
+ * The emit ids an entry list declares, validated as they are collected. Called twice since Plan-034:
+ * at define time over the static `gates` — so a broken static composition still fails at load, the
+ * defineModule precedent — and per run over the full derived-plus-static list, because a derived
+ * entry's id exists only once the repository is known.
+ */
+function collectEmitIds(opsId: string, entries: readonly OpsGateEntry[]): string[] {
   const emits: string[] = [];
-  for (const entry of definition.gates) {
+  for (const entry of entries) {
     if (entry.emits !== true) continue;
     if (entry.label === undefined && !BARE.test(entry.gate)) {
       throw new Error(
-        `ops "${definition.id}" declares emits on "${entry.gate}", whose id is not knowable before it ` +
+        `ops "${opsId}" declares emits on "${entry.gate}", whose id is not knowable before it ` +
           `loads — give the entry a label, which is what it will record under`,
       );
     }
     const id = emitIdFor(entry);
     if (emits.includes(id)) {
-      throw new Error(`ops "${definition.id}" would record two different entries under "${id}" — label one of them`);
+      throw new Error(`ops "${opsId}" would record two different entries under "${id}" — label one of them`);
     }
     emits.push(id);
   }
+  return emits;
+}
+
+export function defineOps(definition: OpsDefinition): ModulePlugin {
+  if (definition.gates.length === 0 && (definition.derives?.length ?? 0) === 0) {
+    throw new Error(`ops "${definition.id}" composes no gates — it would report a vacuous pass`);
+  }
+  // The static half only: a derived entry's emit id is a fact about the repository the ops runs
+  // against, so the definition's `emits` metadata carries what is knowable here and the run computes
+  // the full declared list itself — the ops builds its own emitter, so nothing downstream reads this
+  // metadata for the derived ids.
+  const emits = collectEmitIds(definition.id, definition.gates);
 
   return defineModule(
     {
@@ -212,7 +237,7 @@ export function defineOps(definition: OpsDefinition): ModulePlugin {
       ],
       ...(emits.length > 0 ? { emits } : {}),
     },
-    async (context: ModuleContext): Promise<ModuleResult> => run(definition, emits, context),
+    async (context: ModuleContext): Promise<ModuleResult> => run(definition, context),
   );
 }
 
@@ -273,17 +298,18 @@ interface Resolved {
  * reported, it reads as the repository being broken instead.
  */
 async function resolveAll(
-  definition: OpsDefinition,
+  opsId: string,
+  entries: readonly OpsGateEntry[],
   repoRoot: string,
   pluginDir: string,
   records: RecordsConfig | undefined,
 ): Promise<Resolved[]> {
   const resolved: Resolved[] = [];
-  for (const entry of definition.gates) {
+  for (const entry of entries) {
     const gate = await loadGate(entry.gate);
     if (BARE.test(entry.gate) && gate.definition.id !== entry.gate) {
       throw new Error(
-        `ops "${definition.id}" composes "${entry.gate}", which loaded a gate whose id is ` +
+        `ops "${opsId}" composes "${entry.gate}", which loaded a gate whose id is ` +
           `"${gate.definition.id}" — the folder and the definition disagree`,
       );
     }
@@ -365,11 +391,7 @@ async function selfTest(
   };
 }
 
-async function run(
-  definition: OpsDefinition,
-  emits: readonly string[],
-  context: ModuleContext,
-): Promise<ModuleResult> {
+async function run(definition: OpsDefinition, context: ModuleContext): Promise<ModuleResult> {
   const pluginDir = resolvePluginDir(context.repoRoot);
   // One store per run, beside pluginDir — lazy, so it costs nothing on a run that never calls .get()
   // (--list, --help). No gate in this track reads it yet; Track 3 is the first consumer.
@@ -378,7 +400,16 @@ async function run(
   // once per run through the activation cache (ADR-0019). The repository's declared or existing copy
   // still wins inside the expander.
   const normTemplates = await activatedTemplatePaths(context.config);
-  const resolved = await resolveAll(definition, context.repoRoot, pluginDir, context.config.records);
+  // The full entry list is a fact about this repository (Plan-034): the derived entries — computed
+  // from the activated governances — come first, in the order the hand-written list had, then the
+  // static ones. The emit-id check reruns over the whole list because a derived id exists only now.
+  const derived =
+    definition.derives === undefined || definition.derives.length === 0
+      ? { entries: [] as readonly OpsGateEntry[], skips: [] as readonly OpsSkip[] }
+      : await deriveOpsEntries(definition.derives, context.config);
+  const entries = [...derived.entries, ...definition.gates];
+  const emits = collectEmitIds(definition.id, entries);
+  const resolved = await resolveAll(definition.id, entries, context.repoRoot, pluginDir, context.config.records);
 
   if (context.flags["list"] === true) {
     const gates = resolved.map(({ entry, gate, patterns }) => ({
@@ -439,7 +470,10 @@ async function run(
   // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so
   // a report that lives only in context.log arrives there as a count with nothing behind it.
   const findings: OpsFinding[] = [];
-  const skipped: OpsSkip[] = [];
+  // Seeded with the derivation's skips: a bound-but-unresolved governance is a statement in the run's
+  // own report, the same channel a disabled entry uses, never a silent gap in the derived list.
+  const skipped: OpsSkip[] = [...derived.skips];
+  if (cli && verbose) for (const skip of derived.skips) context.log(`SKIP  [${skip.gate}] ${skip.reason}`);
   const repaired: OpsRepair[] = [];
   const population: OpsPopulation[] = [];
   let failures = 0;

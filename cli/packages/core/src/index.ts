@@ -11,6 +11,8 @@ export type { Emitter, EmitterOptions, Observation } from "./emit.ts";
 export { defineGate, gateSpecifierFor, loadGate, GATE_PREFIX } from "./gate.ts";
 export type { GateDefinition, GateFinding, GateFix, GateOutcome, GatePlugin, GateRunContext } from "./gate.ts";
 export { defineOps } from "./ops.ts";
+export { deriveOpsEntries } from "./ops-derive.ts";
+export type { DerivedOpsEntries, OpsDeriveRule } from "./ops-derive.ts";
 export type {
   GovernedSettings,
   OpsDefinition,

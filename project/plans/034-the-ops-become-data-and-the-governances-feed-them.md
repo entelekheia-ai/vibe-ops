@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-08-22 |
 | Author | Danilo Borges |
 | Depends on | [Plan-033](./shipped/033-one-artifact-one-governance.md) |

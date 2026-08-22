@@ -100,8 +100,11 @@ test("plan/rfc share required fields; task additionally requires Issue", async (
 test("against this repository's own real records — every adr, plan and rfc passes", async () => {
   const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
   const { readdirSync } = await import("node:fs");
-  const adrFiles = readdirSync(path.join(repoRoot, "project", "adr")).filter((f) => f.endsWith(".md")).map((f) => `project/adr/${f}`);
-  const planFiles = readdirSync(path.join(repoRoot, "project", "plans")).filter((f) => f.endsWith(".md")).map((f) => `project/plans/${f}`);
+  // README.md is the directory's index (the roadmap), not one of its records — the same exclusion
+  // vibeops.config.ts declares for the ops run, which this raw-gate test bypasses.
+  const record = (f: string): boolean => f.endsWith(".md") && f !== "README.md";
+  const adrFiles = readdirSync(path.join(repoRoot, "project", "adr")).filter(record).map((f) => `project/adr/${f}`);
+  const planFiles = readdirSync(path.join(repoRoot, "project", "plans")).filter(record).map((f) => `project/plans/${f}`);
 
   const adrOutcome = await recordHeader.run(ctx(repoRoot, adrFiles, "adr"));
   assert.deepEqual(adrOutcome.findings, [], JSON.stringify(adrOutcome.findings));
