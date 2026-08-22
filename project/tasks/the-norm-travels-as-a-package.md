@@ -84,16 +84,19 @@ Facts measured before the work, which the steps below rely on:
   Evidence: `harness status` in the scratch install reported "2 behind" with no config anywhere in the
   repo; `cat /private/tmp/vibeops.config.local.mjs` showed `applied: { adr: 1, plan: 2 }`. Removing it
   restored "never promulgated". Incidentally proved the shipped versions come from the activated
-  packages. Worth a guard the day a test writes its fixture config to `tmpdir()` itself again.
+  packages. Routed: `project/log/a-stray-config-under-tmp-reaches-every-fixture-repository.md`.
 - Observation: `expandTemplateToken`'s repository-first order is what kept `governance .` byte-identical
   through the move — the repo's `records.templates` declaration answered before the new activated-package
   candidate ever fired, so this repository's own runs never depended on activation.
   Evidence: the step-3 diff against the pre-change baseline: population deltas only (+ADR-0019, +Plan-033).
+  Routed: recorded in Plan-033's Outcomes; no separate surface — the fact is the design working.
 - Observation: two functions had to move DOWN into the base, against the collapse's direction, because
   generic consumers read them: `findLogDir` (module-records census) and `trackCheckboxes`
   (`records show` projects open tracks). The seam is "who reads it", never "whose artifact is it about".
   Evidence: the collapse's first build broke on exactly these two imports and nothing else.
+  Routed: the seam rule is in Plan-033's Outcomes and the collapse commit; dropped as a learning —
+  discoverable from the build failure it produces.
 
 ## Closure
 
-- [ ] Run `/vibe-ops:close-task` — do not just delete this file.
+- [x] Run `/vibe-ops:close-task` — do not just delete this file.
