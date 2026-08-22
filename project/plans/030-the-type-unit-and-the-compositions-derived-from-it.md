@@ -168,6 +168,11 @@ flowchart LR
 
 ## Read these first
 
+> **2026-08-22:** for the architecture now being executed, start at
+> [Plan-033](033-one-artifact-one-governance.md) and
+> [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) instead — the list
+> below described Track 3's first cut, since superseded. Items 2–4 remain accurate for Tracks 1–2.
+
 Written 2026-08-21, before a compaction, because the session that produced Tracks 1–3 is about to be
 discarded and a compacted session trusts the retelling rather than re-exploring. In order, each with why:
 
@@ -207,7 +212,14 @@ breaks `npm run build`. Recreate it only together with its first source file.
   edit. Acceptance: `governance` output diffed before/after differs only by the added
   `record-frontmatter-log` entry; a gate test with an invented type produces `record-header-<that type>`.
   Task: [tasks/header-schema-becomes-data.md](../tasks/header-schema-becomes-data.md)
-- [ ] **Track 3 — The norm travels as an npm package.** A course correction, and it comes from RFC-0003's
+> **Tracks 3–6 are superseded by [Plan-033](033-one-artifact-one-governance.md)** (2026-08-22). Their
+> problem statements stand — the npm-only install still has no norm, the entries are still hand-written,
+> the audience boundary is still undrawn — but the architecture answering them changed mid-execution of
+> Track 3: one governance package **per artifact** (not one package for the set), the module/data split
+> collapsed, activation via `vibeops.config`. See this plan's Decision Log (2026-08-22) and ADR-0019.
+> The four tracks below are kept unticked as the record of what was planned, and are not executed here.
+
+- [ ] ~~**Track 3 — The norm travels as an npm package.**~~ A course correction, and it comes from RFC-0003's
   own words: *"the resolution protocol is therefore npm, and a type's identity is the package that ships
   it."* Today no package publishes anything but `dist` (plus `core`'s `queries`), so every type unit,
   template, authoring rule and migration note lives only in the Claude plugin tree — and `sourceRoot` is
@@ -218,8 +230,9 @@ breaks `npm run build`. Recreate it only together with its first source file.
   protocol. Exists at the end: `vibe-ops governance` resolves the shipped types in a repository with the
   npm CLI and no plugin installed. Acceptance: that case, plus the plugin keeping only what drives the
   CLI.
-  Task: [tasks/the-norm-travels-as-a-package.md](../tasks/the-norm-travels-as-a-package.md)
-- [ ] **Track 4 — Entries derived from installed types.** `ops-governance` builds its per-type entries
+  Task: [tasks/the-norm-travels-as-a-package.md](../tasks/the-norm-travels-as-a-package.md) (rewritten as
+  Plan-033's dossier)
+- [ ] ~~**Track 4 — Entries derived from installed types.**~~ `ops-governance` builds its per-type entries
   from the declarations, keyed by carrier; the `required` literals Track 2 wrote into those entries — and
   the guard holding them to the manifests — are deleted together, because the derivation supersedes both.
   The `research` entry is deleted rather than derived. **The structural change this no longer needs:**
@@ -229,7 +242,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   repository. Acceptance: `vibe-ops governance .` output diffed before/after, differing only by the
   removed `research` entry (`log`'s landed in Track 2), plus the fixture case.
   Task: [tasks/ops-entries-derived-from-type-data.md](../tasks/ops-entries-derived-from-type-data.md)
-- [ ] **Track 5 — What the unit derives, and the move.** One generation mechanism for both artefacts a
+- [ ] ~~**Track 5 — What the unit derives, and the move.**~~ One generation mechanism for both artefacts a
   type duplicates today: the `setup` template copy and the per-type `/new-<t>` skill, whose `paths:`
   frontmatter is the only reason those skills exist separately. Generated at build for this plugin's own
   types, at adoption into the target repository's `.claude/skills/` for a type an external package brings
@@ -237,7 +250,7 @@ breaks `npm run build`. Recreate it only together with its first source file.
   self-contained folders here, once there is something proven to move them into. Exists at the end:
   `35-dogfooding-drift.sh`'s pair list is empty because nothing is duplicated by hand.
   Task: (to be written)
-- [ ] **Track 6 — The audience boundary.** `audience` declared on ops and entries; `fragment-parity` out
+- [ ] ~~**Track 6 — The audience boundary.**~~ `audience` declared on ops and entries; `fragment-parity` out
   of the portable composition; `ops-self` marked internal; what adoption/consumers see is filtered.
   Exists at the end: composing "portable only" over a plugin-less fixture repo yields no
   plugin-shaped SKIPs. Acceptance: the before/after SKIP count on such a fixture.
@@ -373,8 +386,23 @@ breaks `npm run build`. Recreate it only together with its first source file.
   `node_modules`, needs no core change, and answers where `needsSource` could not.
   Date / Author: 2026-08-20 / Danilo Borges
 
+- Decision: Tracks 3–6 are superseded by [Plan-033](033-one-artifact-one-governance.md). The norm ships
+  as **one governance package per artifact** (`governance-{adr,rfc,plan,task,log}`), activated through
+  `vibeops.config`; `module-plan`/`module-task`/`module-log` collapse into their governances; the CLI is
+  layered cli base → `governance-base` (sugared primitives) → governances.
+  Rationale: maintainer direction given mid-execution of Track 3, 2026-08-22, after the one-package cut
+  (`governance-policies`, one commit, dropped) made two costs visible: five types versioning as one
+  stream, and the module/data split surviving — every artifact still had two homes. It also **reverses
+  the immediately preceding decision below** (one package for five types): RFC-0003's plural identifier
+  models a package that MAY ship several types, and the resolver still handles that; it does not require
+  the shipped five to travel together. Recorded in
+  [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), which supersedes
+  ADR-0018's scan-marker as the resolution path — activation by config replaces discovery by scan.
+  Date / Author: 2026-08-22 / Danilo Borges
+
 - Decision: the type package carries **the code coupled to its data**, not data alone; and one package
-  ships the five types rather than five packages.
+  ships the five types rather than five packages. **[Reversed 2026-08-22** by the entry above — the
+  coupled-code half stands; the one-package half fell.**]**
   Rationale: a header has a FORMAT, and the TypeScript reading it is coupled to that format —
   `plan-fields.ts` looks for the plan template's own `Status lifecycle:` marker and its living-sections
   fence, `status.ts` counts the checkboxes under `## Tracks`, `close.ts` reads a dossier's shape,
@@ -389,7 +417,14 @@ breaks `npm run build`. Recreate it only together with its first source file.
 
 ## Outcomes & Retrospective
 
-(No outcomes yet — filled at each major track completion and at the end.)
+**2026-08-22 — the plan splits.** Tracks 1 and 2 shipped as designed and stand: the type unit
+(`type.json`, the two-root resolver) and the header schema as data (`record-header`/`record-frontmatter`
+taking `type` + `required`) are in use, and everything Plan-033 builds sits on them. Tracks 3–6 were
+superseded before execution — Track 3 was begun (one commit, dropped) and its first cut is what exposed
+the architecture the maintainer actually wants: one governance package per artifact, activated by
+config, with the modules collapsed in. The problem statements of 3–6 remain live and travel with
+[Plan-033](033-one-artifact-one-governance.md); this plan keeps the record of the shapes considered
+and rejected on the way.
 
 ---
 

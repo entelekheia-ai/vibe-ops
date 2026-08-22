@@ -16,7 +16,7 @@ vibe-ops-template: adr@2
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Superseded by [ADR-0019](0019-one-artifact-one-governance-package-activated-by-config.md) |
 | Date | 2026-08-21 |
 | Deciders | Danilo Borges |
 
