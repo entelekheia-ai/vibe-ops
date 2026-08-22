@@ -133,18 +133,18 @@ Written 2026-08-22 at closure of Plan-033, so a session starting cold does not r
   `shaped` in the fragment of the type that owns them), and migration refusing/proceeding by effective
   class. Exists at the end: a fixture
   artifact with a locally added section migrates and keeps it; a `repo`-classed file is refused with the
-  class named. Task: [tasks/shaped-class-and-reclassification.md](../tasks/shaped-class-and-reclassification.md)
+  class named. Task: tasks/shaped-class-and-reclassification.md (closed dossier — `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/shaped-class-and-reclassification.md`)
 - [x] **Track 2 — Fragments and composition.** Enumeration of installed fragments, per-path origin, the
   double-claim finding, and the hand-written narrowing applied last and refused when widening. Exists at
   the end: two fixture fragments claiming one path produce the finding naming both; a narrowing in config
   changes the effective class.
-  Task: [tasks/ownership-fragments-and-composition.md](../tasks/ownership-fragments-and-composition.md)
+  Task: tasks/ownership-fragments-and-composition.md (closed dossier — `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/ownership-fragments-and-composition.md`)
 - [x] **Track 3 — The declaration consulted, proven on this repository.** Adoption checks classes before
   writing; the corpus-wide migration run was reversed by the shipped-corpus policy (Decision Log), so the
   acceptance of `shaped` on a real record became Plan-004's single opportunistic migration at its own
   closure — structure moved across both jumps, every word of content intact, `records handling`
   reporting `ownership: shaped` throughout. Plan-017 closed, its assumption reversed.
-  Task: [tasks/migration-consults-the-declaration.md](../tasks/migration-consults-the-declaration.md)
+  Task: tasks/migration-consults-the-declaration.md (closed dossier — `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/migration-consults-the-declaration.md`)
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept. Plan-017's closure rides Track 3.
 
@@ -220,3 +220,8 @@ layer real and serialisable as its first concrete input.
 - [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — Implementation Notes 4–6.
 - [Plan-017](./shipped/017-the-plans-still-written-against-the-first-template-shape.md) — absorbed: its whole scope
   is Track 3's acceptance run.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/shaped-class-and-reclassification.md`
+  - `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/ownership-fragments-and-composition.md`
+  - `git show aa4e1c6d7d9b6af24baae52ed514ad7452be3329:project/tasks/migration-consults-the-declaration.md`
