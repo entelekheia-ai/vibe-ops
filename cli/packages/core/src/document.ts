@@ -79,7 +79,15 @@ export function createDocumentStore(repoRoot: string): DocumentStore {
 
       let text: string;
       try {
-        text = readFileSync(path.join(repoRoot, file), "utf8");
+        // `resolve`, not `join`: a key here is USUALLY repository-relative and sometimes absolute.
+        // `<template:<type>>` expands to the activated governance package's own template — outside
+        // repoRoot by construction, and absolute for exactly that reason (files.ts) — whenever the
+        // repository holds no copy of its own. `join` glued the two into `<repoRoot>/Users/…`, a path
+        // that cannot exist, so `template-version` reported "nothing to compare these records against"
+        // over a template that was right there. Invisible in this repository, which keeps its own
+        // copies under `cli/packages/governance-*/templates/` and never reaches the absolute branch;
+        // five SKIPs in every target that does not. Measured 2026-08-23 (Plan-035 Track 3).
+        text = readFileSync(path.resolve(repoRoot, file), "utf8");
       } catch (cause) {
         // One unreadable file must not take down a run of six gates — it returns a Document like any
         // other, text empty, tree absent, the reason named rather than left for the caller to guess.

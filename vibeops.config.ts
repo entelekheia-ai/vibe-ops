@@ -38,7 +38,7 @@ export default {
       // by somebody who never read this file. A shipped template's content is written to resolve in the
       // *target* repository, never this one, so a link or a `[[memory-slug]]`-shaped placeholder inside
       // plugin/skills/*/templates/ is not this repository's to judge. The one gate for which those
-      // copies are the SUBJECT rather than noise lives in the `self` ops below, precisely so this line
+      // copies are the SUBJECT rather than noise lives in the `mirror` ops below, precisely so this line
       // can stay a blanket — see the "POPULATION VS BEHAVIOUR" note in cli/packages/core/src/ops.ts.
       ignore: {
         "*": ["**/templates/**"],
@@ -67,12 +67,17 @@ export default {
       // governances (Plan-034), and no governance package serves research — the type entered the old
       // hand-written list by mistake (Plan-030's Decision Log), so nothing derives an entry for it.
     },
-    self: {
+    // MOVED FROM `self` WITH THE ENTRY IT CONFIGURES (Plan-037). Every line below is
+    // `template-heading-drift`'s, and it followed the entry into `mirror`. Leaving it behind would not
+    // have failed loudly: `settings` is keyed by OPS ID, so an orphaned slice is simply never read, and
+    // the entry runs unconfigured — which here means the whole path policy silently off. That is how
+    // this was found, and it is the cost of moving an entry between compositions.
+    mirror: {
       // THE PATH POLICY (Plan-014). What separates a record that HAS an old heading — legitimate, it was
       // written against an older template — from a document that SAYS records have it, which is the
       // defect. Declared here rather than inside the gate, so it is reviewable and wrong in a way a
       // reader can see. Note what is NOT excluded: `**/templates/**`, because the shipped copies are the
-      // population this ops exists to read.
+      // population `template-heading-drift` exists to read.
       ignore: {
         // A migration note is the SOURCE this gate reads, never a description to be corrected. Scoped to
         // the label rather than blanketed across the ops, because `unstated-destination` takes the same

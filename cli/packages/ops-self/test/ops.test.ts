@@ -37,43 +37,32 @@ test("--list composes the entries this ops owns", async () => {
   const { context } = contextFor(REPO, {}, { list: true });
   const result = await ops.run(context);
   const data = result.data as { gates: readonly { label: string }[] };
-  assert.deepEqual(
-    data.gates.map((gate) => gate.label),
-    ["template-heading-drift", "unstated-destination"],
-  );
+  // One entry since Plan-037 moved `template-heading-drift` to `mirror`, whose subject is a pair. A
+  // single-entry composition is not a defect; a composition whose subject needs an "and" is.
+  assert.deepEqual(data.gates.map((gate) => gate.label), ["unstated-destination"]);
 });
 
-// `.agents/` is asserted explicitly because `**/*.md` does not reach a dot-directory: the rule governing
-// work inside project/ is one of the documents this ops exists to check, and left implicit the run would
-// report a clean sweep over everything except the file that matters most.
-test("the population reaches .agents/, which a bare **/*.md glob does not", async () => {
-  const { context } = contextFor(REPO, {}, { list: true });
-  const result = await ops.run(context);
-  const data = result.data as { gates: readonly { paths: readonly string[] }[] };
-  assert.ok(data.gates[0]!.paths.includes(".agents/**/*.md"), JSON.stringify(data.gates[0]!.paths));
-});
-
-// The shipped templates are NOT excluded here, and that is the whole reason this ops exists rather than
-// being a thirteenth entry in `governance`, whose blanket `**/templates/**` would have hidden them.
+// The remaining entry reads the migration notes as its SUBJECT rather than as an authority, so the
+// population question that split this package out is now asserted in ops-mirror's test, beside the entry
+// it belongs to.
 test("against this repository's own checkout, under its own config — nothing fails", async () => {
   const { config } = await loadConfig(REPO);
   const { context, logs } = contextFor(REPO, config, { verbose: true });
   const result = await ops.run(context);
   assert.equal(result.code, 0, logs.join("\n"));
   assert.ok(
-    logs.some((line) => line.includes("ok    [template-heading-drift]") && line.includes("examined")),
+    logs.some((line) => line.includes("ok    [unstated-destination]") && line.includes("examined")),
     logs.join("\n"),
   );
 });
 
-test("the scaffolding copies are IN the population — excluding them is the bug this ops avoids", async () => {
+test("the notes are examined, not swept past — zero examined is not a reading", async () => {
   const { config } = await loadConfig(REPO);
   const { context } = contextFor(REPO, config, {});
   const result = await ops.run(context);
   const data = result.data as { population: readonly { gate: string; examined: number }[] };
-  // Two shipped twins live under plugin/skills/setup/templates/; a run that examined none of them would
-  // report exactly this ops's clean result while looking at nothing it was built for.
-  assert.ok(data.population[0]!.examined > 40, JSON.stringify(data.population));
+  const notes = data.population.find((entry) => entry.gate === "unstated-destination");
+  assert.ok((notes?.examined ?? 0) > 0, JSON.stringify(data.population));
 });
 
 test("every entry that declares a fixture still fires on it", async () => {

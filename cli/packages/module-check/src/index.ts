@@ -27,7 +27,7 @@ const RUNNER = path.join(here, "..", "sh", "check-agents-md.sh");
  * fixture still reports what it skipped, which is the point: a self-test covering four of fourteen gates
  * reads exactly like one covering all fourteen unless it says so.
  */
-const OPS_WITH_FIXTURES = ["governance", "self", "agents-md"] as const;
+const OPS_WITH_FIXTURES = ["governance", "self", "agents-md", "mirror", "classification"] as const;
 
 /** One ops's self-test, as its own exit code and its own text. An ops that cannot be loaded is a failure,
  *  never a silent pass — an absent suite and a clean one are the same output otherwise. */

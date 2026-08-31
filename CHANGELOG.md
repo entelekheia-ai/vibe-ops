@@ -14,6 +14,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — `template-version` was inert in every repository that kept no template copies of its own
+
+- `<template:<type>>` expands to the activated governance package's template, absolute by construction,
+  and the document store joined it onto the target's root — producing `<repoRoot>/Users/…`, a path that
+  cannot exist. The gate reported "nothing to compare these records against" over a file that was there.
+  Invisible in vibe-ops, which keeps its own copies; five SKIPs in every repository that does not.
+
 ### Added — the `shaped` ownership class, composition with origin, and the repository's narrowings (Plan-031)
 
 - **`shaped`** joins the ownership vocabulary — the tooling owns a record's *structure* (migration may

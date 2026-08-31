@@ -216,11 +216,18 @@ export function expandOptionTokens(
   records: RecordsConfig | undefined,
   normTemplates?: Readonly<Record<string, string>>,
 ): Readonly<Record<string, unknown>> {
-  const expanded: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(options)) {
-    expanded[key] = typeof value === "string" ? expandTokens(value, repoRoot, pluginDir, records, normTemplates) : value;
-  }
-  return expanded;
+  // Recursive, because an entry's options are not always flat: a path can sit inside an array of pairs or
+  // inside a nested source object, and a token left unexpanded there resolves to a file that is not
+  // there — reported as a difference rather than as a composition error.
+  const walk = (value: unknown): unknown => {
+    if (typeof value === "string") return expandTokens(value, repoRoot, pluginDir, records, normTemplates);
+    if (Array.isArray(value)) return value.map(walk);
+    if (typeof value === "object" && value !== null) {
+      return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, walk(item)]));
+    }
+    return value;
+  };
+  return walk(options) as Readonly<Record<string, unknown>>;
 }
 
 /** Files matching any of the patterns. `path.matchesGlob` is native, so this costs no dependency. */

@@ -3,50 +3,57 @@
   "version": "0.0.1",
   "summary": "The instruction surface: AGENTS.md, CLAUDE.md, and the .agents/ ↔ .claude/ bridge",
   "gates": [
-    { "gate": "budget", "paths": ["AGENTS.md"] },
-    { "gate": "pairing", "paths": ["**/AGENTS.md"] },
-    { "gate": "claude-md-content", "paths": ["**/CLAUDE.md"] },
-    { "gate": "bridge" },
-    { "gate": "check-frontmatter", "paths": [".agents/rules/*.md"], "options": { "schema": "rule" } },
+    {
+      "gate": "budget",
+      "paths": [
+        "AGENTS.md"
+      ]
+    },
+    {
+      "gate": "pairing",
+      "paths": [
+        "**/AGENTS.md"
+      ]
+    },
+    {
+      "gate": "claude-md-content",
+      "paths": [
+        "**/CLAUDE.md"
+      ]
+    },
+    {
+      "gate": "bridge"
+    },
+    {
+      "gate": "check-frontmatter",
+      "paths": [
+        ".agents/rules/*.md"
+      ],
+      "options": {
+        "schema": "rule"
+      }
+    },
     {
       "gate": "check-frontmatter",
       "label": "skill-frontmatter",
-      "options": { "schema": "skill" },
-      "paths": ["<plugin>/skills/*/SKILL.md", ".agents/skills/*/SKILL.md"]
+      "options": {
+        "schema": "skill"
+      },
+      "paths": [
+        "<plugin>/skills/*/SKILL.md",
+        ".agents/skills/*/SKILL.md"
+      ]
     },
     {
       "gate": "check-frontmatter",
       "label": "agent-frontmatter",
-      "options": { "schema": "agent" },
-      "paths": ["<plugin>/agents/*.md", ".agents/agents/*.md"]
-    },
-    {
-      "gate": "memory-slug",
-      "emits": true,
-      "paths": ["AGENTS.md", "**/AGENTS.md", "**/CLAUDE.md", "**/README.md"]
-    },
-    {
-      "gate": "fragment-parity",
-      "label": "fragment-parity-frontmatter",
-      "paths": [".agents/rules/*.md"],
-      "options": { "runner": "cli/packages/module-check/sh/check-agents-md.sh", "fragment": "frontmatter", "against": "check-frontmatter", "options": { "schema": "rule" } }
-    },
-    {
-      "gate": "fragment-parity",
-      "label": "fragment-parity-skill-frontmatter",
-      "paths": ["<plugin>/skills/*/SKILL.md", ".agents/skills/*/SKILL.md"],
       "options": {
-        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
-        "fragment": "skill-frontmatter",
-        "against": "check-frontmatter",
-        "options": { "schema": "skill" }
-      }
-    },
-    {
-      "gate": "fragment-parity",
-      "label": "fragment-parity-memory-slug",
-      "paths": ["AGENTS.md", "**/AGENTS.md", "**/CLAUDE.md", "**/README.md"],
-      "options": { "runner": "cli/packages/module-check/sh/check-agents-md.sh", "fragment": "memory-slugs", "against": "memory-slug" }
+        "schema": "agent"
+      },
+      "paths": [
+        "<plugin>/agents/*.md",
+        ".agents/agents/*.md"
+      ]
     }
   ]
 }

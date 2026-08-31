@@ -12,43 +12,30 @@
 //
 // IT WAS PART OF `governance` FOR ONE COMMIT, AND THE CONFIG SAID SO. `governance` excluded
 // `**/templates/**` from every entry through a single `"*"` line, because a shipped template's content
-// resolves in the TARGET repository rather than this one. That holds for each of its twelve entries and
-// is false for `template-heading-drift`, whose whole subject is the false text those shipped copies
-// carry. `ignore` is additive with no negation, so keeping both meant replacing one `"*"` line with
-// thirteen per-label ones — and thirteen lines is not the cost. The cost is that `"*"` was a SAFE
-// DEFAULT: a gate added to `governance` inherited the exclusion without anyone thinking about it, and
-// after the split it inherited nothing and would read the shipped templates in silence, green. Moving
-// the odd entry out restores the default it was breaking.
+// resolves in the TARGET repository rather than this one. That `"*"` was a SAFE DEFAULT: a gate added to
+// `governance` inherited the exclusion without anyone thinking about it, and a gate whose subject IS the
+// shipped copies would inherit it too and read nothing, in silence, green. Splitting kept the default
+// intact for the twelve entries it is right for.
+//
+// WHAT IS LEFT HERE AFTER PLAN-037, AND WHY IT IS ONE ENTRY. `template-heading-drift` moved to `mirror`,
+// whose subject is a PAIR — a migration note's record of a dropped section against the documents still
+// asserting the section exists. What stays is the reading with no counterpart: prose this repository
+// writes about its own machinery, read as itself. That is a narrower subject than the one this package
+// was opened with, and it is the honest one; a package holding a single entry is not a defect, whereas a
+// package whose subject cannot be stated without an "and" is.
 //
 // WHAT ELSE BELONGS HERE. Anything whose subject is this repository's own claims about its own
-// machinery. Plan-014 leaves two named: a document that fails to mention a section a template GAINED,
-// and a renamed section, where the old name is forbidden and the new one required in the same places.
-// Both share this population and this exclusion list, which is what makes this a composition rather
-// than a package built around one detector.
+// machinery, read directly rather than against a second copy. Plan-014 leaves one named that still fits:
+// a document that fails to mention a section a template GAINED — the absence of an assertion, which no
+// pairwise comparison detects.
 //
-// TEMPLATE-HEADING-DRIFT. `.agents/` IS NAMED EXPLICITLY because `**/*.md` does not reach a
-// dot-directory, and the rule that governs work inside `project/` is one of the six documents this gate
-// exists to correct. Left implicit it reports a clean sweep over everything except the file that matters
-// most. Since Plan-033 each type's notes and template live in its own governance package. The gate takes
-// ONE migrations directory, so the notes are listed per package in `options.migrations`; until the gate
-// takes several, the plan package's directory carries the only notes that record dropped sections today.
-// A note that drops a section, a template that no longer has it, and a rule asserting records still carry
-// it — the three files whose disagreement is the whole defect, in the smallest tree that can hold them.
-// `<plugin>/` resolves to the fixture root, so a run pointed at the real plugin surface fails here
-// instead of passing on the wrong corpus.
-//
-// UNSTATED-DESTINATION. The notes are prose about this repository's own machinery too — and the one
-// kind whose reader is a migration about to move somebody's content. Population is the notes themselves,
-// not the documents describing them, which is what separates this from the template-heading-drift entry
-// above: that one reads the notes as its authority, this one reads them as its subject. Two notes, and
-// the second is the point. A fixture carrying only the violation passes whether or not the gate
-// distinguishes anything: the decoy drops a section AND routes it, so a gate that fired on every
-// `**dropped**` row would produce two findings where one is correct. The two notes `unstated-destination`
-// is proven on are exported because the fixture runner asserts only that the expected rule fired — which
-// a gate firing on every `**dropped**` row would also satisfy. The other direction, that the decoy stays
-// silent, is asserted in this package's test against this object, so the fixture and the assertion cannot
-// drift into describing different notes. Since Plan-034 this export and the fixture cannot drift because
-// the fixture is read from ops.json's own `fixture.files` object.
+// UNSTATED-DESTINATION. The notes are prose about this repository's own machinery, and the one kind
+// whose reader is a migration about to move somebody's content. Population is the notes THEMSELVES, not
+// the documents describing them — which is exactly what separates this from the entry that left: that
+// one read the notes as its authority, this one reads them as its subject. Two notes, and the second is
+// the point. A fixture carrying only the violation passes whether or not the gate distinguishes
+// anything: the decoy drops a section AND routes it, so a gate that fired on every `**dropped**` row
+// would produce two findings where one is correct.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
