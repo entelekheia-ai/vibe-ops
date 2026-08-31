@@ -1,0 +1,8 @@
+{
+  "type": "license",
+  "template": "./templates/Apache-2.0.txt",
+  "authoring": "./authoring.md",
+  "migrations": "./migrations",
+  "numbered": false,
+  "dirs": ["."]
+}

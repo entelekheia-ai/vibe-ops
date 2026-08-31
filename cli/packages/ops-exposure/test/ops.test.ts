@@ -24,7 +24,7 @@ function contextFor(
       flags,
       args: [],
       config,
-      settings: settingsFor(config, "classification"),
+      settings: settingsFor(config, "exposure"),
       surface: "cli",
       log: (message) => logs.push(message),
       warn: (message) => logs.push(`warning: ${message}`),
@@ -103,8 +103,8 @@ test("memory-slug catches a real slug on AGENTS.md and records exactly one findi
   // an attribution inside a shipped template, a name from the deny-list — stay fixed once corrected and
   // record nothing.
   const files = (await readdir(artifactDir)).sort();
-  assert.deepEqual(files, ["classification.file-path.jsonl", "classification.memory-slug.jsonl"]);
-  const lines = (await readFile(path.join(artifactDir, "classification.memory-slug.jsonl"), "utf8"))
+  assert.deepEqual(files, ["exposure.file-path.jsonl", "exposure.memory-slug.jsonl"]);
+  const lines = (await readFile(path.join(artifactDir, "exposure.memory-slug.jsonl"), "utf8"))
     .trim()
     .split("\n");
   const header = JSON.parse(lines[0]!) as { tool: string };

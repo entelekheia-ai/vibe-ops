@@ -19,7 +19,7 @@ CHECK_VERSION=1
 check_license_texts() {
   head_
   local id="license-texts" problems=0 tool="$PLUGIN_DIR/skills/license-setup/get-license.sh"
-  local registry="$PLUGIN_DIR/skills/license-setup/licenses/SOURCES.tsv"
+  local registry="$ROOT/cli/packages/governance-license/templates/SOURCES.tsv"
 
   if [ ! -f "$tool" ] || [ ! -f "$registry" ]; then
     skip "$id" "no license-setup skill in this repository"
@@ -30,7 +30,7 @@ check_license_texts() {
   while IFS=$'\t' read -r lid _ want _; do
     [ -z "$lid" ] && continue
     case "$lid" in \#*) continue ;; esac
-    file="$PLUGIN_DIR/skills/license-setup/licenses/$lid.txt"
+    file="$ROOT/cli/packages/governance-license/templates/$lid.txt"
     if [ ! -f "$file" ]; then
       fail "$id" "$lid is pinned in SOURCES.tsv but licenses/$lid.txt is missing"
       problems=$((problems + 1)); continue

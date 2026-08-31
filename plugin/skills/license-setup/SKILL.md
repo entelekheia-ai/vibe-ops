@@ -107,7 +107,7 @@ repo has `.github/workflows/` (or you are creating one), make the check permanen
 
 - Copy `templates/verify-license-text.sh` → `scripts/verify-license-text.sh`, `chmod +x`, substituting
   `{{LICENSE_ID}}`, `{{LICENSE_URL}}` and `{{YEAR}}` `{{PROJECT_NAME}}`, plus `{{LICENSE_TEXT_SHA256}}` —
-  the **fourth** column of that id's row in `${CLAUDE_PLUGIN_ROOT}/skills/license-setup/licenses/SOURCES.tsv`
+  the **fourth** column of that id's row in `the licence registry `get-license.sh` resolves through `vibe-ops records norm --type license``
   (`awk -F'\t' '$1=="<SPDX-ID>"{print $4}'`). Never type a digest from memory; read it from the registry.
 - Copy `templates/license-text-ci.yml` → `.github/workflows/license-text.yml`, substituting `{{LICENSE_ID}}`.
 - `bash scripts/verify-license-text.sh` must pass locally before you commit, and

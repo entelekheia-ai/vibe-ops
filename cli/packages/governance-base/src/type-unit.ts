@@ -36,7 +36,8 @@ export interface TypeUnit {
   readonly authoring: string;
   /** Relative to the manifest file, a directory. */
   readonly migrations: string;
-  readonly schema: TypeUnitSchema;
+  /** Absent for a type whose artifacts carry no metadata — see the parser. */
+  readonly schema?: TypeUnitSchema;
   readonly numbered: boolean;
   readonly pad: number;
   readonly depth: number;
@@ -73,10 +74,15 @@ export function parseTypeUnit(text: string, file: string): TypeUnit {
   const authoring = requireString(parsed, "authoring", file);
   const migrations = requireString(parsed, "migrations", file);
 
+  // OPTIONAL, because not every governed type has records carrying metadata. A licence and a
+  // classification policy are data the tooling owns and hands out; neither has a header table nor
+  // frontmatter, and declaring a carrier for them would have the governance ops derive a metadata check
+  // over a file that has none — `ops-derive` already reads an absent schema as "derives no entry".
+  // Present but malformed is still refused: a typo must not read as absence.
   const schema = parsed.schema as Partial<TypeUnitSchema> | undefined;
-  if (schema === undefined || !CARRIERS.has(schema.carrier as TypeUnitCarrier) || !Array.isArray(schema.required)) {
+  if (schema !== undefined && (!CARRIERS.has(schema.carrier as TypeUnitCarrier) || !Array.isArray(schema.required))) {
     throw new RecordsConfigError(
-      `${file} declares no valid schema — a type unit must carry { carrier: "table" | "frontmatter", required: [...] }`,
+      `${file} declares an invalid schema — a type unit carries { carrier: "table" | "frontmatter", required: [...] } or none`,
     );
   }
 
@@ -85,7 +91,9 @@ export function parseTypeUnit(text: string, file: string): TypeUnit {
     template,
     authoring,
     migrations,
-    schema: { carrier: schema.carrier as TypeUnitCarrier, required: schema.required as readonly string[] },
+    ...(schema === undefined
+      ? {}
+      : { schema: { carrier: schema.carrier as TypeUnitCarrier, required: schema.required as readonly string[] } }),
     numbered: typeof parsed.numbered === "boolean" ? parsed.numbered : true,
     pad: typeof parsed.pad === "number" ? parsed.pad : 3,
     depth: typeof parsed.depth === "number" ? parsed.depth : 1,

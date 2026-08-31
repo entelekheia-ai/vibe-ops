@@ -1,7 +1,7 @@
 {
-  "name": "@entelekheia/vibe-ops-classification",
+  "name": "@entelekheia/vibe-ops-exposure",
   "version": "0.0.1",
-  "description": "What a committed file may not carry, by the classification of the material",
+  "description": "Whether a committed file exposes material above its classification",
   "type": "module",
   "license": "Apache-2.0",
   "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },

@@ -27,6 +27,13 @@ export default {
     },
   },
 
+  // Two types this tooling governs that keep no records: the licence texts it hands out, and the policy
+  // its classification rules enforce. Activation IS the binding (ADR-0019), and neither is discoverable
+  // by the package-name scan, which looks for record types.
+  types: {
+    license: "@entelekheia/governance-license",
+    classification: "@entelekheia/governance-classification",
+  },
   settings: {
     // A shipped template's content is written to resolve in the *target* repository, never this one —
     // a link, or a `[[memory-slug]]`-shaped placeholder, inside plugin/skills/*/templates/ is not this

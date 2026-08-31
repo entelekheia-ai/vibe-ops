@@ -13,7 +13,7 @@ import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const OPS_MODULES = ["agents-md", "governance", "self", "mirror", "classification"] as const;
+const OPS_MODULES = ["agents-md", "governance", "self", "mirror", "exposure"] as const;
 
 async function loadPlugin(specifier: string): Promise<ModulePlugin | undefined> {
   try {

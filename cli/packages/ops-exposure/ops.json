@@ -1,7 +1,7 @@
 {
-  "id": "classification",
+  "id": "exposure",
   "version": "0.0.1",
-  "summary": "What a committed file may not carry, by the classification of the material",
+  "summary": "Whether a committed file exposes material above its classification",
   "gates": [
     {
       "gate": "classification",

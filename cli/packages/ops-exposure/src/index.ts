@@ -1,4 +1,4 @@
-// vibe-ops classification — what a committed file may not carry.
+// vibe-ops exposure — what a committed file may not carry.
 //
 // The collection is `ops.json`; this file is its typing sugar and holds the narrative JSON cannot.
 //

@@ -1,11 +1,11 @@
-# @entelekheia/vibe-ops-classification
+# @entelekheia/vibe-ops-exposure
 
 What a committed file may not carry, by the classification of the material.
 
 ```bash
-vibe-ops classification              # run it
-vibe-ops classification --list       # the rules composed, and the paths each runs over
-vibe-ops classification --self-test  # assert every rule still fires on its fixture
+vibe-ops exposure              # run it
+vibe-ops exposure --list       # the rules composed, and the paths each runs over
+vibe-ops exposure --self-test  # assert every rule still fires on its fixture
 ```
 
 ## The four levels

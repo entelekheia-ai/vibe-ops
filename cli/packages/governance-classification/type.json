@@ -1,0 +1,8 @@
+{
+  "type": "classification",
+  "template": "./templates/classification.md",
+  "authoring": "./authoring.md",
+  "migrations": "./migrations",
+  "numbered": false,
+  "dirs": ["project"]
+}

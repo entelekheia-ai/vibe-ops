@@ -178,11 +178,11 @@
         "rule": "license-text",
         "subject": "a licence this plugin hands out",
         "rows": {
-          "file": "<plugin>/skills/license-setup/licenses/SOURCES.tsv",
+          "file": "cli/packages/governance-license/templates/SOURCES.tsv",
           "format": "tsv"
         },
         "left": {
-          "file": "<plugin>/skills/license-setup/licenses/${0}.txt"
+          "file": "cli/packages/governance-license/templates/${0}.txt"
         },
         "right": {
           "column": 2

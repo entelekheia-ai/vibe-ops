@@ -67,6 +67,8 @@ deleting the gates the two absorbed; the nudge fragment becoming a test that run
 - **The four shell suites under `cli/test/` that nothing invokes.** Found while placing the nudge; a real
   defect, and not this plan's. See Open questions.
 - **Porting the six fragments that already have gates.** They are Plan-022's subject, not this one's.
+- **`manifest-sync`'s remaining field pairs.** One pair is composed; the rest need a cross-source
+  selector `mirror` does not have. Recorded in Open questions.
 
 ## Design
 
@@ -117,13 +119,16 @@ what is a classification rule about every committed file.
 - [x] **Track 2 — `classification`, and the ops that composes it.** Landed 2026-08-23. One gate covering
       four composed rules across three levels; `memory-slug` moved in from `ops-agents-md` and the gate
       `gates/src/memory-slug/` was deleted. Acceptance met: 4 entries, 0 failed.
-- [ ] **Track 3 — The nudge becomes a test that runs.** `27-nudge-behaviour.sh`'s five assertions become a
-      `node:test` file. Whether they are already covered by the existing shell suite for the same hook is
-      determined while porting, not assumed. Acceptance: each assertion watched to fail against a
-      deliberately broken hook before being kept.
-- [ ] **Track 4 — What the ports left behind.** `manifest-sync` is composed for one field pair and needs a
-      cross-source selector for the marketplace join; `governance-license` and `governance-classification`
-      as data-owning packages (the licence texts, the levels document) are not built. Refined at pick-up.
+- [x] **Track 3 — The nudge becomes a test that runs.** Landed 2026-08-23.
+      `cli/packages/harness/test/nudge-behaviour.test.ts`: one parent test holding seven ordered subtests
+      over one fixture and one state file, because the sequence is the subject. All five numbered
+      assertions ported plus the firing-log check; none was covered by the existing shell suite, so
+      nothing was dropped as a duplicate. Each was watched to fail against a deliberately broken hook.
+- [x] **Track 4 — The two governed types.** Landed 2026-08-23. `governance-license` owns the thirteen
+      licence texts and the registry pinning each to its published source; `governance-classification`
+      owns the policy the exposure rules enforce, readable through
+      `vibe-ops records norm --type classification --facet template --print`. `schema` became optional in
+      `parseTypeUnit`, which is what let a type with no records exist at all.
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
 
 ## Success criteria
@@ -218,6 +223,30 @@ Run from the repository root:
 
 ## Outcomes & Retrospective
 
+**Tracks 3 and 4, 2026-08-23.** The nudge became `cli/packages/harness/test/nudge-behaviour.test.ts` —
+seven ordered subtests over one fixture and one state file, since the sequence is the subject. None of
+its five assertions was covered by the 19 KB shell suite for the same hook, so nothing was dropped as a
+duplicate; each was watched to fail against a deliberately broken hook, and one needs two simultaneous
+breaks because by its firing the plan is guarded twice.
+
+**That suite cannot run at all**, which sharpens the dead-ground finding below: it resolves the hook at
+`cli/hooks/plan-progress-nudge.sh` and exits 2 before its first case, because the plugin moved under
+`plugin/`. Its coverage was nominal, not partial.
+
+**Two governed types now own their data.** `governance-license` holds the thirteen licence texts and the
+registry pinning each to its published source; `governance-classification` holds the policy the exposure
+rules enforce, readable with `vibe-ops records norm --type classification --facet template --print`.
+Making `schema` optional in `parseTypeUnit` is what let a type with no records exist — `ops-derive`
+already read an absent schema as "derives no entry", so the validator was refusing a state the consumer
+anticipated.
+
+**A name collision the composition created.** `classification` became both an ops id and a governance
+type, and a bare noun resolves through the governance map first — the ops went unreachable with no error.
+The ops is now `exposure`, named for what it checks rather than for the policy it checks against, and
+each of the three names does one thing: the policy is `classification`, the gate is `classification`, the
+composition is `exposure`.
+
+
 **Tracks 1 and 2, 2026-08-23.** Two gates replaced ten. `mirror` composes 11 entries and
 `classification` 4, both reporting zero failures against this repository; 553 tests pass and the shell
 gate stays at 17 checks, 0 failed. `gates/src/memory-slug/` was deleted, absorbed by `classification`.
@@ -250,6 +279,10 @@ this repository's own README explaining that distinction. `scope: "prose"` resto
 
 ## Open questions
 
+- **`manifest-sync` covers one field pair, not three.** Its remaining comparisons read the marketplace
+  entry selected by a name held in the OTHER document, and `mirror` has no cross-source selector. Adding
+  one is a real extension; hardcoding an index would pass silently the day the plugin is renamed, which is
+  the failure the composition exists to prevent.
 - The four shell suites under `cli/test/` are invoked by nothing — not `npm test`, not the commit gate,
   not CI. One of them tests the same hook as Track 4's subject. Whether they are woken, ported or deleted
   is a decision this plan does not make, and Track 4 must not be read as having made it.
