@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-23 |
 | Author | Danilo Borges |
-| Depends on | [Plan-035](035-the-audience-boundary.md) |
-| Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-022](022-retiring-a-shell-fragment-its-port-has-replaced.md) |
+| Depends on | [Plan-035](../035-the-audience-boundary.md) |
+| Related | [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [Plan-022](../022-retiring-a-shell-fragment-its-port-has-replaced.md) |
 
 ---
 
@@ -60,7 +60,7 @@ deleting the gates the two absorbed; the nudge fragment becoming a test that run
 ### Out of scope
 
 - **Deleting any fragment, and deleting the runner.** That is phase 2, gated on
-  [Plan-022](022-retiring-a-shell-fragment-its-port-has-replaced.md)'s bar — parity green over a real
+  [Plan-022](../022-retiring-a-shell-fragment-its-port-has-replaced.md)'s bar — parity green over a real
   corpus, and each port proven to fail on a fixture built to break it. A repository's commit gate resolves
   that runner out of a checkout, and the count of repositories doing so is well into the single digits, so
   removal is a promulgation across all of them rather than a deletion here.
@@ -129,7 +129,7 @@ what is a classification rule about every committed file.
       owns the policy the exposure rules enforce, readable through
       `vibe-ops records norm --type classification --facet template --print`. `schema` became optional in
       `parseTypeUnit`, which is what let a type with no records exist at all.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the file kept.
 
 ## Success criteria
 
@@ -292,9 +292,9 @@ this repository's own README explaining that distinction. `scope: "prose"` resto
 
 ## Related
 
-- [Plan-035](035-the-audience-boundary.md) — the classification pass that decided which fragment belongs
+- [Plan-035](../035-the-audience-boundary.md) — the classification pass that decided which fragment belongs
   where, and the field that was removed in favour of this plan's package boundary.
-- [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the gate/ops split, and the
+- [RFC-0001](../../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md) — the gate/ops split, and the
   rule that a fragment is removed only once its port is shown to agree with it.
-- [Plan-022](022-retiring-a-shell-fragment-its-port-has-replaced.md) — the retirement bar phase 2 answers
+- [Plan-022](../022-retiring-a-shell-fragment-its-port-has-replaced.md) — the retirement bar phase 2 answers
   to.

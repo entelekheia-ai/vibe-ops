@@ -14,6 +14,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — two parameterised gates carry ten fragments' worth of detection (Plan-037)
+
+- **`mirror`** — produce a left, produce a right, report what is in the left and not in the right. A
+  scalar is a set of one, which is why a copy-against-copy check and a name-against-directory check are
+  the same gate. `compare` is `text`, `sha` or `group`, and the mode carries the machinery: `sha` hashes a
+  side that is a file and takes a side that is a value as the digest it already is.
+- **`classification`** — a pattern that must not appear in a population. `level` (`secret` |
+  `confidential` | `internal`) decides how a finding may speak: at `secret` it names the file and line and
+  never the text. Every rule quotes the MATCH rather than the line, so a looser rule cannot print what a
+  stricter one protects.
+- **`ops-mirror`** and **`ops-exposure`** compose them. `fragment-parity`, `template-heading-drift` and
+  `memory-slug` moved into them, so a repository installing neither package composes none of their
+  entries — the boundary is the package, with nothing to declare and nothing to filter.
+- **`governance-license`** owns the licence texts and the registry pinning each to its published source;
+  **`governance-classification`** owns the policy the exposure rules enforce, readable with
+  `vibe-ops records norm --type classification --facet template --print`. `schema` is now optional in a
+  type manifest: neither type has records carrying metadata.
+- No shell fragment was retired. The commit gate still runs seventeen.
+
 ### Fixed — `template-version` was inert in every repository that kept no template copies of its own
 
 - `<template:<type>>` expands to the activated governance package's template, absolute by construction,

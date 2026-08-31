@@ -14,12 +14,18 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 - [`composing-a-gate-over-a-population-the-ops-already-ignores.md`](composing-a-gate-over-a-population-the-ops-already-ignores.md) —
   A gate added to an ops whose `ignore` blankets its population under `"*"` reports `0 examined` and passes;
   the exclusion belongs to the entry that needs it, not to the ops.
+- [`moving-a-composed-entry-to-another-ops.md`](moving-a-composed-entry-to-another-ops.md) — Moving an entry
+  between ops without moving its `settings` slice leaves the entry running unconfigured — `settings` is
+  keyed by ops id, so the orphaned slice is never read and nothing reports it.
 
 ## `cli/packages/cli/src/`
 
 - [`harness-status-plugin-root-fallback-unverified.md`](harness-status-plugin-root-fallback-unverified.md) —
   CLAUDE_PLUGIN_ROOT as an env-var fallback for the source/target seam is unverified for a Claude Code hook
   subprocess specifically — do not drop the explicit --plugin/--source flag on the strength of it alone.
+- [`naming-an-ops-after-the-governance-type-it-enforces.md`](naming-an-ops-after-the-governance-type-it-enforces.md) —
+  An ops sharing its id with an activated governance type becomes unreachable — a bare noun resolves through
+  the governance map first, and the ops is shadowed with no error.
 
 ## `cli/packages/core/`
 

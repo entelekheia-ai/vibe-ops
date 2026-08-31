@@ -39,7 +39,7 @@ collection form rather than added to the TS shape and migrated a week later.
 
 > **Two of the three goals below were met by a mechanism this plan then removed.** The classification is
 > the lasting deliverable; the field that consumed it is not, and the boundary it aimed at is delivered by
-> [Plan-037](037-the-eleven-fragments-become-gates.md). Read the Decision Log before the goals.
+> [Plan-037](./shipped/037-the-eleven-fragments-become-gates.md). Read the Decision Log before the goals.
 
 - Every ops entry and shell fragment classified `portable` or `internal`, with cited evidence.
 - ~~`audience` declared on ops and on entries~~ — built and reverted; Plan-030's inherited open question
@@ -68,7 +68,7 @@ composing surfaces, and the one defect that makes the acceptance count unreadabl
   cited evidence, each `internal` verdict put through two independent refutation lenses. Landed
   2026-08-23; the numbers are in Outcomes.
 - [~] **Track 2 — The filter.** Built, measured, and **removed unshipped** on 2026-08-23. The boundary it
-  aimed at is delivered instead by [Plan-037](037-the-eleven-fragments-become-gates.md), which carries the
+  aimed at is delivered instead by [Plan-037](./shipped/037-the-eleven-fragments-become-gates.md), which carries the
   same distinction in the package boundary rather than in a field. See the Decision Log and Outcomes.
 - [x] **Track 3 — The template path defect.** Landed 2026-08-23. `<template:<type>>` expands to an
   absolute path when the repository holds no copy of its own, and the document store joined it onto the
@@ -110,7 +110,7 @@ composing surfaces, and the one defect that makes the acceptance count unreadabl
   Date / Author: 2026-08-23 / Danilo Borges
 
 - Decision: the `audience` field is removed unshipped, and the boundary is delivered by the package
-  boundary instead — [Plan-037](037-the-eleven-fragments-become-gates.md).
+  boundary instead — [Plan-037](./shipped/037-the-eleven-fragments-become-gates.md).
   Rationale: maintainer challenge, and it held. The field had no consumer: `setup` writes no configuration
   file into a target, the harness template a target runs never set the variable, and no adoption step
   wrote either. So the only way to turn it on was to hand-edit a file this tooling never creates, and the
@@ -172,7 +172,7 @@ target's gate runs never set it. The 15-to-0 was obtained by passing the flag by
 filter, not the behaviour. In every repository that had already adopted, the composition still announced
 seventeen and delivered seven. A boundary that has to be switched on, by a switch nothing turns, is not a
 boundary. The whole field was reverted the same day;
-[Plan-037](037-the-eleven-fragments-become-gates.md) carries the same distinction in the package boundary,
+[Plan-037](./shipped/037-the-eleven-fragments-become-gates.md) carries the same distinction in the package boundary,
 where a repository that installs no mirror package gets no mirror entries and there is nothing to declare.
 
 **Track 3, 2026-08-23 — kept, because the defect is unrelated to the field.** `<template:<type>>` expands
