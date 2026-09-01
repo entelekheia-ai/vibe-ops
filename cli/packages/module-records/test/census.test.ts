@@ -123,3 +123,29 @@ test("a repository with no record directories reports zero rather than failing",
   assert.deepEqual(result.data, []);
   assert.match(lines.join("\n"), /no record directories/);
 });
+
+// PLAN-029'S OWN SUCCESS CRITERION, and it was NOT met when the plan was first read for closure: a
+// contributed type type-checked, its tokens expanded and its directory resolved — and then the census
+// silently omitted it, because `ORDER` was five hardcoded names. A census that leaves out a population is
+// the exact failure this command was written to end; it replaced an `rg` that found 8 records out of 32
+// and reported a number either way.
+test("a type the tooling ships nowhere is censused, because the repository declared its directory", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-census-"));
+  await write(repo, "project/policy/001-a.md", "---\nvibe-ops-template: policy@1\n---\n\n# A\n");
+  const { census } = await import("../src/census.ts");
+  const { createDocumentStore } = await import("@entelekheia/vibe-ops-core");
+  const entries = census(repo, { records: { dirs: { policy: "project/policy" } } }, createDocumentStore(repo));
+  assert.deepEqual(
+    entries.map((e) => ({ type: e.type, declared: e.declared })),
+    [{ type: "policy", declared: "policy@1" }],
+  );
+});
+
+test("declaring no directory for a contributed type leaves the census exactly as it was", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-census-"));
+  await write(repo, "project/adr/0001-a.md", "---\nvibe-ops-template: adr@2\n---\n\n# A\n");
+  const { census } = await import("../src/census.ts");
+  const { createDocumentStore } = await import("@entelekheia/vibe-ops-core");
+  const entries = census(repo, undefined, createDocumentStore(repo));
+  assert.deepEqual(entries.map((e) => e.type), ["adr"]);
+});

@@ -22,8 +22,12 @@
 // another type's token is the `mismatch` branch — a real finding — and inferring the type from the token
 // would make that branch unreachable by construction.
 
+import { existsSync } from "node:fs";
 import path from "node:path";
+import { classOf } from "@entelekheia/vibe-ops-harness";
+import type { Ownership, OwnershipClass } from "@entelekheia/vibe-ops-harness";
 import type { Document, DocumentStore, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
+import { migrationsDirFor } from "@entelekheia/governance-base";
 import {
   dispatchRecord,
   findLogDir,
@@ -31,7 +35,7 @@ import {
   resolveRecord,
   type DeclaredVersion,
   type Dispatch,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 import type { CensusType } from "./census.ts";
 
 export interface Handling {
@@ -47,14 +51,16 @@ export interface Handling {
   readonly handling: readonly string[];
   /** Present only when no dispatch could be made, saying why rather than defaulting to one. */
   readonly reason?: string;
+  /**
+   * The effective ownership class of this path in the composed declaration (Plan-031), when the caller
+   * handed one in. `"undeclared"` when the declaration matches nothing — which is NOT permission: the
+   * actor consulting this (migration refuses `repo` and `seed`, proceeds on `shaped` and `norm`)
+   * treats an undeclared path as a refusal too, the same rule promulgation applies.
+   */
+  readonly ownership?: OwnershipClass | "undeclared";
 }
 
 const TYPES: readonly RecordType[] = ["adr", "rfc", "plan", "task"];
-
-/** Where `/vibe-ops:migrate` keeps its notes — the same evidence the closing verbs dispatch on. */
-function migrationsDir(pluginDir: string): string {
-  return path.join(pluginDir, "skills", "migrate", "migrations");
-}
 
 /**
  * `log` is not a `RecordType`, so `resolveRecord` cannot locate its template. It is read through the
@@ -112,36 +118,50 @@ function locate(
  * A file under no record directory is reported as such rather than dispatched against a guessed type —
  * the same refusal as the undeclared branch, one level up.
  */
-export function handlingFor(
+export async function handlingFor(
   file: string,
   repoRoot: string,
   pluginDir: string,
   config: VibeOpsConfig | undefined,
   documents: DocumentStore,
-): Handling {
+  sourceRoot?: string,
+  boundary?: Ownership,
+): Promise<Handling> {
+  // Composed once by the caller, not per file: one handling run may cover a whole census.
+  const ownership = boundary === undefined ? {} : { ownership: classOf(boundary, file) ?? ("undeclared" as const) };
   const document = documents.get(file);
   if (document.tree === undefined) {
-    return { file, handling: [], reason: "no such file in this repository, or no grammar covers it" };
+    return { file, handling: [], reason: "no such file in this repository, or no grammar covers it", ...ownership };
   }
 
   const located = locate(file, repoRoot, config, documents);
   if (located === undefined) {
-    return { file, handling: [], reason: "not under any record directory this repository declares" };
+    return { file, handling: [], reason: "not under any record directory this repository declares", ...ownership };
   }
 
   const dispatch = dispatchRecord({
     record: document,
     current: located.current,
-    migrationsDir: migrationsDir(pluginDir),
+    // Per the located TYPE, not one shared directory: since Plan-033 each type's notes travel in its
+    // own governance package, and the pinned tree keeps answering for older installs.
+    migrationsDir: await migrationsDirFor(located.type, repoRoot, config, sourceRoot),
   });
   const handling =
     dispatch.kind === "behind" ? dispatch.notes.map((note) => path.relative(repoRoot, note.file)) : [];
 
-  return { file, type: located.type, dispatch, handling };
+  return { file, type: located.type, dispatch, handling, ...ownership };
 }
 
 /** The terminal rendering: the answer first, then what to read, and nothing else. */
 export function formatHandling(handling: Handling): readonly string[] {
+  const lines = formatDispatch(handling);
+  if (handling.ownership === undefined) return lines;
+  // One line, because the consulting actor needs the class, not the essay: migration proceeds on
+  // `shaped` and `norm`, refuses `repo`, `seed` and `undeclared` — absence is not permission.
+  return [...lines, `  ownership: ${handling.ownership}`];
+}
+
+function formatDispatch(handling: Handling): readonly string[] {
   if (handling.reason !== undefined) return [`${handling.file}: ${handling.reason}`];
 
   const dispatch = handling.dispatch;

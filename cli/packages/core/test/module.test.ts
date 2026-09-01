@@ -6,7 +6,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const ok = async () => ({ code: 0 });
+const ok = async () => ({ code: 0, summary: "ok" });
 
 test("a module id must be lowercase and hyphenated", () => {
   assert.throws(() => defineModule({ id: "Check", version: "1", summary: "x" }, ok), /lowercase/);
@@ -20,6 +20,49 @@ test("a module with no summary is rejected — it would be invisible in --help a
 
 test("a module declaring an empty commands array is rejected — omit the field instead", () => {
   assert.throws(() => defineModule({ id: "x", version: "1", summary: "s", commands: [] }, ok), /empty commands/);
+});
+
+// Plan-027 Track 1 added `required` and `choices` so a flag's domain and its necessity are declared
+// rather than re-checked inside each verb that reads it — `records` carried the same `--type` conditional
+// twice, byte-identical. A declaration that contradicts itself must therefore fail at load, where every
+// surface sees it, and not at the one call that happens to exercise the contradiction.
+test("a flag declaring choices it cannot have is rejected at load, not at the call that hits it", () => {
+  const withFlag = (flag: Parameters<typeof defineModule>[0]["flags"]) =>
+    defineModule({ id: "x", version: "1", summary: "s", flags: flag }, ok);
+
+  assert.throws(
+    () => withFlag([{ name: "loud", type: "boolean", description: "d", choices: ["yes", "no"] }]),
+    /already closed/,
+    "a boolean's domain is closed by its type; a choices list on one is two answers to one question",
+  );
+  assert.throws(
+    () => withFlag([{ name: "type", type: "string", description: "d", choices: [] }]),
+    /unreachable/,
+  );
+  assert.throws(
+    () => withFlag([{ name: "type", type: "string", description: "d", required: true, default: "adr" }]),
+    /satisfies it for free/,
+    "a default makes the flag always present, so declaring it required asserts nothing",
+  );
+  assert.doesNotThrow(() =>
+    withFlag([{ name: "type", type: "string", description: "d", required: true, choices: ["adr", "rfc"] }]),
+  );
+});
+
+test("a verb's own flags are checked the same way the module's are", () => {
+  assert.throws(
+    () =>
+      defineModule(
+        {
+          id: "x",
+          version: "1",
+          summary: "s",
+          commands: [{ name: "resolve", summary: "a", flags: [{ name: "t", type: "boolean", description: "d", choices: ["a"] }] }],
+        },
+        ok,
+      ),
+    /command "resolve" declares choices/,
+  );
 });
 
 test("a duplicated command name is rejected", () => {

@@ -113,10 +113,95 @@ test("several records are answered in one call, each on its own terms", async ()
   assert.equal(data?.[1]?.dispatch?.kind, "behind");
 });
 
-test("handling with no path is an error, not an empty success", async () => {
+// Was an error until Plan-026 Track 5, on the grounds that no path must not be an EMPTY SUCCESS. That
+// concern stands and is asserted below — what changed is the answer, not the standard: `census` is this
+// same reading over the whole repository, so no path now means every record rather than a refusal.
+// An empty array with exit 0 would still be the defect the original test was written against.
+test("handling with no path is the census — a full answer, never an empty success", async () => {
   const repo = await fixture();
   const { result } = await run(repo, []);
 
-  assert.equal(result.code, 2);
-  assert.match(result.summary ?? "", /needs at least one record path/);
+  assert.equal(result.code, 0);
+  assert.ok(Array.isArray(result.data), "the whole-repository reading, not a refusal");
+  assert.ok((result.data as unknown[]).length > 0, "and never an empty array reported as success");
+  assert.match(result.summary, /censused/);
+});
+
+// The listing projection. `list` first shipped returning `show`'s whole shape per record, which over this
+// repository's 28 plans was 43,761 bytes of JSON against 2,711 bytes of printed lines — `sections` alone
+// 78.7% of it, answering a question about ONE record for every record in the directory. The assertion
+// below is the one that would have caught it: what `list` carries per row is what its own line prints.
+test("list carries the listing shape, and only --full carries show's", async () => {
+  const repo = await fixture();
+  await write(repo, "project/plans/001-a.md", [
+    "# Plan-001: A", "", "| Field | Value |", "|---|---|", "| Status | Backlog |", "",
+    "## Tracks", "- [ ] one", "", "## Surprises & Discoveries", "- Observation: x", "",
+  ].join("\n"));
+
+  // Not the `run` helper above — that one is bound to `command: "handling"` and passes no flags.
+  const list = async (flags: Record<string, string | boolean>) =>
+    records.run({
+      repoRoot: repo,
+      flags,
+      command: "list",
+      args: [],
+      config: {},
+      settings: undefined,
+      surface: "cli",
+      log: () => {},
+      warn: () => {},
+    });
+
+  const result = await list({ type: "plan" });
+  assert.equal(result.code, 0);
+  const [row] = result.data as Record<string, unknown>[];
+  assert.ok(row, "the listing produced a row");
+
+  assert.deepEqual(Object.keys(row).sort(), ["file", "status", "tracks", "type"]);
+  assert.equal("sections" in row, false, "a listing must not carry every record's headings");
+  assert.equal("entries" in row, false);
+  assert.equal(row.status, "Backlog", "and it still carries what its printed line shows");
+
+  const all = await list({ type: "plan", fields: "all" });
+  const [allRow] = all.data as Record<string, unknown>[];
+  assert.ok(allRow, "the listing produced a row");
+  assert.ok(Array.isArray(allRow.sections), `"all" is how the whole shape stays reachable`);
+
+  // The cross-record question the projection exists to make cheap: which plans carry a Surprises
+  // section, without paying for seven other fields to ask it.
+  const picked = await list({ type: "plan", fields: "file,sections" });
+  const [pickedRow] = picked.data as Record<string, unknown>[];
+  assert.ok(pickedRow, "the listing produced a row");
+  assert.deepEqual(Object.keys(pickedRow).sort(), ["file", "sections"]);
+
+  // Order comes from LISTABLE, not from how the caller spelled the selection, so two calls asking for
+  // the same set produce identical rows.
+  const reversed = await list({ type: "plan", fields: "sections,file" });
+  assert.deepEqual(reversed.data, picked.data);
+
+  // A typo is the caller's, and it is named rather than silently dropped — a listing missing a field
+  // nobody notices is the same defect class as an empty string reported as success.
+  const typo = await list({ type: "plan", fields: "file,setcions" });
+  assert.equal(typo.code, 2);
+  assert.match(typo.summary, /unknown field\(s\) setcions/);
+});
+
+// Plan-031 Track 1: handling reports each path's effective ownership class from the composed boundary,
+// so migration consults instead of re-deciding. The classes below come from the REAL composed
+// declaration (harness base + the shipped governance fragments) — which is the point: the fixture
+// repository is exactly a target repository, and the boundary is the one every target composes.
+test("handling reports the effective ownership class — shaped for a record, repo for research, and absence is named", async () => {
+  const repo = await fixture();
+  await write(repo, "project/research/2026-01-01-note.md", "# A note\n");
+  await write(repo, "unclaimed.md", "# Nothing claims this path\n");
+  const { data, lines } = await run(repo, [
+    "project/plans/012-current.md",
+    "project/research/2026-01-01-note.md",
+    "unclaimed.md",
+  ]);
+  assert.ok(data);
+  assert.equal(data[0]!.ownership, "shaped", "a plan record: structure the tooling's, content the repository's");
+  assert.equal(data[1]!.ownership, "repo", "research: no governance serves it; never restructured");
+  assert.equal(data[2]!.ownership, "undeclared", "no entry is NOT permission — reported, never guessed");
+  assert.ok(lines.some((line) => line.includes("ownership: shaped")), lines.join("\n"));
 });

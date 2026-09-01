@@ -87,7 +87,7 @@ test("every gate fires on a repository broken in all six ways", async () => {
   assert.equal(result.code, 1);
   // pairing's rule names its failure mode, not the gate — this fixture triggers the "no sibling at
   // all" mode, not the "sibling exists without the import" one (that one is a warn, not a fail).
-  for (const rule of ["budget", "no-sibling-claude-md", "bridge", "frontmatter", "skill-frontmatter", "agent-frontmatter", "memory-slug"]) {
+  for (const rule of ["budget", "no-sibling-claude-md", "bridge", "frontmatter", "skill-frontmatter", "agent-frontmatter"]) {
     assert.match(output, new RegExp(`FAIL {2}\\[${rule}\\]`), output);
   }
   // Named individually, because both are agent-only and neither is a parse failure: a rule name in the
@@ -108,103 +108,15 @@ test("a clean repository passes every composed entry", async () => {
   assert.ok(!logs.some((line) => line.includes("FAIL")), logs.join("\n"));
   // no .claude/ directory at all — bridge must say so, not report a vacuous ok
   assert.ok(logs.some((line) => line.includes("SKIP  [bridge]")), logs.join("\n"));
-  // the three fragment-parity entries (Plan-013) SKIP here too — this fixture is a throwaway repo with
-  // no cli/packages/module-check/sh/check-agents-md.sh of its own to compare against, which is the
-  // correct outcome (fragment-parity's own "no runner" test covers the mechanism directly) rather than
-  // a false pass over a hole.
-  for (const label of ["fragment-parity-frontmatter", "fragment-parity-skill-frontmatter", "fragment-parity-memory-slug"]) {
-    assert.ok(logs.some((line) => line.includes(`SKIP  [${label}]`)), logs.join("\n"));
-  }
+  // The three fragment-parity entries left for `mirror` in Plan-037, and with them the SKIP this test
+  // used to assert here. That SKIP was the honest outcome of composing them into a repository holding no
+  // runner to compare against — which is every repository but this one, and is why they belong to a
+  // package a target does not install rather than to the instruction surface.
+  assert.ok(!logs.some((line) => line.includes("fragment-parity")), logs.join("\n"));
 });
 
-// Plan-013 Track 6, against the real checkout — the comparison RFC-0001 wants before a shell fragment
-// is ever removed, run for real rather than against a synthetic fixture. `check-agents-md.sh` resolves
-// relative to `repoRoot`, so this is the one test in this file that must point `repoRoot` at this
-// repository's own checkout instead of a throwaway one.
-test("the three fragment-parity entries report zero port-regression against this repository's real checkout", async () => {
-  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
-  const { context, logs } = contextFor(repoRoot, {}, { verbose: true });
-  const result = await ops.run(context);
-  assert.equal(result.code, 0, logs.join("\n"));
-  assert.ok(!logs.some((line) => line.includes("[port-regression]")), logs.join("\n"));
-});
 
-test("only memory-slug is recorded, and only for the entries declaring emits: true", async () => {
-  const repoRoot = await gitRepo();
-  await writeFile(path.join(repoRoot, "AGENTS.md"), "over budget but not what this test checks\n");
-  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
-  gitAdd(repoRoot);
 
-  const artifactDir = path.join(repoRoot, ".git", "gate-artifacts");
-  const { context } = contextFor(repoRoot, { artifactDir });
-  await ops.run(context);
-
-  // One file per emitting entry, named for it. An entry that does not declare emits leaves no file at
-  // all, which is what this asserts: the directory holds exactly one name.
-  const files = await import("node:fs/promises").then((fs) => fs.readdir(artifactDir).catch(() => []));
-  assert.deepEqual(files, ["agents-md.memory-slug.jsonl"]);
-
-  const lines = (await readFile(path.join(artifactDir, files[0]!), "utf8")).trim().split("\n");
-  const header = JSON.parse(lines[0]!);
-  assert.equal(header.producer, "memory-slug");
-  for (const forbidden of ["severity", "score", "pass", "verdict", "level"]) {
-    assert.ok(!(forbidden in header), `a recorded observation must not carry a ${forbidden}`);
-    for (const line of lines.slice(1)) {
-      assert.ok(!(forbidden in JSON.parse(line)), `a finding line must not carry a ${forbidden}`);
-    }
-  }
-});
-
-test("memory-slug catches a real slug on AGENTS.md and records exactly one finding", async () => {
-  const repoRoot = await gitRepo();
-  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n\nsee [[project_something]] for detail.\n");
-  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
-  gitAdd(repoRoot);
-
-  const artifactDir = path.join(repoRoot, ".git", "gate-artifacts");
-  const { context, logs } = contextFor(repoRoot, { artifactDir });
-  const result = await ops.run(context);
-
-  assert.equal(result.code, 1);
-  assert.ok(logs.some((line) => line.includes("FAIL  [memory-slug]") && line.includes("project_something")));
-
-  // One artifact per signal, named for the emitting entry: the header carries one producer over one
-  // population, so two entries in one file would describe neither.
-  const lines = (await readFile(path.join(artifactDir, "agents-md.memory-slug.jsonl"), "utf8"))
-    .trim()
-    .split("\n");
-  const header = JSON.parse(lines[0]!);
-  assert.equal(header.kind, "gate");
-  assert.equal(header.tool, "memory-slug@1", "the instrument is the gate and its own version");
-  assert.deepEqual(JSON.parse(lines[1]!), { kind: "finding", rule: "memory-slug", count: 1 });
-});
-
-test("settings.agents-md.ignore excludes a shipped template's memory-slug link; without it, the link is a finding", async () => {
-  const repoRoot = await gitRepo();
-  // Must match one of memory-slug's own declared paths (AGENTS.md/CLAUDE.md/README.md) — a shipped
-  // template README is exactly the case that produced the 13 false findings this task fixed.
-  await mkdir(path.join(repoRoot, "skills", "demo", "templates"), { recursive: true });
-  await writeFile(path.join(repoRoot, "skills", "demo", "templates", "README.md"), "see [[project_x]]\n");
-  await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
-  await writeFile(path.join(repoRoot, "CLAUDE.md"), "@AGENTS.md\n");
-  gitAdd(repoRoot);
-
-  const unfiltered = contextFor(repoRoot, {}, { verbose: true });
-  const unfilteredResult = await ops.run(unfiltered.context);
-  assert.equal(unfilteredResult.code, 1);
-  assert.ok(unfiltered.logs.some((line) => line.includes("FAIL  [memory-slug]") && line.includes("templates")));
-
-  const governed = contextFor(
-    repoRoot,
-    { settings: { "agents-md": { ignore: { "*": ["**/templates/**"] } } } },
-    { verbose: true },
-  );
-  const governedResult = await ops.run(governed.context);
-  assert.equal(governedResult.code, 0);
-  assert.ok(!governed.logs.some((line) => line.includes("FAIL")), governed.logs.join("\n"));
-  const okLine = governed.logs.find((line) => line.includes("ok    [memory-slug]"));
-  assert.ok(okLine?.includes("ignored"), governed.logs.join("\n"));
-});
 
 test("a gate named in settings.agents-md.disabled reports SKIP with the reason, and never runs", async () => {
   const repoRoot = await gitRepo();

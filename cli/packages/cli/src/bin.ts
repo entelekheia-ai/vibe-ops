@@ -15,11 +15,14 @@
 //   vibe-ops --help
 
 import { parseArgs } from "node:util";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
-import { loadConfig } from "@entelekheia/vibe-ops-core";
+import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type { ModuleCommand } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
-import { runModule, repoRootFrom } from "./run.ts";
+import { declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook, HOOK_SURFACES } from "./hook.ts";
@@ -54,6 +57,8 @@ async function usage(): Promise<void> {
       "vibe-ops ./path [flags]       run a module from a local path",
       "vibe-ops mcp [--http] [--port N]",
       "vibe-ops hook <surface>       reads a hook payload on stdin (" + HOOK_SURFACES.join(", ") + ")",
+      "vibe-ops --version            this CLI's own version",
+      "vibe-ops <module> --help      one module's verbs and flags",
       "",
       "Configuration cascades from vibeops.config.ts in the repository up to your home directory.",
     ].join("\n"),
@@ -63,8 +68,35 @@ async function usage(): Promise<void> {
 
 /** Flags are parsed against what the module declares, so an unknown flag is caught rather than ignored. */
 async function runNamed(name: string, argv: string[]): Promise<number> {
-  const plugin = await loadModule(name);
+  // The working directory's config is what routes a governance noun (ADR-0019). Loaded here only for
+  // routing; runModule loads the acting repository's cascade itself, which may differ when a module
+  // resolves its repo from a positional.
+  const { config: routingConfig } = await loadConfig(repoRootFrom(process.cwd()));
+  const plugin = await loadModule(name, routingConfig);
   const commands = plugin.definition.commands;
+
+  // A module's own `--help`. Without it the flag reaches `parseArgs`, which rejects it as unknown and
+  // exits 2 — the module does print its flag list on that path, but as an ERROR, so the one thing a
+  // caller types to orient itself reads as a mistake.
+  if (argv.includes("--help") || argv.includes("-h")) {
+    const verbLine = commands === undefined ? [] : [`  ${plugin.definition.id} <${commands.map((c) => c.name).join("|")}>`];
+    const ownFlags = [...(plugin.definition.flags ?? []), ...(plugin.definition.needsSource === true ? [SOURCE_FLAG] : [])];
+    const flagLines = ownFlags.map((f) => `  --${f.name.padEnd(12)} ${f.description}`);
+    const commandLines = (commands ?? []).flatMap((c) => [
+      `  ${c.name.padEnd(10)} ${c.summary}`,
+      ...(c.flags ?? []).map((f) => `      --${f.name.padEnd(12)} ${f.description}`),
+    ]);
+    p.note(
+      [
+        plugin.definition.summary,
+        ...(verbLine.length > 0 ? ["", ...verbLine] : []),
+        ...(commandLines.length > 0 ? ["", ...commandLines] : []),
+        ...(flagLines.length > 0 ? ["", "flags on every command:", ...flagLines] : []),
+      ].join("\n"),
+      `vibe-ops ${plugin.definition.id}`,
+    );
+    return 0;
+  }
 
   // A module declaring `commands` is dispatched by its first positional argument. Flag parsing happens
   // AFTER the command is known, because a command's own flags are only valid for that verb — `plan
@@ -88,7 +120,10 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     rest = tail;
   }
 
-  const declaredFlags = [...(plugin.definition.flags ?? []), ...(commandDef?.flags ?? [])];
+  // The same list `runModule` validates against and `shapeFor` describes — one function, so the terminal
+  // cannot come to accept what MCP refuses, or the reverse. It was three hand-written copies of the same
+  // three lines, and only two of them ever ran on any given call.
+  const declaredFlags = declaredFlagsFor(plugin.definition, commandDef?.name);
   const options: Record<string, { type: "string" | "boolean" }> = {};
   for (const flag of declaredFlags) options[flag.name] = { type: flag.type };
 
@@ -145,11 +180,37 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     process.stdout.write(`${JSON.stringify(result.data, null, 2)}\n`);
   }
 
-  if (result.summary !== undefined) {
-    if (result.code === 0) p.log.success(result.summary);
-    else p.log.error(result.summary);
+  // `summary` is required of every module, so there is always a line to print — which is the point: a run
+  // that found nothing says where it looked instead of exiting silently. Under `--json` that line would
+  // land in the middle of the payload and break `jq`, so it goes to stderr, where a human still reads it
+  // and a pipe never sees it. Printing it on stdout is what a test caught the moment summary stopped
+  // being optional.
+  if (parsed.values.json === true) {
+    process.stderr.write(`${result.summary}\n`);
+  } else if (result.code === 0) {
+    p.log.success(result.summary);
+  } else {
+    p.log.error(result.summary);
   }
   return result.code;
+}
+
+/**
+ * The version of `@entelekheia/vibe-ops-cli` itself, read from its own manifest rather than baked in by
+ * a build step — there is no build step here that could inject one, and a hardcoded string is a second
+ * place for the number to be wrong.
+ */
+function ownVersion(): string {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    // dist/bin.js and src/bin.ts sit one level under the package root, so the manifest is at ../package.json
+    // from either. Resolving from `import.meta.url` rather than cwd is what makes this correct when the
+    // binary is invoked through a link from another repository.
+    const manifest = JSON.parse(readFileSync(path.join(here, "..", "package.json"), "utf8")) as { version?: string };
+    return manifest.version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 async function main(argv: readonly string[]): Promise<number> {
@@ -160,7 +221,20 @@ async function main(argv: readonly string[]): Promise<number> {
     return command === undefined ? 2 : 0;
   }
 
+  // Before the dispatch below, because anything unrecognised here falls through to `runNamed` and is
+  // resolved as a MODULE NAME — which is how `vibe-ops --version` came to fail with
+  // `cannot load "@entelekheia/vibe-ops-module---version"`, an internal resolution message for what is
+  // simply a flag the CLI did not implement.
+  if (command === "-v" || command === "--version") {
+    process.stdout.write(`${ownVersion()}\n`);
+    return 0;
+  }
+
   if (command === "mcp") {
+    if (rest.includes("--help") || rest.includes("-h")) {
+      p.note(["vibe-ops mcp [--http] [--port N]", "", "Serves every exposed module as MCP tools."].join("\n"), "vibe-ops mcp");
+      return 0;
+    }
     const { values } = parseArgs({
       args: rest,
       options: { http: { type: "boolean" }, port: { type: "string", default: "7337" } },

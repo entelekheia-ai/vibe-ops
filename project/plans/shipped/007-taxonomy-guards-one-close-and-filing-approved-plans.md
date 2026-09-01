@@ -485,7 +485,7 @@ deliberately — see Open questions.
 
 ### What was routed at closure
 
-- Promoted to [`references/records/task.md`](../../../plugin/references/records/task.md): a design shared by several
+- Promoted to [`references/records/task.md`](../../../cli/packages/governance-task/authoring.md): a design shared by several
   dossiers needs a plan of its own, because closure deletes dossiers and takes the reasoning with them.
   This plan is the evidence.
 - **Blocked, with what unblocks it:** the missing-changelog entry is mechanically checkable and by ADR-0004

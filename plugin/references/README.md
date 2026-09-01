@@ -20,6 +20,7 @@ its own steps say to, or hands to a subagent as an absolute path.
 | [`authoring-style.md`](authoring-style.md) | How is a generated document written — phrasing, budget, tables, diagrams? | every skill that writes prose into a target repo |
 | [`exposure-contract.md`](exposure-contract.md) | What may this record carry into a repository that will be cloned alone and may go public? | `new` and `close` directly; `authoring-style.md` for everything else that writes prose |
 | [`harness-pair.md`](harness-pair.md) | What binds a rule, the guard enforcing it and the reading that says whether it worked into one signal? | `setup` (harness mode) and `new-signal` |
+| [`harness-model.md`](harness-model.md) | What is a repository's harness made of, and how is a gap in it judged rather than merely counted? | `setup` (harness audit); the `governance-auditor` agent, for what its readings mean |
 | [`template-shape-change.md`](template-shape-change.md) | A template's shape changed — what else has to change with it? | `new-migration` when the note is written; `migrate` when it is applied |
 
 The decisions behind them are recorded in [`../project/adr/`](../../project/adr/): ADR-0001 for the taxonomy

@@ -27,7 +27,7 @@
 
 import { defineGate, lineAt, walkLayersWithHostPositions } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import { readFrontmatter } from "@entelekheia/vibe-ops-records";
+import { readFrontmatter } from "@entelekheia/governance-base";
 
 type Schema = "rule" | "skill" | "agent";
 

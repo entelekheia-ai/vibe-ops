@@ -11,11 +11,25 @@ Templates are versioned so that **migration happens per artifact, not per plugin
 workspace in one sitting, and a repo half-converted by a plugin-wide flag is worse than one where each file
 says which shape it was written against.
 
+**And per artifact means opportunistic, never a campaign.** A record with a terminal status — a shipped
+plan, an implemented or rejected RFC, anything archival — is **never migrated**: that corpus only grows,
+so migrating it is an eternal treadmill, and its old shape is part of what the record was. A **living**
+record migrates at the moment it is being edited anyway; the `template-version-behind` warning on an open
+record is the trigger, and it goes silent when the record reaches its archival directory. A request to
+"migrate everything" is answered by migrating the living records only, and saying so.
+
 **Kind:** target-state — convergent and idempotent. Running it on an artifact already at the current
 version does nothing. `audit` reports without writing.
 
 **Usage:** `/migrate` (this repo) · `/migrate <path>` (one repo, or one file) · `/migrate audit` (report
 only, writes nothing).
+
+> **Prefer the MCP tool over the terminal.** This plugin ships its own `vibe-ops` MCP server
+> (`.claude-plugin/plugin.json`), so the verbs below are tools, and a tool returns its report as
+> structured data instead of terminal text to read back. The tool's full name depends on how the server
+> was registered — `mcp__vibe-ops__<noun>` from a project `.mcp.json`, `mcp__plugin_vibe-ops_vibe-ops__<noun>`
+> when it comes from the plugin. **If neither is listed, the CLI is correct**: the shell forms shown below
+> are the same command, and the server may simply not be running in this session.
 
 ## The version stamp
 
@@ -58,8 +72,14 @@ its numbers and the gate's agree by construction.
 **Do not hand-roll this with `rg`.** A regex over the token misses one of the two forms and counts any
 artifact that merely *discusses* versioning as declared; both failures report a plausible number.
 
-Compare each against the current template version in
-`${CLAUDE_PLUGIN_ROOT}/templates/<type>.md`. Report the counts before touching anything.
+Compare each against the current template version, read through the CLI — the norm travels as npm
+packages since Plan-033, so there is no template path inside this plugin:
+
+```bash
+vibe-ops records norm --type <type> --facet template --print
+```
+
+Report the counts before touching anything.
 
 **Delegate this whole step to the `vibe-ops:governance-auditor` agent** — the four inputs are in
 [`convergence-policy.md`](../../references/convergence-policy.md), the target state being the current
@@ -68,14 +88,16 @@ template, the unknowns kept as `(unknown)`. On `/migrate audit` that gap list is
 inline only if the agent is not in the session's listing.
 
 **Ask it for the jump chain too, and for the notes that do not exist**: per artifact, the sequence of
-versions between what it declares and the current template, and which of those jumps has no file in
-[`migrations/`](migrations/). A jump with no note stops the run (Step 2), and knowing that now costs one
+versions between what it declares and the current template, and which of those jumps has no note —
+`vibe-ops records norm --type <type> --facet migrations --print` lists every note the norm ships for that
+type. A jump with no note stops the run (Step 2), and knowing that now costs one
 line in a report you were already reading — discovering it halfway through applying notes means stopping
 with some artifacts converted and some not.
 
 ## Step 2 — Read the migration note for each jump
 
-One file per jump, in [`migrations/`](migrations/), named `<type>-<from>-to-<to>.md`. Read **only** the
+One file per jump, named `<type>-<from>-to-<to>.md`, in the directory
+`vibe-ops records norm --type <type> --facet migrations` prints. Read **only** the
 notes for jumps that this run actually needs. A multi-version jump (`0.1 → 0.3`) applies each note in
 order; there is no combined note, because a combined note is one that stops matching either jump.
 
@@ -83,6 +105,13 @@ If a jump has no note, **stop and say so**. A missing note means the template ch
 recording what that costs an existing artifact, and inventing the migration here would make it up.
 
 ## Step 3 — Apply, one artifact at a time
+
+**Consult the ownership class before touching a file** — `records handling` reports it per record as
+`ownership: <class>`. Proceed on `shaped` (the class this skill exists for: the tooling owns the
+structure, the repository owns the content) and on `norm`. **Refuse `repo`, `seed`, and `undeclared`,
+naming the class in the report** — a `repo`-classed file is one this tooling was told is not its to
+restructure, and an undeclared path is not permission, the same rule promulgation applies. The refusal
+is per file: the run continues over its siblings.
 
 **The safety property, and it outranks finishing the run:**
 

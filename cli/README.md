@@ -59,7 +59,9 @@ vibe-ops log lint                # name matches filename, kind is trap|debt, no 
 vibe-ops log sweep               # entries whose path: no longer resolves — candidates, never deletions
 vibe-ops log index               # regenerate the index from the entries; --check reports drift instead
 
-vibe-ops records resolve --type adr      # the layout block for a record type with no noun of its own
+vibe-ops records resolve --type adr|rfc  # the layout block for a record type with no noun of its own
+vibe-ops records list --type plan        # the shipped types here — nothing on a noun answers this
+vibe-ops records resolve --type policy   # a type YOU declared, or an installed package did
 
 vibe-ops @scope/pkg --flag      # a third-party module, by package name
 vibe-ops ./path/to/module       # a module you are developing
@@ -155,5 +157,10 @@ behaves identically under MCP and under a terminal.
 | [`@entelekheia/vibe-ops-gates`](packages/gates/) | Detectors with no notion of scope, one per gate — what an ops composes |
 | [`@entelekheia/vibe-ops-agents-md`](packages/ops-agents-md/) | The first ops: the instruction surface, composed from `vibe-ops-gates` |
 | [`@entelekheia/vibe-ops-governance`](packages/ops-governance/) | The second ops: adr/plan/rfc/task header tables, links, and archival breadcrumbs |
+| [`@entelekheia/vibe-ops-self`](packages/ops-self/) | The third ops: the prose describing this repository's own machinery, which `governance` excludes |
+| [`@entelekheia/governance-base`](packages/governance-base/) | The reusable governance components the noun modules share — layout, numbering, lifecycles, closure, the `defineGovernance` sugar |
+| [`@entelekheia/governance-plan`](packages/governance-plan/) · [`-task`](packages/governance-task/) · [`-log`](packages/governance-log/) · [`-adr`](packages/governance-adr/) · [`-rfc`](packages/governance-rfc/) | One artifact, one governance package (ADR-0019): the type's data and its verbs together; adr and rfc are pure sugar |
+| [`@entelekheia/vibe-ops-module-records`](packages/module-records/) | The cross-type verbs — census, handling, show, list, and `norm`, the facet the plugin skills read |
+| [`@entelekheia/vibe-ops-harness`](packages/harness/) | CLI-internal (no governance of its own): what a repository's harness is, and promulgating the norm into it |
 
 Working on them: [`AGENTS.md`](AGENTS.md).

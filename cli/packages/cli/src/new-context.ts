@@ -1,6 +1,6 @@
 // vibe-ops new-context — the UserPromptExpansion surface for a typed /vibe-ops:new. Reads
 // `command_args` off stdin, takes its first word as the record type, resolves it through
-// @entelekheia/vibe-ops-records, and answers in the hook's own protocol — no shipped script, replacing
+// @entelekheia/governance-base, and answers in the hook's own protocol — no shipped script, replacing
 // plugin/hooks/new-command-context.sh (Plan-011 Track 2), which shelled out to
 // resolve-governance.sh and hand-rolled the JSON escaping jq's absence used to require.
 //
@@ -10,7 +10,7 @@
 
 import { createDocumentStore, loadConfig } from "@entelekheia/vibe-ops-core";
 import type { RecordType } from "@entelekheia/vibe-ops-core";
-import { formatResolved, RecordsConfigError, resolveRecord } from "@entelekheia/vibe-ops-records";
+import { formatResolved, RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
 import { repoRootFrom } from "./run.ts";
 
 interface UserPromptExpansionPayload {

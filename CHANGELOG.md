@@ -14,6 +14,246 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — two parameterised gates carry ten fragments' worth of detection (Plan-037)
+
+- **`mirror`** — produce a left, produce a right, report what is in the left and not in the right. A
+  scalar is a set of one, which is why a copy-against-copy check and a name-against-directory check are
+  the same gate. `compare` is `text`, `sha` or `group`, and the mode carries the machinery: `sha` hashes a
+  side that is a file and takes a side that is a value as the digest it already is.
+- **`classification`** — a pattern that must not appear in a population. `level` (`secret` |
+  `confidential` | `internal`) decides how a finding may speak: at `secret` it names the file and line and
+  never the text. Every rule quotes the MATCH rather than the line, so a looser rule cannot print what a
+  stricter one protects.
+- **`ops-mirror`** and **`ops-exposure`** compose them. `fragment-parity`, `template-heading-drift` and
+  `memory-slug` moved into them, so a repository installing neither package composes none of their
+  entries — the boundary is the package, with nothing to declare and nothing to filter.
+- **`governance-license`** owns the licence texts and the registry pinning each to its published source;
+  **`governance-classification`** owns the policy the exposure rules enforce, readable with
+  `vibe-ops records norm --type classification --facet template --print`. `schema` is now optional in a
+  type manifest: neither type has records carrying metadata.
+- No shell fragment was retired. The commit gate still runs seventeen.
+
+### Fixed — `template-version` was inert in every repository that kept no template copies of its own
+
+- `<template:<type>>` expands to the activated governance package's template, absolute by construction,
+  and the document store joined it onto the target's root — producing `<repoRoot>/Users/…`, a path that
+  cannot exist. The gate reported "nothing to compare these records against" over a file that was there.
+  Invisible in vibe-ops, which keeps its own copies; five SKIPs in every repository that does not.
+
+### Added — the `shaped` ownership class, composition with origin, and the repository's narrowings (Plan-031)
+
+- **`shaped`** joins the ownership vocabulary — the tooling owns a record's *structure* (migration may
+  restructure it per a recorded note), the repository owns every word of its *content*, permanently.
+  Authority orders `norm > shaped > seed > repo`; the record directories moved `repo → shaped` in each
+  governance package's own fragment. `records handling` now reports `ownership: <class>` for any path,
+  and the migrate and setup skills consult it before touching a file.
+- **Composition keeps each entry's origin** and reports a path claimed by two fragments with different
+  classes as a conflict naming both — peers, never precedence; `harness sync` refuses a conflicted path.
+  A repository narrows a class by hand via a top-level `ownership` key in `vibeops.config.ts`
+  (`{match, class, reason}`), applied last and refused, naming the blocking fragment, when it would widen.
+
+### Changed — migration is opportunistic; the shipped corpus keeps its shape
+
+- A record with a terminal status is **never migrated** and leaves the version-reporting population; a
+  living record migrates when it is being edited anyway, with `template-version-behind` as the trigger.
+  Encoded in the lifecycle rule (shipped template included) and the migrate skill.
+
+### Changed — the ops become data, and the governances feed them (Plan-034)
+
+- **Derived per-type entries.** `ops-governance` no longer hand-writes its `record-header`,
+  `record-frontmatter` and `template-version` entries: a `derives` declaration computes them per run
+  from the repository's activated governances, `required` read from each package's own `type.json`.
+  Binding a sixth governance package makes its entries appear with no ops edit. A bound package that
+  does not resolve reports as a SKIP naming it. The `template-version-research` entry is deleted — no
+  package serves the type, which entered the old list by mistake.
+- **`ops.json` is the collection's canonical form.** All three shipped ops moved; each `src/index.ts`
+  is typing sugar over the new `parseOpsDefinition`, which fails at load naming the file and field —
+  including on an unknown key, so a typo cannot compose silently. Fixtures for the derived schema
+  entries are synthesised from the schema, taking `governance` self-test coverage from one fixture to
+  five.
+
+### Changed — one artifact, one governance package; the norm leaves the plugin tree (Plan-033, ADR-0019)
+
+- **Five governance packages.** `@entelekheia/governance-{adr,rfc,plan,task,log}`, each the sole home of
+  its artifact's `type.json`, template, authoring rules, migration notes and an `ownership.json`
+  fragment — plus the TypeScript coupled to its format. `plugin/` ships **no** templates,
+  `references/records/`, migration notes, `types/` or `ownership.json` any more: an npm-only install now
+  carries the whole norm, which it previously did not at all.
+- **The layering.** `@entelekheia/governance-base` (ex `vibe-ops-records`) is the reusable component
+  layer, and its `defineGovernance` sugar is what a per-artifact package is built from — `governance-adr`
+  is one call. `module-plan`, `module-task` and `module-log` are gone; their verbs live in their
+  governance packages, **ids unchanged** (`vibe-ops plan status` works as before). `module-harness` is
+  internalized as `@entelekheia/vibe-ops-harness`, a CLI-internal module with no governance of its own.
+- **Activation is the config.** The effective governance map — shipped defaults overlaid per key by
+  `config.types`, values in RFC-0003's `pkg#type` form — routes the nouns and resolves the data. The
+  Plan-029 `node_modules` scan and ADR-0018's manifest marker leave the resolution path (ADR-0019
+  supersedes ADR-0018); under an explicit binding the scan's ambiguity case cannot arise.
+- **`vibe-ops records norm --type <t> --facet template|authoring|migrations [--print]`** — the proxy
+  verb the plugin's skills now read the norm through, resolved repository → activated package → pinned
+  tree (`harness.source` → `--source` → `CLAUDE_PLUGIN_ROOT`, both historic layouts). `/migrate`, `/new`,
+  `/new-log` and `/new-migration` no longer name any plugin path for norm data.
+- **Promulgation composes its boundary.** `harness sync` reads the base `ownership.json` the harness
+  package carries plus each activated governance's fragment; a pinned tree's declaration is used whole,
+  never blended. `harness status` reads shipped versions from the activated packages' own templates, so
+  it answers on an npm-only install.
+- **Deleted:** the aggregated `types/index.json`, its generator, the `type-index-drift` gate and the
+  `type-scan` — with each manifest beside its facets and versions read from the template at use time,
+  there is nothing left to drift, and nothing left to scan.
+
+### Added — a record type is a resolved name, not a closed union (Plan-029)
+
+- **`RecordType` opens.** It was `"adr" | "rfc" | "plan" | "task"`, and `RecordsConfig` keyed both its
+  maps by it, so a repository keeping an artifact this tooling does not ship could not say so —
+  `records: { dirs: { policy: … } }` was a compile error. It is now an open name; the four shipped types
+  become the defaults consulted for those four, with the generic `project/<type>` convention answering
+  for every other.
+- **`vibe-ops records resolve --type <t>` and `records census` see a contributed type.** A type the
+  repository declares a directory for, or an installed package declares, resolves and is censused. A
+  misspelling still fails naming the valid set — the gate asks whether anything *declared* the name, not
+  whether the name is unknown.
+- **The type scan.** A package declares types with `"vibeOps": { "types": "<dir>" }` in its
+  `package.json`; the scan walks `node_modules` upward and never imports, so learning that a package
+  declares a type does not run its code. One claimant resolves, none reports absence, two or more names
+  every claimant and says how to break the tie.
+- **`types` in `vibeops.config.ts`** binds a local type name to the package that governs it, for the
+  ambiguous case only. It merges per key across the cascade, like `records.dirs`.
+
+### Changed — `authoring-style` gains a "Direct and literal" section (`authoring-style@2`)
+
+- **`plugin/references/authoring-style.md` moves to `@2`**: every claim is stated positively (litotes and
+  negation-as-emphasis are out, double negatives always), language is literal by default with one licensed
+  pointed exception for a finding that is itself a reversal, sentences stay short and active, and uncommon
+  terms are defined or dropped. Grounded in plain-language and cognitive-accessibility guidance
+  ([NN/g](https://www.nngroup.com/articles/plain-language-experts/),
+  [W3C COGA](https://www.w3.org/TR/coga-usable/)); applies to every skill that writes prose into a target
+  repository.
+
+### Changed — the harness audit is a mode of `/vibe-ops:setup`, and stops composing shell (Plan-025 Track 6)
+
+- **`/vibe-ops:setup harness audit` is the assessment**, rather than a separate skill. Its survey calls
+  `harness resolve`/`shape`/`catalog` instead of running four commands by hand — three of which the module
+  already answered, with tests the shell versions never carried, including the one for a glob that matches
+  nothing while `2>/dev/null` swallows the error and reads exactly like an empty population.
+- **`plugin/references/harness-model.md`** is new: the two axes, the lifecycle positions, the regulation
+  categories, the attention-budget calibration, the three tests that turn a gap into a recommendation, and
+  the five ways this audit has produced confident nonsense before. Every number in a report now comes from
+  a verb; the reference is what the numbers *mean*.
+- **The `governance-auditor` agent may run the four reading verbs**, and `harness sync` is named as
+  excluded with no prompt able to grant it — the first module here where some verbs read and one writes.
+
+### Added — promulgation, and the verb that says where a harness is (Plan-025 Tracks 4–5)
+
+- **`vibe-ops harness sync`** brings a repository to the installed version of the norm **without touching
+  its working tree**: it builds a linked working tree of its own, writes only what `ownership.json`
+  classifies as owned by this tooling, commits, and stops at a branch and an annotated tag. It does not
+  merge and it does not push — merging is a judgement about timing that belongs to whoever works there,
+  and a branch is reviewable as an ordinary diff, which a direct write never is.
+- **It verifies what it staged rather than trusting an exit code.** A linked working tree shares the
+  repository's internal directory, so the clone's ignore list applies inside it, and `git add` on an
+  ignored path succeeds while staging nothing. Anything that did not reach the index is reported with the
+  ignore rule that caught it — file, line and pattern — and the run exits non-zero rather than leaving a
+  branch that looks complete.
+- **A path `ownership.json` does not classify stops the run.** Absence of an entry is not permission.
+- **A reclassification that widens what this tooling may overwrite needs consent.** `sync` refuses only
+  those paths, naming both classes and the declaration's own justification, and promulgates the rest;
+  `--accept-boundary <n>` records the agreement in the clone so later runs are silent. Narrowing needs no
+  consent — it can only reduce what this tooling may do.
+- **`vibe-ops harness resolve`** reports where a repository's harness surfaces are — rules, the
+  `.claude/rules` bridge, the commit hook, the manual entrypoint, the runner, the config files and the
+  artifact path. The bridge reading counts symlinks rather than files, because a copied rule stops
+  tracking its source and looks identical in a listing.
+- **`vibeops.config.local.json` is a third config layer**, the only one this tooling writes rather than
+  reads, holding what promulgation applied to a clone. It layers over the operator's own local file
+  instead of competing with it for the same slot, and is gitignored here and in the scaffold this plugin
+  ships.
+
+### Fixed — a flag a verb does not accept is now refused, not ignored (Plan-027 Track 2)
+
+- **`runModule` validates flags**, in the one place the terminal and MCP both pass through. It never did:
+  its whole flag handling applied module-level defaults and copied whatever arrived, so over MCP an
+  inapplicable flag was accepted, ignored, and reported as success. The refusal names the sibling verb
+  that owns the flag — `plan status has no flag --from — it belongs to plan file` — because the tool's own
+  schema is what invited the call.
+- **A `required` flag is enforced, and a verb's own `default` is applied.** Only module-level defaults
+  reached a module before, so a verb could declare one and never receive it.
+- **Every flag in an MCP tool's schema says which verbs accept it.** One static shape per tool means the
+  union is unavoidable while there is one tool per noun; what was avoidable was the union being silent
+  about it. A flag declaring `choices` is published as an enum, **unioned across every verb that declares
+  it** — publishing one verb's narrower domain made a valid sibling call unconstructible, which a test
+  caught rather than a reader.
+- **`vibe-ops --source` on a module that never declared `needsSource` is refused** instead of silently
+  dropped, and the MCP suggestion hook now reads flag arity from the verb it parsed rather than from every
+  verb, which could swallow a positional as a sibling flag's value.
+
+### Changed — one spelling per record type (Plan-027 Track 1)
+
+- **`vibe-ops records resolve` answers for `adr` and `rfc` only.** `plan` and `task` were reachable both
+  here and under their own nouns, and the two surfaces had diverged where nobody chose to. The noun is now
+  the spelling: use `vibe-ops plan resolve` and `vibe-ops task resolve`. Asking `records` for either
+  reports where the answer moved rather than an unrecognised value, so this is a rename and not a removal.
+  `records list`, `census` and `show` still answer for all four types — nothing on a noun answers what they
+  answer.
+- **`vibe-ops log resolve` prints through the same formatter every other resolver uses**, instead of a
+  line built inside its own module. Its output is unchanged; what changed is that one place now decides how
+  a resolved location prints. `log` remains deliberately unnumbered, so the formatter stops after `DIR=`.
+
+### Added — a flag may declare that it is required, and what it accepts (Plan-027 Track 1)
+
+- **`ModuleFlag` gains `required` and `choices`.** A closed value domain and a mandatory flag were being
+  re-checked by hand inside each verb that read them — `records` carried the same `--type` conditional
+  twice, byte-identical, and a missing flag reported the same message as a misspelt one. `defineModule`
+  now rejects a declaration that contradicts itself (choices on a boolean, an empty choices list, a
+  required flag that also has a default) at load rather than at the call that happens to hit it.
+
+### Added — the `harness` module's read-only half (Plan-025 Track 4)
+
+- **`vibe-ops harness shape`** reports whether a repository has a remote, where its hooks live, what CI
+  workflows exist, and commit churn by top-level directory — the four facts every recommendation about
+  what a repository needs rests on.
+- **`vibe-ops harness status`** compares which record types were promulgated into a clone
+  (`config.harness.applied`) against what the installed norm currently ships, the same comparison the
+  `SessionStart` hook already made — the hook is now a caller of this verb instead of carrying its own
+  copy.
+- **`vibe-ops harness catalog`** reports every gate and shell fragment this install ships that is not
+  composed into anything — neither `check --list`'s commit-time fragments nor any of the three shipped
+  ops's own `--list`.
+- **`vibe-ops harness audit`** reports the measured inventory: guides (`AGENTS.md`/`CLAUDE.md`/`.agents/
+  rules/*.md`, with an exact line count and always-on/scoped split) and sensors (what runs at commit, what
+  runs in CI), plus a governance overlay of per-type record counts and how many are behind the current
+  template.
+- **A module may now declare `needsSource: true`** to receive `context.sourceRoot` — where the installed
+  norm lives, resolved as `config.harness.source` > `--source` > `CLAUDE_PLUGIN_ROOT` — alongside its
+  target repository. `harness status` is the first consumer.
+- **Two new gates, `runner-provenance` and `disabled-declared`**, written and tested but deliberately
+  composed into nothing yet.
+
+### Added — a read verb, and commands that stop being silent (Plan-026)
+
+- **`vibe-ops records show <file>`** answers in one call what an agent was asking by grep: a record's
+  status, its sections, how many tracks are still open, how many entries stand under the sections that
+  accumulate work, and which migrations it is behind. Measured across ~390 session transcripts,
+  1,400–1,650 greps were scoped to `project/` across ~600 distinct patterns to ask exactly this.
+  `records list --type <t>` answers which records exist and where they stand.
+- **Every module command now returns a summary.** A run that finds nothing says where it looked
+  (`no plan in project/plans has a Status disagreeing with its tracks`) instead of exiting silently —
+  `ModuleResult.summary` is required rather than optional. Under `--json` the line goes to stderr so
+  stdout stays a stream `jq` can read.
+- **`vibe-ops --version`**, and `--help` on every module rather than only at the top level.
+- **`--json` on `check` and on all three ops**, where output volume actually hurts; `check --explain <id>`
+  prints what a check looks for, read from the fragment's own source.
+- **`check` stops ignoring its argument**: `vibe-ops check <path>` checks that repository, via the new
+  `repoFromFirstArg` field on the module contract. It also says which of two failures produced exit 2,
+  and reports untracked `.md` files it did not examine — a clean run over a silently narrowed population
+  reads exactly like a clean run over a whole one.
+- **`plan guard`**, the symmetric of `task guard`; `records handling` with no path is the census;
+  `--dry-run` is the one name for "do not write", with `--check` kept as a deprecated spelling.
+- **`vibe-ops hook check-global`** runs the gate at the end of a turn and reports whether or not anything
+  failed, so it does not have to be run by hand afterwards. It declares no severity of its own — whatever
+  the config cascade resolved is passed through.
+- **Fixed:** the harness template's runner resolution named `scripts/check-agents-md.sh` for its sibling
+  checkout and its `CLAUDE_PLUGIN_ROOT` branch. Both had been dead since the CLI was packaged, so the
+  branch a shared-checkout workspace is wired to prefer resolved nothing, silently.
+
 ### Added — three agents, a frontmatter gate for them, and a rule for pinning a model (Plan-024)
 
 - **`migration-rehearser`** walks a migration note against the artifact it handles worst and reports where
@@ -302,7 +542,7 @@ it, which is what turns a stamp into routing.
   "only counts as delivered once a release is cut" rule is suspended rather than quietly ignored. The rule
   itself is kept beside it, because it comes back the moment releasing does. `claude plugin validate
   . --strict` is named as the first-party check `check-agents-md.sh` sits on top of rather than replaces.
-- **[Plan-004](project/plans/004-new-research-skill.md) — both Open questions closed.** Research is
+- **[Plan-004](./project/plans/shipped/004-new-research-skill.md) — both Open questions closed.** Research is
   **dated**, not numbered, where it is written and named by topic where it is published, so the skill's
   discovery step looks for neither a prefix nor a next number. And research **has** a lifecycle: write-once
   with the supersession banner as its single legal edit, plus an index status of

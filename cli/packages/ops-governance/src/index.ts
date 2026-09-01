@@ -1,98 +1,40 @@
-// vibe-ops governance — the governance surface as an ops: this repository's own adr/plan/rfc/task
-// records, the links inside every tracked markdown file, and the `git show <sha>:<path>` breadcrumbs a
-// task's closure leaves behind. Composition only: no detector lives here — see cli/packages/gates/.
+// vibe-ops governance — the governance surface as an ops: this repository's own record types, the
+// links inside every tracked markdown file, and the `git show <sha>:<path>` breadcrumbs a task's
+// closure leaves behind. Composition only: no detector lives here — see cli/packages/gates/.
 //
-// The last two entries of the four record-header ones share a gate but never a population or a
-// schema: `plan` and `rfc` happen to require the same three fields today, but the entries stay
-// separate so a future divergence between the two costs an edited `options.schema`, not a shared one
-// quietly drifting apart from what each type actually declares.
+// THE COLLECTION IS `ops.json`, AND THIS FILE IS ITS TYPING SUGAR (Plan-034 Track 2). The data form
+// is canonical — measured before the move: the entry lists held zero functions — and what follows is
+// the narrative the JSON cannot carry.
 //
-// The `template-version` entries mirror that split for the same reason, and each is handed its own
-// template rather than a version number: the current version is whatever that file declares, so a
-// template bump needs no edit here. `project/research/` has an entry too, disabled in
-// `vibeops.config.ts` with its reason — the type has no template and its shape is not settled
-// (Plan-012). A disabled entry reports SKIP naming the reason, which is a statement; leaving research
-// out of the composition entirely would have been silence, and silence reads identically to clean.
+// THE PER-TYPE ENTRIES ARE DERIVED, NOT LISTED (Plan-034). `derives` in the collection is the whole
+// per-type story: for each governance the repository activates (ADR-0019 — the config is the
+// registry), the `record-schema` rule emits the entry its carrier calls for (`table` →
+// `record-header`, `frontmatter` → `record-frontmatter`) with `required` read from that package's own
+// `type.json`, and the `template-version` rule emits one versioning entry handed `<template:<type>>`
+// — the current version is whatever the resolved template declares, so a template bump needs no edit
+// here. The hand-written list this replaces restated each type's `required` and was held in step by a
+// guard test; the derivation deleted the literals and the guard together, and a repository binding a
+// sixth governance package sees its entries appear with no edit to this package.
 //
-// `markdown-link` and `breadcrumb` emit — both recur for as long as this repository has markdown:
-// links rot as files move, and every task closure adds another breadcrumb that a rewritten history can
-// break. `record-header` does not: once a record has a `Status` it keeps it, and a series of zeros
-// there would say nothing. `fragment-parity` does not either — it is temporary by construction, tied
-// to a shell fragment RFC-0001 expects to eventually delete, and a series that dies with its subject is
-// one nobody reads.
+// `project/research/` derives nothing because no governance package serves it — the type entered the
+// old list by mistake and sat disabled in vibeops.config.ts from the day it was composed (Plan-030's
+// Decision Log carries the rationale); the derivation deletes it rather than reproducing it.
+//
+// WHAT EMITS, AND WHY. The derived `template-version` entries emit — a record's declared version is a
+// series worth watching. `markdown-link` and `breadcrumb` emit too, and both recur for as long as
+// this repository has markdown: links rot as files move, and every task closure adds another
+// breadcrumb that a rewritten history can break. The derived schema entries do not: once a record has
+// a `Status` it keeps it, and a series of zeros there would say nothing. `fragment-parity` does not
+// either — it is temporary by construction, tied to a shell fragment RFC-0001 expects to eventually
+// delete, and a series that dies with its subject is one nobody reads. Its entry runs over the same
+// population `markdown-link` itself examines — the alignment is what makes the comparison mean
+// anything — and it records which two versions agreed as the gate's `compared:` tag, because a
+// demonstration that is printed and not recorded is not evidence the next time either side moves.
 
-import { defineOps } from "@entelekheia/vibe-ops-core";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { defineOps, parseOpsDefinition } from "@entelekheia/vibe-ops-core";
 
-export default defineOps({
-  id: "governance",
-  version: "0.0.1",
-  summary: "The governance surface: records, links and archival references",
-  gates: [
-    { gate: "record-header", label: "record-header-adr", options: { schema: "adr" }, paths: ["project/adr/*.md"] },
-    { gate: "record-header", label: "record-header-plan", options: { schema: "plan" }, paths: ["project/plans/*.md"] },
-    { gate: "record-header", label: "record-header-rfc", options: { schema: "rfc" }, paths: ["project/rfc/**/*.md"] },
-    { gate: "record-header", label: "record-header-task", options: { schema: "task" }, paths: ["project/tasks/*.md"] },
-    // Emits: a record's declared version is a series worth watching — the population grows, versions
-    // move, and what is still behind is exactly the reading Plan-012 exists to produce.
-    {
-      gate: "template-version",
-      label: "template-version-adr",
-      options: { template: "<plugin>/templates/adr.md" },
-      paths: ["project/adr/*.md"],
-      emits: true,
-    },
-    {
-      gate: "template-version",
-      label: "template-version-plan",
-      options: { template: "<plugin>/templates/plan.md" },
-      paths: ["project/plans/**/*.md"],
-      emits: true,
-    },
-    {
-      gate: "template-version",
-      label: "template-version-rfc",
-      options: { template: "<plugin>/templates/rfc.md" },
-      paths: ["project/rfc/**/*.md"],
-      emits: true,
-    },
-    {
-      gate: "template-version",
-      label: "template-version-task",
-      options: { template: "<plugin>/templates/task.md" },
-      paths: ["project/tasks/*.md"],
-      emits: true,
-    },
-    {
-      gate: "template-version",
-      label: "template-version-log",
-      options: { template: "<plugin>/templates/log.md" },
-      paths: ["project/log/*.md"],
-      emits: true,
-    },
-    {
-      gate: "template-version",
-      label: "template-version-research",
-      options: { template: "<plugin>/templates/plan.md" },
-      paths: ["project/research/*.md"],
-      emits: true,
-    },
-    { gate: "markdown-link", emits: true },
-    { gate: "breadcrumb", emits: true },
-    {
-      gate: "fragment-parity",
-      // Same population markdown-link itself examines — see the header comment on the gate for why
-      // that alignment is what makes the comparison mean anything.
-      paths: ["**/*.md"],
-      // RFC-0001 removes a fragment only once its port is SHOWN to agree with it, and a demonstration
-      // that is printed and not recorded is not evidence the next time either side moves. The record
-      // carries which two versions agreed, as the gate's `compared:` tag — a clean run writes one too,
-      // because "they agreed over 94 files on this date" is the whole reading.
-      emits: true,
-      options: {
-        runner: "cli/packages/module-check/sh/check-agents-md.sh",
-        fragment: "links",
-        against: "markdown-link",
-      },
-    },
-  ],
-});
+const collection = new URL("../ops.json", import.meta.url);
+
+export default defineOps(parseOpsDefinition(readFileSync(collection, "utf8"), fileURLToPath(collection)));

@@ -16,64 +16,23 @@
 // entry: `fragment-parity` is temporary by construction, tied to a shell fragment RFC-0001 expects to
 // eventually delete, and a series that dies with its subject is one nobody reads. Each entry's `paths`
 // mirrors the population of the check it is comparing against, so the comparison means what it says.
+//
+// THE COLLECTION IS `ops.json`, AND THIS FILE IS ITS TYPING SUGAR (Plan-034 Track 2).
+//
+// THE ENTRIES, AND WHY EACH IS SHAPED AS IT IS.
+//
+// The `agent-frontmatter` entry: no `fragment-parity` entry accompanies this one, and none ever will.
+// Parity compares a gate against the shell fragment it ports, and `agent` has no fragment to replace
+// (Plan-024 Track 6).
+//
+// The `memory-slug` entry: the only entry that emits (RFC-0001, Rationale) — the others are
+// structural properties that, once corrected, stay corrected. This one is behavioural and recurrent,
+// and worth a series.
 
-import { defineOps } from "@entelekheia/vibe-ops-core";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { defineOps, parseOpsDefinition } from "@entelekheia/vibe-ops-core";
 
-const CHECK_AGENTS_MD_RUNNER = "cli/packages/module-check/sh/check-agents-md.sh";
+const collection = new URL("../ops.json", import.meta.url);
 
-export default defineOps({
-  id: "agents-md",
-  version: "0.0.1",
-  summary: "The instruction surface: AGENTS.md, CLAUDE.md, and the .agents/ ↔ .claude/ bridge",
-  gates: [
-    { gate: "budget", paths: ["AGENTS.md"] },
-    { gate: "pairing", paths: ["**/AGENTS.md"] },
-    { gate: "claude-md-content", paths: ["**/CLAUDE.md"] },
-    { gate: "bridge" },
-    { gate: "check-frontmatter", paths: [".agents/rules/*.md"], options: { schema: "rule" } },
-    {
-      gate: "check-frontmatter",
-      label: "skill-frontmatter",
-      options: { schema: "skill" },
-      paths: ["<plugin>/skills/*/SKILL.md", ".agents/skills/*/SKILL.md"],
-    },
-    // No `fragment-parity` entry accompanies this one, and none ever will: parity compares a gate
-    // against the shell fragment it ports, and `agent` has no fragment to replace (Plan-024 Track 6).
-    {
-      gate: "check-frontmatter",
-      label: "agent-frontmatter",
-      options: { schema: "agent" },
-      paths: ["<plugin>/agents/*.md", ".agents/agents/*.md"],
-    },
-    // The only entry that emits (RFC-0001, Rationale): the other four are structural properties that,
-    // once corrected, stay corrected. This one is behavioural and recurrent, and worth a series.
-    {
-      gate: "memory-slug",
-      emits: true,
-      paths: ["AGENTS.md", "**/AGENTS.md", "**/CLAUDE.md", "**/README.md"],
-    },
-    {
-      gate: "fragment-parity",
-      label: "fragment-parity-frontmatter",
-      paths: [".agents/rules/*.md"],
-      options: { runner: CHECK_AGENTS_MD_RUNNER, fragment: "frontmatter", against: "check-frontmatter", options: { schema: "rule" } },
-    },
-    {
-      gate: "fragment-parity",
-      label: "fragment-parity-skill-frontmatter",
-      paths: ["<plugin>/skills/*/SKILL.md", ".agents/skills/*/SKILL.md"],
-      options: {
-        runner: CHECK_AGENTS_MD_RUNNER,
-        fragment: "skill-frontmatter",
-        against: "check-frontmatter",
-        options: { schema: "skill" },
-      },
-    },
-    {
-      gate: "fragment-parity",
-      label: "fragment-parity-memory-slug",
-      paths: ["AGENTS.md", "**/AGENTS.md", "**/CLAUDE.md", "**/README.md"],
-      options: { runner: CHECK_AGENTS_MD_RUNNER, fragment: "memory-slugs", against: "memory-slug" },
-    },
-  ],
-});
+export default defineOps(parseOpsDefinition(readFileSync(collection, "utf8"), fileURLToPath(collection)));

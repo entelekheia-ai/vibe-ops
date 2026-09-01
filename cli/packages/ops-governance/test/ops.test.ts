@@ -42,7 +42,12 @@ function contextFor(repoRoot: string, config: VibeOpsConfig, flags: Record<strin
   return { context, logs };
 }
 
-test("--list composes every entry, in order: the record-header schemas, the template-version ones, then the rest", async () => {
+// The per-type entries here are DERIVED from the activated governances (Plan-034) — an empty config
+// activates the five shipped defaults, so this order is the derivation's own: carrier groups sorted by
+// name (table, then frontmatter), the order the hand-written list had. `template-version-research` is
+// gone by design: no governance package serves research, so nothing derives it — the one declared
+// output difference of Plan-034.
+test("--list composes every entry, in order: the derived record schemas, the derived template-versions, then the static rest", async () => {
   const repoRoot = await gitRepo();
   gitAdd(repoRoot);
   const { context } = contextFor(repoRoot, {}, { list: true });
@@ -55,17 +60,54 @@ test("--list composes every entry, in order: the record-header schemas, the temp
       "record-header-plan",
       "record-header-rfc",
       "record-header-task",
+      "record-frontmatter-log",
       "template-version-adr",
       "template-version-plan",
       "template-version-rfc",
       "template-version-task",
       "template-version-log",
-      "template-version-research",
       "markdown-link",
       "breadcrumb",
-      "fragment-parity",
     ],
   );
+});
+
+// Plan-034's acceptance: a repository binding a sixth governance package sees its entries appear with
+// zero edits to this ops. The "package" is the smallest activation object core accepts — root plus a
+// parsed unit — bound by an absolute path, which parseBinding passes to import() verbatim.
+test("a governance package bound in config derives its entries with no edit to this ops", async () => {
+  const repoRoot = await gitRepo();
+  gitAdd(repoRoot);
+  const pkg = await mkdtemp(path.join(tmpdir(), "vibeops-governance-note-"));
+  await mkdir(path.join(pkg, "templates"), { recursive: true });
+  await writeFile(path.join(pkg, "templates", "note.md"), "---\nvibe-ops-template: note@1\n---\n\n# Note\n");
+  await writeFile(
+    path.join(pkg, "index.mjs"),
+    `export default { root: ${JSON.stringify(pkg)}, unit: { type: "note", template: "./templates/note.md", ` +
+      `authoring: "./authoring.md", migrations: "./migrations", ` +
+      `schema: { carrier: "table", required: ["Status"] }, numbered: false, pad: 0, depth: 1, dirs: ["project/note"] } };`,
+  );
+
+  const config = { types: { note: path.join(pkg, "index.mjs") } } as VibeOpsConfig;
+  const { context } = contextFor(repoRoot, config, { list: true });
+  const result = await ops.run(context);
+  const labels = (result.data as { gates: readonly { label: string }[] }).gates.map((g) => g.label);
+  assert.ok(labels.includes("record-header-note"), labels.join(", "));
+  assert.ok(labels.includes("template-version-note"), labels.join(", "));
+});
+
+// The other half of the derivation contract: a binding whose package does not resolve is a statement
+// in the run's own report — the channel a disabled entry uses — never a silent gap in the entry list.
+test("a bound type whose package does not resolve is a skip naming the package, never a silent gap", async () => {
+  const repoRoot = await gitRepo();
+  gitAdd(repoRoot);
+  const config = { types: { plan: "@entelekheia/governance-does-not-exist" } } as VibeOpsConfig;
+  const { context } = contextFor(repoRoot, config, {});
+  const result = await ops.run(context);
+  const skipped = (result.data as { skipped: readonly { gate: string; reason: string }[] }).skipped;
+  const planSkips = skipped.filter((s) => s.gate.endsWith("-plan"));
+  assert.equal(planSkips.length, 2, JSON.stringify(skipped));
+  for (const skip of planSkips) assert.match(skip.reason, /@entelekheia\/governance-does-not-exist/);
 });
 
 test("an adr missing a required field fails record-header-adr, naming the field", async () => {
@@ -153,8 +195,9 @@ test("against this repository's own checkout — records behind their template w
     logs.some((line) => line.startsWith("WARN  [template-version-behind]")),
     "expected at least one record behind its template, reported as a warning",
   );
-  assert.ok(
-    logs.some((line) => line.includes("SKIP  [template-version-research]")),
-    "research is excluded by a stated reason, never by silence",
-  );
 });
+
+// The guard that held the hand-written `required` literals to each type's own manifest lived here
+// until Plan-034 derived the entries from the activated governances — the literals and the guard were
+// deleted together, superseded by the derivation itself: an entry computed from the manifest cannot
+// disagree with it.

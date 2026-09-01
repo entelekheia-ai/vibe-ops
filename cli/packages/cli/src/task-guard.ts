@@ -6,7 +6,7 @@
 // to prevent and cannot prevent, because prose cannot fire at the moment of the act.
 //
 // It invents no convention: the task template ships the marker itself, and `closureBoxOpen` in
-// @entelekheia/vibe-ops-records is the reader — the same one `task close` ticks through, so the guard and
+// @entelekheia/governance-base is the reader — the same one `task close` ticks through, so the guard and
 // the ceremony can never disagree about what "closed" means.
 //
 // This is the one surface that answers `permissionDecision: "deny"` rather than `additionalContext`. It
@@ -14,7 +14,7 @@
 
 import path from "node:path";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
-import { closureBoxOpen } from "@entelekheia/vibe-ops-records";
+import { closureBoxOpen } from "@entelekheia/governance-base";
 import { repoRootFrom } from "./run.ts";
 
 interface PreToolUsePayload {

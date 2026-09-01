@@ -1,0 +1,22 @@
+{
+  "id": "self",
+  "version": "0.0.1",
+  "summary": "What this repository claims about itself, checked against what it is",
+  "gates": [
+    {
+      "gate": "unstated-destination",
+      "paths": [
+        "cli/packages/governance-*/migrations/*.md"
+      ],
+      "fixture": {
+        "expect": [
+          "unstated-destination"
+        ],
+        "files": {
+          "notes/plan-0.1-to-0.2.md": "# plan 0.1 → 0.2\n\n| Section | 0.1 | 0.2 |\n|---|---|---|\n| `## Progress` | step-level checklist | **dropped** |\n\n## What it costs an existing artifact\n\nThe header table gains a row. Nothing else changes.\n\n",
+          "notes/task-0.1-to-0.2.md": "# task 0.1 → 0.2\n\n| Section | 0.1 | 0.2 |\n|---|---|---|\n| `## Surprises & Discoveries` | living section | **dropped** |\n\n## What it costs an existing artifact\n\nEvery entry under `Surprises & Discoveries` is routed by the promotion test before the\ndossier is deleted; an entry that survives it lands in the repository's own learnings.\n\n"
+        }
+      }
+    }
+  ]
+}

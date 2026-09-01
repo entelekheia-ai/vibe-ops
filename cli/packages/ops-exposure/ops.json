@@ -1,0 +1,118 @@
+{
+  "id": "exposure",
+  "version": "0.0.1",
+  "summary": "Whether a committed file exposes material above its classification",
+  "gates": [
+    {
+      "gate": "classification",
+      "label": "private-name",
+      "paths": [
+        "**/*.md"
+      ],
+      "options": {
+        "level": "secret",
+        "rule": "private-name",
+        "subject": "a private name"
+      },
+      "fixture": {
+        "expect": [
+          "private-name"
+        ],
+        "files": {
+          "denylist.tsv": "client\tAcmeCorp\n",
+          "doc.md": "# Doc\n\nBuilt for AcmeCorp last year.\n"
+        },
+        "options": {
+          "level": "secret",
+          "rule": "private-name",
+          "subject": "a private name",
+          "forbidFrom": "denylist.tsv"
+        }
+      }
+    },
+    {
+      "gate": "classification",
+      "label": "file-path",
+      "emits": true,
+      "paths": [
+        "**/*.md"
+      ],
+      "options": {
+        "level": "confidential",
+        "rule": "file-path",
+        "subject": "an absolute path from someone's machine",
+        "forbid": [
+          "(?:/Users/|/home/|[Cc]:[\\\\/]+Users[\\\\/]+)[A-Za-z0-9][^\\s\"'`)]*"
+        ]
+      },
+      "fixture": {
+        "expect": [
+          "file-path"
+        ],
+        "files": {
+          "plan.md": "Run:\n\n    node /Users/someone/checkout/bin.js\n"
+        }
+      }
+    },
+    {
+      "gate": "classification",
+      "label": "template-attribution",
+      "paths": [
+        "<plugin>/skills/*/templates/**/*.md"
+      ],
+      "options": {
+        "level": "confidential",
+        "rule": "template-attribution",
+        "subject": "an attribution a target repository never made",
+        "forbid": [
+          "Copyright \\(c\\) [0-9]{4}"
+        ]
+      },
+      "fixture": {
+        "expect": [
+          "template-attribution"
+        ],
+        "files": {
+          "skills/demo/templates/t.md": "<!--\n Copyright (c) 2026 Someone\n-->\n\n# Template\n"
+        }
+      }
+    },
+    {
+      "gate": "classification",
+      "label": "memory-slug",
+      "emits": true,
+      "paths": [
+        "AGENTS.md",
+        "**/AGENTS.md",
+        "**/CLAUDE.md",
+        "**/README.md"
+      ],
+      "options": {
+        "level": "internal",
+        "rule": "memory-slug",
+        "subject": "a pointer to a note nobody else holds",
+        "forbid": [
+          "\\[\\[[a-z0-9][a-z0-9_-]*\\]\\]"
+        ],
+        "scope": "prose"
+      },
+      "fixture": {
+        "expect": [
+          "memory-slug"
+        ],
+        "files": {
+          "AGENTS.md": "# Map\n\nSee [[project_something]] for the rest.\n"
+        },
+        "options": {
+          "level": "internal",
+          "rule": "memory-slug",
+          "subject": "a pointer to a note nobody else holds",
+          "forbid": [
+            "\\[\\[[a-z0-9][a-z0-9_-]*\\]\\]"
+          ],
+          "scope": "prose"
+        }
+      }
+    }
+  ]
+}

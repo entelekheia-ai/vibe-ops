@@ -5,21 +5,79 @@
 // and neither should have to restate the other. Nearest wins per key; the search does NOT stop at the
 // git root, because the home-directory file is the whole point of having a cascade at all.
 //
+// TWO FILES PER DIRECTORY, LAYERED. `vibeops.config.local.*` is clone-local and version-control-ignored;
+// `vibeops.config.*` is the committed one. Within a directory the local file wins per key, and BOTH
+// contribute — so a committed config can ship fully populated while a clone overrides only what is true
+// of that machine, which is the .env/.env.example split applied to configuration. The pair repeats at
+// every level, which is what finally gives the home directory the personal-override file this module's
+// consumers have been describing in prose with no mechanism behind it.
+//
+// The directory walk still outranks the pair: a nearer COMMITTED file beats a farther LOCAL one. Getting
+// that backwards produces a plausible-looking cascade in which a stale personal file in the home
+// directory silently governs every repository, and it is asserted against in this package's tests.
+//
 // `.ts` is loaded by dynamic import and relies on Node's native type stripping (>=22.18), so a config
 // file costs no dependency and no build step. `.js`/`.mjs` work identically.
 
 import { pathToFileURL } from "node:url";
 import { homedir } from "node:os";
-import { access } from "node:fs/promises";
+import { access, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const FILENAMES = ["vibeops.config.ts", "vibeops.config.mjs", "vibeops.config.js"] as const;
+/**
+ * Candidate filenames for one directory, nearest-wins order — every local variant before every committed
+ * one. Extension order within each half is a first-match tiebreak, unchanged from when there was one half:
+ * a directory holding both `.ts` and `.mjs` of the same kind is a mistake, and this picks one rather than
+ * merging two files that were never meant to coexist.
+ */
+const FILENAMES = [
+  "vibeops.config.local.ts",
+  "vibeops.config.local.mjs",
+  "vibeops.config.local.js",
+  "vibeops.config.ts",
+  "vibeops.config.mjs",
+  "vibeops.config.js",
+] as const;
 
-/** The four governance record types `@entelekheia/vibe-ops-records` resolves. */
-export type RecordType = "adr" | "rfc" | "plan" | "task";
+/** Where the local half of the list ends — the boundary `loadOne` splits on to take one file from each. */
+const LOCAL_FILENAME_COUNT = 3;
 
 /**
- * Overrides the built-in search order `@entelekheia/vibe-ops-records` uses to find a record type's
+ * The one config file this tooling WRITES, as opposed to reads. Promulgation records what it applied to a
+ * clone, and that has to land somewhere a program can edit without rewriting a person's file: the three
+ * local variants above are all executable, and a program editing someone's TypeScript to change one key
+ * is a class of bug this repository does not need.
+ *
+ * It is a THIRD layer, not a fourth entry in the local half, and the difference is load-bearing. Within a
+ * half the first match wins, so adding it there would make a clone holding both this file and a
+ * `vibeops.config.local.ts` silently lose one of them — the machine's state or the operator's overrides,
+ * depending on the order chosen. Neither is acceptable, and the failure would be invisible. Layered, they
+ * compose: the operator keeps declaring preferences in a file they own, this one carries only what was
+ * promulgated, and it ranks nearest because it is the most specific statement about this clone.
+ */
+const STATE_FILENAME = "vibeops.config.local.json";
+
+/**
+ * A record type, by name. **An open name, not a union** (Plan-029 Track 1): a repository may keep an
+ * artifact this tooling does not ship, and a package may contribute one, so `records: { dirs: { policy:
+ * … } }` has to type-check. It did not — the closed union of four literals was the single compile-time
+ * wall, and RFC-0003's whole model stops at it.
+ *
+ * PLAIN `string`, NOT A BRANDED ONE, and that is a decision rather than a shortcut. A brand protects
+ * against passing an arbitrary string where a domain value belongs; here an arbitrary string IS a valid
+ * type name, and every name arrives from outside the type system anyway — a config key, a directory
+ * name, a frontmatter stamp, a package's declaration. Branding would put a cast at every one of those
+ * boundaries and buy nothing back.
+ *
+ * The alias keeps its name so the signatures that read `RecordType` still say what they mean. The four
+ * this tooling ships are no longer the definition of what a type CAN be; they are the defaults
+ * `@entelekheia/governance-base` consults for those four names, with a generic convention answering for
+ * every other (`recordDirCandidates`/`templateCandidates` in `files.ts`).
+ */
+export type RecordType = string;
+
+/**
+ * Overrides the built-in search order `@entelekheia/governance-base` uses to find a record type's
  * directory and template. Top-level rather than a `settings` slice: `plan`, `task` and `log` all read
  * through the one resolver, and a per-module slice would be three copies of the same answer.
  *
@@ -33,9 +91,87 @@ export interface RecordsConfig {
   readonly templates?: Partial<Record<RecordType, string>>;
 }
 
+/**
+ * Which installed package governs a type name, declared ONLY where the scan alone is ambiguous — the
+ * same doctrine as `records.dirs`, which an ordinary repository never writes either.
+ *
+ * Keyed by the LOCAL short name, and that is the point rather than a convenience. A fully qualified name
+ * in every stamp would let two packages each manage "their own" `policy` in one repository without
+ * either being detectably wrong, which is the governance failure the binding exists to prevent. One
+ * short name admits one owner, and changing owner is a line somebody edits in review.
+ *
+ * The value is the governing package's name. A binding that resolves to nothing is USED ANYWAY: the
+ * caller examines zero files against the name the repository chose, which is visible and attributable,
+ * where quietly falling back to another claimant is neither.
+ */
+export interface TypesConfig {
+  readonly [localName: string]: string;
+}
+
+/**
+ * Which version of each record type was PROMULGATED into this clone — not which version any given
+ * artifact was written against, which is what that artifact's own `vibe-ops-template:` line says. The two
+ * answer different questions and diverge exactly when something has not been migrated yet, which is the
+ * case worth detecting; storing one would not give you the other.
+ *
+ * Belongs in `vibeops.config.local.*`: it is true of one clone on one machine, and committing it would
+ * make every promulgation a diff in a file the repository owns.
+ *
+ * ABSENCE IS A STATE, AND IT IS NOT ZERO. No `harness` key at all means never promulgated to; a key with
+ * no entry for `plan` means the same about plans specifically. Neither is "version 0", and a reader that
+ * defaults them to a number reports every untouched repository as catastrophically behind — which is how a
+ * signal earns being ignored.
+ */
+export interface HarnessConfig {
+  readonly applied?: Partial<Record<RecordType, number>>;
+  /**
+   * Which version of the ownership declaration this clone has agreed to — the boundary between what
+   * promulgation may overwrite and what belongs to the repository.
+   *
+   * It is stored separately from `applied` because it answers a question about CONSENT rather than about
+   * currency. A declaration that reclassifies a path from "written once, then yours" to "this tooling
+   * overwrites it" converts something the repository owned into something it does not, and a promulgation
+   * that read the newer boundary to decide what it may overwrite here would be assuming an agreement that
+   * was never made. So `sync` compares this against the installed declaration and refuses only the paths
+   * whose class WIDENED, leaving the rest to promulgate normally. Narrowing needs no consent: it can only
+   * reduce what this tooling may do.
+   *
+   * Absent means never agreed to any boundary, which is the ordinary state of a clone nothing has been
+   * promulgated into — not agreement to version zero.
+   */
+  readonly boundary?: number;
+  /**
+   * Where this repository's norm comes from — the root a `needsSource` module reads templates and
+   * ownership declarations from. Highest-priority tier of the three the CLI resolves (declared config,
+   * then `--source`, then `CLAUDE_PLUGIN_ROOT`): a repository or operator that has said so explicitly
+   * outranks an invocation flag or an environment variable set by the surrounding hook wiring.
+   */
+  readonly source?: string;
+}
+
+/**
+ * One hand-written reclassification of a path in the composed ownership boundary (Plan-031) — always
+ * toward LESS tooling authority, applied as the composition's last layer. `class` is a string here
+ * because core does not know the class vocabulary (the harness owns it and validates on composition);
+ * `reason` is required by that validation — a bare class is refused, a reclassification is a ledger
+ * entry. Written by the operator; no tool writes this key (tool-written configuration is Plan-032's
+ * format RFC).
+ */
+export interface OwnershipNarrowing {
+  readonly match: string;
+  readonly class: string;
+  readonly reason: string;
+}
+
 export interface VibeOpsConfig {
+  /** Which package governs a type name, where the scan alone cannot say. See `TypesConfig`. */
+  readonly types?: TypesConfig;
+  /** The repository's own layer of the ownership boundary. See `OwnershipNarrowing`. */
+  readonly ownership?: readonly OwnershipNarrowing[];
   /** Module ids to treat as enabled without an explicit flag. */
   readonly modules?: readonly string[];
+  /** See `HarnessConfig`. Written by promulgation, read by the session hook; absent until either runs. */
+  readonly harness?: HarnessConfig;
   /** Per-module settings, keyed by module id. A module reads its own slice and nothing else. */
   readonly settings?: Readonly<Record<string, unknown>>;
   /** Where observations go when a module declares `emits`. Absent disables emission entirely. */
@@ -73,17 +209,46 @@ export function searchPath(start: string, home: string = homedir()): readonly st
   return dirs;
 }
 
-async function loadOne(dir: string): Promise<{ file: string; config: VibeOpsConfig } | undefined> {
-  for (const name of FILENAMES) {
-    const candidate = path.join(dir, name);
-    if (!(await exists(candidate))) continue;
-    const module = (await import(pathToFileURL(candidate).href)) as { default?: VibeOpsConfig };
-    if (module.default === undefined) {
-      throw new Error(`${candidate} has no default export — a config file must \`export default { ... }\``);
+async function loadFile(candidate: string): Promise<{ file: string; config: VibeOpsConfig } | undefined> {
+  if (!(await exists(candidate))) return undefined;
+
+  // The state file is data, so it is parsed rather than imported: no default export to demand, no code to
+  // execute, and a malformed one names itself instead of failing as an opaque module error.
+  if (candidate.endsWith(".json")) {
+    const text = await readFile(candidate, "utf8");
+    try {
+      return { file: candidate, config: JSON.parse(text) as VibeOpsConfig };
+    } catch (error) {
+      throw new Error(`${candidate} is not valid JSON: ${(error as Error).message}`);
     }
-    return { file: candidate, config: module.default };
   }
-  return undefined;
+
+  const module = (await import(pathToFileURL(candidate).href)) as { default?: VibeOpsConfig };
+  if (module.default === undefined) {
+    throw new Error(`${candidate} has no default export — a config file must \`export default { ... }\``);
+  }
+  return { file: candidate, config: module.default };
+}
+
+/**
+ * Every config file in one directory, nearest-wins order: the machine-written state file, then the
+ * operator's local file, then the committed one. Returns all of them rather than the first match —
+ * returning the first is what would make a nearer file REPLACE the one it is meant to layer over, which
+ * is the whole point.
+ */
+async function loadOne(dir: string): Promise<readonly { file: string; config: VibeOpsConfig }[]> {
+  const local = FILENAMES.slice(0, LOCAL_FILENAME_COUNT);
+  const committed = FILENAMES.slice(LOCAL_FILENAME_COUNT);
+  const found: { file: string; config: VibeOpsConfig }[] = [];
+  for (const half of [[STATE_FILENAME], local, committed]) {
+    for (const name of half) {
+      const one = await loadFile(path.join(dir, name));
+      if (one === undefined) continue;
+      found.push(one);
+      break;
+    }
+  }
+  return found;
 }
 
 /**
@@ -103,6 +268,32 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     artifactDir: nearer.artifactDir ?? further.artifactDir,
     settings: { ...further.settings, ...nearer.settings },
     records,
+    // Per key, like `records.dirs` rather than whole like `harness.applied`: two bindings naming two
+    // different types are independent facts, so a home file binding one must not be discarded by a repo
+    // binding another. Whole-key would make the nearer file's silence about a type an answer.
+    types:
+      nearer.types === undefined && further.types === undefined ? undefined : { ...further.types, ...nearer.types },
+    // Concatenated, further first: narrowings are last-match-wins inside the composition, so the nearer
+    // file's entry lands later and prevails over a home-directory one for the same match.
+    ownership:
+      nearer.ownership === undefined && further.ownership === undefined
+        ? undefined
+        : [...(further.ownership ?? []), ...(nearer.ownership ?? [])],
+    // `applied` wins WHOLE, deliberately unlike `settings` and `records`: merging per record type would
+    // let a map written for one repository answer for another one further down the path, and "this clone
+    // is on plan@3" is a fact about a single working tree, where a half-inherited answer is worse than
+    // none. The rule is about the MAP, though, not about the key it lives under — `harness` as a whole
+    // used to win whole, which was the same thing while `applied` was the only entry and stopped being so
+    // the moment a machine-written state file could sit nearer than the file an operator declares
+    // `source` in. Whole-key would have had the state file silently discard that.
+    harness:
+      nearer.harness === undefined && further.harness === undefined
+        ? undefined
+        : {
+            applied: nearer.harness?.applied ?? further.harness?.applied,
+            boundary: nearer.harness?.boundary ?? further.harness?.boundary,
+            source: nearer.harness?.source ?? further.harness?.source,
+          },
   };
 }
 
@@ -110,12 +301,44 @@ export async function loadConfig(start: string, home: string = homedir()): Promi
   const sources: string[] = [];
   let config: VibeOpsConfig = {};
   for (const dir of searchPath(start, home)) {
-    const found = await loadOne(dir);
-    if (found === undefined) continue;
-    sources.push(found.file);
-    config = sources.length === 1 ? found.config : merge(config, found.config);
+    for (const found of await loadOne(dir)) {
+      sources.push(found.file);
+      config = sources.length === 1 ? found.config : merge(config, found.config);
+    }
   }
   return { config, sources };
+}
+
+/** Where a repository's machine-written harness state lives. Absolute, given the repository root. */
+export function statePath(repoRoot: string): string {
+  return path.join(repoRoot, STATE_FILENAME);
+}
+
+/**
+ * Record what promulgation applied to this clone, touching only the keys handed in.
+ *
+ * The rest of the file is read and written back unchanged, so an operator can put other keys in it and a
+ * later promulgation will not eat them — and, more to the point, no *other* file is touched at all. The
+ * ownership declaration classes `vibeops.config.local.*` as belonging to the repository precisely so that
+ * promulgation updates its own key through the module that owns it rather than rewriting a file it does
+ * not own. This function is that module's half of the bargain.
+ */
+export async function writeHarnessState(repoRoot: string, harness: HarnessConfig): Promise<string> {
+  const file = statePath(repoRoot);
+  let current: VibeOpsConfig = {};
+  if (await exists(file)) {
+    const text = await readFile(file, "utf8");
+    try {
+      current = JSON.parse(text) as VibeOpsConfig;
+    } catch (error) {
+      // Refused rather than overwritten: the file is small and hand-editable, so a syntax error in it is
+      // far likelier to be someone's work in progress than corruption worth discarding.
+      throw new Error(`${file} is not valid JSON, so it will not be rewritten: ${(error as Error).message}`);
+    }
+  }
+  const merged: VibeOpsConfig = { ...current, harness: { ...current.harness, ...harness } };
+  await writeFile(file, `${JSON.stringify(merged, undefined, 2)}\n`, "utf8");
+  return file;
 }
 
 /** A module's own slice of `settings`, never the whole object. */

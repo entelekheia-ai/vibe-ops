@@ -40,14 +40,26 @@
 // because a template bump leaves every record behind at once, which is right while a migration is in
 // flight and wrong for a repository that has finished one and wants the gate to hold the line.
 
-import { createEmitter } from "./emit.ts";
-import { excludeByGlobs, expandPluginToken, filterByGlobs, resolvePluginDir, trackedFiles } from "./files.ts";
+import { createEmitter, UndeclaredObservationError } from "./emit.ts";
+import {
+  excludeByGlobs,
+  expandOptionTokens,
+  expandTokens,
+  filterByGlobs,
+  resolveArtifactDir,
+  resolvePluginDir,
+  trackedFiles,
+} from "./files.ts";
+import { activatedTemplatePaths } from "./governance-map.ts";
+import { deriveOpsEntries } from "./ops-derive.ts";
+import type { OpsDeriveRule } from "./ops-derive.ts";
 import { createDocumentStore } from "./document.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
 import type { GateFinding, GatePlugin } from "./gate.ts";
 import type { ModulePlugin, ModuleResult } from "./module.ts";
 import type { ModuleContext } from "./context.ts";
+import type { RecordsConfig } from "./config.ts";
 import path from "node:path";
 import { realpathSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -139,7 +151,15 @@ export interface OpsDefinition {
   readonly id: string;
   readonly version: string;
   readonly summary: string;
+  /** The static entries. What every ops had before Plan-034, and still the whole list for most. */
   readonly gates: readonly OpsGateEntry[];
+  /**
+   * Named derivation rules, computed per run from the repository's activated governances (ADR-0019)
+   * and prepended to `gates` — see ops-derive.ts. This is what makes the entry list a function of the
+   * repository being run against: a repository binding a sixth governance package sees its entries
+   * appear with no edit to any ops.
+   */
+  readonly derives?: readonly OpsDeriveRule[];
 }
 
 const BARE = /^[a-z][a-z0-9-]*$/;
@@ -153,25 +173,40 @@ function labelFor(entry: OpsGateEntry): string {
   return entry.label ?? entry.gate;
 }
 
-export function defineOps(definition: OpsDefinition): ModulePlugin {
-  if (definition.gates.length === 0) {
-    throw new Error(`ops "${definition.id}" composes no gates — it would report a vacuous pass`);
-  }
+/**
+ * The emit ids an entry list declares, validated as they are collected. Called twice since Plan-034:
+ * at define time over the static `gates` — so a broken static composition still fails at load, the
+ * defineModule precedent — and per run over the full derived-plus-static list, because a derived
+ * entry's id exists only once the repository is known.
+ */
+function collectEmitIds(opsId: string, entries: readonly OpsGateEntry[]): string[] {
   const emits: string[] = [];
-  for (const entry of definition.gates) {
+  for (const entry of entries) {
     if (entry.emits !== true) continue;
     if (entry.label === undefined && !BARE.test(entry.gate)) {
       throw new Error(
-        `ops "${definition.id}" declares emits on "${entry.gate}", whose id is not knowable before it ` +
+        `ops "${opsId}" declares emits on "${entry.gate}", whose id is not knowable before it ` +
           `loads — give the entry a label, which is what it will record under`,
       );
     }
     const id = emitIdFor(entry);
     if (emits.includes(id)) {
-      throw new Error(`ops "${definition.id}" would record two different entries under "${id}" — label one of them`);
+      throw new Error(`ops "${opsId}" would record two different entries under "${id}" — label one of them`);
     }
     emits.push(id);
   }
+  return emits;
+}
+
+export function defineOps(definition: OpsDefinition): ModulePlugin {
+  if (definition.gates.length === 0 && (definition.derives?.length ?? 0) === 0) {
+    throw new Error(`ops "${definition.id}" composes no gates — it would report a vacuous pass`);
+  }
+  // The static half only: a derived entry's emit id is a fact about the repository the ops runs
+  // against, so the definition's `emits` metadata carries what is knowable here and the run computes
+  // the full declared list itself — the ops builds its own emitter, so nothing downstream reads this
+  // metadata for the derived ids.
+  const emits = collectEmitIds(definition.id, definition.gates);
 
   return defineModule(
     {
@@ -181,6 +216,11 @@ export function defineOps(definition: OpsDefinition): ModulePlugin {
       flags: [
         { name: "list", type: "boolean", description: "Print the gates composed, and the paths each runs over" },
         { name: "audit", type: "boolean", description: "Report exactly as a run would, and always exit 0" },
+        // The four governance nouns have had `--json` since they existed; the ops did not, so the only way
+        // to read an ops report from a terminal was to parse its rendered lines back. `runModule` already
+        // suppresses logging under the flag, and `bin.ts` already renders `data` — this declares the flag
+        // the plumbing was waiting for.
+        { name: "json", type: "boolean", description: "Return the report as JSON on stdout instead of lines" },
         { name: "verbose", type: "boolean", description: "Print the full run rather than only what failed" },
         { name: "file", type: "string", description: "Scope to one file instead of every tracked file" },
         {
@@ -197,7 +237,7 @@ export function defineOps(definition: OpsDefinition): ModulePlugin {
       ],
       ...(emits.length > 0 ? { emits } : {}),
     },
-    async (context: ModuleContext): Promise<ModuleResult> => run(definition, emits, context),
+    async (context: ModuleContext): Promise<ModuleResult> => run(definition, context),
   );
 }
 
@@ -257,13 +297,19 @@ interface Resolved {
  * broken composition, and it must fail as one — halfway through a run, with three gates already
  * reported, it reads as the repository being broken instead.
  */
-async function resolveAll(definition: OpsDefinition, repoRoot: string, pluginDir: string): Promise<Resolved[]> {
+async function resolveAll(
+  opsId: string,
+  entries: readonly OpsGateEntry[],
+  repoRoot: string,
+  pluginDir: string,
+  records: RecordsConfig | undefined,
+): Promise<Resolved[]> {
   const resolved: Resolved[] = [];
-  for (const entry of definition.gates) {
+  for (const entry of entries) {
     const gate = await loadGate(entry.gate);
     if (BARE.test(entry.gate) && gate.definition.id !== entry.gate) {
       throw new Error(
-        `ops "${definition.id}" composes "${entry.gate}", which loaded a gate whose id is ` +
+        `ops "${opsId}" composes "${entry.gate}", which loaded a gate whose id is ` +
           `"${gate.definition.id}" — the folder and the definition disagree`,
       );
     }
@@ -271,7 +317,7 @@ async function resolveAll(definition: OpsDefinition, repoRoot: string, pluginDir
     resolved.push({
       entry,
       gate,
-      patterns: declared.map((pattern) => expandPluginToken(pattern, repoRoot, pluginDir)),
+      patterns: declared.map((pattern) => expandTokens(pattern, repoRoot, pluginDir, records)),
     });
   }
   return resolved;
@@ -300,7 +346,7 @@ async function selfTest(
     const label = labelFor(entry);
     if (entry.fixture === undefined) {
       cases.push({ label, fired: false, missing: [], skipped: "no fixture declared" });
-      if (context.surface === "cli") context.log(`SKIP  [${label}] no fixture declared`);
+      if (context.surface === "cli" && context.flags["json"] !== true) context.log(`SKIP  [${label}] no fixture declared`);
       continue;
     }
     const { files, expect, options } = entry.fixture;
@@ -322,7 +368,7 @@ async function selfTest(
       const produced = new Set(outcome.findings.map((finding) => finding.rule));
       const missing = expect.filter((rule) => !produced.has(rule));
       cases.push({ label, fired: missing.length === 0, missing });
-      if (context.surface === "cli") {
+      if (context.surface === "cli" && context.flags["json"] !== true) {
         context.log(
           missing.length === 0
             ? `ok    [${label}] fired on its fixture: ${expect.join(", ")}`
@@ -345,16 +391,25 @@ async function selfTest(
   };
 }
 
-async function run(
-  definition: OpsDefinition,
-  emits: readonly string[],
-  context: ModuleContext,
-): Promise<ModuleResult> {
+async function run(definition: OpsDefinition, context: ModuleContext): Promise<ModuleResult> {
   const pluginDir = resolvePluginDir(context.repoRoot);
   // One store per run, beside pluginDir — lazy, so it costs nothing on a run that never calls .get()
   // (--list, --help). No gate in this track reads it yet; Track 3 is the first consumer.
   const documents = createDocumentStore(context.repoRoot);
-  const resolved = await resolveAll(definition, context.repoRoot, pluginDir);
+  // The norm's templates, for `<template:<type>>` in a repository holding no copy of its own — resolved
+  // once per run through the activation cache (ADR-0019). The repository's declared or existing copy
+  // still wins inside the expander.
+  const normTemplates = await activatedTemplatePaths(context.config);
+  // The full entry list is a fact about this repository (Plan-034): the derived entries — computed
+  // from the activated governances — come first, in the order the hand-written list had, then the
+  // static ones. The emit-id check reruns over the whole list because a derived id exists only now.
+  const derived =
+    definition.derives === undefined || definition.derives.length === 0
+      ? { entries: [] as readonly OpsGateEntry[], skips: [] as readonly OpsSkip[] }
+      : await deriveOpsEntries(definition.derives, context.config);
+  const entries = [...derived.entries, ...definition.gates];
+  const emits = collectEmitIds(definition.id, entries);
+  const resolved = await resolveAll(definition.id, entries, context.repoRoot, pluginDir, context.config.records);
 
   if (context.flags["list"] === true) {
     const gates = resolved.map(({ entry, gate, patterns }) => ({
@@ -364,7 +419,7 @@ async function run(
       summary: gate.definition.summary,
       emits: entry.emits === true,
     }));
-    if (context.surface === "cli") {
+    if (context.surface === "cli" && context.flags["json"] !== true) {
       for (const { entry, gate, patterns } of resolved) {
         const marks = entry.emits === true ? "  (emits)" : "";
         context.log(`  ${labelFor(entry).padEnd(18)} ${patterns.join(" ")}${marks}`);
@@ -379,10 +434,19 @@ async function run(
   // The emitter is doubly opt-in, unchanged: an entry declares `emits` AND the config names a
   // destination. Either alone produces nothing, so an observation is never written somewhere nobody
   // chose. Built here rather than taken from context.emit — see the header.
+  /**
+   * Whether one finding blocks. Most specific wins: the rule it names, else the entry it came from,
+   * else every finding in this ops, else the caller's default — the gate's own declared level for a
+   * real finding, `warn` for the emission failure below. One cascade, because two would drift and a
+   * drift here is invisible from either side: both answers look like a level.
+   */
+  const levelOf = (rule: string, label: string, fallback: "fail" | "warn"): "fail" | "warn" =>
+    governed?.level?.[rule] ?? governed?.level?.[label] ?? governed?.level?.["*"] ?? fallback;
+
   const emit =
     emits.length > 0 && context.config.artifactDir !== undefined
       ? createEmitter({
-          artifactDir: path.resolve(context.repoRoot, context.config.artifactDir),
+          artifactDir: resolveArtifactDir(context.repoRoot, context.config.artifactDir),
           moduleId: definition.id,
           moduleVersion: definition.version,
           repoRoot: context.repoRoot,
@@ -396,13 +460,20 @@ async function run(
   const fileFlag = context.flags["file"];
   const files = typeof fileFlag === "string" ? [toRepoRelative(fileFlag, context.repoRoot)] : trackedFiles(context.repoRoot);
   const verbose = context.flags["verbose"] === true;
-  const cli = context.surface === "cli";
+  // `--json` puts the payload on stdout, which is the same stream these lines use — so a line printed
+  // beside the JSON is a line printed inside it. Folding the flag into `cli` silences every log site at
+  // once rather than leaving each one to remember, which is how `module-check` lost its own preamble
+  // into the payload the first time this flag was added there.
+  const cli = context.surface === "cli" && context.flags["json"] !== true;
   const fixSpec = fixSpecFrom(context.flags["fix"], resolved, definition.id);
   const governed = context.settings as GovernedSettings | undefined;
   // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so
   // a report that lives only in context.log arrives there as a count with nothing behind it.
   const findings: OpsFinding[] = [];
-  const skipped: OpsSkip[] = [];
+  // Seeded with the derivation's skips: a bound-but-unresolved governance is a statement in the run's
+  // own report, the same channel a disabled entry uses, never a silent gap in the derived list.
+  const skipped: OpsSkip[] = [...derived.skips];
+  if (cli && verbose) for (const skip of derived.skips) context.log(`SKIP  [${skip.gate}] ${skip.reason}`);
   const repaired: OpsRepair[] = [];
   const population: OpsPopulation[] = [];
   let failures = 0;
@@ -428,7 +499,9 @@ async function run(
       repoRoot: context.repoRoot,
       pluginDir,
       files: scoped,
-      options: entry.options ?? {},
+      // Expanded here, not left to each gate: `<plugin>/` and `<template:<type>>` are facts about the
+      // target's layout, which is the ops's half of the split, never the detector's.
+      options: expandOptionTokens(entry.options ?? {}, context.repoRoot, pluginDir, context.config.records, normTemplates),
       documents,
     };
     let outcome = await gate.run(gateContext);
@@ -463,14 +536,7 @@ async function run(
     population.push({ gate: label, examined, ignored: ignoredCount });
 
     for (const finding of outcome.findings) {
-      // Most specific wins: the rule this finding names, else the entry it came from, else every finding
-      // in this ops, else what the gate itself declared, else fail.
-      const level =
-        governed?.level?.[finding.rule] ??
-        governed?.level?.[label] ??
-        governed?.level?.["*"] ??
-        finding.level ??
-        "fail";
+      const level = levelOf(finding.rule, label, finding.level ?? "fail");
       if (level === "warn") warnings += 1;
       else failures += 1;
       findings.push({
@@ -501,7 +567,7 @@ async function run(
       for (const finding of outcome.findings) {
         counts[finding.rule] = (counts[finding.rule] ?? 0) + 1;
       }
-      await emit({
+      const observation = {
         id: emitIdFor(entry),
         // The GATE and its own version — the detector that produced these findings, never the
         // composition that ran it. See the header comment on emit.ts.
@@ -518,7 +584,33 @@ async function run(
           ...(outcome.instrument === undefined ? [] : [`compared:${outcome.instrument}`]),
           ...patterns,
         ],
-      });
+      };
+
+      try {
+        await emit(observation);
+      } catch (error) {
+        // The two ways an emitter throws mean opposite things, and until they were told apart every
+        // emission failure aborted the whole ops — so a sensor that could not WRITE refused a commit
+        // whose content was clean. That is what made `harness sync` read as the target's gate rejecting
+        // a promulgation: `.git/gate-artifacts` under a linked working tree, where `.git` is a file.
+        //
+        // An undeclared id is not that. It is this repository's own composition disagreeing with its own
+        // definition, and no target may declare it away.
+        if (error instanceof UndeclaredObservationError) throw error;
+
+        // Everything else is the DESTINATION failing, not the reading: a read-only mount, a full disk, a
+        // path that is not a directory. Declared `warn`, and that word is the default rather than the
+        // verdict — `settings.<ops>.level` raises `emit-failed` to `fail` for a repository whose series
+        // matters more than its commits. Reported as a finding rather than swallowed, because the
+        // objection to not blocking is that a reading goes missing in silence, and a named finding in
+        // the run's own output and `data` is the answer to the silence, not to the blocking.
+        const level = levelOf("emit-failed", label, "warn");
+        if (level === "warn") warnings += 1;
+        else failures += 1;
+        const why = error instanceof Error ? error.message : String(error);
+        findings.push({ gate: label, rule: "emit-failed", evidence: `${observation.id} was not recorded: ${why}`, level });
+        if (cli) context.log(`${level === "warn" ? "WARN" : "FAIL"}  [emit-failed] ${observation.id} was not recorded: ${why}`);
+      }
     }
   }
 

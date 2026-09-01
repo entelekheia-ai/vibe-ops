@@ -1,0 +1,19 @@
+{
+  "id": "governance",
+  "version": "0.0.1",
+  "summary": "The governance surface: records, links and archival references",
+  "derives": [
+    "record-schema",
+    "template-version"
+  ],
+  "gates": [
+    {
+      "gate": "markdown-link",
+      "emits": true
+    },
+    {
+      "gate": "breadcrumb",
+      "emits": true
+    }
+  ]
+}

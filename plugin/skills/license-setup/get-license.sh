@@ -29,7 +29,20 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REGISTRY="$HERE/licenses/SOURCES.tsv"
+
+# The texts and their registry belong to @entelekheia/governance-license, not to this skill: the pins are
+# data the tooling owns, and the gate that verifies them reads them there. Resolved through the CLI, which
+# knows where an installed package sits; the checkout path answers when the CLI is not on PATH, which is
+# the case while working on this repository itself.
+LICENSES="$(vibe-ops records norm --type license --facet template 2>/dev/null | sed -n 's/^PATH=//p' | xargs -I{} dirname {} 2>/dev/null || true)"
+if [ -z "${LICENSES:-}" ] || [ ! -d "$LICENSES" ]; then
+  LICENSES="$HERE/../../../cli/packages/governance-license/templates"
+fi
+if [ ! -d "$LICENSES" ]; then
+  echo "get-license: cannot find the licence texts — is @entelekheia/governance-license installed?" >&2
+  exit 2
+fi
+REGISTRY="$LICENSES/SOURCES.tsv"
 SPDX_TEXT_URL="https://raw.githubusercontent.com/spdx/license-list-data/main/text"
 
 die() { printf 'get-license: %s\n' "$1" >&2; exit "${2:-2}"; }
@@ -94,7 +107,7 @@ cmd_fetch() {
 
   local url sha_file cached tmp got
   IFS=$'\t' read -r url sha_file _ <<<"$(lookup "$id")"
-  cached="$HERE/licenses/$id.txt"
+  cached="$LICENSES/$id.txt"
   tmp="$(mktemp)"; trap 'rm -f "$tmp"' RETURN
 
   # Cache first: the shipped copy is byte-identical to upstream or it is not used. Offline installs work,
@@ -173,7 +186,7 @@ cmd_pin() {
   local id="${1:-}" url="${2:-}"
   [ -n "$id" ] || die "usage: $0 pin <SPDX-ID> [URL]" 2
   [ -n "$url" ] || url="$SPDX_TEXT_URL/$id.txt"
-  local dest="$HERE/licenses/$id.txt" tmp; tmp="$(mktemp)"; trap 'rm -f "$tmp"' RETURN
+  local dest="$LICENSES/$id.txt" tmp; tmp="$(mktemp)"; trap 'rm -f "$tmp"' RETURN
   fetch_url "$url" >"$tmp"
   local sha_file sha_text
   sha_file="$(sha256 <"$tmp")"

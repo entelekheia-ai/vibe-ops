@@ -1,0 +1,16 @@
+{
+  "note": "This governance's fragment of the promulgation boundary — composed with the harness base declaration and every other activated governance's fragment at sync time (Plan-033, ADR-0019). Read, never re-decided at a call site.",
+  "version": 2,
+  "paths": [
+    {
+      "match": "project/templates/rfc.md",
+      "class": "norm",
+      "why": "Each declares its own version and each version jump has a migration note. This is the class's clearest case: drift here is what the applied-version map exists to detect."
+    },
+    {
+      "match": "project/rfc/**",
+      "class": "shaped",
+      "why": "Two owners, permanently (Plan-031): the tooling owns the structure — migration may restructure per a recorded note, and the template-version gates read the declared stamp — while the repository owns every word written under it. Promulgation still never writes here; `shaped` is migration's class, not promulgation's."
+    }
+  ]
+}

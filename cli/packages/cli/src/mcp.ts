@@ -10,9 +10,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import type { ModulePlugin } from "@entelekheia/vibe-ops-core";
+import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
+import type { ModuleFlag, ModulePlugin } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
-import { runModule } from "./run.ts";
+import { repoRootFrom, runModule } from "./run.ts";
 import { createServer } from "node:http";
 
 function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
@@ -46,19 +47,88 @@ function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
       .optional()
       .describe("Required to run a destructive command. Preview with dry-run first; this is not undoable.");
   }
-  // Flags are unioned across every command (plus the module's own) rather than scoped per command —
-  // an MCP input schema is one static shape per tool, not one per enum value, so a flag valid only
-  // for one verb still appears for the others; the module itself rejects a flag its dispatched verb
-  // does not use, the same way the terminal does.
-  const allFlags = [...(plugin.definition.flags ?? []), ...(commands ?? []).flatMap((c) => c.flags ?? [])];
-  const seen = new Set<string>();
-  for (const flag of allFlags) {
-    if (seen.has(flag.name)) continue;
-    seen.add(flag.name);
-    shape[flag.name] =
-      flag.type === "boolean"
-        ? z.boolean().optional().describe(flag.description)
-        : z.string().optional().describe(flag.description);
+  // ONE STATIC SHAPE PER TOOL is the constraint, and it is the SDK's, not a choice made here: an input
+  // schema is a single object shape, so a tool per noun cannot publish a different property set per verb.
+  // Passing a discriminated union instead publishes `{"type":"object","properties":{}}` — measured
+  // 2026-08-14, an empty schema, strictly worse than the union it would replace.
+  //
+  // So the union stays and is made honest two ways. `runModule` REFUSES a flag the dispatched verb does
+  // not declare, naming the verb it belongs to, so an invited-but-invalid call fails loudly instead of
+  // being accepted and ignored (Plan-027 Track 2 — before it, nothing rejected a flag on this path at
+  // all). And every entry below says which verbs accept it, so a caller reading the schema can tell.
+  // Each declaration of a flag, with the verb that made it — `undefined` for a module-level one, which
+  // applies to every verb. Keyed by name, because the same name may be declared more than once and the
+  // differences between those declarations are exactly what the published entry has to carry.
+  const declarationsFor = new Map<string, { verb?: string; flag: ModuleFlag }[]>();
+  const record = (flag: ModuleFlag, verb?: string): void => {
+    const seen = declarationsFor.get(flag.name);
+    if (seen === undefined) declarationsFor.set(flag.name, [{ verb, flag }]);
+    else seen.push({ verb, flag });
+  };
+  for (const flag of plugin.definition.flags ?? []) record(flag);
+  for (const command of commands ?? []) for (const flag of command.flags ?? []) record(flag, command.name);
+  if (plugin.definition.needsSource === true) record(SOURCE_FLAG);
+
+  for (const [name, declarations] of declarationsFor) {
+    const scopedTo = declarations.map((one) => one.verb).filter((verb) => verb !== undefined);
+    const scoped = scopedTo.length === declarations.length && scopedTo.length > 0;
+
+    // A module-level flag applies to every verb and gets no prefix — tagging it would be noise on the
+    // majority. The prefix is carried by the minority that is scoped, which is the whole point.
+    //
+    // Where several verbs declare the SAME name with DIFFERENT wording, each wording is published beside
+    // the verbs that mean it, rather than one of them standing in for all. `records --type` is the case:
+    // `resolve` takes two types and `list` takes four, so printing only the first left the entry saying
+    // `adr | rfc` while its own enum accepted four — a contradiction inside one property.
+    const byWording = new Map<string, string[]>();
+    for (const { verb, flag } of declarations) {
+      const seen = byWording.get(flag.description);
+      if (seen === undefined) byWording.set(flag.description, verb === undefined ? [] : [verb]);
+      else if (verb !== undefined) seen.push(verb);
+    }
+    const segments = [...byWording].map(([wording, verbs]) => (verbs.length === 0 ? wording : `[${verbs.join(", ")}] ${wording}`));
+
+    // A REQUIREMENT CANNOT BE SCOPED IN A SHARED SHAPE, and getting this wrong breaks the sibling verbs
+    // rather than the one being described: `records --type` is required by `resolve` and `list` while
+    // `census` must run without it, so marking the property mandatory would make `census` unreachable
+    // over MCP. Only a module-level requirement — one that holds for every verb — reaches the schema as
+    // `required`. A scoped one is stated in the description and enforced by `runModule`, which is the
+    // layer that knows which verb was dispatched.
+    const requiredBy = declarations.filter((one) => one.flag.required === true).map((one) => one.verb);
+    const mandatory = requiredBy.length === declarations.length && !scoped;
+    const description = [
+      segments.join("; "),
+      !mandatory && requiredBy.length > 0 ? `(required for: ${requiredBy.join(", ")})` : undefined,
+    ]
+      .filter((part) => part !== undefined)
+      .join(" ");
+
+    // `choices` becomes an enum, so a client reads the accepted values rather than guessing them. Two
+    // consequences, and the second was found by a test rather than by reasoning.
+    //
+    // An out-of-domain value is refused at the transport, before the module runs, so a module's own
+    // guidance for a retired value is unreachable HERE. That is the right trade — a client reading the
+    // schema never constructs the bad call — and the guidance still serves the terminal and any client
+    // that ignores schemas, which is why the module keeps it.
+    //
+    // AN ENUM IN A SHARED SHAPE MUST BE THE UNION, for exactly the reason the property set is. `records`
+    // declares `--type` twice: `resolve` takes `adr|rfc`, `list` takes all four. Publishing the first
+    // declaration's domain made `records list --type plan` — a valid call — unconstructible over MCP,
+    // rejected by the transport with a schema error. Narrowing per verb is `runModule`'s job and the
+    // module's; the schema may only describe what SOME verb accepts. A flag some declaration leaves open
+    // publishes no enum at all, since an open domain unions to an open domain.
+    const domains = declarations.map((one) => one.flag.choices);
+    const union = domains.every((one) => one !== undefined)
+      ? [...new Set(domains.flatMap((one) => [...one!]))]
+      : undefined;
+
+    const base =
+      declarations[0]!.flag.type === "boolean"
+        ? z.boolean()
+        : union !== undefined && union.length > 0
+          ? z.enum(union as [string, ...string[]])
+          : z.string();
+    shape[name] = (mandatory ? base : base.optional()).describe(description);
   }
   return shape;
 }
@@ -66,8 +136,11 @@ function shapeFor(plugin: ModulePlugin): Record<string, z.ZodType> {
 export async function buildServer(moduleNames: readonly string[]): Promise<McpServer> {
   const server = new McpServer({ name: "vibe-ops", version: "0.0.1" });
 
+  // One config read for routing the governance nouns (ADR-0019) — the server is stateless per call for
+  // everything else, and runModule re-reads the acting repository's cascade itself.
+  const { config: routingConfig } = await loadConfig(repoRootFrom(process.cwd()));
   for (const name of moduleNames) {
-    const plugin = await loadModule(name);
+    const plugin = await loadModule(name, routingConfig);
     const { id, summary } = plugin.definition;
 
     server.registerTool(

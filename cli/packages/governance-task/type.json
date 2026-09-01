@@ -1,0 +1,22 @@
+{
+  "type": "task",
+  "template": "./templates/task.md",
+  "authoring": "./authoring.md",
+  "migrations": "./migrations",
+  "schema": {
+    "carrier": "table",
+    "required": [
+      "Status",
+      "Created",
+      "Author",
+      "Issue"
+    ]
+  },
+  "numbered": true,
+  "pad": 3,
+  "depth": 1,
+  "dirs": [
+    "project/tasks",
+    "tasks"
+  ]
+}

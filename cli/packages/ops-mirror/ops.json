@@ -1,0 +1,281 @@
+{
+  "id": "mirror",
+  "version": "0.0.1",
+  "summary": "What one place claims, another place must confirm",
+  "gates": [
+    {
+      "gate": "template-heading-drift",
+      "paths": [
+        "**/*.md",
+        ".agents/**/*.md"
+      ],
+      "options": {
+        "migrations": "cli/packages/governance-plan/migrations",
+        "templates": {
+          "adr": "cli/packages/governance-adr/templates/adr.md",
+          "log": "cli/packages/governance-log/templates/log.md",
+          "plan": "cli/packages/governance-plan/templates/plan.md",
+          "rfc": "cli/packages/governance-rfc/templates/rfc.md",
+          "task": "cli/packages/governance-task/templates/task.md"
+        }
+      },
+      "emits": true,
+      "fixture": {
+        "options": {
+          "migrations": "<plugin>/migrations",
+          "templates": {
+            "plan": "<plugin>/templates/plan.md"
+          }
+        },
+        "expect": [
+          "template-heading-drift-named",
+          "template-heading-drift-count"
+        ],
+        "files": {
+          "migrations/plan-0.1-to-0.2.md": "# plan 0.1 → 0.2\n\n| Section | 0.1 | 0.2 |\n|---|---|---|\n| `## Progress` | step-level checklist | **dropped** |\n| Living sections | four | two |\n\n",
+          "templates/plan.md": "---\nvibe-ops-template: plan@3\n---\n\n# Plan-NNN\n\n<!-- ===== LIVING SECTIONS ===== -->\n\n## Decision Log\n\n## Outcomes & Retrospective\n\n<!-- ===== END LIVING SECTIONS ===== -->\n\n",
+          "rule.md": "### Plan (`project/plans/`)\n\nFour sections are living and are maintained while the work happens: `Progress` is one.\n\n"
+        }
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "paths": [
+        "**/*.md"
+      ],
+      "emits": true,
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "links",
+        "against": "markdown-link"
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-frontmatter",
+      "paths": [
+        ".agents/rules/*.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "frontmatter",
+        "against": "check-frontmatter",
+        "options": {
+          "schema": "rule"
+        }
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-skill-frontmatter",
+      "paths": [
+        "<plugin>/skills/*/SKILL.md",
+        ".agents/skills/*/SKILL.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "skill-frontmatter",
+        "against": "check-frontmatter",
+        "options": {
+          "schema": "skill"
+        }
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-memory-slug",
+      "paths": [
+        "AGENTS.md",
+        "**/AGENTS.md",
+        "**/CLAUDE.md",
+        "**/README.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "memory-slugs",
+        "against": "classification",
+        "options": {
+          "level": "internal",
+          "rule": "memory-slug",
+          "subject": "a pointer to a note nobody else holds",
+          "forbid": [
+            "\\[\\[[a-z0-9][a-z0-9_-]*\\]\\]"
+          ]
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "dogfooding-drift",
+      "options": {
+        "compare": "text",
+        "ignore": [
+          "copyright"
+        ],
+        "subject": "this repository's copy and the copy it ships",
+        "rule": "dogfooding-drift",
+        "pairs": [
+          [
+            "cli/packages/governance-plan/templates/plan.md",
+            "<plugin>/skills/setup/templates/project/templates/plan.md"
+          ],
+          [
+            "cli/packages/governance-task/templates/task.md",
+            "<plugin>/skills/setup/templates/project/templates/task.md"
+          ],
+          [
+            "cli/packages/governance-adr/templates/adr.md",
+            "<plugin>/skills/setup/templates/project/templates/adr.md"
+          ],
+          [
+            "cli/packages/governance-rfc/templates/rfc.md",
+            "<plugin>/skills/setup/templates/project/templates/rfc.md"
+          ],
+          [
+            "cli/packages/governance-log/templates/log.md",
+            "<plugin>/skills/setup/templates/project/templates/log.md"
+          ],
+          [
+            ".agents/rules/governance.md",
+            "<plugin>/skills/setup/templates/agents/rules/governance.md"
+          ],
+          [
+            "GOVERNANCE.md",
+            "<plugin>/skills/setup/templates/root/GOVERNANCE.md"
+          ]
+        ]
+      },
+      "fixture": {
+        "expect": [
+          "dogfooding-drift"
+        ],
+        "files": {
+          "GOVERNANCE.md": "# G\n\nown\n",
+          "skills/setup/templates/project/GOVERNANCE.md": "# G\n\nshipped, edited\n"
+        },
+        "options": {
+          "compare": "text",
+          "ignore": [
+            "copyright"
+          ],
+          "rule": "dogfooding-drift",
+          "subject": "this repository's copy and the copy it ships",
+          "pairs": [
+            [
+              "GOVERNANCE.md",
+              "skills/setup/templates/project/GOVERNANCE.md"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "license-text",
+      "emits": true,
+      "options": {
+        "compare": "sha",
+        "rule": "license-text",
+        "subject": "a licence this plugin hands out",
+        "rows": {
+          "file": "cli/packages/governance-license/templates/SOURCES.tsv",
+          "format": "tsv"
+        },
+        "left": {
+          "file": "cli/packages/governance-license/templates/${0}.txt"
+        },
+        "right": {
+          "column": 2
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "hooks-registration",
+      "options": {
+        "compare": "group",
+        "bothWays": true,
+        "rule": "hooks-registration",
+        "subject": "the hook registration and the scripts on disk",
+        "left": {
+          "scan": "\\$\\{CLAUDE_PLUGIN_ROOT\\}/hooks/([A-Za-z0-9_.-]+)",
+          "in": [
+            "<plugin>/hooks/hooks.json"
+          ]
+        },
+        "right": {
+          "entries": "<plugin>/hooks",
+          "kind": "file",
+          "matching": "\\.sh$"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "authoring-completeness",
+      "options": {
+        "compare": "group",
+        "rule": "authoring-missing",
+        "subject": "the authoring rules each governance package owes",
+        "left": {
+          "entries": "cli/packages",
+          "kind": "dir",
+          "matching": "^governance-(adr|rfc|plan|task)$"
+        },
+        "right": {
+          "resolving": "cli/packages/${0}/authoring.md"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "plugin-root-path",
+      "emits": true,
+      "paths": [
+        "**/*.md"
+      ],
+      "options": {
+        "compare": "group",
+        "rule": "plugin-root-path",
+        "subject": "a path this plugin ships",
+        "left": {
+          "scan": "\\$\\{CLAUDE_PLUGIN_ROOT\\}/([A-Za-z0-9_./-]+)",
+          "in": [
+            "**/*.md"
+          ]
+        },
+        "right": {
+          "resolving": "<plugin>/${0}"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "command-reference",
+      "paths": [
+        "README.md",
+        "<plugin>/skills/**/*.md",
+        "<plugin>/agents/*.md"
+      ],
+      "options": {
+        "compare": "group",
+        "rule": "command-reference",
+        "subject": "a command this plugin exposes",
+        "left": {
+          "scan": "vibe-ops:([A-Za-z0-9_-]+)",
+          "in": [
+            "README.md",
+            "<plugin>/skills/**/*.md",
+            "<plugin>/agents/*.md"
+          ]
+        },
+        "right": {
+          "resolving": [
+            "<plugin>/skills/${0}",
+            "<plugin>/agents/${0}.md"
+          ]
+        }
+      }
+    }
+  ]
+}

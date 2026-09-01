@@ -17,13 +17,13 @@
 import path from "node:path";
 import type { DocumentStore, RecordType, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 import {
-  DEPTH,
+  depthFor,
   findLogDir,
   listMarkdownFiles,
   NOT_A_RECORD,
   readTemplateVersion,
   resolveRecord,
-} from "@entelekheia/vibe-ops-records";
+} from "@entelekheia/governance-base";
 
 /** The four numbered types plus `log`, which has no number and so no `RecordType` of its own. */
 export type CensusType = RecordType | "log";
@@ -40,6 +40,23 @@ export interface CensusEntry {
 }
 
 const ORDER: readonly CensusType[] = ["adr", "rfc", "plan", "task", "log"];
+
+/**
+ * The types to census: the five this tooling ships, plus any the REPOSITORY declares a directory for.
+ *
+ * The shipped five alone were the whole list until Plan-029 opened the type union, and that made the
+ * census the one surface where a contributed type stayed invisible — it type-checked, its tokens
+ * expanded, its directory resolved, and then nothing counted it. A census that silently omits a
+ * population is the failure this command exists to end: it was written to replace an `rg` that found 8
+ * records out of 32 and reported a number either way.
+ *
+ * Declared types come last and in declaration order, so the shipped five keep the order every existing
+ * reading used.
+ */
+function censusOrder(config: VibeOpsConfig | undefined): readonly CensusType[] {
+  const declared = Object.keys(config?.records?.dirs ?? {}).filter((type) => !ORDER.includes(type));
+  return [...ORDER, ...declared];
+}
 
 /** What a record declaring nothing prints as — never a version, in either direction. */
 const UNKNOWN = "(unknown)";
@@ -80,13 +97,13 @@ export function census(
   documents: DocumentStore,
 ): readonly CensusEntry[] {
   const entries: CensusEntry[] = [];
-  for (const type of ORDER) {
+  for (const type of censusOrder(config)) {
     const dir =
       type === "log"
         ? findLogDir(repoRoot)
         : resolveRecord(type, repoRoot, config, documents).dir;
     if (dir === undefined) continue;
-    const found = read(documents, repoRoot, dir, type, type === "log" ? 1 : DEPTH[type]);
+    const found = read(documents, repoRoot, dir, type, depthFor(type));
     found.sort((a, b) => a.file.localeCompare(b.file));
     entries.push(...found);
   }

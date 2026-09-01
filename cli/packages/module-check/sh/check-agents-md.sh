@@ -38,7 +38,10 @@
 #   VIBE_OPS_DISABLED_CHECKS  newline-separated "id:reason" pairs. A composed check whose id appears
 #                             here is never run; it reports SKIP naming the reason instead of running,
 #                             so the disablement is a ledger entry rather than a silent pass — set from
-#                             a repository's own scripts/checks/_run.sh, never a plugin default
+#                             a repository's own scripts/checks/_run.sh, never a plugin default.
+#                             `vibe-ops check` also sets it from settings.check.disabled and appends
+#                             after whatever is already here, so a declaration made at the point of
+#                             invocation still wins: the first line carrying an id is the one matched
 #
 # Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.
 

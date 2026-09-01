@@ -84,7 +84,7 @@ skills say so rather than pretending otherwise.
 - [`GOVERNANCE.md`](../../GOVERNANCE.md) — the issue-pairing table, including how a plan differs.
 - [`.agents/rules/governance.md`](../../.agents/rules/governance.md) — the lifecycle mechanics.
 - [`skills/new/SKILL.md`](../../plugin/skills/new/SKILL.md) with
-  [`references/records/task.md`](../../plugin/references/records/task.md) ·
+  [`references/records/task.md`](../../cli/packages/governance-task/authoring.md) ·
   [`skills/close-task/SKILL.md`](../../plugin/skills/close-task/SKILL.md) — the two ends of it. (Pointer
   repaired when `new-task` was folded into `/new`; again when `close-task`/`close-plan` were folded into
   `/close`; and a third time when Plan-011 split them back apart, because the two lifecycles end

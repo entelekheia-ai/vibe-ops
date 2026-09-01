@@ -12,8 +12,21 @@ import type { ModuleContext } from "./context.ts";
 /** What a module reports back. `code` is the process exit code when run from the CLI. */
 export interface ModuleResult {
   readonly code: number;
-  /** Human-facing summary line. The CLI prints it; the MCP server returns it as tool text. */
-  readonly summary?: string;
+  /**
+   * Human-facing summary line. The CLI prints it; the MCP server returns it as tool text.
+   *
+   * **Required, and the empty result is the reason.** A run that found nothing used to return neither
+   * `summary` nor `data`, so both surfaces printed nothing at all — and an empty string is not read as
+   * "this surface rendered no report", it is read as "there is nothing", which is a different and often
+   * false answer. Measured across the session corpus: four abandoned calls returned empty, and in every
+   * one the caller distrusted the silence and re-derived the answer by hand rather than believing it.
+   *
+   * So a summary states what was looked for and where, even — especially — when the answer is none:
+   * `"no incoherent plan among 12 in project/plans"` rather than nothing at all. There is deliberately
+   * no `count` field beside it; a report array carries its own length, and the summary carries the
+   * population.
+   */
+  readonly summary: string;
   /** Structured payload, returned verbatim by MCP. Must be JSON-serializable. */
   readonly data?: unknown;
 }
@@ -31,6 +44,19 @@ export interface ModuleFlag {
    * gate. Unused on a `boolean` flag, which already has this for free.
    */
   readonly implicit?: string;
+  /**
+   * That the flag must be present. Declared rather than checked inside the module, because a
+   * requirement enforced by a hand-written conditional is a requirement each verb re-states: `records`
+   * carried the same `--type` check twice, byte-identical, and a missing flag reported the same message
+   * as a misspelt one. Only meaningful on a flag with no `default`, which would satisfy it for free.
+   */
+  readonly required?: boolean;
+  /**
+   * The closed set of values a `string` flag accepts. Declaring it here is what lets one refusal
+   * message, the terminal's `--help` and the MCP schema's enum all derive from the same list instead of
+   * three copies that drift. Never set on a `boolean` flag — its domain is already closed.
+   */
+  readonly choices?: readonly string[];
 }
 
 /**
@@ -70,7 +96,39 @@ export interface ModuleDefinition {
   readonly emits?: readonly string[];
   /** Set when the module must not run unattended — the CLI confirms before invoking it. */
   readonly destructive?: boolean;
+  /**
+   * That this module's first positional argument names the repository to act on, so the CLI resolves
+   * `repoRoot` from it instead of from the working directory, and removes it from `args`.
+   *
+   * It exists because a module may not touch `process.cwd()` — everything positional is resolved once,
+   * by the CLI — and a relative path like `.` or `../other` cannot be resolved without it. `vibe-ops
+   * check .` was therefore accepting an argument it silently ignored, keying off the working directory
+   * instead: harmless for `.`, and wrong for every other value. Declaring the intent here lets the one
+   * layer that legitimately knows the working directory do the resolution.
+   *
+   * Only for a module whose subject IS a repository. A module whose positionals are file paths
+   * (`task close <dossier>…`) must not set it.
+   */
+  readonly repoFromFirstArg?: boolean;
+  /**
+   * That this module reads from the installed norm, not only from the repository it acts on, and needs
+   * `context.sourceRoot` resolved. Set by a module comparing the target against what is installed —
+   * `harness status` is the first. Absent means `sourceRoot` is never populated, even if a `--source`
+   * flag or `CLAUDE_PLUGIN_ROOT` happen to be present, the same opt-in shape `emits` already has.
+   */
+  readonly needsSource?: boolean;
 }
+
+/**
+ * The `--source` flag every `needsSource` module gets, without declaring it itself. One definition so the
+ * terminal's parser, its `--help` output, and the MCP tool schema describe the same flag rather than three
+ * hand-written copies drifting apart.
+ */
+export const SOURCE_FLAG: ModuleFlag = {
+  name: "source",
+  type: "string",
+  description: "Root of the installed norm to compare against. Falls back to config.harness.source, then CLAUDE_PLUGIN_ROOT.",
+};
 
 export interface ModulePlugin {
   readonly definition: ModuleDefinition;
@@ -78,6 +136,25 @@ export interface ModulePlugin {
 }
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+/**
+ * The three ways a flag can describe itself incoherently. Checked here rather than where the flag is
+ * read, so a module that declares itself wrongly fails at load instead of at the one call that happens
+ * to exercise the contradiction — the same argument `defineModule` already makes for duplicate names.
+ */
+function checkFlagDeclaration(flag: ModuleFlag, where: string): void {
+  if (flag.choices !== undefined) {
+    if (flag.type !== "string") {
+      throw new Error(`${where} declares choices on --${flag.name}, which is a ${flag.type} flag — its domain is already closed`);
+    }
+    if (flag.choices.length === 0) {
+      throw new Error(`${where} declares an empty choices list on --${flag.name} — a flag no value satisfies is unreachable`);
+    }
+  }
+  if (flag.required === true && flag.default !== undefined) {
+    throw new Error(`${where} declares --${flag.name} required and also gives it a default, which satisfies it for free`);
+  }
+}
 
 export function defineModule(
   definition: ModuleDefinition,
@@ -93,6 +170,7 @@ export function defineModule(
   for (const flag of definition.flags ?? []) {
     if (seen.has(flag.name)) throw new Error(`module "${definition.id}" declares --${flag.name} twice`);
     seen.add(flag.name);
+    checkFlagDeclaration(flag, `module "${definition.id}"`);
   }
   if (definition.commands !== undefined) {
     if (definition.commands.length === 0) {
@@ -119,6 +197,7 @@ export function defineModule(
           throw new Error(`module "${definition.id}" command "${command.name}" declares --${flag.name} twice`);
         }
         seenCommandFlags.add(flag.name);
+        checkFlagDeclaration(flag, `module "${definition.id}" command "${command.name}"`);
       }
     }
   }

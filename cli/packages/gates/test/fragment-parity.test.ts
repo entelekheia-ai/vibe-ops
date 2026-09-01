@@ -133,7 +133,7 @@ test("skill-frontmatter compares cleanly against check-frontmatter under schema:
 // fault the file ends up in the port's findings either way. `record-header` isolates the mechanism
 // instead — it throws without a valid `options.schema`, so whether fragment-parity's own call to
 // `gate.run` carries the forwarded options is directly observable as throws-vs-does-not.
-test("options reaches the gate under test — record-header throws without options.schema, not with it", async () => {
+test("options reaches the gate under test — record-header throws without options.type, not with it", async () => {
   const repoRoot = await mkdtemp(path.join(tmpdir(), "vibeops-fragment-parity-forward-"));
   spawnSync("git", ["-C", repoRoot, "init", "-q"]);
   await writeFile(path.join(repoRoot, "AGENTS.md"), "# map\n");
@@ -150,10 +150,10 @@ test("options reaches the gate under test — record-header throws without optio
 
   await assert.rejects(
     () => fragmentParity.run(ctx(repoRoot, ["AGENTS.md"], { runner: fakeRunner, fragment: "fake", against: "record-header" })),
-    /record-header requires options\.schema/,
+    /record-header requires options\.type/,
   );
   await assert.doesNotReject(() =>
-    fragmentParity.run(ctx(repoRoot, ["AGENTS.md"], { runner: fakeRunner, fragment: "fake", against: "record-header", options: { schema: "adr" } })),
+    fragmentParity.run(ctx(repoRoot, ["AGENTS.md"], { runner: fakeRunner, fragment: "fake", against: "record-header", options: { type: "adr", required: ["Status"] } })),
   );
 });
 

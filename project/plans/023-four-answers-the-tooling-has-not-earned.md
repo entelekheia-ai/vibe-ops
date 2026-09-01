@@ -37,7 +37,7 @@ is cheaper than three times.
 
 ## Goals
 
-1. `records resolve` never hands back a record number that has already been used and archived.
+1. Resolution never hands back a record number that has already been used and archived.
 2. A check run states which fragment set it composed, so a clean report cannot be confused with a clean
    report over a subset.
 3. A freshly scaffolded package passes its own `npm test` and `npm run typecheck` with no edits.
@@ -70,12 +70,12 @@ once, in Track 2, and let Track 1 adopt it.
 
 ## Tracks
 
-- [ ] **Track 1 — `records resolve` consults history for the one record type that deletes its files.**
+- [ ] **Track 1 — Resolution consults history for the one record type that deletes its files.**
       Resolution derives the next id by taking the highest-numbered file present in the record type's
       directory and adding one. That is correct for ADR, RFC and plan, which are permanent. It is wrong for
       **task**, whose dossier is deleted at closure by design — git history is the archive, so the working
       tree shows only in-flight work and a closed task's number looks free. Verified in **this repository**
-      on 2026-08-13: `records resolve --type task` answers `existing: 0, next: "001"`, while
+      on 2026-08-13: resolving `task` answers `existing: 0, next: "001"`, while
       `git log --diff-filter=D --name-only -- 'project/tasks/*'` shows tasks 001–007 closed and deleted
       here, with 001–004 having been issued twice already. The behaviour predates the TypeScript CLI — it
       was first seen in the since-deleted `scripts/resolve-governance.sh` and the rewrite carried it across
@@ -140,8 +140,9 @@ once, in Track 2, and let Track 1 adopt it.
 
 Run from the repository root:
 
-- `records resolve --type task --json` in a repository with archived-and-deleted dossiers reports a `next`
-  greater than every number ever used, and a test asserts it.
+- `vibe-ops task resolve --json` in a repository with archived-and-deleted dossiers reports a `next`
+  greater than every number ever used, and a test asserts it. (Spelled `records resolve --type task` when
+  this plan was written; Plan-027 Track 1 made the noun the one spelling for a type that has one.)
 - `cli/packages/module-check/sh/check-agents-md.sh` on a repository with custom fragments and no
   `VIBE_OPS_CHECK_DIRS` produces a summary a reader can tell apart from a full run.
 - A package scaffolded by `/vibe-ops:setup repo` passes `npm test` and `npm run typecheck` with no manual

@@ -1,6 +1,6 @@
 // vibe-ops hook plan-context — the UserPromptSubmit surface that places this repository's plan format
 // at the moment a plan is written. Replaces plugin/hooks/plan-mode-context.sh (Plan-011 Track 3), whose
-// body is now `planModeGuidance` in @entelekheia/vibe-ops-records.
+// body is now `planModeGuidance` in @entelekheia/governance-base.
 //
 // Why a hook at all, unchanged from the script it replaces: a plan-mode plan is written before anything
 // under project/ has been read, so the format has to be present at that instant, and it carries the next
@@ -17,7 +17,8 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createDocumentStore, loadConfig } from "@entelekheia/vibe-ops-core";
-import { planModeGuidance, RecordsConfigError, resolveRecord } from "@entelekheia/vibe-ops-records";
+import { RecordsConfigError, resolveRecord } from "@entelekheia/governance-base";
+import { planModeGuidance } from "@entelekheia/governance-plan";
 import { repoRootFrom } from "./run.ts";
 
 interface UserPromptSubmitPayload {

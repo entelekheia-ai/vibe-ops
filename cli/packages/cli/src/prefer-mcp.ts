@@ -27,7 +27,7 @@
 import { loadConfig } from "@entelekheia/vibe-ops-core";
 import { exposedModules } from "./builtins.ts";
 import { loadModule } from "./resolve.ts";
-import { repoRootFrom } from "./run.ts";
+import { declaredFlagsFor, repoRootFrom } from "./run.ts";
 
 interface PreToolUsePayload {
   readonly tool_input?: { readonly command?: string };
@@ -151,13 +151,13 @@ export async function runPreferMcpHook(): Promise<number> {
     const commandDef = definition.commands?.find((c) => c.name === verb);
     if ((commandDef?.destructive ?? definition.destructive) === true) continue;
 
-    // The same union `shapeFor` builds for the tool schema, so a flag valid for another verb still
-    // resolves its arity here — the module rejects it either way, and the alternative is guessing whether
-    // the next token is a value or a positional.
+    // Scoped to the verb this line actually names, not to the union of every verb's flags. The union was
+    // wrong in a way that only showed on a mis-parse: a string flag belonging to a SIBLING verb resolved
+    // its arity here, so the token after it was swallowed as that flag's value instead of being read as
+    // a positional — turning a suggestion for `task guard <dossier>` into one that drops the dossier.
+    // `runModule` refuses the sibling's flag anyway (Plan-027 Track 2), so widening bought nothing.
     const flagTypes = new Map(
-      [...(definition.flags ?? []), ...(definition.commands ?? []).flatMap((c) => c.flags ?? [])].map(
-        (flag) => [flag.name, flag.type] as const,
-      ),
+      declaredFlagsFor(definition, verb).map((flag) => [flag.name, flag.type] as const),
     );
 
     const fields = [...(verb === undefined ? [] : [`command: "${verb}"`]), ...fieldsFor(rest, flagTypes)];

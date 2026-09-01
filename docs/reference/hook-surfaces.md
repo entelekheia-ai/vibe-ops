@@ -21,6 +21,8 @@ member per hook **event**; the payload field, the guard and the reply's `hookEve
 | `new-context` | `UserPromptExpansion` | `command_args`, `cwd` | the first word of `command_args` is `adr`, `rfc`, `plan` or `task` |
 | `task-guard` | `PreToolUse` | `tool_input.command`, `cwd` | the command deletes a `tasks/*.md` whose closure box is unchecked |
 | `prefer-mcp` **(temporary)** | `PreToolUse` | `tool_input.command`, `cwd` | the command invokes a `vibe-ops` module that is also an MCP tool |
+| `harness-status --plugin <dir>` | `SessionStart` | `cwd` | a record type's promulgated version is older than the installed template's |
+| `check-global` | `Stop` | `cwd`, `stop_hook_active` | the repository declares a `vibeops.config.*` of its own — **and then it reports whether or not anything failed**, the one surface here that speaks on a clean run |
 
 **`ops` is a reserved first word.** That surface takes an arbitrary ops name, so the reservation is what
 keeps a third-party ops from shadowing a surface, and a surface added later from shadowing an ops.
@@ -112,6 +114,31 @@ any module the config does not expose.
 **Its success condition is its own deletion.** When the CLI form stops appearing in transcripts, remove
 `prefer-mcp.ts`, its entry in `HOOK_SURFACES`, and its registration. A migration nudge that outlives its
 migration is a tax on every Bash call.
+
+### `harness-status --plugin <dir>`
+
+Compares the version of each record type **promulgated** into the repository being opened — the
+`harness.applied` map in `vibeops.config.local.*` — against what the installed templates declare, and
+reports only the types that are behind.
+
+**Silence is its normal outcome, and the design point.** It runs at the start of every session in every
+repository the operator opens, and almost none of them have anything pending. It says nothing when the
+versions match, nothing when a type was never promulgated (absence is a state, not version zero), and
+nothing when the repository is *ahead* of an older installed plugin. Comparing only what someone actually
+promulgated is what keeps precision at 1 by construction — a signal that fires in unrelated repositories
+is one people stop reading.
+
+**It reports and never writes**, however obvious the repair looks. Whether a hook may configure a
+repository the operator merely opened is
+[RFC-0002](../../project/rfc/0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md)'s
+first open question, and answering it as a side effect of being helpful is what that RFC exists to
+prevent.
+
+**It is the only surface besides `ops` that takes arguments.** `--plugin` is where the installed versions
+are read from, passed explicitly because the registration expands `${CLAUDE_PLUGIN_ROOT}` for exactly this
+— a module is handed one repository root, and the source/target seam does not exist yet. No `--plugin`, an
+unreadable directory, or a malformed payload: silence and exit 0. Every error path fails open, because an
+advisory hook must never be why a session does not start.
 
 ## A hook is never an MCP tool
 

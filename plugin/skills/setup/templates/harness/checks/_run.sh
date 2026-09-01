@@ -20,7 +20,7 @@
 #   1. A snapshot copied into this repository at scripts/check-agents-md.sh. It is a SNAPSHOT: it does
 #      not update itself, and refreshing it is a deliberate re-copy. First because it is the only source
 #      that survives this repository being cloned alone, outside whatever workspace authored it.
-#   2. A sibling `vibe-ops` checkout at ../vibe-ops/scripts/check-agents-md.sh, relative to this
+#   2. A sibling `vibe-ops` checkout, at $RUNNER_IN_CHECKOUT under ../vibe-ops/, relative to this
 #      repository's own root. This is the one to prefer INSIDE a workspace that keeps several
 #      repositories beside a shared vibe-ops checkout (entelekheia's Plan-020): there is nothing to
 #      refresh, because it is always the live tree, and it costs nothing to add — but it does not exist
@@ -40,14 +40,21 @@
 # and the wrong one for a repository that ships its gate to outside contributors. Moving such a
 # repository to the snapshot instead needs no change here — branch 1 already wins over branch 2 the
 # moment the copy exists.
+# Where the runner sits INSIDE a vibe-ops checkout. It has not been at `scripts/` since the CLI was
+# packaged, and branches 2 and 3 below went on naming that path afterwards — so the sibling branch this
+# workspace's own repositories are wired to prefer resolved nothing, silently, and every one of them fell
+# through to branch 1 or to the error. Named once here rather than spelled out three times, because that
+# is how the two copies came to disagree with reality while the third stayed right.
+RUNNER_IN_CHECKOUT="cli/packages/module-check/sh/check-agents-md.sh"
+
 resolve_runner() { # $1 = repository root; prints the runner path, or nothing
   local root="$1"
   if [ -x "$root/scripts/check-agents-md.sh" ]; then
     printf '%s' "$root/scripts/check-agents-md.sh"
-  elif [ -x "$root/../vibe-ops/scripts/check-agents-md.sh" ]; then
-    printf '%s' "$root/../vibe-ops/scripts/check-agents-md.sh"
-  elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh" ]; then
-    printf '%s' "${CLAUDE_PLUGIN_ROOT}/scripts/check-agents-md.sh"
+  elif [ -x "$root/../vibe-ops/$RUNNER_IN_CHECKOUT" ]; then
+    printf '%s' "$root/../vibe-ops/$RUNNER_IN_CHECKOUT"
+  elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/../$RUNNER_IN_CHECKOUT" ]; then
+    printf '%s' "${CLAUDE_PLUGIN_ROOT}/../$RUNNER_IN_CHECKOUT"
   fi
 }
 
@@ -59,7 +66,7 @@ run_composed_checks() { # $1 = repository root
   if [ -z "$runner" ]; then
     RUN_OUTPUT="no governance runner found.
 Expected a snapshot at $root/scripts/check-agents-md.sh, a sibling checkout at
-$root/../vibe-ops/scripts/check-agents-md.sh, or CLAUDE_PLUGIN_ROOT pointing at the plugin.
+$root/../vibe-ops/$RUNNER_IN_CHECKOUT, or CLAUDE_PLUGIN_ROOT pointing at the plugin.
 A hook cannot reach an installed plugin, so a repository with a gate needs the copy or the sibling."
     RUN_RC=2
     return 2

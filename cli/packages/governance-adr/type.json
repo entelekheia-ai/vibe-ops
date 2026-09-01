@@ -1,0 +1,22 @@
+{
+  "type": "adr",
+  "template": "./templates/adr.md",
+  "authoring": "./authoring.md",
+  "migrations": "./migrations",
+  "schema": {
+    "carrier": "table",
+    "required": [
+      "Status",
+      "Date",
+      "Deciders"
+    ]
+  },
+  "numbered": true,
+  "pad": 4,
+  "depth": 1,
+  "dirs": [
+    "project/adr",
+    "adr",
+    "docs/adr"
+  ]
+}

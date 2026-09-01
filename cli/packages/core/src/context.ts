@@ -28,6 +28,13 @@ export interface ModuleContext {
   readonly config: VibeOpsConfig;
   /** This module's slice of `config.settings`, resolved by id. */
   readonly settings: unknown;
+  /**
+   * Where the installed norm lives, for a module that declares `needsSource: true`. Resolved once by
+   * `runModule`, highest-priority match wins: `config.harness.source`, then the `--source` flag, then
+   * `process.env.CLAUDE_PLUGIN_ROOT`. Undefined when none of the three resolve — a module reading this
+   * must treat that as "nothing to compare against", not as an error.
+   */
+  readonly sourceRoot?: string;
   readonly surface: Surface;
   /**
    * Present only when the module's definition declares `emits`. Absent means this module was never

@@ -1,6 +1,18 @@
 {
-  "description": "Two guards, each silent unless its exact condition holds, plus five that are the vibe-ops command itself rather than a shipped script. prefer-mcp (vibe-ops hook prefer-mcp, no script) is TEMPORARY and never decides anything: it names the MCP tool equivalent to a vibe-ops command just run through Bash, and is deleted once the migration it exists for is done. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-file (vibe-ops hook plan-file, no script) files an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-guard (vibe-ops hook task-guard, no script) refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
+  "description": "Two guards, each silent unless its exact condition holds, plus six that are the vibe-ops command itself rather than a shipped script. harness-status (vibe-ops hook harness-status, no script) reads the version of each record type promulgated into the repository being opened and says nothing unless the installed templates are newer; it is passed ${CLAUDE_PLUGIN_ROOT} explicitly because that is where the installed versions are read from, and it reports without ever writing (RFC-0002 open question 1). prefer-mcp (vibe-ops hook prefer-mcp, no script) is TEMPORARY and never decides anything: it names the MCP tool equivalent to a vibe-ops command just run through Bash, and is deleted once the migration it exists for is done. plan-context (vibe-ops hook plan-context, no script) places this repository's plan format and next plan number at the moment a plan is written in plan mode. plan-file (vibe-ops hook plan-file, no script) files an approved plan-mode plan into that repository's project/plans/ and says where it landed. new-context (vibe-ops hook new-context, no script) resolves the repository before a typed /vibe-ops:new starts. task-guard (vibe-ops hook task-guard, no script) refuses to delete a task dossier whose closure ceremony has not run. plan-progress-nudge notices a turn wrote to a repository whose plan is active without touching that plan's living sections. session-state-cleanup deletes this session's own state files at SessionEnd.",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vibe-ops",
+            "args": ["hook", "harness-status", "--plugin", "${CLAUDE_PLUGIN_ROOT}"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
@@ -73,6 +85,15 @@
               "${CLAUDE_PLUGIN_ROOT}/hooks/plan-progress-nudge.sh"
             ],
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "vibe-ops",
+            "args": [
+              "hook",
+              "check-global"
+            ],
+            "timeout": 30
           }
         ]
       }

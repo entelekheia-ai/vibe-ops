@@ -37,14 +37,20 @@
 
 import { defineGate, expandPluginToken } from "@entelekheia/vibe-ops-core";
 import type { Document, GateFinding } from "@entelekheia/vibe-ops-core";
-import { compareVersions, findHeaderTable, readTemplateVersion, valueOf } from "@entelekheia/vibe-ops-records";
+import { compareVersions, findHeaderTable, readTemplateVersion, valueOf } from "@entelekheia/governance-base";
 
 interface TemplateVersionOptions {
   /**
-   * Repository-relative path to the template whose declaration is the current one. A leading
-   * `<plugin>/` expands to wherever the target's plugin surface actually is — `plugin/` in a repo
-   * shaped like this one, the root in a flat one. Hardcoding either layout makes the pair unreachable
-   * in the other, which is the failure `$PLUGIN_DIR` already exists to prevent on the shell side.
+   * Repository-relative path to the template whose declaration is the current one, **already expanded
+   * by the composing ops**. A composition names `<template:<type>>` and the ops resolves it against the
+   * repository's own `records.templates` and search order; `<plugin>/` still expands too, for a
+   * composition that names a path inside the plugin surface directly.
+   *
+   * It arrives expanded rather than being resolved here because where a template lives is a fact about
+   * the target's layout, which is the ops's half of the split and never the detector's. Naming
+   * `<plugin>/templates/<type>.md` in the composition put that decision here by accident: in a repo laid
+   * out flat the token resolved to the repository root, where nothing writes templates, so this gate was
+   * inert in every repository the tooling scaffolds while reporting SKIP.
    */
   readonly template?: string;
 }
@@ -75,12 +81,18 @@ export default defineGate(
     const templatePath = expandPluginToken(declaredPath, repoRoot, pluginDir);
 
     // Two different absences, and collapsing them is how a gate reports a repository as broken for
-    // being small. A template that is not there means this repository keeps no records of that type —
-    // nothing to read, so SKIP naming the path. A template that IS there and declares nothing is a real
-    // defect: every record under it would read as undeclared for a reason that is not about the record.
+    // being small. A template that is not there leaves nothing to compare against, so SKIP naming the
+    // path. A template that IS there and declares nothing is a real defect: every record under it would
+    // read as undeclared for a reason that is not about the record.
+    //
+    // THE REASON SAYS ONLY WHAT THIS GATE KNOWS. It used to say "this repository keeps no records of
+    // that type", which is a statement about the records — a population this gate never looked at, and
+    // one it was wrong about: the sentence was printed over a repository holding 9 ADRs, 25 RFCs and 4
+    // plans, because the composition names a template path the repository does not use. A skip reason
+    // that explains the wrong thing is what kept that misconfiguration invisible.
     const templateDocument = documents.get(templatePath);
     if (templateDocument.tree === undefined) {
-      return { findings: [], skipped: `no ${templatePath} — this repository keeps no records of that type` };
+      return { findings: [], skipped: `no ${templatePath} — nothing to compare these records against` };
     }
 
     const current = readTemplateVersion(templateDocument);

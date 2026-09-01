@@ -57,6 +57,11 @@ The four gates named above, one new exported helper in `cli/packages/core/`, the
 
 ## Design
 
+> **Path annotation, 2026-08-23.** The citations to `gates/src/memory-slug/` above are historical and
+> are kept as written. That gate was absorbed by `gates/src/classification/`, composed as the `memory-slug`
+> entry of `ops-classification` — the detection and its `proseText` reasoning are unchanged.
+
+
 A markdown document reaches a gate already parsed, and the parse exposes three surfaces that answer
 different questions. Reading the wrong one is the defect this plan corrects in four places.
 
@@ -82,7 +87,7 @@ flowchart TD
 
 Three of the four gates need the same thing — *the document's prose, with anything quoted as code removed*
 — and each currently hand-rolls it. `memory-slug` toggles a fence flag line by line and strips code spans
-with `` /`[^`]*`/g `` ([memory-slug/index.ts:18-20](../../../cli/packages/gates/src/memory-slug/index.ts#L18-L20));
+with `` /`[^`]*`/g `` (`memory-slug/index.ts:18-20`);
 `claude-md-content` strips HTML comments with `/<!--[\s\S]*?-->/g`
 ([claude-md-content/index.ts:17](../../../cli/packages/gates/src/claude-md-content/index.ts#L17)); `pairing` does
 not strip anything and is wrong for it (below).
@@ -107,13 +112,13 @@ Verified against the existing fixture on 2026-08-12: `[[project_something]]` doe
 `text` node. The inline grammar parses it as `(shortcut_link (link_text))`, and the `shortcut_link` node's
 own text is `[project_something]` — a single bracket pair — so the gate's `SLUG` pattern does not match
 it. **Walking node types finds nothing.** Masking via `proseText` and regexing the result reports the real
-slug at line 7, which is what [memory-slug.test.ts:39](../../../cli/packages/gates/test/memory-slug.test.ts#L39)
+slug at line 7, which is what `memory-slug.test.ts:39`
 already asserts.
 
 This is the reason the primitive is a masked *string* rather than a node walk.
 
 One behaviour change to make deliberately: the gate currently does `examined += 1` before reading the file
-([memory-slug/index.ts:29](../../../cli/packages/gates/src/memory-slug/index.ts#L29)), so a file with no grammar
+(`memory-slug/index.ts:29`), so a file with no grammar
 would count as read. Under the document-model idiom an unparsed file is skipped and not counted, per
 `core`'s README. Its composed population is all `.md`, so no real reading moves.
 

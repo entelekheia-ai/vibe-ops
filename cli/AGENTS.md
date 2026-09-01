@@ -12,13 +12,15 @@ The repository-wide map is [`../AGENTS.md`](../AGENTS.md); the plugin is [`../pl
 |---|---|
 | [`packages/core/`](packages/core/) | `@entelekheia/vibe-ops-core` — the contract, the config cascade, the eita seam, and the tree-sitter document model behind `GateRunContext.documents`. **How to read a document is [its own README](packages/core/README.md)**, not restated here: the block-vs-inline split, `lineAt` over `startPosition.row`, and what `uncovered` obliges. Depends on nothing else **in this workspace**, so it builds first — but its runtime dependencies are **native**: `tree-sitter` ships prebuilt binaries for `darwin-arm64`, `darwin-x64`, `linux-x64` and `win32-x64`, **not** `linux-arm64`, which compiles from source, so `npm install` can fail there where it previously could not. **Two grammar-manifest conventions coexist** and `grammars.ts` reads both — markdown declares grammars in a `"tree-sitter"` array in its own `package.json`; yaml has no such key and ships a standalone `tree-sitter.json` with the same fields under `"grammars"`. Check a third grammar against both before assuming either is universal. |
 | [`packages/cli/`](packages/cli/) | `@entelekheia/vibe-ops-cli` — the `vibe-ops` binary, module dispatch, the **stateless** MCP server, and the `hook` surface (`src/hook.ts`) a skill-scoped `hooks:` block calls by name. Also the programmatic API a third-party module builds against. |
-| [`packages/module-<id>/`](packages/) | One module, one package. `module-check` is the reference implementation. `module-plan`, `module-task` and `module-log` are the three governance **nouns** (Plan-011); `module-records` answers for `adr`/`rfc`, the two record types with no noun of their own. |
-| [`packages/records/`](packages/records/) | `@entelekheia/vibe-ops-records` — the governance record library the nouns share: where records live, the next number, a plan's status chain and living sections, the closure box, filing and closing. **Action, never detection** — it mutates and resolves destinations, which is exactly what a gate may not do. It is also a second foundation package: it sorts after every `module-*` that depends on it, so `npm run build` builds it explicitly, like `core`. |
+| [`packages/module-<id>/`](packages/) · [`packages/governance-<t>/`](packages/) | One module, one package; since Plan-033 **one artifact, one governance package** (ADR-0019). `module-check` is the reference module implementation. `governance-{adr,rfc,plan,task,log}` each carry their artifact's data (`type.json` at the package root, `templates/`, `migrations/`, `authoring.md`, an `ownership.json` fragment) AND its verbs, built on `defineGovernance` — adr and rfc are pure sugar; plan, task and log absorbed the former `module-plan`/`-task`/`-log`, ids unchanged. A bare noun routes through the **effective governance map** (shipped defaults ⊕ `config.types` — the config is the registry) before the package-name conventions. `module-records` keeps the cross-type verbs — census, handling, show, list, and `norm`, the facet reader the plugin skills call. [`packages/harness/`](packages/harness/) is **CLI-internal** (no governance of its own), declares `needsSource`, and reads the installed norm — the activated packages, or a pinned tree — as well as the repository it acts on. Five of its six verbs read; **`sync` is the only thing here that writes into another repository**, on a linked working tree, stopping at a branch and a tag. What it may overwrite is governed by the **composed** ownership boundary: the harness's own base `ownership.json` plus each activated governance's fragment, origin kept per entry, with the repository's own hand-written `ownership` narrowings from `vibeops.config.ts` applied last — refused when one would widen (a pinned tree's declaration is used whole, never blended). **A path with no entry is not permission**, a doubly-claimed path is refused naming both claimants (peers, never precedence), and the run stops on either. |
+| [`packages/governance-base/`](packages/governance-base/) | `@entelekheia/governance-base` (ex `records`, renamed in Plan-033) — the reusable governance components the nouns share, and home of the `defineGovernance` sugar: where records live, the next number, a plan's status chain and living sections, the closure box, filing and closing, and (`shape.ts`) a record's own shape — its headings and how many entries stand under a named section, which is what `records show` projects. `entriesUnder` returns **`undefined` for an absent section and `0` for an empty one**; collapsing the two is the defect the verb exists to remove. **Action, never detection** — it mutates and resolves destinations, which is exactly what a gate may not do. It is also a second foundation package: it sorts after every `module-*` that depends on it, so `npm run build` builds it explicitly, like `core`. |
 | [`packages/module-check/sh/`](packages/module-check/sh/) | The seventeen checks, still shell, owned by the module that runs them. `--list` shows what was composed; `--self-test` builds a deliberately broken fixture and asserts every check fires on it. The script stays **Node-free and standalone** — `vibe-ops check --self-test` chains it with each ops's own `--self-test` above it, so one command proves every detector still fires without the runner ever needing a build. |
-| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate; twelve of them. Nine read the document model rather than the file, and how to do that is [core's README](packages/core/README.md); only `budget` (counts lines), `bridge` (reads `git ls-files -s` for the symlink mode bit) and `fragment-parity` (holds no repository knowledge at all, see below) do not. Five have shell precedent under `module-check/sh/checks/` — `budget`, `bridge`, `check-frontmatter`, `memory-slug`, `markdown-link`; `pairing`, `claude-md-content`, `breadcrumb`, `record-header`, `template-version`, `template-heading-drift` and `fragment-parity` have none. Two are worth knowing before composing them: **`record-header`** demands `options.schema` (`adr`/`plan`/`rfc`/`task`) and throws without it, so one entry per record type — its header-table reader is shared with `packages/records/`, not duplicated; **`fragment-parity`** takes `{runner, fragment, against, options?}` and reports only what a shell fragment caught that its port missed (`port-regression`) — the comparison RFC-0001 requires before a fragment is removed; `options` forwards to the gate under test, needed because `check-frontmatter` cannot be compared under its `skill` schema without it (Plan-013). The remaining eleven fragments stay shell until an ops composes them. |
+| [`packages/gates/`](packages/gates/) | `@entelekheia/vibe-ops-gates` — detectors with no notion of scope, one folder per gate; seventeen of them. Nine read the document model rather than the file, and how to do that is [core's README](packages/core/README.md); only `budget` (counts lines), `bridge` (reads `git ls-files -s` for the symlink mode bit) and `fragment-parity` (holds no repository knowledge at all, see below) do not. Five have shell precedent under `module-check/sh/checks/` — `budget`, `bridge`, `check-frontmatter`, `markdown-link`, and the two parameterised ones below; `pairing`, `claude-md-content`, `breadcrumb`, `record-header`, `template-version`, `template-heading-drift`, `fragment-parity`, `disabled-declared`, `runner-provenance`, `unstated-destination` and `record-frontmatter` have none. Two are worth knowing before composing them: **`record-header`** and its frontmatter-carrier sibling **`record-frontmatter`** each take `options.type` and `options.required` and throw without them, so one entry per record type — the type name and its field list are DATA, from that type's own `governance-<t>/type.json` (Plan-030 Track 2, re-homed by Plan-033), and neither gate holds a list of the types this repository ships. Which of the two a type gets is its manifest's `schema.carrier`: `table` or `frontmatter`. `record-header`'s header-table reader is shared with `packages/governance-base/`, not duplicated; **`fragment-parity`** takes `{runner, fragment, against, options?}` and reports only what a shell fragment caught that its port missed (`port-regression`) — the comparison RFC-0001 requires before a fragment is removed; `options` forwards to the gate under test, needed because `check-frontmatter` cannot be compared under its `skill` schema without it (Plan-013). **`mirror` and `classification` each carry many fragments' worth of detection**, because ten of the eleven unported fragments were two operations wearing different data: `mirror` produces a left and a right and reports what is in the left and not in the right (`compare`: `text` | `sha` | `group`), and `classification` reports a pattern that must not appear in a population (`level`: `secret` | `confidential` | `internal`, which decides how a finding may speak). In both, the MODE carries the machinery and the ops carries only data — an `options` that said HOW to detect would move the detection into configuration nothing versions. The eleventh fragment exercises a hook across firings and is a test, not a gate. Every fragment still runs: nothing was retired (Plan-037). |
 | [`packages/ops-agents-md/`](packages/ops-agents-md/) | `@entelekheia/vibe-ops-agents-md` — the first ops: composes eight `packages/gates/` entries over the instruction surface, five of them ports. The eighth, `agent-frontmatter`, has no shell precedent and gets no `fragment-parity` entry — parity compares a gate against the fragment it replaces, and this one replaces nothing. Runs **beside** the shell fragments it ports, not instead of them, until the two are shown to agree. |
-| [`packages/ops-governance/`](packages/ops-governance/) | `@entelekheia/vibe-ops-governance` — the second ops: four `record-header` entries and six `template-version` ones (per record type), `markdown-link`, `breadcrumb`, and `fragment-parity` comparing `20-links.sh` against `markdown-link`. Every entry is scoped to a record directory; the one that was not now lives in `ops-self` below. |
-| [`packages/ops-self/`](packages/ops-self/) | `@entelekheia/vibe-ops-self` — the third ops, and the one whose population is the near-complement of `governance`'s: not the records, but the prose describing this repository's own machinery. It exists separately for a measured reason — `governance` excludes `**/templates/**` from every entry through one `"*"` line, which is a **safe default** a new gate inherits without thinking, and `template-heading-drift` is the one gate for which those shipped copies are the subject rather than noise. Composing both under `governance` cost that default. |
+| [`packages/ops-governance/`](packages/ops-governance/) | `@entelekheia/vibe-ops-governance` — the second ops. Its per-type entries are **derived per run from the activated governances** (Plan-034): the `record-schema` rule emits `record-header` or `record-frontmatter` per each type's `schema.carrier` with `required` read from that package's own `type.json`, and `template-version` emits one versioning entry per type — a repository binding a sixth governance package sees its entries appear with no edit here. The static rest is `markdown-link`, `breadcrumb`, and `fragment-parity` comparing `20-links.sh` against `markdown-link`. The collection is `ops.json` at the package root — the canonical form for all three ops since Plan-034 — with `src/index.ts` as typing sugar over `parseOpsDefinition`, holding the narrative JSON cannot carry. |
+| [`packages/ops-self/`](packages/ops-self/) | `@entelekheia/vibe-ops-self` — the third ops, and the one whose population is the near-complement of `governance`'s: not the records, but the prose describing this repository's own machinery, read as ITSELF rather than against a counterpart. One entry since Plan-037 moved `template-heading-drift` to `mirror`; a single-entry composition is not a defect, whereas a composition whose subject needs an "and" is. |
+| [`packages/ops-mirror/`](packages/ops-mirror/README.md) | `@entelekheia/vibe-ops-mirror` — the fourth ops: **what one place claims, another place must confirm**. An entry belongs here when describing it by naming only ONE of the two things it reads would be wrong. It is also the boundary an `audience` field was built and reverted for (Plan-035): every entry here is meaningless in a repository holding no vibe-ops checkout, and a repository that does not install this package composes none of them — nothing to declare, nothing to filter. **`settings` is keyed by ops id**, so moving an entry here means moving its settings slice in the same commit; a slice left behind is never read and the entry runs unconfigured, in silence. |
+| [`packages/ops-exposure/`](packages/ops-exposure/README.md) | `@entelekheia/vibe-ops-exposure` — the fifth ops: **whether a committed file exposes material above its classification**. The policy it enforces is `@entelekheia/governance-classification`; the ops is named for the check because a bare noun resolves to the governance type first. One entry per rule, and `level` (`secret` | `confidential` | `internal`) decides how a finding may speak rather than labelling it: at `secret` the finding names where only. Every rule quotes the MATCH and never the line — a detector cannot see another entry's rules, so quoting a whole line would eventually print what a stricter rule protects. `private-name` takes its patterns from a path (`VIBE_OPS_DENYLIST`), never from the composition. |
 | [`test/`](test/) | The **plugin's** shell tests, not the CLI's — `measure-nudge-noise.sh` is the only instrument for what a hook cannot observe about itself: what the model did after it fired. Each package's own tests live in `packages/*/test/`. |
 
 ## The module contract
@@ -31,8 +33,18 @@ wrongly is wrong everywhere at once rather than in one surface nobody checks.
 is `argv[0]` from a terminal and the `command` field over MCP, and it is validated **in `runModule`** —
 not in `bin.ts` — because that is the one place both surfaces pass through. The same is true of
 `destructive`: the terminal confirms with a TTY prompt, MCP requires an explicit `confirm: true`, and
-neither may skip the gate by being the surface it is. A verb's own `flags` are merged with the module's
-and are only valid for that verb.
+neither may skip the gate by being the surface it is.
+
+**And of flags**, which was the sentence's aspiration and is now its behaviour. A verb's own `flags` merge
+with the module's and are valid for that verb only; `runModule` refuses anything else, naming the sibling
+verb that owns it, and enforces `required`. One list serves all three surfaces — `declaredFlagsFor` in
+[`packages/cli/src/run.ts`](packages/cli/src/run.ts), read by the terminal's parser, by that refusal, and
+by the MCP schema. Until Plan-027 Track 2 there was no refusal at all on the MCP path: an inapplicable
+flag was accepted, ignored and reported as success, which the tool's own schema invited by advertising
+every verb's flags for every verb. **A `choices` domain reaching the MCP schema is the union across every
+verb declaring that flag**, never one verb's — one static shape per tool cannot scope a domain, and
+publishing the narrower one makes a valid sibling call unconstructible. The same holds for `required`,
+which reaches the schema only when it is module-wide.
 
 **Positional arguments reach every surface.** `vibe-ops task close <dossier>…` is `args` in the MCP input
 schema too; a verb reachable from a terminal and from nowhere else is a bug, and there is a test per track
@@ -66,6 +78,13 @@ export default defineModule(
   a module logs only when `surface === "cli"`. Report arrays carry their own length: no `count`
   beside the array it summarises, and no "composed N" preamble.
 - **`destructive: true`** makes the CLI confirm before running. Set it on anything not trivially undone.
+- **`repoFromFirstArg: true`** makes the CLI resolve `repoRoot` from the module's first positional
+  instead of from the working directory, and **consume it** so the module never sees it. Only for a
+  module whose subject *is* a repository — `check` sets it; `task close <dossier>…` must not, or a file
+  path would be read as a repository. It exists because a module may not touch `process.cwd()`, so a
+  relative `.` or `../other` is unresolvable inside one: `vibe-ops check .` was accepting an argument it
+  silently ignored and keying off the working directory, which was right for `.` by accident and wrong
+  for every other value.
 
 ## Gates and ops
 
@@ -75,7 +94,10 @@ them the way `eita` splits `trait` from `profile`. A **gate** (`defineGate`, `pa
 pure detector — it does not know which repository it is in or whether anything downstream records what
 it finds. An **ops** (`defineOps`, `packages/ops-<id>/`) is a named composition of gates over declared
 paths, and it decides which of them emit — it *is* a module, so dispatch, MCP and config learn no
-second concept.
+second concept. Since Plan-034 the collection's canonical form is the package's own `ops.json`
+(`parseOpsDefinition` loads it; `src/index.ts` is typing sugar), and it may name `derives` rules —
+per-type entries computed per run from the repository's activated governances, so the entry list is a
+fact about the repository, never a hand-maintained copy of the types it serves.
 
 - **The ops owns emission, never the gate.** Population (`--examined`) and moment are knowable only to
   the composition; a gate handed a file list cannot enforce "zero examined is not a reading"
@@ -92,10 +114,22 @@ second concept.
   `plugin/` here, the root in a flat repo — via `resolvePluginDir`/`expandPluginToken` in
   `packages/core/src/files.ts`. Hardcoding one layout for the other makes a dogfooded pair unreachable
   in the other, which is exactly the bug the shell runner's `$PLUGIN_DIR` already exists to avoid.
-  **A path inside a gate's free-form `options` needs the same token and gets no help finding out** —
-  `paths` is expanded by the ops, `options` is not, and nothing type-checks a string. A gate handed a
-  path expands it itself (`template-version` does); a fixture shaped like *this* repository will never
-  reveal the omission, so the end-to-end fixtures are deliberately flat.
+  **`options` is expanded too, by the same ops** (`expandOptionTokens`), so a path there is no longer a
+  different kind of string — the asymmetry this paragraph used to describe in prose is gone rather than
+  documented. A gate that expands `<plugin>/` itself keeps working: the second pass finds no token.
+- **`<records:<type>>` resolves to where that type's records actually live** — declared `records.dirs`,
+  else the first existing candidate, else the first candidate. A type the map does not name (`log`,
+  `research`, one a repository brings) gets the generic `project/<type>` convention, which is what makes a
+  custom type resolvable without the map growing an entry. A **declared** directory is used even when it
+  does not exist: the entry then examines zero files against the path the repository named, which is
+  attributable, where a quiet fallback elsewhere is not.
+- **`<template:<type>>` in `options` resolves to where that type's template actually is** — the
+  repository's `records.templates`, else the first existing candidate (`project/templates/`, `templates/`,
+  `.agents/templates/`), else the plugin surface, which is what a repository whose templates *are* its
+  distributable needs. `<plugin>/templates/…`
+  was the literal before, and in a flat repo it resolved to the repository root — a path `setup repo`
+  never writes, so `template-version` was inert in **every** repository this tooling scaffolds and said
+  `SKIP`. The search order has one copy, in core; `packages/records/` builds its candidate map from it.
 - **A gate declares `fixable: true` and a `fix()` third argument to `defineGate` together, or neither.**
   `fix()` receives the findings `run()` just returned and repairs the mechanical ones — `pairing` creates
   a missing sibling `CLAUDE.md` but never edits one that exists without the import, because that is a
@@ -115,7 +149,8 @@ second concept.
 
 `vibe-ops hook <surface>` ([`packages/cli/src/hook.ts`](packages/cli/src/hook.ts)) is the **one namespace
 for every entry point that reads a hook payload on stdin** — `ops <ops> [--fix <gates>]` (PostToolUse, an
-ops over the file just written), `plan-context` (UserPromptSubmit), `new-context` (UserPromptExpansion).
+ops over the file just written), `plan-context` (UserPromptSubmit), `new-context` (UserPromptExpansion),
+`harness-status` (SessionStart).
 They are not variations on one hook: the payload field, the guard and the `hookEventName` in the reply
 differ in each; what they share is the envelope, and that is what the namespace names. **`ops` is a
 reserved first word**, so an arbitrary ops name can never shadow a surface, nor a new surface someone's
@@ -147,6 +182,31 @@ file holds the operator's preferences, and neither should restate the other. Nea
 `settings` merges one level deep so a repo overriding one module's settings does not discard the home
 file's settings for every other module.
 
+**Each directory holds three files, layered, not one.** `vibeops.config.*` is committed;
+`vibeops.config.local.*` is the operator's, clone-local and gitignored; **`vibeops.config.local.json` is
+the machine's** — the only config file this tooling itself writes, where `harness sync` records what it
+promulgated, and parsed rather than imported. All three contribute, nearest first, so a committed config
+ships fully populated while a clone overrides only what is true of that machine. The trio
+repeats at every level, which is what gives the home directory the personal-override file this section
+used to describe with no mechanism behind it. **The directory walk still outranks the trio** — a nearer
+committed file beats a farther local one, asserted by a test because inverting it yields a cascade that
+still looks correct while a stale home file governs every repository. `loadOne()` therefore returns every
+match in a directory rather than the first, which is the thing to preserve if it is ever refactored:
+returning the first makes a local file *replace* the committed one it exists to layer over
+([ADR-0014](../project/adr/0014-clone-local-configuration-layers-rather-than-replaces.md)).
+
+**The state file is a third layer, not a fourth name in the local half**, and that is not a filing
+preference: within a half the first match wins, so a clone holding both it and a `vibeops.config.local.ts`
+would silently lose one of them — the machine's state or the operator's overrides, depending on the order
+chosen, with no error either way.
+
+`harness.applied` lives there — which version of each record type was **promulgated** into this clone, not
+what any artifact was written against, which is that artifact's own frontmatter. Absence is a state and is
+never zero, and unlike `settings` **the map** merges nearest-wins whole: a half-inherited one would answer
+for a repository it was never applied to. `harness.boundary` and `harness.source` beside it layer per key
+like everything else — the whole-key rule was written when `applied` was the only entry, and keeping it
+there would have had the machine's state file discard an operator's declared `source`.
+
 `.ts` is loaded by dynamic `import()` and relies on Node's native type stripping (**≥22.18**), so a
 config file costs no dependency and no build step. `.mjs` and `.js` work identically.
 
@@ -175,8 +235,15 @@ settings: {
     disabled: { "record-header-rfc": "still migrating" }, // a reason, never a boolean
     level: { "template-version-behind": "fail" },      // by rule, label, or "*"; most specific wins
   },
+  check: { disabled: { "machine-paths": "the private layer" } }, // the shell runner, same spelling
 },
 ```
+
+**`check` honors `disabled` under the same key and the same shape**, translating it into the
+`VIBE_OPS_DISABLED_CHECKS` the shell runner already read — appended after whatever the environment
+carries, so an invocation-time override still wins. A repository whose only declaration was that variable
+had a different configuration per caller: the same gate run from a hook or from a sibling directory
+reported its whole declared backlog as failures, 38 of them, measured 2026-08-14.
 
 `"*"` applies to every entry in the ops; a gate's own label narrows further, additively with `"*"`,
 never replacing it. `disabled` takes a reason string — never a boolean — so a disablement is a ledger
@@ -197,6 +264,24 @@ grades. There is deliberately no `severity`, `pass` or `score` field, and a test
 thresholds belong to the consuming product. Emitting an id the module does not declare **throws**, so
 the definition and the code cannot silently disagree.
 
+**An emitter throws for two unrelated reasons and they are told apart, because they mean opposite
+things.** An undeclared id (`UndeclaredObservationError`) is this repository's own composition
+disagreeing with its own definition and stays **fatal** — no target may declare it away. A failure to
+*write* is the destination, not the reading: it becomes an `emit-failed` finding, default **`warn`**,
+levelable like any other through `settings.<ops>.level`. Until they were separated, an unwritable
+`artifactDir` aborted the whole ops, so a sensor that could not record refused a commit whose content was
+clean — which is how a `harness sync` into a linked working tree read as the *target's* gate rejecting
+the promulgation. The objection to not blocking is that a reading goes missing in silence; a named
+finding in the run's output and in `data` answers the silence, not the blocking.
+
+**An `artifactDir` declared under `.git/` is resolved through `git rev-parse --git-common-dir`**
+(`resolveArtifactDir`, `packages/core/src/files.ts`), never through the working tree. In a linked working
+tree `.git` is a *file*, so the plain resolve produces a path under a file and `mkdir` raises `ENOTDIR`.
+The common dir is `.git` in an ordinary checkout, so this **moves no existing artifacts**, and it is the
+better answer anyway: every working tree of one clone accumulates where a drain reads. The test that
+proves it must use a real linked working tree — against an ordinary checkout the old code gives the same
+answer and the test proves nothing.
+
 ## Working here
 
 ```bash
@@ -207,12 +292,27 @@ npm test               # builds first via pretest
 node cli/packages/cli/dist/bin.js check
 ```
 
-- **`npm run build` builds `core` explicitly before `--workspaces`.** Workspaces build in *directory*
-  order, not dependency order, so `cli` sorts ahead of `core` and would typecheck against its stale
-  `dist/` and report success. That produced a false green three times in eita before the line existed.
-- **The checks are shell and stay shell.** Porting seventeen fragments to TypeScript is a separate act;
-  doing it as part of packaging would have shipped seventeen freshly-written checks with no history of
-  having caught anything. `packages/module-check/src/index.ts` is their front door, not a rewrite.
+- **`npm run build` builds `core`, `governance-base`, `governance-plan` and `harness` explicitly before `--workspaces`.**
+  Workspaces build in *directory* order, not dependency order, so `cli` sorts ahead of all three and
+  would typecheck against their stale `dist/` and report success. That produced a false green three times
+  in eita before the line existed, and once more here — the harness was added to the list only after
+  a from-scratch build failed on `cli` while every incremental build had passed. **A package earns a
+  place in `build:foundation` by being *statically* imported by something that sorts ahead of it.** That
+  is why `harness` and `governance-plan` are there and no other module is: `cli` reaches everything else through a
+  dynamic `import()` with a computed specifier, which creates no compile-time dependency, but
+  `src/harness-status.ts` imports the harness by name and the three plan hooks import `governance-plan`. **Verify a new cross-package import with
+  `rm -rf cli/packages/*/dist && npm run build`** — an incremental build cannot see this class of break.
+- **A NEW detector is a gate, never a new shell fragment.** `packages/gates/` plus an ops entry is the
+  unit (RFC-0001), and the direction of travel is one way: fragments become gates, never the reverse.
+  A gate is composable, testable, levelable, ignorable and fixable from config; a fragment is none of
+  those. **The existing seventeen fragments stay shell** — porting them is a separate act, and doing it
+  as part of packaging would have shipped seventeen freshly-written checks with no history of having
+  caught anything (`packages/module-check/src/index.ts` is their front door, not a rewrite). That
+  sentence protects what already exists; it is **not** licence to add an eighteenth. Read it that way
+  once already: `36-type-index-drift.sh` was written as a fragment on the strength of it, then deleted
+  and rewritten as `gates/type-index-drift` — the version that could declare `fixable` and regenerate
+  what it found stale. (That gate later left with the aggregated index it compared — Plan-033 — which
+  retires the example, not the rule.)
 - **A fragment declares `CHECK_VERSION`, an integer, and the runner refuses one that does not** — the
   same axis and the same rule as `version` on a `GateDefinition`, moving only when a consumer of the
   check's output must handle it differently. It surfaces as `<id>@<version>` in `--list`, in the emitted

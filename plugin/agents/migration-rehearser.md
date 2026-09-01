@@ -36,7 +36,7 @@ migration, performed by the one participant who was told not to.
 
 The caller gives you, as absolute paths:
 
-1. **The note** — `skills/migrate/migrations/<type>-<from>-to-<to>.md`.
+1. **The note** — `<type>-<from>-to-<to>.md`, in the directory `vibe-ops records norm --type <type> --facet migrations` prints (the type's governance package).
 2. **The population** — the directory of artifacts of that type, or an explicit list.
 3. **The template** the note migrates to, when the note refers to it.
 

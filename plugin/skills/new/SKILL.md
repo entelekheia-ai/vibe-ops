@@ -25,23 +25,38 @@ mode. An existing record is advanced through its own lifecycle, never re-scaffol
 
 ---
 
+> **Prefer the MCP tool over the terminal.** This plugin ships its own `vibe-ops` MCP server
+> (`.claude-plugin/plugin.json`), so the verbs below are tools, and a tool returns its report as
+> structured data instead of terminal text to read back. The tool's full name depends on how the server
+> was registered — `mcp__vibe-ops__<noun>` from a project `.mcp.json`, `mcp__plugin_vibe-ops_vibe-ops__<noun>`
+> when it comes from the plugin. **If neither is listed, the CLI is correct**: the shell forms shown below
+> are the same command, and the server may simply not be running in this session.
+
 ## Step 0 — Resolve the repo, in one call
 
+**One record type, one spelling.** A type with a noun of its own is resolved through that noun;
+everything else is answered by `records` — the shipped types that have no noun, and **a type this tooling
+ships nowhere**, which resolves once the repository declares its directory or an installed package
+declares the type. Its *layout* answers; its authoring rules arrive with the type's own package, so a
+contributed type has none until then and Step 1 says so rather than inventing them.
+
 ```bash
-vibe-ops records resolve --type <adr|rfc|plan|task>
+vibe-ops plan resolve                 # plan
+vibe-ops task resolve                 # task
+vibe-ops records resolve --type adr   # adr, and rfc the same way
 ```
 
-It prints where records of that type live, which template governs them, which file is the numbering
-authority, how many exist, and what number comes next. `plan` and `task` also have their own nouns —
-`vibe-ops plan resolve`, `vibe-ops task resolve` — which answer the same block plus what is specific to
-them; either is correct here.
+Each prints where records of that type live, which template governs them, which file is the numbering
+authority, how many exist, and what number comes next. `plan` and `task` add what is specific to them —
+the status chain and living sections for one, the GitHub remote and auth for the other.
 
 **Then read two files it named**, in this order:
 
-1. [`${CLAUDE_PLUGIN_ROOT}/references/records/<type>.md`](../../references/records/) — **the rules for
-   that record type, which are the second half of this skill.** They are not repeated here, and only the
-   matching one is ever read: four record types' rules delivered at once is four times the context for one
-   record.
+1. The type's authoring rules — **the second half of this skill.** Since Plan-033 they travel in the
+   type's own governance package, read through the CLI (never through a plugin path, which an npm-only
+   install does not have): `vibe-ops records norm --type <type> --facet authoring --print`. They are not
+   repeated here, and only the matching type's rules are ever read: every type's rules delivered at once
+   is that many times the context for one record.
 2. The path in `TPL=`, when you are about to write immediately.
 
 **A typed `/vibe-ops:new <type> …` has already resolved this**, before this skill started: `vibe-ops hook

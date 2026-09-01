@@ -14,6 +14,18 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 - [`composing-a-gate-over-a-population-the-ops-already-ignores.md`](composing-a-gate-over-a-population-the-ops-already-ignores.md) —
   A gate added to an ops whose `ignore` blankets its population under `"*"` reports `0 examined` and passes;
   the exclusion belongs to the entry that needs it, not to the ops.
+- [`moving-a-composed-entry-to-another-ops.md`](moving-a-composed-entry-to-another-ops.md) — Moving an entry
+  between ops without moving its `settings` slice leaves the entry running unconfigured — `settings` is
+  keyed by ops id, so the orphaned slice is never read and nothing reports it.
+
+## `cli/packages/cli/src/`
+
+- [`harness-status-plugin-root-fallback-unverified.md`](harness-status-plugin-root-fallback-unverified.md) —
+  CLAUDE_PLUGIN_ROOT as an env-var fallback for the source/target seam is unverified for a Claude Code hook
+  subprocess specifically — do not drop the explicit --plugin/--source flag on the strength of it alone.
+- [`naming-an-ops-after-the-governance-type-it-enforces.md`](naming-an-ops-after-the-governance-type-it-enforces.md) —
+  An ops sharing its id with an activated governance type becomes unreachable — a bare noun resolves through
+  the governance map first, and the ops is shadowed with no error.
 
 ## `cli/packages/core/`
 
@@ -24,10 +36,25 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 
 ## `cli/packages/core/src/`
 
+- [`a-stray-config-under-tmp-reaches-every-fixture-repository.md`](a-stray-config-under-tmp-reaches-every-fixture-repository.md) —
+  A leaked vibeops.config.local.mjs sitting in /private/tmp was picked up by the config cascade of every
+  temp-dir fixture repository below it — a virgin scratch install reported harness.applied it never had, and
+  nothing looked wrong from inside the repo.
+- [`asking-resolveplugindir-where-the-tool-keeps-its-own-files.md`](asking-resolveplugindir-where-the-tool-keeps-its-own-files.md) —
+  `resolvePluginDir` answers "where is the TARGET's plugin surface", so using it to locate files the tooling
+  ships — templates, migration notes — resolves to the target's root in a flat repo, where nothing writes;
+  the failure is a silent SKIP or a blocking `unhandled`, never an error.
 - [`emitting-an-observation-nothing-can-read.md`](emitting-an-observation-nothing-can-read.md) — The
   TypeScript emitter wrote a shape the receiving translator refuses at line 1, for its whole existence,
   while the shell producer beside it was ingested normally — emission succeeding says a file was written,
   never that anything can read it.
+
+## `cli/packages/gates/test/`
+
+- [`gate-fixture-population-check-outside-reporoot.md`](gate-fixture-population-check-outside-reporoot.md) —
+  A gate test whose fixture needs a path OUTSIDE repoRoot (e.g. repoRoot/..) must nest repoRoot inside its
+  own mkdtemp workspace, or parallel test files silently share the same parent directory and pollute each
+  other's fixtures.
 
 ## `cli/packages/records/src/`
 

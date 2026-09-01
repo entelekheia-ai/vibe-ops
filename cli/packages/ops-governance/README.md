@@ -14,10 +14,12 @@ vibe-ops governance --verbose    # the full run, not only what failed
 
 | Entry | Paths | Emits |
 |---|---|---|
-| `record-header` (schema `adr`) | `project/adr/*.md` | no — structural |
-| `record-header` (schema `plan`) | `project/plans/*.md` | no |
-| `record-header` (schema `rfc`) | `project/rfc/**/*.md` | no |
-| `record-header` (schema `task`) | `project/tasks/*.md` | no |
+| `record-header` (type `adr`) | `project/adr/*.md` | no — structural |
+| `record-header` (type `plan`) | `project/plans/*.md` | no |
+| `record-header` (type `rfc`) | `project/rfc/**/*.md` | no |
+| `record-header` (type `task`) | `project/tasks/*.md` | no |
+| `record-frontmatter` (type `log`) | `project/log/*.md` | no — structural |
+| `template-version` (per type: `adr`, `plan`, `rfc`, `task`, `log`, `research`) | that type's records | **yes** |
 | `markdown-link` | the gate's own default (`**/*.md`) | **yes** |
 | `breadcrumb` | the gate's own default (`**/*.md`) | **yes** |
 | `fragment-parity` (`links` vs `markdown-link`) | `**/*.md` | no — temporary by construction |
@@ -25,7 +27,9 @@ vibe-ops governance --verbose    # the full run, not only what failed
 `markdown-link` and `breadcrumb` emit because both recur for as long as this repository has markdown —
 links rot as files move, and every task closure adds another breadcrumb a rewritten history can break.
 `record-header` does not: once a record declares a `Status` it keeps it, and a series of zeros there
-says nothing about whether the guide is working. `fragment-parity` does not either — it exists to be
+says nothing about whether the guide is working. `record-frontmatter` is the same reading for a type whose
+fields travel in YAML frontmatter rather than a header table — which one a type gets is decided by its own
+`types/<t>/type.json`, under `schema.carrier`, not by anything here. `fragment-parity` does not either — it exists to be
 deleted the day `20-links.sh` is, and a series that dies with its subject is one nobody reads.
 
 Research carries no schema: nothing in this repository declares its shape, and inventing one is a

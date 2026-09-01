@@ -1,0 +1,24 @@
+{
+  "type": "rfc",
+  "template": "./templates/rfc.md",
+  "authoring": "./authoring.md",
+  "migrations": "./migrations",
+  "schema": {
+    "carrier": "table",
+    "required": [
+      "Status",
+      "Created",
+      "Author"
+    ]
+  },
+  "numbered": true,
+  "pad": 4,
+  "depth": 2,
+  "dirs": [
+    "project/rfc",
+    "project/rfcs",
+    "rfc",
+    "rfcs",
+    "docs/rfc"
+  ]
+}
