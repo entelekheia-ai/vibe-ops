@@ -56,6 +56,13 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   own mkdtemp workspace, or parallel test files silently share the same parent directory and pollute each
   other's fixtures.
 
+## `cli/packages/module-check/sh/`
+
+- [`guarding-a-fragment-on-plugin-dir-while-globbing-root.md`](guarding-a-fragment-on-plugin-dir-while-globbing-root.md) —
+  A shell fragment whose existence guard tests `$PLUGIN_DIR` and whose loop globs `$ROOT` reads nothing in
+  every repository layout but one, and reports it as `ok` or as an inapplicable `SKIP` — a fragment prints
+  no examined count, so its own output cannot say which.
+
 ## `cli/packages/records/src/`
 
 - [`moving-a-declaration-to-offset-zero.md`](moving-a-declaration-to-offset-zero.md) — Frontmatter is found

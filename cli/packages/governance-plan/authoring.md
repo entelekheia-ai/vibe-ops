@@ -31,6 +31,14 @@ criterion then fails on the very file the rename obliges — allow exactly the a
 criterion that way from the start. (Measured on this repository's own first retrofit, where the criterion
 and the changelog it mandated contradicted each other within one track.)
 
+**A criterion an operator satisfies by hand measures the mechanism, not the behaviour.** If the acceptance
+reads "compose X and count Y", ask who turns X on in a repository nobody is standing in. A feature whose
+only caller is the measurement passes green, is written up, and does not exist anywhere it was meant to
+run — and nothing in the run says so, because the number is real. Phrase the criterion against the state a
+repository reaches on its own: what an ordinary run reports, not what a run with the right flag reports.
+(Measured 2026-08-23: a boundary shipped its acceptance at "15 skips to 0" with the selector passed by
+hand, while every adopted repository still composed the full set. The field was reverted unshipped.)
+
 ## The exposure contract, and why a plan is the record most exposed to it
 
 Everything in
