@@ -70,8 +70,12 @@ export async function runCheckGlobalHook(): Promise<number> {
   // The filter is by prefix, not by `sources.length`: the cascade searches from the repository up to the
   // home directory, so an operator with a personal `vibeops.config.*` makes `sources` non-empty in every
   // repository on the machine. Guarding on the length alone would have fired this gate in all of them.
-  const { sources } = await loadConfig(repoRoot);
-  const declaredHere = sources.some((file) => file.startsWith(`${repoRoot}/`));
+  //
+  // And by layer, not by file: the managed `vibeops.config.json` is written by this tooling, so its
+  // presence says a tool promulgated here, not that the repository asked for a gate (RFC-0004 §8). Only
+  // a `declared` or `local` file of the repository's own switches the gate on.
+  const { layers } = await loadConfig(repoRoot);
+  const declaredHere = layers.some((one) => one.layer !== "managed" && one.file.startsWith(`${repoRoot}/`));
   if (!declaredHere) return 0;
 
   let result;

@@ -47,6 +47,13 @@
 
 set -uo pipefail
 
+# A git hook hands its child the committing repository: in a linked worktree that is an ABSOLUTE
+# GIT_DIR and GIT_INDEX_FILE, exported. Every fragment that builds a fixture repository and runs git
+# inside it would then read the committing repository instead — measured 2026-09-03, where
+# nudge-behaviour failed under pre-commit in a worktree and passed everywhere else. The root this
+# script checks arrives as an argument or is derived from the working directory, never from these.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX
+
 FAILURES=0
 CHECKS=0
 

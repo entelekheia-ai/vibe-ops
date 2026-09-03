@@ -1,9 +1,21 @@
 export { defineModule, SOURCE_FLAG } from "./module.ts";
 export type { ModuleCommand, ModuleDefinition, ModuleFlag, ModulePlugin, ModuleResult } from "./module.ts";
 export type { ModuleContext, Surface } from "./context.ts";
-export { loadConfig, searchPath, settingsFor, statePath, writeHarnessState } from "./config.ts";
+export { loadConfig, MANAGED_FILENAME, searchPath, settingsFor, statePath, writeHarnessState, writeManagedConfig } from "./config.ts";
 export type { HarnessConfig } from "./config.ts";
-export type { LoadedConfig, OwnershipNarrowing, RecordsConfig, RecordType, TypesConfig, VibeOpsConfig } from "./config.ts";
+export type {
+  ConfigLayer,
+  LoadedConfig,
+  ManagedConfigPatch,
+  ManagedWriteRefusal,
+  OwnershipNarrowing,
+  RecordsConfig,
+  RecordType,
+  TypesConfig,
+  VibeOpsConfig,
+  WriteManagedConfigOptions,
+  WriteManagedConfigResult,
+} from "./config.ts";
 export { activateGovernance, activatedTemplatePaths, DEFAULT_GOVERNANCE_BINDINGS, effectiveGovernanceBindings } from "./governance-map.ts";
 export type { ActivatedGovernance, GovernanceBinding } from "./governance-map.ts";
 export { createEmitter, UndeclaredObservationError } from "./emit.ts";

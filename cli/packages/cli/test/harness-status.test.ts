@@ -47,8 +47,8 @@ test("a repository whose applied map matches what is installed produces no outpu
   const repoRoot = await gitRepo();
   const plugin = await pluginDir({ plan: 3, task: 3 });
   await writeFile(
-    path.join(repoRoot, "vibeops.config.local.mjs"),
-    `export default { harness: { applied: { plan: 3, task: 3 } } };`,
+    path.join(repoRoot, "vibeops.config.json"),
+    JSON.stringify({ harness: { applied: { plan: 3, task: 3 } } }),
   );
 
   const { stdout, status } = run(repoRoot, ["--plugin", plugin]);
@@ -71,8 +71,8 @@ test("a repository behind on one type says so, once, and names the migration com
   const repoRoot = await gitRepo();
   const plugin = await pluginDir({ plan: 3, task: 3 });
   await writeFile(
-    path.join(repoRoot, "vibeops.config.local.mjs"),
-    `export default { harness: { applied: { plan: 2, task: 3 } } };`,
+    path.join(repoRoot, "vibeops.config.json"),
+    JSON.stringify({ harness: { applied: { plan: 2, task: 3 } } }),
   );
 
   const { stdout, status } = run(repoRoot, ["--plugin", plugin]);
@@ -91,11 +91,11 @@ test("a repository behind on one type says so, once, and names the migration com
 test("no --plugin, an unreadable plugin directory, and a malformed payload all fail open and silent", async () => {
   const repoRoot = await gitRepo();
   await writeFile(
-    path.join(repoRoot, "vibeops.config.local.mjs"),
+    path.join(repoRoot, "vibeops.config.json"),
     // Since Plan-033 the CLI carries its norm in the bundled governance packages, so "no --plugin" is a
     // SERVED case, not silence — this fixture unbinds every type so the hook's fail-open half is what
     // is being measured, not the packages the test process happens to have installed.
-    `export default { harness: { applied: { plan: 1 } }, types: { adr: "@x/none", rfc: "@x/none", plan: "@x/none", task: "@x/none", log: "@x/none" } };`,
+    JSON.stringify({ harness: { applied: { plan: 1 } }, types: { adr: "@x/none", rfc: "@x/none", plan: "@x/none", task: "@x/none", log: "@x/none" } }),
   );
 
   assert.equal(run(repoRoot, []).stdout, "", "no --plugin and no activatable package: nothing to compare against");

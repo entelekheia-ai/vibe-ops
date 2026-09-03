@@ -47,6 +47,31 @@ test("a payload naming a freshly written AGENTS.md fixes its missing sibling and
   assert.equal(await readFile(path.join(repoRoot, "CLAUDE.md"), "utf8"), "@AGENTS.md\n");
 });
 
+function runCheckGlobal(repoRoot: string): { stdout: string; status: number } {
+  const result = spawnSync("node", [BIN, "hook", "check-global"], {
+    cwd: repoRoot,
+    input: JSON.stringify({ cwd: repoRoot }),
+    encoding: "utf8",
+  });
+  return { stdout: result.stdout ?? "", status: result.status ?? -1 };
+}
+
+// RFC-0004 §8: the managed file is a tool's record of having promulgated here, never the repository
+// asking for a gate. The declared file beside it is the control that proves the silence is a decision.
+test("check-global: a managed vibeops.config.json alone leaves the Stop gate off; a declared file turns it on", async () => {
+  const repoRoot = await gitRepo();
+  await writeFile(path.join(repoRoot, "vibeops.config.json"), JSON.stringify({ harness: { applied: { plan: 1 } } }));
+
+  const managedOnly = runCheckGlobal(repoRoot);
+  assert.equal(managedOnly.status, 0);
+  assert.equal(managedOnly.stdout, "", "a machine-written file must not switch a gate on for every contributor");
+
+  await writeFile(path.join(repoRoot, "vibeops.config.mjs"), "export default {};\n");
+  const declared = runCheckGlobal(repoRoot);
+  assert.equal(declared.status, 0);
+  assert.notEqual(declared.stdout, "", "the repository's own declared file is what asks for the gate");
+});
+
 test("a payload naming an unrelated file produces no output at all", async () => {
   const repoRoot = await gitRepo();
   await writeFile(path.join(repoRoot, "README.md"), "hello\n");

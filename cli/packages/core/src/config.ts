@@ -1,20 +1,25 @@
-// vibeops.config.ts resolution — repository first, then upward, ending at the user's home directory.
+// vibeops.config.* resolution — repository first, then upward, ending at the user's home directory.
 //
 // The cascade is the same shape a linter or tsconfig uses, and it exists for the same reason: the
 // per-repo file holds what is true of that repo, the home file holds the operator's own preferences,
 // and neither should have to restate the other. Nearest wins per key; the search does NOT stop at the
 // git root, because the home-directory file is the whole point of having a cascade at all.
 //
-// TWO FILES PER DIRECTORY, LAYERED. `vibeops.config.local.*` is clone-local and version-control-ignored;
-// `vibeops.config.*` is the committed one. Within a directory the local file wins per key, and BOTH
-// contribute — so a committed config can ship fully populated while a clone overrides only what is true
-// of that machine, which is the .env/.env.example split applied to configuration. The pair repeats at
-// every level, which is what finally gives the home directory the personal-override file this module's
-// consumers have been describing in prose with no mechanism behind it.
+// THREE LAYERS PER DIRECTORY (RFC-0004 §1), named `local`, `declared`, `managed` — in that precedence
+// order, nearest first. `vibeops.config.local.*` is clone-local and version-control-ignored, written by
+// the operator; `vibeops.config.*` is committed, written by a person by hand; `vibeops.config.json` is
+// committed too, but written only by this tooling — it is DATA, parsed rather than imported, and it is a
+// THIRD half of `loadOne`, never a fourth name in the committed half, because within a half the first
+// match wins and a directory holding both `vibeops.config.ts` and `vibeops.config.json` would otherwise
+// silently drop one of them. Unlike the other two, `managed` is read only at the nearest ancestor holding
+// a `.git` entry (§2) — a `vibeops.config.json` found anywhere else in the walk is reported in `leave`
+// and never read, because a machine-written file governing every repository under `$HOME` would be an
+// accident nobody can see.
 //
-// The directory walk still outranks the pair: a nearer COMMITTED file beats a farther LOCAL one. Getting
-// that backwards produces a plausible-looking cascade in which a stale personal file in the home
-// directory silently governs every repository, and it is asserted against in this package's tests.
+// The directory walk still outranks the layer: a nearer `local`/`declared` beats a farther `managed`, and
+// a nearer `managed` beats a farther `declared`, home included. Getting the directory/layer priority
+// backwards produces a plausible-looking cascade in which a stale personal file in the home directory
+// silently governs every repository, and it is asserted against in this package's tests.
 //
 // `.ts` is loaded by dynamic import and relies on Node's native type stripping (>=22.18), so a config
 // file costs no dependency and no build step. `.js`/`.mjs` work identically.
@@ -25,10 +30,10 @@ import { access, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Candidate filenames for one directory, nearest-wins order — every local variant before every committed
- * one. Extension order within each half is a first-match tiebreak, unchanged from when there was one half:
- * a directory holding both `.ts` and `.mjs` of the same kind is a mistake, and this picks one rather than
- * merging two files that were never meant to coexist.
+ * Candidate filenames for one directory, nearest-wins order — every local variant before every declared
+ * one. Extension order within each half is a first-match tiebreak, unchanged from when there was one
+ * half: a directory holding both `.ts` and `.mjs` of the same kind is a mistake, and this picks one
+ * rather than merging two files that were never meant to coexist.
  */
 const FILENAMES = [
   "vibeops.config.local.ts",
@@ -43,17 +48,23 @@ const FILENAMES = [
 const LOCAL_FILENAME_COUNT = 3;
 
 /**
- * The one config file this tooling WRITES, as opposed to reads. Promulgation records what it applied to a
- * clone, and that has to land somewhere a program can edit without rewriting a person's file: the three
- * local variants above are all executable, and a program editing someone's TypeScript to change one key
- * is a class of bug this repository does not need.
+ * The `managed` layer (RFC-0004 §1) — the one config file this tooling WRITES, as opposed to reads.
+ * Promulgation records what it applied to a clone, and that has to land somewhere a program can edit
+ * without rewriting a person's file: `local` and `declared` are executable, and a program editing
+ * someone's TypeScript to change one key is a class of bug this repository does not need.
  *
- * It is a THIRD layer, not a fourth entry in the local half, and the difference is load-bearing. Within a
- * half the first match wins, so adding it there would make a clone holding both this file and a
- * `vibeops.config.local.ts` silently lose one of them — the machine's state or the operator's overrides,
- * depending on the order chosen. Neither is acceptable, and the failure would be invisible. Layered, they
- * compose: the operator keeps declaring preferences in a file they own, this one carries only what was
- * promulgated, and it ranks nearest because it is the most specific statement about this clone.
+ * Read only at the nearest ancestor of the search's start directory that holds a `.git` entry (§2) — see
+ * `findGitToplevel`. `writeManagedConfig` is the only writer.
+ */
+export const MANAGED_FILENAME = "vibeops.config.json";
+
+/**
+ * @deprecated RFC-0004 §1; removed in Plan-032 Track 4. `vibeops.config.local.json` is the retired
+ * machine-written layer `managed` replaces. It is no longer one of the three named layers and `loadOne`
+ * no longer folds it into the general cascade — but this package still reads it, at the lowest possible
+ * precedence, as a fallback source for `harness.applied`/`harness.boundary` while nothing has written a
+ * `managed` file yet, so a clone that predates this RFC does not silently forget what was promulgated to
+ * it. See the "Legacy state read" mark below. `writeHarnessState` is still the only writer.
  */
 const STATE_FILENAME = "vibeops.config.local.json";
 
@@ -114,8 +125,9 @@ export interface TypesConfig {
  * answer different questions and diverge exactly when something has not been migrated yet, which is the
  * case worth detecting; storing one would not give you the other.
  *
- * Belongs in `vibeops.config.local.*`: it is true of one clone on one machine, and committing it would
- * make every promulgation a diff in a file the repository owns.
+ * `applied` and `boundary` come from the `managed` layer alone (RFC-0004 §3) — see the comment on
+ * `merge`'s `harness` case for how that is enforced without a fourth merge rule. A `local` or `declared`
+ * file holding either key is not consulted, even though nothing here stops a person from writing one.
  *
  * ABSENCE IS A STATE, AND IT IS NOT ZERO. No `harness` key at all means never promulgated to; a key with
  * no entry for `plan` means the same about plans specifically. Neither is "version 0", and a reader that
@@ -145,22 +157,30 @@ export interface HarnessConfig {
    * ownership declarations from. Highest-priority tier of the three the CLI resolves (declared config,
    * then `--source`, then `CLAUDE_PLUGIN_ROOT`): a repository or operator that has said so explicitly
    * outranks an invocation flag or an environment variable set by the surrounding hook wiring.
+   *
+   * Unlike `applied`/`boundary`, `source` stays hand-written and unwritable, and folds through the
+   * ordinary `local`/`declared`/`managed` cascade like any other key — it is not restricted to `managed`.
    */
   readonly source?: string;
 }
 
 /**
- * One hand-written reclassification of a path in the composed ownership boundary (Plan-031) — always
- * toward LESS tooling authority, applied as the composition's last layer. `class` is a string here
- * because core does not know the class vocabulary (the harness owns it and validates on composition);
- * `reason` is required by that validation — a bare class is refused, a reclassification is a ledger
- * entry. Written by the operator; no tool writes this key (tool-written configuration is Plan-032's
- * format RFC).
+ * One reclassification of a path in the composed ownership boundary (Plan-031) — always toward LESS
+ * tooling authority, applied as the composition's last layer. `class` is a string here because core does
+ * not know the class vocabulary (the harness owns it and validates on composition); `reason` is required
+ * by that validation — a bare class is refused, a reclassification is a ledger entry.
+ *
+ * Written by a person in a `declared` file, or by this tooling in the `managed` layer through
+ * `writeManagedConfig` (RFC-0004 §4). `origin` distinguishes the two: absent on a freshly parsed file,
+ * populated as `<layer>:<file>` once `loadConfig` has merged it, so a consumer such as
+ * `composedOwnership` can report where a narrowing came from without re-deriving it.
  */
 export interface OwnershipNarrowing {
   readonly match: string;
   readonly class: string;
   readonly reason: string;
+  /** Set by `loadConfig`; a raw per-file declaration never carries this. See the type doc above. */
+  readonly origin?: string;
 }
 
 export interface VibeOpsConfig {
@@ -180,10 +200,19 @@ export interface VibeOpsConfig {
   readonly records?: RecordsConfig;
 }
 
+/** The three named layers a config file can belong to (RFC-0004 §1), nearest-wins in this order. */
+export type ConfigLayer = "local" | "declared" | "managed";
+
 export interface LoadedConfig {
   readonly config: VibeOpsConfig;
   /** Every file that contributed, nearest first. Empty when nothing was found. */
   readonly sources: readonly string[];
+  /** Which layer each entry in `sources` belongs to — a `check-global.ts`-style caller narrows on this
+   *  rather than pattern-matching a filename. Same order as `sources`, same length. */
+  readonly layers: readonly { readonly file: string; readonly layer: ConfigLayer }[];
+  /** A file present but outside the target state — the convergence policy's `leave` verb applied to a
+   *  file rather than a key: a `managed` file found off the repository toplevel. Never read. */
+  readonly leave: readonly { readonly file: string; readonly reason: string }[];
 }
 
 async function exists(candidate: string): Promise<boolean> {
@@ -195,8 +224,8 @@ async function exists(candidate: string): Promise<boolean> {
   }
 }
 
-/** Directories from `start` up to and including the filesystem root, plus the home directory. */
-export function searchPath(start: string, home: string = homedir()): readonly string[] {
+/** Directories from `start` up to and including the filesystem root — no home directory appended. */
+function ancestorsOf(start: string): string[] {
   const dirs: string[] = [];
   let current = path.resolve(start);
   for (;;) {
@@ -205,15 +234,36 @@ export function searchPath(start: string, home: string = homedir()): readonly st
     if (parent === current) break;
     current = parent;
   }
+  return dirs;
+}
+
+/** Directories from `start` up to and including the filesystem root, plus the home directory. */
+export function searchPath(start: string, home: string = homedir()): readonly string[] {
+  const dirs = ancestorsOf(start);
   if (!dirs.includes(home)) dirs.push(home);
   return dirs;
+}
+
+/**
+ * The nearest ancestor of `start`, inclusive, holding a `.git` entry — directory or file, because a
+ * linked worktree and a submodule both use a file (RFC-0004 §2). A filesystem probe, no git shell-out.
+ * Walks only the ancestor chain of `start`; the home directory is never consulted here even when it
+ * holds its own `.git` — the toplevel answers "what repository is `start` inside", not "does home have
+ * one too".
+ */
+async function findGitToplevel(start: string): Promise<string | undefined> {
+  for (const dir of ancestorsOf(start)) {
+    if (await exists(path.join(dir, ".git"))) return dir;
+  }
+  return undefined;
 }
 
 async function loadFile(candidate: string): Promise<{ file: string; config: VibeOpsConfig } | undefined> {
   if (!(await exists(candidate))) return undefined;
 
-  // The state file is data, so it is parsed rather than imported: no default export to demand, no code to
-  // execute, and a malformed one names itself instead of failing as an opaque module error.
+  // A `.json` file is data, so it is parsed rather than imported: no default export to demand, no code to
+  // execute, and a malformed one names itself instead of failing as an opaque module error. Both the
+  // managed layer and the legacy state file are `.json`.
   if (candidate.endsWith(".json")) {
     const text = await readFile(candidate, "utf8");
     try {
@@ -230,25 +280,76 @@ async function loadFile(candidate: string): Promise<{ file: string; config: Vibe
   return { file: candidate, config: module.default };
 }
 
+/** `origin` is set on every ownership entry a `local`/`declared`/`managed` file contributes, never on a
+ *  legacy-state one — the legacy file is not one of the three named layers (RFC-0004 §3). */
+function tagOwnershipOrigin(config: VibeOpsConfig, layer: ConfigLayer, file: string): VibeOpsConfig {
+  if (config.ownership === undefined) return config;
+  const origin = `${layer}:${file}`;
+  return { ...config, ownership: config.ownership.map((entry) => ({ ...entry, origin })) };
+}
+
 /**
- * Every config file in one directory, nearest-wins order: the machine-written state file, then the
- * operator's local file, then the committed one. Returns all of them rather than the first match —
- * returning the first is what would make a nearer file REPLACE the one it is meant to layer over, which
- * is the whole point.
+ * `harness.applied`/`harness.boundary` are `managed`-only (RFC-0004 §3): a `local` or `declared` file
+ * holding either key must not reach the general merge, or `merge`'s existing "nearer wins whole" rule
+ * would let it win over a farther `managed` file, which is exactly the arbitration this RFC ends. Strip
+ * happens here, at load time, so `merge` itself needs no third argument telling it which layer it is
+ * looking at — it just sees `harness.applied`/`boundary` as always absent from a non-managed contribution.
+ * `harness.source` is untouched: it is not restricted to `managed`.
  */
-async function loadOne(dir: string): Promise<readonly { file: string; config: VibeOpsConfig }[]> {
-  const local = FILENAMES.slice(0, LOCAL_FILENAME_COUNT);
-  const committed = FILENAMES.slice(LOCAL_FILENAME_COUNT);
-  const found: { file: string; config: VibeOpsConfig }[] = [];
-  for (const half of [[STATE_FILENAME], local, committed]) {
-    for (const name of half) {
-      const one = await loadFile(path.join(dir, name));
-      if (one === undefined) continue;
-      found.push(one);
+function withoutManagedOnlyHarnessFields(config: VibeOpsConfig): VibeOpsConfig {
+  if (config.harness === undefined) return config;
+  const { source } = config.harness;
+  return { ...config, harness: source === undefined ? undefined : { source } };
+}
+
+interface FoundEntry {
+  readonly file: string;
+  readonly layer: ConfigLayer;
+  readonly config: VibeOpsConfig;
+}
+
+/**
+ * Every config file in one directory that is eligible to be read, nearest-wins order: the operator's
+ * `local` file, then the committed `declared` one, then — only when `dir` is the git toplevel — the
+ * `managed` one. A `managed` file found in a directory that is not the toplevel is reported in `leave`
+ * and never read (RFC-0004 §2). Returns every match rather than the first per half — returning the first
+ * is what would make a nearer file REPLACE the one it is meant to layer over, which is the whole point.
+ *
+ * The legacy state file is handled by the caller, not here: it is not one of the three named layers, and
+ * folding it into this function's return shape would make it look like a fourth one.
+ */
+async function loadOne(
+  dir: string,
+  isGitToplevel: boolean,
+): Promise<{ found: readonly FoundEntry[]; leave: readonly { file: string; reason: string }[] }> {
+  const found: FoundEntry[] = [];
+  const leave: { file: string; reason: string }[] = [];
+
+  for (const name of FILENAMES.slice(0, LOCAL_FILENAME_COUNT)) {
+    const one = await loadFile(path.join(dir, name));
+    if (one !== undefined) {
+      found.push({ file: one.file, layer: "local", config: tagOwnershipOrigin(one.config, "local", one.file) });
       break;
     }
   }
-  return found;
+  for (const name of FILENAMES.slice(LOCAL_FILENAME_COUNT)) {
+    const one = await loadFile(path.join(dir, name));
+    if (one !== undefined) {
+      found.push({ file: one.file, layer: "declared", config: tagOwnershipOrigin(one.config, "declared", one.file) });
+      break;
+    }
+  }
+
+  const managed = await loadFile(path.join(dir, MANAGED_FILENAME));
+  if (managed !== undefined) {
+    if (isGitToplevel) {
+      found.push({ file: managed.file, layer: "managed", config: tagOwnershipOrigin(managed.config, "managed", managed.file) });
+    } else {
+      leave.push({ file: managed.file, reason: "vibeops.config.json is read only at the repository toplevel" });
+    }
+  }
+
+  return { found, leave };
 }
 
 /**
@@ -274,18 +375,23 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     types:
       nearer.types === undefined && further.types === undefined ? undefined : { ...further.types, ...nearer.types },
     // Concatenated, further first: narrowings are last-match-wins inside the composition, so the nearer
-    // file's entry lands later and prevails over a home-directory one for the same match.
+    // file's entry lands later and prevails over a home-directory one for the same match. Each entry
+    // already carries its `<layer>:<file>` origin (`tagOwnershipOrigin`, applied before this function
+    // ever sees it), so concatenation is enough to keep it — merge does not need to know layers or files.
     ownership:
       nearer.ownership === undefined && further.ownership === undefined
         ? undefined
         : [...(further.ownership ?? []), ...(nearer.ownership ?? [])],
-    // `applied` wins WHOLE, deliberately unlike `settings` and `records`: merging per record type would
-    // let a map written for one repository answer for another one further down the path, and "this clone
-    // is on plan@3" is a fact about a single working tree, where a half-inherited answer is worse than
-    // none. The rule is about the MAP, though, not about the key it lives under — `harness` as a whole
-    // used to win whole, which was the same thing while `applied` was the only entry and stopped being so
-    // the moment a machine-written state file could sit nearer than the file an operator declares
-    // `source` in. Whole-key would have had the state file silently discard that.
+    // `applied`/`boundary` win WHOLE, deliberately unlike `settings` and `records`: merging per record
+    // type would let a map written for one repository answer for another one further down the path, and
+    // "this clone is on plan@3" is a fact about a single working tree, where a half-inherited answer is
+    // worse than none. They read as `managed`-only (RFC-0004 §3) not because this function treats
+    // `managed` specially — it does not, and cannot, since it only ever sees two already-merged
+    // `VibeOpsConfig` values with no layer attached — but because `withoutManagedOnlyHarnessFields` has
+    // already stripped both keys from every `local`/`declared` contribution before it reaches here. The
+    // whole-key rule this function applies is exactly the rule described when `applied` was the only
+    // entry and the file that carried it was clone-local state rather than a committed layer; what moved
+    // is which files are still in the running by the time this runs, not the arithmetic here.
     harness:
       nearer.harness === undefined && further.harness === undefined
         ? undefined
@@ -298,30 +404,75 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
 }
 
 export async function loadConfig(start: string, home: string = homedir()): Promise<LoadedConfig> {
+  const toplevel = await findGitToplevel(start);
   const sources: string[] = [];
+  const layers: { file: string; layer: ConfigLayer }[] = [];
+  const leave: { file: string; reason: string }[] = [];
   let config: VibeOpsConfig = {};
+  let seeded = false;
+
+  // Legacy state read — removed in Plan-032 Track 4 (RFC-0004 §1, §8 deviation). `vibeops.config.local.json`
+  // is not one of the three named layers and never enters the general fold below; it is consulted only as
+  // a fallback for `harness.applied`/`harness.boundary`, at the lowest possible precedence, and only for
+  // whichever of the two the `managed` layer left unanswered. Read only at the repository toplevel — the one
+  // place the file was ever written — so a copy anywhere else in the walk, the home directory included, is
+  // never consulted, for the reason §2 gives the managed layer. It is reported in `leave` so every reader
+  // can name the file behind a value that is in force.
+  let legacyHarness: HarnessConfig | undefined;
+
   for (const dir of searchPath(start, home)) {
-    for (const found of await loadOne(dir)) {
-      sources.push(found.file);
-      config = sources.length === 1 ? found.config : merge(config, found.config);
+    const { found, leave: dirLeave } = await loadOne(dir, dir === toplevel);
+    leave.push(...dirLeave);
+
+    if (dir === toplevel) {
+      const state = await loadFile(path.join(dir, STATE_FILENAME));
+      if (state !== undefined) {
+        legacyHarness = state.config.harness;
+        leave.push({
+          file: state.file,
+          reason: "vibeops.config.local.json is the retired state layer — still read as the lowest fallback for harness.applied/harness.boundary until Plan-032 Track 4 retires it",
+        });
+      }
+    }
+
+    for (const entry of found) {
+      sources.push(entry.file);
+      layers.push({ file: entry.file, layer: entry.layer });
+      const contribution = entry.layer === "managed" ? entry.config : withoutManagedOnlyHarnessFields(entry.config);
+      config = seeded ? merge(config, contribution) : contribution;
+      seeded = true;
     }
   }
-  return { config, sources };
+
+  if (legacyHarness !== undefined) {
+    const applied = config.harness?.applied ?? legacyHarness.applied;
+    const boundary = config.harness?.boundary ?? legacyHarness.boundary;
+    if (applied !== undefined || boundary !== undefined || config.harness?.source !== undefined) {
+      config = { ...config, harness: { ...config.harness, applied, boundary } };
+    }
+  }
+
+  return { config, sources, layers, leave };
 }
 
-/** Where a repository's machine-written harness state lives. Absolute, given the repository root. */
+/**
+ * @deprecated RFC-0004 §4; removed in Plan-032 Track 4. Where a repository's legacy machine-written
+ * harness state lives. Superseded by `writeManagedConfig`, which targets `MANAGED_FILENAME` instead —
+ * this function and `writeHarnessState` remain only because `@entelekheia/vibe-ops-harness` still calls
+ * them; Track 4 moves that caller over and deletes both.
+ */
 export function statePath(repoRoot: string): string {
   return path.join(repoRoot, STATE_FILENAME);
 }
 
 /**
- * Record what promulgation applied to this clone, touching only the keys handed in.
+ * @deprecated RFC-0004 §4; removed in Plan-032 Track 4. Record what promulgation applied to this clone,
+ * touching only the keys handed in, in the legacy `vibeops.config.local.json` state file. Superseded by
+ * `writeManagedConfig(dir, { harness: { applied, boundary } })`, which writes the committed `managed`
+ * layer instead of a clone-local one — see RFC-0004 §3 for why `harness.applied`/`harness.boundary` moved.
  *
  * The rest of the file is read and written back unchanged, so an operator can put other keys in it and a
- * later promulgation will not eat them — and, more to the point, no *other* file is touched at all. The
- * ownership declaration classes `vibeops.config.local.*` as belonging to the repository precisely so that
- * promulgation updates its own key through the module that owns it rather than rewriting a file it does
- * not own. This function is that module's half of the bargain.
+ * later promulgation will not eat them — and, more to the point, no *other* file is touched at all.
  */
 export async function writeHarnessState(repoRoot: string, harness: HarnessConfig): Promise<string> {
   const file = statePath(repoRoot);
@@ -344,4 +495,227 @@ export async function writeHarnessState(repoRoot: string, harness: HarnessConfig
 /** A module's own slice of `settings`, never the whole object. */
 export function settingsFor<T = Record<string, unknown>>(config: VibeOpsConfig, id: string): T | undefined {
   return config.settings?.[id] as T | undefined;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// The managed layer's writer (RFC-0004 §4).
+// ---------------------------------------------------------------------------------------------------------
+
+/** The writable key set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`. Nothing
+ *  else — `harness.source` stays hand-written and unwritable, like every other `VibeOpsConfig` key. */
+export interface ManagedConfigPatch {
+  readonly types?: TypesConfig;
+  readonly ownership?: readonly OwnershipNarrowing[];
+  readonly harness?: Pick<HarnessConfig, "applied" | "boundary">;
+}
+
+export interface WriteManagedConfigOptions {
+  /** Dotted key paths to delete after `patch` merges — `"types.plan"`, `"harness.applied"`,
+   *  `"harness.boundary"`. A spread cannot express deletion, and the Track-4 migration needs it. */
+  readonly remove?: readonly string[];
+}
+
+/** One line per RFC-0004 §4: `R1` shadowed by the toplevel's own `declared` file; `R2` the on-disk managed
+ *  file is not valid JSON; `R3` `dir` is not a repository; `R4` a key outside the closed writable set;
+ *  `R5` a `types` name already bound, in `managed`, to a different package. */
+export type ManagedWriteRefusal = "R1" | "R2" | "R3" | "R4" | "R5";
+
+export type WriteManagedConfigResult =
+  | {
+      readonly ok: true;
+      readonly file: string;
+      /** One entry per other layer that still holds a key this write just touched — the toplevel's own
+       *  `local` file is the only one that can, since `declared` was already checked by R1 and nothing
+       *  farther out-ranks a toplevel `managed` file (RFC-0004 §3: "a nearer managed beats a farther
+       *  declared, home included"). Empty when nothing shadows the write. */
+      readonly shadowedBy: readonly { readonly layer: ConfigLayer; readonly file: string }[];
+    }
+  | {
+      readonly ok: false;
+      readonly refusal: ManagedWriteRefusal;
+      /** Names the file, or the two packages for R5, per RFC-0004 §4. */
+      readonly message: string;
+    };
+
+function isWritablePath(segments: readonly string[]): boolean {
+  const [top, second] = segments;
+  if (top === "types") return segments.length === 1 || segments.length === 2;
+  if (top === "ownership") return segments.length === 1;
+  if (top === "harness") return segments.length === 2 && (second === "applied" || second === "boundary");
+  return false;
+}
+
+/** Flattens a patch object's keys into the same `["harness","applied"]`-shaped segments `isWritablePath`
+ *  and the `remove` list use, so both are validated the same way regardless of how a caller built them
+ *  (a well-typed `ManagedConfigPatch`, or a loosely-typed object from an untyped caller). */
+function collectPatchPaths(patch: Record<string, unknown>): string[][] {
+  const paths: string[][] = [];
+  for (const [key, value] of Object.entries(patch)) {
+    if ((key === "harness" || key === "types") && value !== null && typeof value === "object") {
+      const sub = Object.keys(value as Record<string, unknown>);
+      if (sub.length === 0) paths.push([key]);
+      else for (const name of sub) paths.push([key, name]);
+    } else {
+      paths.push([key]);
+    }
+  }
+  return paths;
+}
+
+async function loadLayerAt(
+  dir: string,
+  names: readonly string[],
+): Promise<{ file: string; config: VibeOpsConfig } | undefined> {
+  for (const name of names) {
+    const found = await loadFile(path.join(dir, name));
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
+const loadDeclaredAt = (dir: string) => loadLayerAt(dir, FILENAMES.slice(LOCAL_FILENAME_COUNT));
+const loadLocalAt = (dir: string) => loadLayerAt(dir, FILENAMES.slice(0, LOCAL_FILENAME_COUNT));
+
+/** Does `holder`'s config already carry a value for a key this patch would write — same granularity as
+ *  R1: `types.<name>` per name, `ownership` per identical `match`, `harness.applied`/`harness.boundary`
+ *  each whole. */
+function holdsPatchedKey(holder: VibeOpsConfig, patch: ManagedConfigPatch): boolean {
+  if (patch.types !== undefined && Object.keys(patch.types).some((name) => holder.types?.[name] !== undefined)) {
+    return true;
+  }
+  if (
+    patch.ownership !== undefined &&
+    patch.ownership.some((entry) => holder.ownership?.some((existing) => existing.match === entry.match) === true)
+  ) {
+    return true;
+  }
+  if (patch.harness?.applied !== undefined && holder.harness?.applied !== undefined) return true;
+  if (patch.harness?.boundary !== undefined && holder.harness?.boundary !== undefined) return true;
+  return false;
+}
+
+function applyPatch(current: Record<string, unknown>, patch: ManagedConfigPatch): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...current };
+  if (patch.types !== undefined) {
+    next.types = { ...(current.types as TypesConfig | undefined), ...patch.types };
+  }
+  if (patch.ownership !== undefined) {
+    const existing = (current.ownership as OwnershipNarrowing[] | undefined) ?? [];
+    const merged = [...existing];
+    for (const entry of patch.ownership) {
+      const i = merged.findIndex((e) => e.match === entry.match);
+      if (i === -1) merged.push(entry);
+      else merged[i] = entry;
+    }
+    next.ownership = merged;
+  }
+  if (patch.harness !== undefined) {
+    next.harness = { ...(current.harness as HarnessConfig | undefined), ...patch.harness };
+  }
+  return next;
+}
+
+/** Deletes each dotted path (already validated by `isWritablePath`), dropping an emptied `types`/`harness`
+ *  object entirely so its absence reads as absence rather than as `{}`. */
+function applyRemove(obj: Record<string, unknown>, removePaths: readonly string[][]): Record<string, unknown> {
+  let next = obj;
+  for (const segments of removePaths) {
+    if (segments.length === 1) {
+      const { [segments[0]!]: _dropped, ...rest } = next;
+      next = rest;
+      continue;
+    }
+    const [top, key] = segments as [string, string];
+    const child = next[top];
+    if (child === undefined || typeof child !== "object") continue;
+    const { [key]: _dropped, ...restChild } = child as Record<string, unknown>;
+    if (Object.keys(restChild).length === 0) {
+      const { [top]: _empty, ...rest } = next;
+      next = rest;
+    } else {
+      next = { ...next, [top]: restChild };
+    }
+  }
+  return next;
+}
+
+/**
+ * The only writer of the `managed` layer (RFC-0004 §4). `dir` is the directory written in — the isolated
+ * worktree during a sync, the repository root otherwise — and must itself hold a `.git` entry: a write
+ * never lands above the toplevel, and read/write must target the same file, so this does not search
+ * upward for one the way `findGitToplevel` does for reads.
+ *
+ * Refuses rather than throws for every one of R1–R5: they are routine, expected outcomes a surveying
+ * skill maps to the convergence policy's own verbs (`adopt` for R1/R5, `leave` for R3), not exceptional
+ * control flow — see the flowchart in RFC-0004 §4. A malformed on-disk managed file (R2) is the one
+ * exception in spirit but not in shape: it is just as much a returned outcome as the other four.
+ */
+export async function writeManagedConfig(
+  dir: string,
+  patch: ManagedConfigPatch,
+  options: WriteManagedConfigOptions = {},
+): Promise<WriteManagedConfigResult> {
+  const resolvedDir = path.resolve(dir);
+
+  // R3 — no repository. A write never lands above the toplevel, so `dir` must already be one.
+  if (!(await exists(path.join(resolvedDir, ".git")))) {
+    return { ok: false, refusal: "R3", message: `${resolvedDir} is not a repository: no .git entry, so the managed layer cannot be written here` };
+  }
+
+  const removePaths = (options.remove ?? []).map((p) => p.split("."));
+  const patchPaths = collectPatchPaths(patch as unknown as Record<string, unknown>);
+
+  // R4 — the writable set is closed.
+  for (const segments of [...patchPaths, ...removePaths]) {
+    if (!isWritablePath(segments)) {
+      return {
+        ok: false,
+        refusal: "R4",
+        message: `${segments.join(".")} is not writable — the managed layer accepts only types, ownership, harness.applied and harness.boundary`,
+      };
+    }
+  }
+
+  const file = path.join(resolvedDir, MANAGED_FILENAME);
+  let current: Record<string, unknown> = {};
+  if (await exists(file)) {
+    const text = await readFile(file, "utf8");
+    try {
+      current = JSON.parse(text) as Record<string, unknown>;
+    } catch (error) {
+      // R2 — unparseable, naming the file.
+      return { ok: false, refusal: "R2", message: `${file} is not valid JSON: ${(error as Error).message}` };
+    }
+  }
+
+  // R1 — shadowed by the toplevel's own `declared` layer. `local` is never consulted here: one clone must
+  // not block a repository-wide write.
+  const declared = await loadDeclaredAt(resolvedDir);
+  if (declared !== undefined && holdsPatchedKey(declared.config, patch)) {
+    return { ok: false, refusal: "R1", message: `already declared in ${declared.file}; refusing to shadow a hand-written value` };
+  }
+
+  // R5 — a managed `types` binding cannot be silently rebound to a different package.
+  if (patch.types !== undefined) {
+    const currentTypes = (current.types as TypesConfig | undefined) ?? {};
+    for (const [name, pkg] of Object.entries(patch.types)) {
+      const existing = currentTypes[name];
+      if (existing !== undefined && existing !== pkg) {
+        return {
+          ok: false,
+          refusal: "R5",
+          message: `${name} is already bound to ${existing} in the managed layer; refusing to rebind it to ${pkg} — that binding change is a migrate, not a write`,
+        };
+      }
+    }
+  }
+
+  const written = applyRemove(applyPatch(current, patch), removePaths);
+  await writeFile(file, `${JSON.stringify(written, undefined, 2)}\n`, "utf8");
+
+  const local = await loadLocalAt(resolvedDir);
+  const shadowedBy =
+    local !== undefined && holdsPatchedKey(local.config, patch) ? [{ layer: "local" as const, file: local.file }] : [];
+
+  return { ok: true, file, shadowedBy };
 }
