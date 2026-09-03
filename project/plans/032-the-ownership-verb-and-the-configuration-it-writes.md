@@ -123,6 +123,13 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
    and the fragment format `vibeops.config.json` joins as `shaped` (§7).
 5. **`plugin/skills/setup/SKILL.md`** and **`plugin/skills/migrate/SKILL.md`** — the verbs that carry
    install and update. No new install noun.
+6. **`cli/packages/core/test/config.test.ts`** — the ordering assertions Track 2 extends (every one of
+   them must keep passing), and the fixture style to copy for the new ones.
+7. **`cli/AGENTS.md`** — the config cascade as documented today (`:185-188` describes the three files
+   Track 6 rewrites), the build order (`governance-base` in the foundation pass), and how a single test
+   file is run.
+8. **`plugin/references/convergence-policy.md`** — the four verbs every write in Tracks 5 and 6 must be
+   named by.
 
 ## Tracks
 
