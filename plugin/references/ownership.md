@@ -1,5 +1,5 @@
 ---
-vibe-ops-reference: ownership@2
+vibe-ops-reference: ownership@3
 ---
 
 # Ownership — what promulgation may write, and what it must refuse
@@ -19,14 +19,20 @@ whole value of the declaration is that there is exactly one answer.
 | Class | Promulgation | The repository |
 |---|---|---|
 | `norm` | overwrites it | may not keep a local edit; an edit here is drift to reconcile |
-| `shaped` | never writes it — this is **migration's** class, not promulgation's | owns every word of the content, permanently; the tooling owns the structure and may restructure per a recorded migration note |
+| `shaped` | writes only the parts a recorded rule names, each through the module that owns them, and never the file whole | owns everything else, permanently |
 | `seed` | writes it once, when absent | owns it from the moment it exists |
 | `repo` | never touches it, and stops if it would | owns it entirely |
 
-`shaped` (Plan-031) is the class for a record: its template is versioned and its version jumps carry
-migration notes — structure the tooling claims — while everything written under the headings is the
-repository's and survives every migration. Authority orders `norm > shaped > seed > repo`, strictly:
-a move rightward is a narrowing and applies silently; a move leftward is a widening and needs consent.
+`shaped` is the class for a file with an owner per part, and it has two instances. A **record**
+(Plan-031): its template is versioned and its version jumps carry migration notes — structure the
+tooling claims — while everything written under the headings is the repository's and survives every
+migration; promulgation never writes a record, migration does. The **managed configuration**,
+`vibeops.config.json` (RFC-0004): the tooling owns the keys a recorded rule names — `types`,
+`ownership`, `harness.applied`, `harness.boundary` — each written through the module that owns it, while
+the repository owns the file's existence and every other key, which every write preserves. The definition
+that covers both is "the parts a recorded rule names versus the rest". Authority orders
+`norm > shaped > seed > repo`, strictly: a move rightward is a narrowing and applies silently; a move
+leftward is a widening and needs consent.
 
 `seed` is the largest class and that is the point. Most of what a scaffold produces is a starting shape
 whose value is that someone then changes it — a README, a build manifest, a guardrails file that ships
@@ -37,10 +43,12 @@ statement about how little it overwrites.
 
 Ask these in order, and stop at the first that answers.
 
-1. **Does the file declare a version, or does a migration note exist for changing it?** Then ask who
-   owns the words: a template or mechanism whose whole content ships from the norm is `norm`; a record
-   whose stamp and headings are the template's but whose content a person wrote is `shaped`. Versioning
-   a file is the act of claiming it — the question is only how much of it is claimed.
+1. **Does the file declare a version, does a migration note exist for changing it, or does a recorded
+   rule name the keys a tool writes in it?** Then ask who owns the words: a template or mechanism whose
+   whole content ships from the norm is `norm`; a record whose stamp and headings are the template's but
+   whose content a person wrote is `shaped`, and so is a configuration file whose named keys a tool writes
+   while the repository keeps the rest. Versioning a file, or naming the keys a tool may write in it, is
+   the act of claiming it — the question is only how much of it is claimed.
 2. **Does the shipped copy contain a placeholder, a TODO, or an instruction to the person receiving it?**
    Then it is `seed`. A file whose shipped content asks to be replaced cannot also be a file this tooling
    overwrites.
@@ -71,12 +79,15 @@ fragments with different classes is a **conflict**, reported naming both claiman
 path is refused by every writer until it is resolved. Only the repository resolves it, with an entry in
 its own layer.
 
-That layer is `ownership` in `vibeops.config.ts` — hand-written `{ match, class, reason }` entries,
-applied **last**, always toward less tooling authority. A narrowing is refused, naming what stopped it,
-when it would **widen** past the highest class any fragment declared for that match, when its class is
-not in the vocabulary, or when it carries no reason — a reclassification is a ledger entry, and a bare
-class is not one. (Tool-written configuration is a separate question, owned by Plan-032's format RFC;
-this layer is the operator's.)
+That layer is `ownership` in the repository's configuration — `{ match, class, reason }` entries written
+by hand in `vibeops.config.ts` or by `ownership set` into the managed `vibeops.config.json`, applied
+**last**, always toward less tooling authority. A narrowing is refused, naming what stopped it, when it
+would **widen** past the highest class any fragment declared for that match, when its class is not in the
+vocabulary, or when it carries no reason — a reclassification is a ledger entry, and a bare class is not
+one. (Which file a tool writes, and what it may write there, is
+[RFC-0004](../../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md); the hand-written
+`.ts` outranks the managed file, so a declared entry always wins over a tool-written one on the same
+match.)
 
 ## The two rules that are not about classification
 
@@ -95,5 +106,8 @@ identical from the outside, and the entry is what separates them.
 It carries its own version, and the version travels the same way every other version here does. A change
 that moves a path from `seed` to `norm` is not a formatting change — it converts something a repository
 owned into something this tooling overwrites — and promulgation that reads a newer boundary to decide what
-it may overwrite in a repository that agreed to an older one is assuming consent it does not have. That
-case is an open question of the plan this file was written for, and it is not answered here.
+it may overwrite in a repository that agreed to an older one is assuming consent it does not have.
+RFC-0004 §6 answers the case: **only a widening needs consent, and only for a path the run would write.**
+A bump that adds entries, rewords a justification, or narrows a class promulgates without asking and
+records the new boundary; a bump that moves a path the run writes toward more authority stops on that
+path, naming the class it had and the class it would gain, until the repository accepts it.

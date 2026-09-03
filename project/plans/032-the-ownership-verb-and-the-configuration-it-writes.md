@@ -141,24 +141,31 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
       `MANAGED_FILENAME` as a third half of `loadOne`; the `.git`-ancestor probe; `layers` and `leave`
       on `LoadedConfig`; `harness.applied`/`harness.boundary` sourced from `managed` alone; per-entry
       `ownership` origins; `writeManagedConfig(dir, patch, { remove })` with refusals R1–R5 and the
-      shadow report; `writeHarnessState` and `statePath` removed from the export. Acceptance: every
-      assertion RFC-0004 lists for `config.test.ts` exists and passes; `npm test` green.
+      shadow report. Acceptance: every assertion RFC-0004 lists for `config.test.ts` exists and passes;
+      `npm test` green. **Adds, never retires:** `writeHarnessState` and `statePath` stay exported, marked
+      deprecated, and the legacy state file stays readable as the lowest source for `harness.applied`,
+      because `harness` still imports both and the gate must stay green between tracks; Track 4 retires
+      them with their callers, and the "`vibeops.config.local.json` appears in `leave` unread" assertion
+      lands there.
 - [ ] **Track 3 — The vocabulary and the consent fix.** `harness/ownership.json` to version 2 with
       `vibeops.config.json` as `shaped` and the widened matches; `plugin/references/ownership.md` to
       `ownership@3` with the `shaped` row generalised to "the parts a recorded rule names versus the rest",
-      naming both instances; the enum and the authority order in `harness/src/ownership.ts` untouched;
-      `sync` calls `boundaryRefusals` so a non-widening bump promulgates without `--accept-boundary`.
-      Acceptance: `ownership.test.ts` proves `vibeops.config.json` composes as `shaped` and that
-      classifying it widens nothing; a sync test proves a non-widening bump promulgates and records the
-      new boundary; `vibe-ops check .` green here.
+      naming both instances; the enum and the authority order in `harness/src/ownership.ts` untouched.
+      Acceptance: `ownership.test.ts` proves `vibeops.config.json` composes as `shaped` from the harness
+      and that classifying it widens nothing; `vibe-ops check .` green here. The consent fix moved to
+      Track 4 — its input does not exist yet; see the Open questions.
 - [ ] **Track 4 — The ceremony and the readers.** `harness/src/sync.ts` in RFC-0004 §6's seven steps,
       including the one-file commit and the leftover removal at the repository root; `harness/src/index.ts`
       writing through `writeManagedConfig` and reporting "this repository has never been promulgated to";
       `resolve.ts` with a `managed` surface and `state` flagged `leave`; `check-global.ts` reading
-      `declared` and `local` only. Acceptance: `sync.test.ts` proves the managed file lands in the commit
-      carrying the files it describes, that a run staging no norm file commits it alone, and that step 7
-      empties then deletes the leftover; `hook.test.ts` proves a managed file alone leaves the Stop gate
-      off.
+      `declared` and `local` only; the legacy state read and the `writeHarnessState`/`statePath` exports
+      retired from `core` once nothing imports them; `sync` calls `boundaryRefusals` so a non-widening
+      bump promulgates without `--accept-boundary`, on whatever record of the agreed classes the Open
+      question settles. Acceptance: `sync.test.ts` proves the managed file lands in the commit carrying
+      the files it describes, that a run staging no norm file commits it alone, that step 7 empties then
+      deletes the leftover, and that a non-widening bump promulgates and records the new boundary;
+      `config.test.ts` proves `vibeops.config.local.json` appears in `leave` unread; `hook.test.ts`
+      proves a managed file alone leaves the Stop gate off.
 - [ ] **Track 5 — The nouns and the gates.** `config get` / `config list --show-origin` and
       `ownership get` / `list --show-origin` / `set` in `cli/packages/cli/src`, exposed over MCP like every
       other noun; `config-shadow`, `config-managed-committed` and `config-state-leftover` under
@@ -256,6 +263,16 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 
 - RFC-0004's two Open Questions: overlapping-but-unequal `ownership` globs, and whether `config list`
   renders home-directory layers. Neither blocks a track; the first real case decides each.
+- **Where the agreed classes come from.** RFC-0004 §6 has `sync` call `boundaryRefusals`, whose second
+  argument is the declaration the repository *agreed to* — and nothing records one. `harness.boundary`
+  is a version number; the composed boundary's version is the max across fragments (the governance
+  fragments are already at 2 while the base was at 1), so "ownership@1" names no document that could be
+  read back, and `sync.ts` says as much in the comment above its blanket refusal. Found 2026-09-03
+  while cutting Track 3; the RFC's review rounds did not catch it. The candidate: at promulgation,
+  record beside `harness.boundary` the class of every norm file that run wrote — a literal per-file
+  snapshot of what the repository consented to, small, committed, and exactly what `classOf` needs —
+  and compare against that. Amends RFC-0004's writable key set by one key or one shape; a maintainer
+  decision before Track 4 starts.
 
 ---
 

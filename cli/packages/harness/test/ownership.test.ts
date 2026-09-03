@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { classOf, composedOwnership, entryFor } from "../src/index.ts";
+import { classOf, composedOwnership, entryFor, widens } from "../src/index.ts";
 import type { OwnershipClass } from "../src/index.ts";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
@@ -108,3 +108,26 @@ test("a narrowing without a reason, or with an unknown class, is refused", async
 function escapeForRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+// RFC-0004 §7: the managed configuration is the second instance of `shaped`, declared in the harness
+// base at ownership@2, and the two declared-config matches widen to the three forms the cascade imports.
+test("the base declares vibeops.config.json as shaped, from the harness, and naming it widens nothing", async () => {
+  const boundary = await composedOwnership(undefined);
+  assert.ok(boundary !== undefined, "the base fragment alone is a boundary");
+
+  const managed = entryFor(boundary!, "vibeops.config.json");
+  assert.equal(managed?.class, "shaped");
+  assert.equal((managed as { origin?: string } | undefined)?.origin, "harness", "the base half declares it, no governance fragment");
+  assert.ok(boundary!.version >= 2, `the base bumped to 2 with the entry; composed version is ${boundary!.version}`);
+
+  // An entry where none existed is not a widening — absence was never permission (ownership.ts).
+  assert.equal(widens(undefined, "shaped"), false);
+
+  // The widened matches: every form the cascade imports, and the leaving state file gets no entry.
+  assert.equal(classOf(boundary!, "vibeops.config.ts"), "seed");
+  assert.equal(classOf(boundary!, "vibeops.config.mjs"), "seed");
+  assert.equal(classOf(boundary!, "vibeops.config.js"), "seed");
+  assert.equal(classOf(boundary!, "vibeops.config.local.ts"), "repo");
+  assert.equal(classOf(boundary!, "vibeops.config.local.js"), "repo");
+  assert.equal(classOf(boundary!, "vibeops.config.local.json"), undefined, "vibeops.config.local.json is leaving and is not classified");
+});

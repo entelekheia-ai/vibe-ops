@@ -1,9 +1,9 @@
 {
   "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the four classes is plugin/references/ownership.md.",
-  "version": 1,
+  "version": 2,
   "classes": {
     "norm": "This tooling owns it. Promulgation overwrites it, and a local edit is drift to be reconciled rather than a preference to be preserved.",
-    "shaped": "Two owners, permanently (Plan-031): the tooling owns the structure — migration may restructure it per a recorded note — and the repository owns every word of the content. Promulgation never writes here; this is migration's class.",
+    "shaped": "Two owners, permanently (Plan-031, generalised by RFC-0004): the tooling owns the parts a recorded rule names — a record's structure, which migration may restructure per a recorded note; a managed configuration's keys, each written through the module that owns it — and the repository owns everything else. Promulgation never rewrites a shaped file whole.",
     "seed": "Written once when absent, never overwritten. The repository owns it from the moment it exists.",
     "repo": "Never written and never read for a decision. Promulgation that would touch one of these stops and reports."
   },
@@ -84,14 +84,19 @@
       "why": "Placeholders that let an empty directory survive. Once the directory has content they are deleted, and re-creating them would be noise."
     },
     {
-      "match": "vibeops.config.ts",
+      "match": "vibeops.config.{ts,mjs,js}",
       "class": "seed",
-      "why": "The repository's own declared configuration. Promulgation may create it and must never rewrite what a repository declared about itself."
+      "why": "The repository's own declared configuration, in any of the three forms the cascade imports. Promulgation may create it and must never rewrite what a repository declared about itself. The `.mjs` and `.js` siblings are named because the per-destination handling consult reported them unclassified while sync never met them."
     },
     {
-      "match": "vibeops.config.local.ts",
+      "match": "vibeops.config.json",
+      "class": "shaped",
+      "why": "The managed layer (RFC-0004): the configuration a tool writes. The tooling owns four keys — `types`, `ownership`, `harness.applied`, `harness.boundary` — each through the module that owns it; the repository owns the file's existence and every other key, which every write preserves. Committed, read only at the repository's toplevel, and never rewritten whole: a `types` entry from `setup` survives a `sync`."
+    },
+    {
+      "match": "vibeops.config.local.{ts,mjs,js}",
       "class": "repo",
-      "why": "Clone-local and version-control-ignored. It is where the applied-version map is written, so promulgation updates that one key through the module that owns it — never by rewriting the file."
+      "why": "Clone-local and version-control-ignored: the operator's own layer, outranking the declared and managed ones. Promulgation never writes it; what the harness records about a repository goes to the managed file (RFC-0004)."
     },
     {
       "match": "project/research/**",
