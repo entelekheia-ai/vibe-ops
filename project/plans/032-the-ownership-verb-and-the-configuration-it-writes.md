@@ -36,9 +36,9 @@ vibe-ops-template: plan@3
 > never a new install noun — and the committed home for **`harness.applied`** (clone-local until then, so
 > two clones of one repository could disagree undetectably). One format decision, three writers.
 >
-> **Track 1 drafted 2026-09-03.** [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md)
-> exists as a Draft. Tracks 2–6 below are cut from its Implementation Notes and hold while it is under
-> review; a change at review re-cuts them before any of them starts.
+> **Track 1 done 2026-09-03.** [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md)
+> was drafted, reviewed and accepted the same day. Tracks 2–6 below are cut from its Implementation
+> Notes and are the contract for the work.
 
 ---
 
@@ -58,7 +58,7 @@ the harness records them in the promulgation commit.
 
 ## Goals
 
-- The format RFC written, reviewed and accepted before any verb code. **Drafted 2026-09-03.**
+- The format RFC written, reviewed and accepted before any verb code. **Accepted 2026-09-03.**
 - One committed serialised member, `vibeops.config.json`, that a tool writes and a person never has to:
   three layers per directory, `managed` last, read at the git toplevel, every write reporting what shadows
   it, and a refusal — naming the file — where the hand-written file already holds the key; at the skill
@@ -126,10 +126,10 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 
 ## Tracks
 
-- [ ] **Track 1 — The configuration-format RFC.** Drafted 2026-09-03 through a judged panel of four
-      independent designs and two adversarial review rounds, every `file:line` verified against the tree.
-      Remaining: review (Open Questions carried, none blocking), maintainer acceptance recorded in the
-      header. No later track starts before acceptance.
+- [x] **Track 1 — The configuration-format RFC.** Drafted 2026-09-03 through a judged panel of four
+      independent designs and two adversarial review rounds, every `file:line` verified against the tree;
+      reviewed and accepted by the maintainer the same day, sign-off recorded in the header, the two Open
+      Questions carried as non-blocking.
 - [ ] **Track 2 — The managed layer in core.** `cli/packages/core/src/config.ts` and `index.ts`:
       `MANAGED_FILENAME` as a third half of `loadOne`; the `.git`-ancestor probe; `layers` and `leave`
       on `LoadedConfig`; `harness.applied`/`harness.boundary` sourced from `managed` alone; per-entry

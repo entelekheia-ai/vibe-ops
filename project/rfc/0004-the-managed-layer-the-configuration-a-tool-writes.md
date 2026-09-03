@@ -16,8 +16,9 @@ vibe-ops-template: rfc@2
 
 | Field | Value |
 |---|---|
-| Status | Draft |
+| Status | Accepted |
 | Created | 2026-09-03 |
+| Accepted | 2026-09-03 — Danilo Borges, maintainer sign-off; the two Open Questions carried, neither blocking |
 | Author | Danilo Borges |
 | Depends on | [RFC-0002](0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md), [RFC-0003](0003-a-governance-type-as-a-pluggable-unit.md) |
 | Related | [ADR-0014](../adr/0014-clone-local-configuration-layers-rather-than-replaces.md), [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md), [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-031](../plans/shipped/031-ownership-fragments-and-the-shaped-class.md), [Plan-032](../plans/032-the-ownership-verb-and-the-configuration-it-writes.md), [Plan-033](../plans/shipped/033-one-artifact-one-governance.md) |
