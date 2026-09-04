@@ -7,7 +7,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { classOf, composedOwnership, entryFor, widens } from "../src/index.ts";
-import type { OwnershipClass } from "../src/index.ts";
+import type { ComposedEntry, OwnershipClass } from "../src/index.ts";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 /**
@@ -65,7 +65,7 @@ test("a repository entry on the conflicted match resolves it, and the narrowing 
   );
   assert.equal(classOf(boundary!, "project/shared/x.md"), "seed");
   const entry = entryFor(boundary!, "project/shared/x.md");
-  assert.equal(entry?.origin, "repository");
+  assert.equal((entry as ComposedEntry | undefined)?.origin, "repository");
 });
 
 test("a narrowing that would widen is refused naming the fragment that declared the narrower class", async () => {
@@ -117,7 +117,7 @@ test("the base declares vibeops.config.json as shaped, from the harness, and nam
 
   const managed = entryFor(boundary!, "vibeops.config.json");
   assert.equal(managed?.class, "shaped");
-  assert.equal((managed as { origin?: string } | undefined)?.origin, "harness", "the base half declares it, no governance fragment");
+  assert.equal((managed as ComposedEntry | undefined)?.origin, "harness", "the base half declares it, no governance fragment");
   assert.ok(boundary!.version >= 2, `the base bumped to 2 with the entry; composed version is ${boundary!.version}`);
 
   // An entry where none existed is not a widening — absence was never permission (ownership.ts).
