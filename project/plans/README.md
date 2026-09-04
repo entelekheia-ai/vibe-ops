@@ -27,7 +27,7 @@ pluggable unit. Three plans shipped it; four carry what is left.
 | 034 | [the ops become data, and the governances feed them](./shipped/034-the-ops-become-data-and-the-governances-feed-them.md) | Backlog | nothing |
 | 035 | [the audience boundary](035-the-audience-boundary.md) | Backlog | nothing (034 shipped) |
 | 031 | [ownership fragments, and the shaped class](./shipped/031-ownership-fragments-and-the-shaped-class.md) | Backlog | nothing |
-| 032 | [the ownership verb, and the configuration it writes](032-the-ownership-verb-and-the-configuration-it-writes.md) | In Progress (Track 1 done: RFC-0004 accepted; next Track 2) | nothing |
+| 032 | [the ownership verb, and the configuration it writes](032-the-ownership-verb-and-the-configuration-it-writes.md) | In Progress (Tracks 1–4 done; next Track 5, the nouns and the gates) | nothing |
 | 036 | [the proxy grows](036-the-proxy-grows.md) | Backlog | nothing (opportunistic) |
 
 ## Suggested attack order
