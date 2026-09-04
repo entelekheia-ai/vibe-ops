@@ -13,7 +13,7 @@
 import { existsSync, lstatSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { statePath } from "@entelekheia/vibe-ops-core";
+import { MANAGED_FILENAME, STATE_FILENAME } from "@entelekheia/vibe-ops-core";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export interface Surface {
@@ -33,6 +33,9 @@ export interface ResolvedHarness {
   readonly runner: Surface;
   readonly config: Surface;
   readonly configLocal: Surface;
+  /** The managed layer (RFC-0004): the configuration a tool writes, committed at the toplevel. */
+  readonly managed: Surface;
+  /** The retired state layer. Present means `leave`: never read, retired by the next `harness sync`. */
   readonly state: Surface;
   /** Where observations go, from config. Absent disables emission entirely, which is a state and not a gap. */
   readonly artifactDir?: string;
@@ -80,7 +83,8 @@ export function resolveHarness(repoRoot: string, config: VibeOpsConfig): Resolve
     runner: surface(repoRoot, "scripts/checks/_run.sh"),
     config: surface(repoRoot, "vibeops.config.ts"),
     configLocal: surface(repoRoot, "vibeops.config.local.ts"),
-    state: surface(repoRoot, path.relative(repoRoot, statePath(repoRoot))),
+    managed: surface(repoRoot, MANAGED_FILENAME),
+    state: surface(repoRoot, STATE_FILENAME, () => "leave — retired, never read; the next harness sync moves its map into the managed file and deletes it"),
     artifactDir: config.artifactDir,
     hooksPath,
   };
@@ -99,6 +103,7 @@ export function formatResolvedHarness(resolved: ResolvedHarness): string[] {
     line("RUNNER", resolved.runner),
     line("CONFIG", resolved.config),
     line("CONFIG_LOCAL", resolved.configLocal),
+    line("MANAGED", resolved.managed),
     line("STATE", resolved.state),
     `ARTIFACTS=${resolved.artifactDir ?? "(none — emission is off)"}`,
   ];

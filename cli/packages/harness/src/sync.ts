@@ -22,7 +22,7 @@
 // THE DURABLE ARTIFACTS ARE THE BRANCH AND THE TAG, not the directory. The working tree is removed as the
 // last step, so promulgation cannot accumulate forgotten sibling directories nobody remembers creating.
 
-import { mkdtemp, readFile, writeFile, mkdir } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, mkdir, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -30,7 +30,8 @@ import path from "node:path";
 import { classOf, composedOwnership, entryFor, ownershipPath, readOwnership, widens } from "./ownership.ts";
 import type { ComposedBoundary, DoubleClaim } from "./ownership.ts";
 import type { Ownership, OwnershipClass } from "./ownership.ts";
-import { activateGovernance, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
+import { activateGovernance, effectiveGovernanceBindings, MANAGED_FILENAME, STATE_FILENAME, writeManagedConfig } from "@entelekheia/vibe-ops-core";
+import type { HarnessConfig } from "@entelekheia/vibe-ops-core";
 import { shippedVersionsFromPackages, shippedVersionsFromPinned } from "./status.ts";
 import type { VersionedType } from "./status.ts";
 
@@ -75,6 +76,44 @@ export interface SyncResult {
    * was promulgated here", and a run that promulgated nothing must not claim otherwise.
    */
   readonly applied: Partial<Record<VersionedType, number>>;
+  /**
+   * What RFC-0004 §6 step 7 did to the retired `vibeops.config.local.json` at the repository root after
+   * the branch and the tag existed: its harness keys moved into the committed managed file, so the file
+   * was emptied of them, or deleted when nothing else was in it. Absent when there was no such file, on
+   * a dry run, and on any run that produced no branch.
+   */
+  readonly retiredState?: "emptied" | "deleted";
+}
+
+/** A `.json` config file as bytes on disk — parsed, never imported, and named when it cannot be parsed. */
+async function readJsonFile(file: string): Promise<Record<string, unknown> | undefined> {
+  if (!existsSync(file)) return undefined;
+  const text = await readFile(file, "utf8");
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch (error) {
+    throw new Error(`${file} is not valid JSON: ${(error as Error).message}`);
+  }
+}
+
+/**
+ * RFC-0004 §6 step 7 — a keyed write through the module that owns the keys, on a file the cascade no
+ * longer reads: remove the harness's own keys from the leftover state file and delete it when nothing
+ * else is in it. Anything else someone put there is kept, byte for byte in meaning if not in formatting.
+ */
+async function retireStateFile(repoRoot: string): Promise<"emptied" | "deleted" | undefined> {
+  const file = path.join(repoRoot, STATE_FILENAME);
+  const raw = await readJsonFile(file);
+  if (raw === undefined) return undefined;
+  const { harness, ...rest } = raw;
+  const { applied: _a, boundary: _b, agreed: _c, ...restHarness } = (harness ?? {}) as Record<string, unknown>;
+  const next: Record<string, unknown> = Object.keys(restHarness).length === 0 ? rest : { ...rest, harness: restHarness };
+  if (Object.keys(next).length === 0) {
+    await unlink(file);
+    return "deleted";
+  }
+  await writeFile(file, `${JSON.stringify(next, undefined, 2)}\n`, "utf8");
+  return "emptied";
 }
 
 function git(cwd: string, args: readonly string[]): { code: number; out: string; err: string } {
@@ -166,26 +205,28 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
 
   const boundary = { agreed: options.agreedBoundary, installed: installed.version };
 
-  // A clone that has agreed to the installed version, or is being told to agree to it now, has nothing to
-  // reconcile. Otherwise every path is checked against the boundary it actually agreed to — which this
-  // cannot read, because only the installed declaration is on disk. So the honest comparison is available
-  // only when the versions match or consent is being given; where it is not, the refusal is the whole run
-  // and it says exactly that.
+  // CONSENT (RFC-0004 §6). The declaration the repository agreed to is not on disk — only the installed
+  // one is, and a version number cannot be read back into classes when the composed version is the max
+  // across fragments. What IS on disk is the receipt `harness.agreed` in the committed managed file: the
+  // class of every file promulgation wrote here, recorded in the commit that wrote them. Compared against
+  // that, only a path whose class WIDENED is refused; a bump that renames, narrows or adds entries
+  // promulgates and records the new boundary. A repository with no receipt — never promulgated to, or
+  // promulgated before the receipt existed — has agreed to nothing this can compare, and promulgates.
+  // Read from the committed file directly, never from the merged config: a `local` or `declared` copy is
+  // exactly the forged consent §3 keeps out of the cascade.
   const agreeing = options.acceptBoundary === installed.version;
-  const settled = options.agreedBoundary === installed.version || agreeing;
+  const managedAtRoot = await readJsonFile(path.join(repoRoot, MANAGED_FILENAME));
+  const receipt = ((managedAtRoot?.harness as HarnessConfig | undefined)?.agreed ?? undefined) as
+    | Readonly<Record<string, string>>
+    | undefined;
 
   const refused: RefusedPath[] = [];
-  if (!settled && options.agreedBoundary !== undefined) {
-    for (const file of content.keys()) {
-      const now = classOf(installed, file);
-      if (now === undefined) continue;
-      refused.push({
-        path: file,
-        was: "seed",
-        now,
-        why: `this clone agreed to ownership@${options.agreedBoundary}; the installed declaration is ownership@${installed.version} and was not accepted`,
-      });
-    }
+  if (!agreeing && receipt !== undefined) {
+    const agreedTo: Ownership = {
+      version: options.agreedBoundary ?? 0,
+      paths: Object.entries(receipt).map(([match, cls]) => ({ match, class: cls as OwnershipClass, why: "" })),
+    };
+    refused.push(...boundaryRefusals(installed, agreedTo, content.keys()));
   }
 
   const written: string[] = [];
@@ -250,12 +291,48 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
       await writeFile(destination, content.get(file)!, "utf8");
     }
 
+    // RFC-0004 §6 steps 1–3. The committed map is read back from THIS working tree, never from the
+    // caller's merged config; the leftover state file at the repository root seeds it once, for the
+    // types this run leaves untouched (step 7 deletes that file); the staged types land at their shipped
+    // versions; the receipt gains the class of every file this run wrote. Written and added BEFORE
+    // `git add`, so the swallowed-path verification below covers it like any other file — but only
+    // counted as touched when its bytes changed, or an unchanged map would read as swallowed.
+    const managedFile = path.join(worktree, MANAGED_FILENAME);
+    const before = existsSync(managedFile) ? await readFile(managedFile, "utf8") : undefined;
+    const committedHarness = ((await readJsonFile(managedFile))?.harness ?? {}) as HarnessConfig;
+    const leftoverHarness = ((await readJsonFile(path.join(repoRoot, STATE_FILENAME)))?.harness ?? {}) as HarnessConfig;
+    const shipped = pinned !== undefined ? await shippedVersionsFromPinned(pinned) : await shippedVersionsFromPackages(options.config);
+    const templateOf = (type: string): string => `project/templates/${type}.md`;
+    const appliedMap: Record<string, number> = {};
+    for (const [type, version] of Object.entries(committedHarness.applied ?? {})) if (version !== undefined) appliedMap[type] = version;
+    for (const [type, version] of Object.entries(leftoverHarness.applied ?? {})) {
+      if (version !== undefined && !touched.includes(templateOf(type))) appliedMap[type] = version;
+    }
+    for (const [type, version] of Object.entries(shipped)) {
+      if (touched.includes(templateOf(type))) appliedMap[type] = version;
+    }
+    const agreed: Record<string, string> = { ...committedHarness.agreed };
+    for (const file of touched) agreed[file] = classOf(installed, file)!;
+    const wroteManaged = await writeManagedConfig(worktree, {
+      harness: { applied: appliedMap as HarnessConfig["applied"], boundary: installed.version, agreed },
+    });
+    if (!wroteManaged.ok) {
+      throw new Error(`the promulgation tree's ${MANAGED_FILENAME} could not be written: ${wroteManaged.message}`);
+    }
+    if ((await readFile(managedFile, "utf8")) !== before) touched.push(MANAGED_FILENAME);
+
     git(worktree, ["add", "--", ...touched]);
 
     // VERIFY WHAT WAS STAGED, never the exit code. `git add` on an ignored path succeeds and stages
     // nothing, mentioning it only as a hint — so a branch that looks complete is the default failure here.
+    // A touched path that is already tracked and byte-identical to HEAD stages nothing too, and that is
+    // not swallowing: a repository already holding this norm re-promulgates as "nothing to write", and
+    // RFC-0004 §6 step 4 needs exactly that run to still commit the managed file alone.
     const staged = new Set(git(worktree, ["diff", "--cached", "--name-only"]).out.split("\n").filter((n) => n !== ""));
-    const swallowed = touched.filter((file) => !staged.has(file)).map((file) => ({ path: file, rule: ignoredBy(worktree, file) }));
+    const tracked = (file: string): boolean => git(worktree, ["ls-files", "--error-unmatch", "--", file]).code === 0;
+    const swallowed = touched
+      .filter((file) => !staged.has(file) && !tracked(file))
+      .map((file) => ({ path: file, rule: ignoredBy(worktree, file) }));
 
     if (swallowed.length > 0) {
       return { branch, written, seeded, refused, swallowed, boundary, applied: {} };
@@ -280,16 +357,18 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
       throw new Error(`${branch} was committed, but tagging it ${tag} failed: ${tagged.err}`);
     }
 
-    // What this run actually put there, restricted to the types whose file reached the index. Without it
-    // `harness status` reports a freshly promulgated repository as never promulgated to — the exact
-    // question this whole mechanism exists to answer, left unanswered by the act that should answer it.
-    const shipped = pinned !== undefined ? await shippedVersionsFromPinned(pinned) : await shippedVersionsFromPackages(options.config);
+    // What this run actually put there, restricted to the types whose file reached the index — the
+    // committed map in the branch carries the whole picture; this is the run's own answer.
     const applied: Partial<Record<VersionedType, number>> = {};
     for (const [type, version] of Object.entries(shipped) as [VersionedType, number][]) {
-      if (staged.has(`project/templates/${type}.md`)) applied[type] = version;
+      if (staged.has(templateOf(type))) applied[type] = version;
     }
 
-    return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied };
+    // Step 7, after the branch and the tag exist, at the repository root: the leftover state file has
+    // been folded into the committed map above and is retired.
+    const retiredState = await retireStateFile(repoRoot);
+
+    return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied, retiredState };
   } catch (error) {
     unwinding = true;
     throw error;

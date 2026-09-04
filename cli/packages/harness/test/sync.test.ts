@@ -67,7 +67,11 @@ test("sync leaves the target's working tree untouched, and stops at a branch and
   assert.equal(result.tag, "vibe-ops/norm@1");
 
   const changed = git(repoRoot, ["diff", "--name-only", "main", result.branch!]).split("\n").filter((n) => n !== "");
-  assert.deepEqual(changed.sort(), ["project/templates/adr.md", "project/templates/plan.md"]);
+  assert.deepEqual(
+    changed.sort(),
+    ["project/templates/adr.md", "project/templates/plan.md", "vibeops.config.json"],
+    "the managed file travels in the commit carrying the files it describes (RFC-0004 §6)",
+  );
 
   // The durable artifacts are the branch and the tag; the directory is not one of them.
   assert.equal(git(repoRoot, ["worktree", "list"]).split("\n").length, 1, "no sibling working tree left behind");
@@ -220,18 +224,51 @@ test("boundaryRefusals names only the paths that widened, never the whole run", 
   assert.match(refused[0]!.why, /declares a version/, "the refusal carries the declaration's own justification");
 });
 
-test("a clone that agreed to an older boundary is refused until it accepts the installed one", async () => {
+/** A target whose committed managed file carries a receipt: the classes it agreed to at boundary 1. */
+async function targetWithReceipt(agreed: Record<string, string>, extra: Record<string, unknown> = {}): Promise<string> {
   const repoRoot = await target();
-  const sourceRoot = await source(2);
+  await writeFile(path.join(repoRoot, "vibeops.config.json"), JSON.stringify({ ...extra, harness: { boundary: 1, agreed } }));
+  git(repoRoot, ["add", "."]);
+  git(repoRoot, ["commit", "-q", "-m", "receipt"]);
+  return repoRoot;
+}
+
+function committedManaged(repoRoot: string, branch: string): { harness: { applied?: Record<string, number>; boundary?: number; agreed?: Record<string, string> } } & Record<string, unknown> {
+  return JSON.parse(git(repoRoot, ["show", `${branch}:vibeops.config.json`]));
+}
+
+test("consent: a bump that widens a path this run writes is refused against the receipt, until accepted", async () => {
+  const repoRoot = await targetWithReceipt({ "project/templates/adr.md": "seed", "project/templates/plan.md": "norm" });
+  const sourceRoot = await source(2); // declares both norm: adr widened, plan did not
 
   const refusedRun = await sync({ repoRoot, sourceRoot, agreedBoundary: 1, dryRun: false });
-  assert.ok(refusedRun.refused.length > 0, "an unaccepted boundary change is not promulgated over");
+  assert.deepEqual(refusedRun.refused.map((one) => one.path), ["project/templates/adr.md"], "only the path that widened, never the whole run");
+  assert.equal(refusedRun.refused[0]!.was, "seed");
+  assert.equal(refusedRun.refused[0]!.now, "norm");
   assert.equal(refusedRun.branch, undefined);
-  assert.match(refusedRun.refused[0]!.why, /agreed to ownership@1/);
 
   const accepted = await sync({ repoRoot, sourceRoot, agreedBoundary: 1, acceptBoundary: 2, dryRun: false });
   assert.equal(accepted.refused.length, 0, "consent given on this run clears it");
   assert.equal(accepted.branch, "vibe-ops/norm-2");
+  const committed = committedManaged(repoRoot, "vibe-ops/norm-2");
+  assert.equal(committed.harness.boundary, 2);
+  assert.deepEqual(
+    committed.harness.agreed,
+    { "project/templates/adr.md": "norm", "project/templates/plan.md": "norm" },
+    "the receipt now records the classes consented to",
+  );
+});
+
+test("consent: a bump that widens nothing promulgates without --accept-boundary and records the new boundary", async () => {
+  const repoRoot = await targetWithReceipt({ "project/templates/adr.md": "norm", "project/templates/plan.md": "norm" }, { "x-team": { owner: "platform" } });
+  const sourceRoot = await source(2);
+
+  const result = await sync({ repoRoot, sourceRoot, agreedBoundary: 1, dryRun: false });
+  assert.equal(result.refused.length, 0, "no path widened, so a version bump alone asks nothing");
+  assert.equal(result.branch, "vibe-ops/norm-2");
+  const committed = committedManaged(repoRoot, "vibe-ops/norm-2");
+  assert.equal(committed.harness.boundary, 2, "the new boundary is recorded by the run that promulgated under it");
+  assert.deepEqual(committed["x-team"], { owner: "platform" }, "a foreign key in the managed file survives the write");
 });
 
 test("a clone already on the installed boundary promulgates without asking again", async () => {
@@ -242,4 +279,72 @@ test("a clone already on the installed boundary promulgates without asking again
   assert.equal(result.refused.length, 0);
   assert.equal(result.branch, "vibe-ops/norm-2");
   assert.ok(existsSync(path.join(repoRoot, ".git")), "the target is intact");
+});
+
+test("the managed file lands in the commit carrying the files it describes: applied, boundary, agreed", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+
+  const result = await sync({ repoRoot, sourceRoot, dryRun: false });
+
+  const committed = committedManaged(repoRoot, result.branch!);
+  assert.deepEqual(committed.harness, {
+    applied: { adr: 3, plan: 3 },
+    boundary: 1,
+    agreed: { "project/templates/adr.md": "norm", "project/templates/plan.md": "norm" },
+  });
+  assert.ok(!existsSync(path.join(repoRoot, "vibeops.config.json")), "the caller's checkout is untouched — the map lives in the branch until it merges");
+  assert.equal(result.retiredState, undefined, "no state file, nothing to retire");
+});
+
+test("a run staging no norm file commits the managed file alone, seeded from the leftover state file, and deletes it (step 7)", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+  // The target already holds, byte for byte, every template the norm would write.
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  for (const type of ["adr", "plan"]) {
+    await writeFile(path.join(repoRoot, "project", "templates", `${type}.md`), `---\nvibe-ops-template: ${type}@3\n---\n\n# ${type}\n`);
+  }
+  git(repoRoot, ["add", "."]);
+  git(repoRoot, ["commit", "-q", "-m", "already current"]);
+  const state = path.join(repoRoot, "vibeops.config.local.json");
+  await writeFile(state, JSON.stringify({ harness: { applied: { rfc: 2 }, boundary: 1 } }));
+
+  const result = await sync({ repoRoot, sourceRoot, dryRun: false });
+
+  assert.equal(result.branch, "vibe-ops/norm-1");
+  assert.deepEqual(result.swallowed, [], "an unchanged tracked file is not a swallowed one");
+  const changed = git(repoRoot, ["diff", "--name-only", "main", result.branch!]).split("\n").filter((n) => n !== "");
+  assert.deepEqual(changed, ["vibeops.config.json"], "the one-file commit is the honest record of this run");
+  const committed = committedManaged(repoRoot, result.branch!);
+  assert.deepEqual(committed.harness.applied, { adr: 3, plan: 3, rfc: 2 }, "the leftover map seeds the types this run left untouched");
+  assert.equal(result.retiredState, "deleted");
+  assert.ok(!existsSync(state), "nothing but harness keys was in it, so step 7 deleted it");
+});
+
+test("step 7 empties the leftover state file of the harness keys and keeps whatever else was in it", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+  const state = path.join(repoRoot, "vibeops.config.local.json");
+  await writeFile(state, JSON.stringify({ harness: { applied: { adr: 1 }, boundary: 1, source: "/pinned" }, settings: { check: {} } }));
+
+  const result = await sync({ repoRoot, sourceRoot, dryRun: false });
+
+  assert.equal(result.retiredState, "emptied");
+  assert.deepEqual(JSON.parse(await readFile(state, "utf8")), { settings: { check: {} }, harness: { source: "/pinned" } });
+  const committed = committedManaged(repoRoot, result.branch!);
+  assert.deepEqual(committed.harness.applied, { adr: 3, plan: 3 }, "a type this run wrote takes the shipped version, not the leftover one");
+});
+
+test("a dry run and a refused run leave the leftover state file alone", async () => {
+  const repoRoot = await targetWithReceipt({ "project/templates/adr.md": "seed" });
+  const sourceRoot = await source(2);
+  const state = path.join(repoRoot, "vibeops.config.local.json");
+  await writeFile(state, JSON.stringify({ harness: { applied: { adr: 1 } } }));
+
+  const dry = await sync({ repoRoot, sourceRoot, agreedBoundary: 1, acceptBoundary: 2, dryRun: true });
+  assert.equal(dry.branch, undefined);
+  const refused = await sync({ repoRoot, sourceRoot, agreedBoundary: 1, dryRun: false });
+  assert.ok(refused.refused.length > 0);
+  assert.ok(existsSync(state), "step 7 runs only after a branch and a tag exist");
 });

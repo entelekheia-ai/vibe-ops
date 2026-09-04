@@ -59,14 +59,12 @@ const LOCAL_FILENAME_COUNT = 3;
 export const MANAGED_FILENAME = "vibeops.config.json";
 
 /**
- * @deprecated RFC-0004 §1; removed in Plan-032 Track 4. `vibeops.config.local.json` is the retired
- * machine-written layer `managed` replaces. It is no longer one of the three named layers and `loadOne`
- * no longer folds it into the general cascade — but this package still reads it, at the lowest possible
- * precedence, as a fallback source for `harness.applied`/`harness.boundary` while nothing has written a
- * `managed` file yet, so a clone that predates this RFC does not silently forget what was promulgated to
- * it. See the "Legacy state read" mark below. `writeHarnessState` is still the only writer.
+ * The RETIRED state layer (RFC-0004 §1, ADR-0015 amended). Never read by the cascade: a file by this name
+ * at the repository toplevel is reported in `leave` so every reader can name it, and `harness sync` is the
+ * one thing that still opens it — once, to seed `harness.applied` from it and then empty and delete it
+ * (§6 step 7). Exported for that reader alone.
  */
-const STATE_FILENAME = "vibeops.config.local.json";
+export const STATE_FILENAME = "vibeops.config.local.json";
 
 /**
  * A record type, by name. **An open name, not a union** (Plan-029 Track 1): a repository may keep an
@@ -152,6 +150,15 @@ export interface HarnessConfig {
    * promulgated into — not agreement to version zero.
    */
   readonly boundary?: number;
+  /**
+   * The classes the repository consented to, one entry per norm file promulgation has written here —
+   * `{ "<repository-relative path>": "<class>" }`, recorded by `harness sync` in the same commit as the
+   * files it describes. A receipt, never a decision: it changes no effective class (that is `ownership`),
+   * it is only what `boundaryRefusals` compares the installed declaration against, so that a bump that
+   * widens a path this tooling writes stops on that path and a bump that widens nothing promulgates.
+   * `class` is a string here because core does not know the vocabulary. `managed`-only, like `applied`.
+   */
+  readonly agreed?: Readonly<Record<string, string>>;
   /**
    * Where this repository's norm comes from — the root a `needsSource` module reads templates and
    * ownership declarations from. Highest-priority tier of the three the CLI resolves (declared config,
@@ -289,8 +296,8 @@ function tagOwnershipOrigin(config: VibeOpsConfig, layer: ConfigLayer, file: str
 }
 
 /**
- * `harness.applied`/`harness.boundary` are `managed`-only (RFC-0004 §3): a `local` or `declared` file
- * holding either key must not reach the general merge, or `merge`'s existing "nearer wins whole" rule
+ * `harness.applied`/`harness.boundary`/`harness.agreed` are `managed`-only (RFC-0004 §3): a `local` or
+ * `declared` file holding any of them must not reach the general merge, or `merge`'s existing "nearer wins whole" rule
  * would let it win over a farther `managed` file, which is exactly the arbitration this RFC ends. Strip
  * happens here, at load time, so `merge` itself needs no third argument telling it which layer it is
  * looking at — it just sees `harness.applied`/`boundary` as always absent from a non-managed contribution.
@@ -398,6 +405,7 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
         : {
             applied: nearer.harness?.applied ?? further.harness?.applied,
             boundary: nearer.harness?.boundary ?? further.harness?.boundary,
+            agreed: nearer.harness?.agreed ?? further.harness?.agreed,
             source: nearer.harness?.source ?? further.harness?.source,
           },
   };
@@ -411,28 +419,17 @@ export async function loadConfig(start: string, home: string = homedir()): Promi
   let config: VibeOpsConfig = {};
   let seeded = false;
 
-  // Legacy state read — removed in Plan-032 Track 4 (RFC-0004 §1, §8 deviation). `vibeops.config.local.json`
-  // is not one of the three named layers and never enters the general fold below; it is consulted only as
-  // a fallback for `harness.applied`/`harness.boundary`, at the lowest possible precedence, and only for
-  // whichever of the two the `managed` layer left unanswered. Read only at the repository toplevel — the one
-  // place the file was ever written — so a copy anywhere else in the walk, the home directory included, is
-  // never consulted, for the reason §2 gives the managed layer. It is reported in `leave` so every reader
-  // can name the file behind a value that is in force.
-  let legacyHarness: HarnessConfig | undefined;
-
   for (const dir of searchPath(start, home)) {
     const { found, leave: dirLeave } = await loadOne(dir, dir === toplevel);
     leave.push(...dirLeave);
 
-    if (dir === toplevel) {
-      const state = await loadFile(path.join(dir, STATE_FILENAME));
-      if (state !== undefined) {
-        legacyHarness = state.config.harness;
-        leave.push({
-          file: state.file,
-          reason: "vibeops.config.local.json is the retired state layer — still read as the lowest fallback for harness.applied/harness.boundary until Plan-032 Track 4 retires it",
-        });
-      }
+    // The retired state layer is never read (RFC-0004 §1): named in `leave` at the toplevel, the one place
+    // it was ever written, so a reader can say what the file is and `harness sync` can retire it.
+    if (dir === toplevel && (await exists(path.join(dir, STATE_FILENAME)))) {
+      leave.push({
+        file: path.join(dir, STATE_FILENAME),
+        reason: "vibeops.config.local.json is the retired state layer — never read; the next harness sync moves its map into vibeops.config.json and deletes it",
+      });
     }
 
     for (const entry of found) {
@@ -444,52 +441,7 @@ export async function loadConfig(start: string, home: string = homedir()): Promi
     }
   }
 
-  if (legacyHarness !== undefined) {
-    const applied = config.harness?.applied ?? legacyHarness.applied;
-    const boundary = config.harness?.boundary ?? legacyHarness.boundary;
-    if (applied !== undefined || boundary !== undefined || config.harness?.source !== undefined) {
-      config = { ...config, harness: { ...config.harness, applied, boundary } };
-    }
-  }
-
   return { config, sources, layers, leave };
-}
-
-/**
- * @deprecated RFC-0004 §4; removed in Plan-032 Track 4. Where a repository's legacy machine-written
- * harness state lives. Superseded by `writeManagedConfig`, which targets `MANAGED_FILENAME` instead —
- * this function and `writeHarnessState` remain only because `@entelekheia/vibe-ops-harness` still calls
- * them; Track 4 moves that caller over and deletes both.
- */
-export function statePath(repoRoot: string): string {
-  return path.join(repoRoot, STATE_FILENAME);
-}
-
-/**
- * @deprecated RFC-0004 §4; removed in Plan-032 Track 4. Record what promulgation applied to this clone,
- * touching only the keys handed in, in the legacy `vibeops.config.local.json` state file. Superseded by
- * `writeManagedConfig(dir, { harness: { applied, boundary } })`, which writes the committed `managed`
- * layer instead of a clone-local one — see RFC-0004 §3 for why `harness.applied`/`harness.boundary` moved.
- *
- * The rest of the file is read and written back unchanged, so an operator can put other keys in it and a
- * later promulgation will not eat them — and, more to the point, no *other* file is touched at all.
- */
-export async function writeHarnessState(repoRoot: string, harness: HarnessConfig): Promise<string> {
-  const file = statePath(repoRoot);
-  let current: VibeOpsConfig = {};
-  if (await exists(file)) {
-    const text = await readFile(file, "utf8");
-    try {
-      current = JSON.parse(text) as VibeOpsConfig;
-    } catch (error) {
-      // Refused rather than overwritten: the file is small and hand-editable, so a syntax error in it is
-      // far likelier to be someone's work in progress than corruption worth discarding.
-      throw new Error(`${file} is not valid JSON, so it will not be rewritten: ${(error as Error).message}`);
-    }
-  }
-  const merged: VibeOpsConfig = { ...current, harness: { ...current.harness, ...harness } };
-  await writeFile(file, `${JSON.stringify(merged, undefined, 2)}\n`, "utf8");
-  return file;
 }
 
 /** A module's own slice of `settings`, never the whole object. */
@@ -501,12 +453,13 @@ export function settingsFor<T = Record<string, unknown>>(config: VibeOpsConfig, 
 // The managed layer's writer (RFC-0004 §4).
 // ---------------------------------------------------------------------------------------------------------
 
-/** The writable key set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`. Nothing
- *  else — `harness.source` stays hand-written and unwritable, like every other `VibeOpsConfig` key. */
+/** The writable key set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`,
+ *  `harness.agreed`. Nothing else — `harness.source` stays hand-written and unwritable, like every other
+ *  `VibeOpsConfig` key. */
 export interface ManagedConfigPatch {
   readonly types?: TypesConfig;
   readonly ownership?: readonly OwnershipNarrowing[];
-  readonly harness?: Pick<HarnessConfig, "applied" | "boundary">;
+  readonly harness?: Pick<HarnessConfig, "applied" | "boundary" | "agreed">;
 }
 
 export interface WriteManagedConfigOptions {
@@ -541,7 +494,7 @@ function isWritablePath(segments: readonly string[]): boolean {
   const [top, second] = segments;
   if (top === "types") return segments.length === 1 || segments.length === 2;
   if (top === "ownership") return segments.length === 1;
-  if (top === "harness") return segments.length === 2 && (second === "applied" || second === "boundary");
+  if (top === "harness") return segments.length === 2 && (second === "applied" || second === "boundary" || second === "agreed");
   return false;
 }
 
@@ -591,6 +544,7 @@ function holdsPatchedKey(holder: VibeOpsConfig, patch: ManagedConfigPatch): bool
   }
   if (patch.harness?.applied !== undefined && holder.harness?.applied !== undefined) return true;
   if (patch.harness?.boundary !== undefined && holder.harness?.boundary !== undefined) return true;
+  if (patch.harness?.agreed !== undefined && holder.harness?.agreed !== undefined) return true;
   return false;
 }
 
@@ -671,7 +625,7 @@ export async function writeManagedConfig(
       return {
         ok: false,
         refusal: "R4",
-        message: `${segments.join(".")} is not writable — the managed layer accepts only types, ownership, harness.applied and harness.boundary`,
+        message: `${segments.join(".")} is not writable — the managed layer accepts only types, ownership, harness.applied, harness.boundary and harness.agreed`,
       };
     }
   }

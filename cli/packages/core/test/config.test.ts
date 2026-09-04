@@ -227,11 +227,21 @@ test("a .git FILE counts as the toplevel, same as a .git directory", async () =>
   assert.deepEqual(leave, []);
 });
 
-test.todo(
-  "vibeops.config.local.json appears in leave, unread — RFC-0004 §1 assertion, not implemented in Plan-032 " +
-    "Track 2: the legacy state file is deliberately still read (as a lowest-precedence harness.applied/" +
-    "harness.boundary fallback) rather than left. Track 4 retires the read and this becomes a real test.",
-);
+test("vibeops.config.local.json at the toplevel appears in leave, unread — the retired state layer (RFC-0004 §1)", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-state-leave-"));
+  await gitDir(dir);
+  await writeFile(path.join(dir, "vibeops.config.local.json"), JSON.stringify({ harness: { applied: { plan: 9 }, boundary: 1 }, types: { x: "@x/y" } }));
+
+  const { config, sources, layers, leave } = await loadConfig(dir, dir);
+
+  assert.equal(config.harness, undefined, "nothing in it is read — not applied, not boundary, not types");
+  assert.equal(config.types, undefined);
+  assert.deepEqual(sources, [], "it is not a source");
+  assert.deepEqual(layers, [], "it is not one of the three layers");
+  assert.deepEqual(leave.map((one) => one.file), [path.join(dir, "vibeops.config.local.json")]);
+  assert.match(leave[0]!.reason, /never read/);
+  assert.match(leave[0]!.reason, /harness sync/, "the reason says what retires it");
+});
 
 test("harness.applied and harness.boundary come from managed alone; a declared copy is ignored", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "vibeops-managed-harness-"));
@@ -261,46 +271,6 @@ test("harness.applied is undefined when only a declared file sets it, and no man
   assert.equal(config.harness, undefined, "a declared harness.applied is not a source — managed is the only one");
 });
 
-test(
-  "Legacy state read (Plan-032 Track 4 removes this): vibeops.config.local.json is the lowest-precedence " +
-    "fallback for harness.applied/harness.boundary when no managed layer supplies them",
-  async () => {
-    const home = await mkdtemp(path.join(tmpdir(), "vibeops-legacy-state-"));
-    const repo = path.join(home, "nested", "repo");
-    await mkdir(repo, { recursive: true });
-    await gitDir(repo);
-
-    await writeFile(
-      path.join(home, "vibeops.config.local.json"),
-      JSON.stringify({ harness: { applied: { plan: 1, task: 1, adr: 1 }, boundary: 1 } }),
-    );
-    await writeFile(
-      path.join(repo, "vibeops.config.local.json"),
-      JSON.stringify({ harness: { applied: { plan: 3 } } }),
-    );
-
-    const { config, leave } = await loadConfig(repo, home);
-
-    assert.deepEqual(config.harness?.applied, { plan: 3 }, "only the toplevel's legacy file is read");
-    assert.equal(config.harness?.boundary, undefined, "the home-directory copy is never consulted, so it cannot fill in boundary");
-    assert.deepEqual(
-      leave.map((one) => one.file),
-      [path.join(repo, "vibeops.config.local.json")],
-      "the legacy file in force is named in leave; the home copy, never read, is not",
-    );
-  },
-);
-
-test("a managed layer's harness.applied wins over the legacy state file even when the state file is nearer", async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-legacy-vs-managed-"));
-  await gitDir(dir);
-  await writeFile(path.join(dir, "vibeops.config.local.json"), JSON.stringify({ harness: { applied: { plan: 9 } } }));
-  await writeFile(path.join(dir, MANAGED_FILENAME), JSON.stringify({ harness: { applied: { plan: 1 } } }));
-
-  const { config } = await loadConfig(dir, dir);
-
-  assert.deepEqual(config.harness?.applied, { plan: 1 }, "managed outranks the legacy fallback regardless of nearness");
-});
 
 test("types merges per local name across all three layers in one directory", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "vibeops-types-three-layers-"));
@@ -527,4 +497,35 @@ test("R5 does not fire when the managed write repeats the same binding", async (
   const result = await writeManagedConfig(dir, { types: { plan: "@acme/governance-plan" } });
 
   assert.equal(result.ok, true);
+});
+
+
+test("harness.agreed comes from managed alone and merges whole, like applied", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-agreed-"));
+  await gitDir(dir);
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { harness: { agreed: { "a.md": "norm" } } };`);
+  await writeFile(path.join(dir, MANAGED_FILENAME), JSON.stringify({ harness: { agreed: { "project/templates/adr.md": "norm", "README.md": "seed" } } }));
+
+  const { config } = await loadConfig(dir, dir);
+
+  assert.deepEqual(config.harness?.agreed, { "project/templates/adr.md": "norm", "README.md": "seed" }, "the declared copy is ignored, the managed map is taken whole");
+});
+
+test("writeManagedConfig accepts harness.agreed, refuses it under R1 when declared, and removes it by path", async () => {
+  const dir = await repoWithManaged("vibeops-write-agreed-", { harness: { applied: { plan: 1 } } });
+
+  const written = await writeManagedConfig(dir, { harness: { agreed: { "project/templates/plan.md": "norm" } } });
+  assert.equal(written.ok, true);
+  let onDisk = JSON.parse(await readFile(path.join(dir, MANAGED_FILENAME), "utf8"));
+  assert.deepEqual(onDisk.harness, { applied: { plan: 1 }, agreed: { "project/templates/plan.md": "norm" } });
+
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { harness: { agreed: {} } };`);
+  const refused = await writeManagedConfig(dir, { harness: { agreed: { "x.md": "seed" } } });
+  assert.equal(refused.ok, false);
+  assert.equal((refused as { refusal: string }).refusal, "R1");
+
+  const removed = await writeManagedConfig(dir, {}, { remove: ["harness.agreed"] });
+  assert.equal(removed.ok, true);
+  onDisk = JSON.parse(await readFile(path.join(dir, MANAGED_FILENAME), "utf8"));
+  assert.deepEqual(onDisk.harness, { applied: { plan: 1 } }, "agreed removed, applied untouched");
 });

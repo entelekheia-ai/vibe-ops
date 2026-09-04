@@ -136,7 +136,8 @@ Five refusals, each a non-zero exit naming a file or a package:
   repository-wide write.
 - **R2 — unparseable.** Existing behaviour, new file.
 - **R3 — no repository.** No `.git` ancestor; a write never lands above the toplevel.
-- **R4 — key not writable.** The set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`.
+- **R4 — key not writable.** The set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`,
+  `harness.agreed` (the last added 2026-09-04, see Consent in §6).
 - **R5 — name already owned.** The **managed** layer at this toplevel binds the local name to another
   package: a managed `types.plan` bound to `@acme/governance-plan` refuses a write binding `plan` to
   `@entelekheia/governance-plan`, naming both. A `declared` binding of the same name is R1. This makes
@@ -209,6 +210,18 @@ refuses every classified path (`sync.ts:178-189`). The implementation makes `syn
 widens nothing promulgates without `--accept-boundary` and records the new boundary. That fix ships with
 this RFC's bump to `ownership@2`, so the migration names no consent step, and the one repository holding a
 recorded boundary records `boundary: 2` at its next sync.
+
+*Amended 2026-09-04, maintainer decision, found while implementing Track 3.* `boundaryRefusals` takes the
+declaration the repository agreed to, and nothing recorded one: `harness.boundary` is a number, and the
+composed version is the max across fragments, so "ownership@1" names no document that can be read back.
+The record is a **receipt**, `harness.agreed: { "<path>": "<class>" }` — the class of every file the run
+wrote, written by `sync` in the promulgation commit beside `applied` and `boundary`, `managed`-only and
+whole like them, the fifth member of R4's closed set. A receipt, not a decision: it changes no effective
+class (that is `ownership`), it is only what the next `sync` compares the installed declaration against,
+per path, so that a widening stops on the path that widened and a bump that widens nothing promulgates. A
+repository with no receipt has agreed to nothing this can compare, and promulgates. Folding the receipt
+into `ownership` entries was rejected: one list with two writers, where the tool must never rewrite an
+operator's entry on the same match.
 
 **Population, measured 2026-09-03**, across the repositories this tooling governs today: one holds a
 `vibeops.config.local.json`, carrying `applied` for five types and `boundary: 1`; two hold a committed
@@ -352,8 +365,8 @@ gate off. In `cli/packages/gates/test/config-shadow.test.ts`, `config-managed-co
 - **The committed configuration is two files.** **This amends RFC-0003:313-315**, whose one-slot convention
   held while every committed form was executable. The repository's override still lives in the configuration
   the repository commits; that configuration is now a hand-written file and a tool-written one.
-- **The writable key set is closed**: `types`, `ownership`, `harness.applied`, `harness.boundary`.
-  `harness.source` stays hand-written and unwritable.
+- **The writable key set is closed**: `types`, `ownership`, `harness.applied`, `harness.boundary`,
+  `harness.agreed` (amended 2026-09-04). `harness.source` stays hand-written and unwritable.
 - **`vibeops.config.json` is `shaped`, and `shaped` generalises** from "structure versus content" to "the
   parts a recorded rule names versus the rest" — four classes, enum and authority order unchanged; a fifth
   class is rejected. A class governs file-level writes from a norm's content map; a keyed write through the

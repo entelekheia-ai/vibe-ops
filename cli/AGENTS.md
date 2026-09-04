@@ -182,30 +182,31 @@ file holds the operator's preferences, and neither should restate the other. Nea
 `settings` merges one level deep so a repo overriding one module's settings does not discard the home
 file's settings for every other module.
 
-**Each directory holds three files, layered, not one.** `vibeops.config.*` is committed;
-`vibeops.config.local.*` is the operator's, clone-local and gitignored; **`vibeops.config.local.json` is
-the machine's** — the only config file this tooling itself writes, where `harness sync` records what it
-promulgated, and parsed rather than imported. All three contribute, nearest first, so a committed config
-ships fully populated while a clone overrides only what is true of that machine. The trio
-repeats at every level, which is what gives the home directory the personal-override file this section
-used to describe with no mechanism behind it. **The directory walk still outranks the trio** — a nearer
-committed file beats a farther local one, asserted by a test because inverting it yields a cascade that
-still looks correct while a stale home file governs every repository. `loadOne()` therefore returns every
-match in a directory rather than the first, which is the thing to preserve if it is ever refactored:
-returning the first makes a local file *replace* the committed one it exists to layer over
+**Each directory holds three layers, not one file** ([RFC-0004](../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md)):
+`local` (`vibeops.config.local.{ts,mjs,js}`, the operator's, clone-local and gitignored), `declared`
+(`vibeops.config.{ts,mjs,js}`, committed, hand-written) and **`managed`** (`vibeops.config.json`,
+committed, **the only config file this tooling writes** — parsed rather than imported, one key per owning
+module through `writeManagedConfig`, read only at the nearest `.git` ancestor and reported in
+`LoadedConfig.leave` anywhere else). All three contribute, nearest first, so a committed config ships fully
+populated while a clone overrides only what is true of that machine. **The directory walk still outranks
+the layers** — a nearer declared file beats a farther local one, and a nearer managed file beats a farther
+declared one, asserted by tests because inverting it yields a cascade that still looks correct while a
+stale home file governs every repository. `loadOne()` therefore returns every match in a directory rather
+than the first per half, which is the thing to preserve if it is ever refactored: returning the first makes
+a local file *replace* the committed one it exists to layer over
 ([ADR-0014](../project/adr/0014-clone-local-configuration-layers-rather-than-replaces.md)).
 
-**The state file is a third layer, not a fourth name in the local half**, and that is not a filing
-preference: within a half the first match wins, so a clone holding both it and a `vibeops.config.local.ts`
-would silently lose one of them — the machine's state or the operator's overrides, depending on the order
-chosen, with no error either way.
+**`vibeops.config.local.json` is retired and never read**; a leftover one is named in `leave`, and the next
+`harness sync` moves its map into the managed file and deletes it.
 
-`harness.applied` lives there — which version of each record type was **promulgated** into this clone, not
-what any artifact was written against, which is that artifact's own frontmatter. Absence is a state and is
-never zero, and unlike `settings` **the map** merges nearest-wins whole: a half-inherited one would answer
-for a repository it was never applied to. `harness.boundary` and `harness.source` beside it layer per key
-like everything else — the whole-key rule was written when `applied` was the only entry, and keeping it
-there would have had the machine's state file discard an operator's declared `source`.
+`harness.applied`, `harness.boundary` and `harness.agreed` come from the `managed` layer **alone** — a
+`local` or `declared` copy is stripped at load — and merge nearest-wins whole: `applied` is which version
+of each record type was **promulgated** here (not what any artifact was written against, which is that
+artifact's own frontmatter; absence is a state and never zero), `boundary` the ownership version it was
+promulgated under, `agreed` the receipt — the class of every file promulgation wrote, which the next
+`sync` compares the installed declaration against so that only a widening asks for consent. `sync` writes
+all three into the promulgation commit itself, so on the base branch they answer only once that branch
+merges. `harness.source` stays hand-written and cascades per key like every other key.
 
 `.ts` is loaded by dynamic `import()` and relies on Node's native type stripping (**≥22.18**), so a
 config file costs no dependency and no build step. `.mjs` and `.js` work identically.

@@ -154,7 +154,7 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
       Acceptance: `ownership.test.ts` proves `vibeops.config.json` composes as `shaped` from the harness
       and that classifying it widens nothing; `vibe-ops check .` green here. The consent fix moved to
       Track 4 — its input does not exist yet; see the Open questions.
-- [ ] **Track 4 — The ceremony and the readers.** `harness/src/sync.ts` in RFC-0004 §6's seven steps,
+- [x] **Track 4 — The ceremony and the readers.** Landed 2026-09-04, main loop. `harness/src/sync.ts` in RFC-0004 §6's seven steps,
       including the one-file commit and the leftover removal at the repository root; `harness/src/index.ts`
       writing through `writeManagedConfig` and reporting "this repository has never been promulgated to";
       `resolve.ts` with a `managed` surface and `state` flagged `leave`; `check-global.ts` reading
@@ -203,6 +203,27 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 ---
 
 ## Decision Log
+
+- Decision: the consent record is a receipt, `harness.agreed: { "<path>": "<class>" }`, written by `sync`
+  in the promulgation commit and compared by `boundaryRefusals` at the next run; the fifth member of the
+  managed layer's writable set. Rejected: keeping the blanket refusal (the failure RFC-0004 §6 names), and
+  folding the receipt into `ownership` entries (one list, two writers, where the tool must never rewrite an
+  operator's entry on the same match). Today the receipt is all `norm`, since `sync` writes templates only.
+  Rationale: maintainer direction, 2026-09-03, after seeing the managed file rendered with and without the
+  key. RFC-0004 §6 amended with one paragraph; the Open question below is closed.
+  Date / Author: 2026-09-04 / Danilo Borges
+
+- Decision: a touched path that is tracked and byte-identical to HEAD is "unchanged", not "swallowed".
+  Rationale: found cutting Track 4 — `sync` counted every unstaged touched path as swallowed, so a
+  repository already holding the norm re-promulgated as exit 3; RFC-0004 §6 step 4 (the one-file commit)
+  needs exactly that run to succeed. Swallowing still means an untracked path that never reached the index.
+  Date / Author: 2026-09-04 / Danilo Borges
+
+- Decision: the gate unsets `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE` and `GIT_PREFIX` on entry.
+  Rationale: a linked worktree's `pre-commit` exports them absolute; the `nudge-behaviour` fixture's
+  `git init` then reinitialised the real repository as bare (`core.bare=true`, repaired by hand). Found
+  committing Track 2 from a worktree; a `project/log/` entry at Track 6's routing.
+  Date / Author: 2026-09-03 / Danilo Borges
 
 - Decision: This plan stays a stub until its format RFC exists; no track is refined before it.
   Rationale: specifying the verb first would decide the format implicitly, which is the exact failure
@@ -263,16 +284,7 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 
 - RFC-0004's two Open Questions: overlapping-but-unequal `ownership` globs, and whether `config list`
   renders home-directory layers. Neither blocks a track; the first real case decides each.
-- **Where the agreed classes come from.** RFC-0004 §6 has `sync` call `boundaryRefusals`, whose second
-  argument is the declaration the repository *agreed to* — and nothing records one. `harness.boundary`
-  is a version number; the composed boundary's version is the max across fragments (the governance
-  fragments are already at 2 while the base was at 1), so "ownership@1" names no document that could be
-  read back, and `sync.ts` says as much in the comment above its blanket refusal. Found 2026-09-03
-  while cutting Track 3; the RFC's review rounds did not catch it. The candidate: at promulgation,
-  record beside `harness.boundary` the class of every norm file that run wrote — a literal per-file
-  snapshot of what the repository consented to, small, committed, and exactly what `classOf` needs —
-  and compare against that. Amends RFC-0004's writable key set by one key or one shape; a maintainer
-  decision before Track 4 starts.
+- ~~Where the agreed classes come from~~ — closed 2026-09-04 by the `harness.agreed` receipt (Decision Log).
 
 ---
 

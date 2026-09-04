@@ -3,7 +3,7 @@
 // composed versus merely available, and what guides/sensors exist. Promulgation (`sync`) and the skill
 // split are separate tracks and are not this module's job.
 
-import { defineModule, writeHarnessState } from "@entelekheia/vibe-ops-core";
+import { defineModule } from "@entelekheia/vibe-ops-core";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
@@ -100,6 +100,7 @@ export default defineModule(
         for (const one of result.refused) context.log(`  REFUSED  ${one.path} (${one.was} → ${one.now}) — ${one.why}`);
         for (const one of result.swallowed) context.log(`  SWALLOWED ${one.path} — ${one.rule}`);
         if (result.branch !== undefined) context.log(`branch: ${result.branch}${result.tag === undefined ? "" : `  tag: ${result.tag}`}`);
+        if (result.retiredState !== undefined) context.log(`retired  vibeops.config.local.json (${result.retiredState}) — its map now lives in vibeops.config.json on ${result.branch}`);
       }
 
       // Refusals and swallowed paths both exit non-zero, for the same reason: each leaves the target in a
@@ -123,21 +124,10 @@ export default defineModule(
         };
       }
 
-      // Recorded only on a run that actually promulgated — never on a dry run, and never on one that
-      // refused. Both keys, not just consent: `applied` is what makes `harness status` and the session
-      // signal able to answer "is this repository current?", and a sync that wrote the files without
-      // recording them would leave that question exactly as unanswered as before it ran.
-      //
-      // The boundary is recorded whenever the run succeeded, not only when `--accept-boundary` was
-      // passed. A refusal is the only thing consent clears, and a run reaching here produced none — so
-      // either the versions already agreed or consent was given on this invocation.
-      if (context.flags["dry-run"] !== true && result.branch !== undefined && result.tag !== undefined) {
-        await writeHarnessState(context.repoRoot, {
-          applied: { ...context.config.harness?.applied, ...result.applied },
-          boundary: result.boundary.installed,
-        });
-      }
-
+      // What was promulgated, and the boundary it was promulgated under, are in the branch: sync wrote
+      // `vibeops.config.json` into the promulgation commit itself (RFC-0004 §6), so nothing is recorded
+      // here, and `harness status` on the base branch answers from the committed map once that branch
+      // merges — the named limitation between promulgation and merge (§8).
       return {
         code: 0,
         summary:
@@ -165,7 +155,11 @@ export default defineModule(
 
     if (context.command === "status") {
       if (context.config.harness?.applied === undefined) {
-        return { code: 0, summary: "this clone has never been promulgated to — nothing to compare", data: { behind: [] } };
+        return {
+          code: 0,
+          summary: "this repository has never been promulgated to — nothing to compare (a promulgation branch not yet merged does not count)",
+          data: { behind: [] },
+        };
       }
       // The activated governance packages answer first; a pinned tree covers a repository holding to an
       // older norm. Both absent is still an answer: nothing ships, so nothing is behind.

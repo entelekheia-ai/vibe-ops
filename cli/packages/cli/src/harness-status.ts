@@ -1,5 +1,5 @@
 // vibe-ops harness-status — the SessionStart surface. Compares the version of each record type
-// PROMULGATED into this clone (`harness.applied` in vibeops.config.local.*) against the version the
+// PROMULGATED into this repository (`harness.applied` in the committed vibeops.config.json) against the version the
 // installed norm ships, and says something only when they differ.
 //
 // SILENCE IS THE POINT, NOT A FALLBACK. This runs at the start of every session in every repository the
