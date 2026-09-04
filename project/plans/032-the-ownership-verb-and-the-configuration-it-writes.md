@@ -182,7 +182,8 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
       in ADR-0014, ADR-0015 and RFC-0003; the one repository holding a state file migrated by a real
       `harness sync`; RFC-0004 advanced to Implemented. Acceptance: `/vibe-ops:setup repo audit` against
       a repository with a hand-declared `types` name reports it as shadowed and writes nothing; the
-      migrated repository's `harness status` answers from the managed file with the state file gone.
+      migrated repository's `harness status` answers from the managed file with the state file gone;
+      `npm run typecheck`, `npm test` and `vibe-ops check .` green at close, nothing left pending here.
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 

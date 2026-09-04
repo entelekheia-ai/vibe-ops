@@ -93,8 +93,10 @@ It builds a **linked working tree of its own**, writes only what the ownership d
 norm's, commits, tags `vibe-ops/norm@<n>`, and removes that tree. Your target's checkout — branch,
 uncommitted work, everything — is untouched. It stops at the branch and the tag: no merge, no push.
 
-On success it records what it applied in `vibeops.config.local.json` in the target, which is what lets
-`status` answer next time.
+On success the promulgation commit itself carries `vibeops.config.json` — the managed layer, holding
+which version of each type it applied, the boundary it applied under, and the receipt of the classes the
+repository consented to — so `status` answers from the tree once that branch merges. A leftover
+`vibeops.config.local.json` from before RFC-0004 seeds that map on the first run and is then deleted.
 
 ### Three ways it will refuse, all exiting non-zero
 

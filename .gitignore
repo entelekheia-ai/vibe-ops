@@ -5,17 +5,16 @@ dist/
 # Graphify
 graphify-out/
 
-# Clone-local configuration. Layers over the committed vibeops.config.ts; holds what is true of one
-# working tree on one machine, including the applied-version map promulgation writes. The committed
-# counterpart declaring which keys exist is vibeops.config.local.example.ts.
+# Clone-local configuration. Layers over the committed vibeops.config.ts and vibeops.config.json; holds
+# what is true of one working tree on one machine. The committed counterpart declaring which keys exist
+# is vibeops.config.local.example.ts.
 vibeops.config.local.ts
 vibeops.config.local.mjs
 vibeops.config.local.js
 
-# The machine's own layer, and the only config file this tooling writes rather than reads: `harness sync`
-# records here what it promulgated into this clone. Ignored for the same reason as the three above and
-# one more — it is written by a command rather than by a person, so tracking it would turn every
-# promulgation into a diff in a file the repository owns.
+# Retired (RFC-0004): the record of what was promulgated here now lives in the committed
+# vibeops.config.json, the managed layer — never list that file here. This name stays ignored so a
+# leftover copy from before the change is not committed by accident; `harness sync` deletes it.
 vibeops.config.local.json
 
 # Gambiarra: the sibling path every repo under this workspace resolves the runner through.

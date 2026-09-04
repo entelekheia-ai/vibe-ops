@@ -81,6 +81,14 @@ other than what the governance rule expects but referenced as authoritative by t
 neither. Report the gap list and the verbs, and **confirm before writing** — this is the point where the
 run is destructive if the judgement is wrong.
 
+**The governance bindings are part of the gap list**, one row per `types.<name>` the target needs beyond
+the shipped defaults (`license`, `classification`, a type a package brings), read with
+`vibe-ops config get types.<name>`: `create` when no layer binds the name; `adopt` when the hand-written
+`vibeops.config.ts` already binds it, or the managed file binds it to another package — reported, left
+untouched, and the run still exits 0; `leave` for a name the target's own docs bind on purpose to something
+else. A binding *is* the install of a governance ([RFC-0004](../../../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) §5):
+there is no install verb, only this write.
+
 If the user asked for an `audit`, stop here: report the gap list and write nothing.
 
 ## Step 1 — Gather inputs
@@ -158,6 +166,22 @@ Replace across the copied files:
   chosen in Step 4 (default `Apache-2.0`).
 Verify no `{{` remains: `grep -rn '{{' <repo>` should be empty.
 
+## Step 3a — Bind the governance types
+
+Yours, never the scaffolder's, after Step 3 and before the license. For every binding the Step 0 survey
+marked `create`:
+
+```bash
+(cd "$TARGET" && vibe-ops config set types.<name> <package>)   # e.g. types.license @entelekheia/governance-license
+```
+
+It writes one key into `vibeops.config.json` — the **managed** layer, committed, the only config file a
+tool writes — and prints `written managed:vibeops.config.json`, plus `shadowed by <layer>:<file>` when a
+nearer file still holds the key. A refusal naming a file (the hand-written config already binds the name)
+or two packages (the managed file binds it elsewhere) is the survey's `adopt` row arriving late: report it,
+touch nothing, exit 0. Write only names whose binding differs from the shipped defaults — a default
+restated is a diff that says nothing.
+
 ## Step 4 — License
 
 Run **`license-setup`** (defaults: Apache-2.0, not a fork; ask enforcement level per that skill's own Step 1
@@ -191,6 +215,11 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   A red run here means the skeleton this skill just laid down is broken — most often a `.claude/` symlink
   that git checked out as text on a machine with `core.symlinks=false`. Fix it before handing off; a
   baseline handed over broken is worse than none, because it looks done.
+
+- Verify the bindings landed where Step 3a says: `vibe-ops config list --show-origin` names
+  `managed:vibeops.config.json` behind every `types.<name>` written there (and `declared:` behind an adopted
+  one), and `vibeops.config.json` is staged — an unstaged managed file is what the
+  `config-managed-committed` gate exists to catch.
 
 - **Offer the CI copy — do not install it.** Ask once, and take no for an answer:
 
@@ -360,6 +389,8 @@ is local config, it does not travel with a clone, and a tracked hook nobody wire
 - [ ] `.agents/rules/{governance,repo-guardrails}.md` exist, each symlinked from `.claude/rules/`; `.agents/skills/` present (empty)
 - [ ] `docs/` Diátaxis skeleton present
 - [ ] No `{{PLACEHOLDER}}` remains (`grep -rn '{{'`)
+- [ ] Every non-default `types.<name>` from the survey is bound (`create` written to the managed file, `adopt`
+      reported untouched); `config list --show-origin` confirms the origin; `vibeops.config.json` is staged
 - [ ] `license-setup` completed (real `LICENSE` text, not the plugin's own; `AGENTS.md` license-rules section present)
 - [ ] `check-agents-md.sh` run against the target after staging, and green
 - [ ] The CI copy was **offered once**; if accepted, both CI steps pass locally before staging — if

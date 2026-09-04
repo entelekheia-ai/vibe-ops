@@ -22,6 +22,10 @@ vibe-ops-template: adr@2
 
 ---
 
+> **Amended by [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) (2026-09-03):** the
+> layering rule stands; a third, committed layer the tooling writes (`vibeops.config.json`) ranks below the
+> committed `.ts`, and `harness.applied`/`harness.boundary` come from that layer alone.
+
 ## Context
 
 Configuration resolves through a cascade: the file nearest the repository root wins per key, and the

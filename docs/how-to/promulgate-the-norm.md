@@ -94,17 +94,23 @@ paths named, decide whether you accept losing your local version of each, and th
 vibe-ops harness sync ../some-repo --accept-boundary 2
 ```
 
-That records the agreement in that clone, so later runs are silent. Do not reach for it reflexively — the
-whole reason the run stopped is that this is the one direction that takes something away from you.
+That records the agreement in the promulgation commit — `harness.agreed` in `vibeops.config.json`, the
+class of every file the run wrote — so later runs compare against it and stay silent until something
+widens again. Do not reach for it reflexively — the whole reason the run stopped is that this is the one
+direction that takes something away from you.
 
 ## 5. Record what you applied
 
-`sync` writes `vibeops.config.local.json` in the target: the machine's own config layer, holding which
-version of the norm was promulgated there. It is gitignored, and it is what makes
-`vibe-ops harness status` and the session-start signal able to answer "is this repository current?"
-without reading every file.
+`sync` writes `vibeops.config.json` — the managed layer — **into the promulgation commit**, beside the
+files it describes: which version of each type was applied, the boundary it was applied under, and the
+receipt of the classes agreed to. It is committed, read only at the repository's toplevel, and it is
+what makes `vibe-ops harness status` and the session-start signal able to answer "is this repository
+current?" without reading every file — once the branch merges. Until then the base branch answers as it
+did before the run.
 
-Do not hand-edit it. Do not commit it.
+Do not hand-edit it; a hand edit loses to `vibeops.config.ts` and reads as a tool write. A leftover
+`vibeops.config.local.json` from before this file existed seeds the map on the first run and is deleted
+by it.
 
 ## Common questions
 

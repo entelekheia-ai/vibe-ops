@@ -23,6 +23,10 @@ vibe-ops-template: adr@2
 
 ---
 
+> **Amended by [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) (2026-09-03):** the
+> third layer this ADR added, `vibeops.config.local.json`, is retired; the tooling's layer is the committed
+> `vibeops.config.json`, read at the repository toplevel and written inside the promulgation commit.
+
 ## Context
 
 [ADR-0014](0014-clone-local-configuration-layers-rather-than-replaces.md) established that each directory

@@ -19,20 +19,10 @@
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
 export default {
-  // Which version of each record type was PROMULGATED into this clone. Written by promulgation and read
-  // by the session hook; you would not normally hand-edit it.
-  //
-  // This is not the same fact as the `vibe-ops-template:` line inside a given record — that says what
-  // THAT ARTIFACT was written against. The two diverge exactly when something has not been migrated yet,
-  // which is the case worth detecting, so neither can be derived from the other.
-  //
-  // Absence is a state and it is NOT zero: no `harness` key means this clone has never been promulgated
-  // to, and a missing entry means the same about that one record type. Nothing may default either to a
-  // number — an untouched repository reported as catastrophically behind is how a signal earns being
-  // ignored.
-  harness: {
-    applied: { adr: 2, rfc: 2, plan: 3, task: 3, log: 2 },
-  },
+  // NOT HERE: `harness.applied`, `harness.boundary`, `harness.agreed`. Which version of each record type
+  // was promulgated, under which boundary, is a fact about the tree, not about one clone — it lives in
+  // the committed `vibeops.config.json` (the managed layer, RFC-0004), written by `harness sync` inside
+  // the promulgation commit. A copy in this file is stripped at load and never consulted.
 
   // Where observations go. Overriding this per clone is the intended use of the local file: the committed
   // value points inside the git directory on purpose, and an operator who wants them elsewhere says so

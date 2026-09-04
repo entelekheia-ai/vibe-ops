@@ -81,6 +81,13 @@ vibe-ops records norm --type <type> --facet template --print
 
 Report the counts before touching anything.
 
+**Detect the bindings too.** `vibe-ops config list --show-origin` lists every `types.<name>` and the file
+behind it. Two rows belong in the report: a name bound to a package that is no longer installed (its noun
+and its records directory have stopped resolving — say which), and a name whose package moved the type to
+another package (a rebind). Both are `migrate` in the policy's terms, and both are written into the managed
+layer only ([RFC-0004](../../../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) §5);
+a binding in the hand-written `vibeops.config.ts` is reported and left to the person who wrote it.
+
 **Delegate this whole step to the `vibe-ops:governance-auditor` agent** — the four inputs are in
 [`convergence-policy.md`](../../references/convergence-policy.md), the target state being the current
 template versions above. It runs the census read-only and returns one row per artifact behind its
@@ -126,6 +133,11 @@ is per file: the run continues over its siblings.
 
 Then update the stamp to the new version, and only then.
 
+**Bindings, in the same run.** A rebind is `vibe-ops config set types.<name> <new-package>`; a package that
+is gone is `vibe-ops config unset types.<name>`, and the report names the noun and the records directory
+that stop resolving with it. Both print `written managed:vibeops.config.json`; a refusal naming a file means
+the hand-written config holds the name — report it, touch nothing.
+
 ## Step 4 — The documents that DESCRIBE the shape
 
 Step 1 counts records. A document that says what shape a record has is not a record: it carries no stamp,
@@ -165,7 +177,8 @@ Per artifact: migrated, skipped (and why), or needs-a-decision (and what the dec
 migrates nothing and explains three blockers has done its job.
 
 **Never report a migration that did not happen.** The stamp is the evidence — an artifact whose stamp did
-not move was not migrated, whatever else the run did to it.
+not move was not migrated, whatever else the run did to it. For a binding the evidence is
+`config list --show-origin` after the run, not the command's exit code.
 
 Report the second population separately, and by its own evidence: the gate's verdict, not a count of
 edits. A run that rewrote six sentences and left the gate red has not finished that half.

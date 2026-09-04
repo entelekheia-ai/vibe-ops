@@ -77,7 +77,9 @@ repository owned into something this tooling overwrites. A promulgation that rea
 decide what it may overwrite in a repository that agreed to the *old* one would be assuming a consent
 that was never given.
 
-So `sync` compares the boundary version your clone agreed to against the installed one, and:
+So `sync` compares the classes your repository agreed to — the receipt it wrote at the last promulgation,
+`harness.agreed` in the committed `vibeops.config.json`, one class per file it wrote — against the installed
+declaration, and:
 
 - **refuses only the paths whose class widened**, naming each one, both classes, and the declaration's own
   justification for the change;
@@ -85,8 +87,10 @@ So `sync` compares the boundary version your clone agreed to against the install
   reason should not block anything;
 - **exits non-zero**, so a partially-refused run cannot be mistaken for a clean one.
 
-You clear it by reading the diff and re-running with `--accept-boundary <n>`, which records the agreement
-in that clone so later runs are silent.
+You clear it by reading the diff and re-running with `--accept-boundary <n>`, which records the new
+classes in the receipt, in the promulgation commit, so later runs are silent. A repository with no receipt
+— never promulgated to, or promulgated before the receipt existed — has agreed to nothing this can
+compare, and promulgates.
 
 **Only widening needs consent.** `norm → seed`, `norm → repo`, `seed → repo` all *reduce* what this
 tooling may do, and are applied without asking — refusing those too would block a repository on a change

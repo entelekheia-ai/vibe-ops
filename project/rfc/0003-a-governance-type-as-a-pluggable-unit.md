@@ -23,6 +23,10 @@ vibe-ops-template: rfc@2
 
 ---
 
+> **Amended by [RFC-0004](0004-the-managed-layer-the-configuration-a-tool-writes.md) (2026-09-03):** the
+> repository's narrowing may also be written by a tool, into the committed `vibeops.config.json` — the
+> "gets no file of its own" sentence below is superseded by that layer.
+
 ## Summary
 
 A governance record type — a plan, an ADR, or one a repository invents — is today spread across eight
