@@ -6,7 +6,7 @@ export const BUILTIN_MODULES = [
   "check",
   "agents-md",
   "governance",
-  "self",
+  "for-vibe-ops",
   "mirror",
   "exposure",
   "plan",

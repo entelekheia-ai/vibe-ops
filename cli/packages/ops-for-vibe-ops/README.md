@@ -1,11 +1,11 @@
-# @entelekheia/vibe-ops-self
+# @entelekheia/vibe-ops-for-vibe-ops
 
 What this repository claims about itself, checked against what it is.
 
 ```bash
-vibe-ops self              # run it
-vibe-ops self --list       # the gates composed, and the paths each runs over
-vibe-ops self --self-test  # assert every gate that declares a fixture still fires on it
+vibe-ops for-vibe-ops              # run it
+vibe-ops for-vibe-ops --list       # the gates composed, and the paths each runs over
+vibe-ops for-vibe-ops --self-test  # assert every gate that declares a fixture still fires on it
 ```
 
 ## Why this is not part of `governance`

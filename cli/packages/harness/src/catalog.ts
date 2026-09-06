@@ -2,7 +2,7 @@
 //
 // "Composed" spans two systems that share nothing but the word: the seventeen shell fragments
 // `check.sh` runs at commit time (`check --list`), and the TypeScript gates the three ops packages wire
-// into `vibe-ops agents-md`/`governance`/`self` (each ops's own `--list`). A gate that has no shell
+// into `vibe-ops agents-md`/`governance`/`for-vibe-ops` (each ops's own `--list`). A gate that has no shell
 // precedent — most of them — would show up as "available but not composed" if only the shell side were
 // read, even when an ops already runs it on every commit. That false gap is exactly the wrong
 // recommendation this verb exists to prevent ("build something already written and merely unwired"), so
@@ -13,7 +13,7 @@ import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const OPS_MODULES = ["agents-md", "governance", "self", "mirror", "exposure"] as const;
+const OPS_MODULES = ["agents-md", "governance", "for-vibe-ops", "mirror", "exposure"] as const;
 
 async function loadPlugin(specifier: string): Promise<ModulePlugin | undefined> {
   try {

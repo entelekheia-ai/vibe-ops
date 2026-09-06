@@ -29,7 +29,7 @@
     "@entelekheia/vibe-ops-module-check": "^0.0.1",
     "@entelekheia/vibe-ops-module-records": "^0.0.1",
     "@entelekheia/governance-base": "^0.0.1",
-    "@entelekheia/vibe-ops-self": "^0.0.1"
+    "@entelekheia/vibe-ops-for-vibe-ops": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

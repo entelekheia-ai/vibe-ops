@@ -22,17 +22,17 @@
 //
 // SO THE MEMBERSHIP RULE IS NOT "PLUGIN-SHAPED". It is the pair. An entry belongs here when it would be
 // wrong to describe it by naming only one of the two things it reads, and it does NOT belong here merely
-// because it happens to be internal to this repository — `unstated-destination` stays in `self`, whose
+// because it happens to be internal to this repository — `unstated-destination` stays in `for-vibe-ops`, whose
 // subject is the prose this repository writes about its own machinery, read as itself rather than
 // against a counterpart.
 //
-// TEMPLATE-HEADING-DRIFT ARRIVES FROM `self`, AND THE REASON `self` EXISTS SURVIVES THE MOVE. That
+// TEMPLATE-HEADING-DRIFT ARRIVES FROM `for-vibe-ops`, AND THE REASON `for-vibe-ops` EXISTS SURVIVES THE MOVE. That
 // reason is `governance`'s single `ignore: { "*": ["**/templates/**"] }` line — a SAFE DEFAULT that a
 // gate added to `governance` inherits without anyone thinking about it, and which is exactly wrong for
 // the one gate whose subject is the content of those shipped copies. This ops declares no such
 // exclusion and is not `governance`, so the default it would have broken is not in force here. What the
 // entry compares is a migration note's record of a dropped section against the documents still asserting
-// the section exists — a pair, which is why it is here rather than in `self`.
+// the section exists — a pair, which is why it is here rather than in `for-vibe-ops`.
 //
 // `.agents/` IS NAMED EXPLICITLY in that entry's paths because `**/*.md` does not reach a dot-directory,
 // and the rule governing work inside `project/` is one of the documents the gate exists to correct. Left

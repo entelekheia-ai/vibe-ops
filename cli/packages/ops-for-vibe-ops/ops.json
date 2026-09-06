@@ -1,7 +1,7 @@
 {
-  "id": "self",
+  "id": "for-vibe-ops",
   "version": "0.0.1",
-  "summary": "What this repository claims about itself, checked against what it is",
+  "summary": "What the norm's own repository claims about itself, checked against what it is — the ops for vibe-ops, not for a consumer",
   "gates": [
     {
       "gate": "unstated-destination",

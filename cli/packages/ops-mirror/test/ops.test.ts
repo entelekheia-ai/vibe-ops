@@ -67,7 +67,7 @@ test("the population reaches .agents/, which a bare **/*.md glob does not", asyn
 
 // The shipped templates are NOT excluded here, and that is why `template-heading-drift` may not live in
 // `governance`, whose blanket `**/templates/**` would hide the very copies it reads. This ops declares no
-// such exclusion, which is the property the move from `ops-self` had to preserve.
+// such exclusion, which is the property the move from `ops-for-vibe-ops` had to preserve.
 test("against this repository's own checkout, under its own config — nothing fails", async () => {
   const { config } = await loadConfig(REPO);
   const { context, logs } = contextFor(REPO, config, { verbose: true });

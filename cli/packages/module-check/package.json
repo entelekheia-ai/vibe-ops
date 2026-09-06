@@ -25,7 +25,7 @@
     "@entelekheia/vibe-ops-core": "^0.0.1",
     "@entelekheia/vibe-ops-governance": "^0.0.1",
     "@entelekheia/vibe-ops-agents-md": "^0.0.1",
-    "@entelekheia/vibe-ops-self": "^0.0.1"
+    "@entelekheia/vibe-ops-for-vibe-ops": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

@@ -40,6 +40,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `.gitignore` up to date inside the promulgation commit; the three config gates moved from `self` to
   `governance`, joined by `modules-omits-builtin` (warns when a declared `modules` list hides a built-in
   noun from the MCP server); `BUILTIN_MODULES` is exported by core.
+- The `self` ops is `for-vibe-ops` (`@entelekheia/vibe-ops-for-vibe-ops`): the checks that only make sense in the
+  norm's own repository, named so a consumer does not read it as "check yourself". Every gate in `gates/`
+  is now composed into an ops — `disabled-declared` and `runner-provenance` joined `governance`.
 - `harness sync` promulgates a template only for a governance type that declares a record schema: a
   repository binding `license` or `classification` was refused for two `project/templates/` paths no
   fragment classifies — found by a dry run into this repository.

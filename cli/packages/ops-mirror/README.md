@@ -18,7 +18,7 @@ side is the subject on its own.
 
 That is the membership rule, and it is narrower than it looks: an entry belongs here when describing it
 by naming only one of the two things it reads would be wrong. Being internal to this repository is not
-enough — `unstated-destination` stays in `self`, because it reads the migration notes as *itself* rather
+enough — `unstated-destination` stays in `for-vibe-ops`, because it reads the migration notes as *itself* rather
 than against a counterpart.
 
 ## What this package replaced
@@ -33,7 +33,7 @@ An `audience` field was built to filter them and removed unshipped — a boundar
 on, by a switch nothing turns, is not a boundary. This package **is** the boundary: a repository that
 does not install it composes none of these, with nothing to declare and nothing to filter.
 
-## `template-heading-drift` arrived from `self`, and the reason `self` exists survived
+## `template-heading-drift` arrived from `for-vibe-ops`, and the reason `for-vibe-ops` exists survived
 
 `governance` excludes `**/templates/**` from every entry through a single `"*"` line. That line is a
 **safe default** — a gate added there inherits it without anyone thinking about it — and it is exactly

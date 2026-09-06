@@ -71,7 +71,7 @@ function guides(repoRoot: string): readonly GuideEntry[] {
   const entries: GuideEntry[] = [];
   for (const file of trackedFiles(repoRoot)) {
     // A shipped copy under a templates/ directory is written to resolve in a TARGET repository, never
-    // this one — the same safe default `governance`/`self` apply via their own `ignore` config, applied
+    // this one — the same safe default `governance`/`for-vibe-ops` apply via their own `ignore` config, applied
     // here directly because this reading has no ops config to consult.
     if (file.includes("templates/")) continue;
     const isInstructionFile = INSTRUCTION_BASENAMES.has(path.basename(file));

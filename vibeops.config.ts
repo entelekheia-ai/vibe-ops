@@ -78,7 +78,7 @@ export default {
       // governances (Plan-034), and no governance package serves research — the type entered the old
       // hand-written list by mistake (Plan-030's Decision Log), so nothing derives an entry for it.
     },
-    // MOVED FROM `self` WITH THE ENTRY IT CONFIGURES (Plan-037). Every line below is
+    // MOVED FROM `for-vibe-ops` WITH THE ENTRY IT CONFIGURES (Plan-037). Every line below is
     // `template-heading-drift`'s, and it followed the entry into `mirror`. Leaving it behind would not
     // have failed loudly: `settings` is keyed by OPS ID, so an orphaned slice is simply never read, and
     // the entry runs unconfigured — which here means the whole path policy silently off. That is how

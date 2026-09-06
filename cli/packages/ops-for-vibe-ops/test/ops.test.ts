@@ -23,7 +23,7 @@ function contextFor(
       flags,
       args: [],
       config,
-      settings: settingsFor(config, "self"),
+      settings: settingsFor(config, "for-vibe-ops"),
       surface: "cli",
       log: (message) => logs.push(message),
       warn: (message) => logs.push(`warning: ${message}`),

@@ -1,4 +1,4 @@
-// vibe-ops self — what this repository CLAIMS ABOUT ITSELF, checked against what it is.
+// vibe-ops for-vibe-ops — what this repository CLAIMS ABOUT ITSELF, checked against what it is.
 //
 // THE COLLECTION IS `ops.json`, AND THIS FILE IS ITS TYPING SUGAR (Plan-034 Track 2). The data form
 // is canonical, and what follows is the narrative the JSON cannot carry.
