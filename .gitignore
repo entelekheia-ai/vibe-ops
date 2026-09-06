@@ -5,16 +5,13 @@ dist/
 # Graphify
 graphify-out/
 
-# Clone-local configuration. Layers over the committed vibeops.config.ts and vibeops.config.json; holds
-# what is true of one working tree on one machine. The committed counterpart declaring which keys exist
-# is vibeops.config.local.example.ts.
+# Clone-local configuration: what is true of one working tree on one machine, layered over the committed
+# vibeops.config.*. The .json name is retired — this tooling's own record (which norm was promulgated
+# here, the boundary it agreed to) is committed in vibeops.config.json, which must NOT be listed here.
+# The four names stay literal: a glob would un-track that file with no error.
 vibeops.config.local.ts
 vibeops.config.local.mjs
 vibeops.config.local.js
-
-# Retired (RFC-0004): the record of what was promulgated here now lives in the committed
-# vibeops.config.json, the managed layer — never list that file here. This name stays ignored so a
-# leftover copy from before the change is not committed by accident; `harness sync` deletes it.
 vibeops.config.local.json
 
 # Gambiarra: the sibling path every repo under this workspace resolves the runner through.

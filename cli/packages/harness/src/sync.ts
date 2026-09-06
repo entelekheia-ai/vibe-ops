@@ -171,6 +171,12 @@ export async function normContent(
   for (const type of Object.keys(effectiveGovernanceBindings(config))) {
     const activated = await activateGovernance(type, config);
     if (activated === undefined) continue;
+    // Only a RECORD type's template is norm content at project/templates/<type>.md. A type with no
+    // record schema — `license`, whose "template" is a licence text, `classification`, whose is the
+    // policy itself — keeps no records there, and promulgating its template under that name wrote a
+    // path no ownership fragment classifies: measured 2026-09-06 by a dry run into this repository,
+    // which binds both and was refused for it.
+    if (activated.unit.schema === undefined) continue;
     const from = path.resolve(activated.root, activated.unit.template);
     if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
   }

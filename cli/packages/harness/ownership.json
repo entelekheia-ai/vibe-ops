@@ -91,7 +91,7 @@
     {
       "match": "vibeops.config.json",
       "class": "shaped",
-      "why": "The managed layer (RFC-0004): the configuration a tool writes. The tooling owns four keys — `types`, `ownership`, `harness.applied`, `harness.boundary` — each through the module that owns it; the repository owns the file's existence and every other key, which every write preserves. Committed, read only at the repository's toplevel, and never rewritten whole: a `types` entry from `setup` survives a `sync`."
+      "why": "The managed layer (RFC-0004): the configuration a tool writes. The tooling owns the keys a recorded rule names — `types`, `ownership`, `harness.applied`, `harness.boundary`, `harness.agreed`, `records.dirs` — each through the module that owns it; the repository owns the file's existence and every other key, which every write preserves. Committed, read only at the repository's toplevel, and never rewritten whole: a `types` entry from `setup` survives a `sync`."
     },
     {
       "match": "vibeops.config.local.{ts,mjs,js}",

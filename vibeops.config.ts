@@ -18,6 +18,9 @@ export default {
   // (Plan-011 Track 2) is what makes this repository's own records get written from the very file it
   // ships to every other repository — the drift 35-dogfooding-drift.sh exists to catch, closed at the
   // source instead of caught after the fact. log is declarable since Plan-029 opened the type union.
+  // The same fact is why `harness sync` is never run INTO this repository: it would copy the five record
+  // templates to project/templates/, a third copy nothing here reads, and `harness status` answering
+  // "never promulgated" for the norm's owner is the accurate answer (RFC-0004 §8, measured 2026-09-06).
   records: {
     templates: {
       adr: "cli/packages/governance-adr/templates/adr.md",

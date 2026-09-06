@@ -412,3 +412,28 @@ test("the older two-block ignore shape — three names, then the .json in its ow
   );
   assert.equal(migrateIgnoreBlock(text).outcome, "unchanged", "idempotent: the second pass finds the current shape");
 });
+
+// A governance type that keeps no records — its "template" is the artifact itself — contributes no
+// project/templates/<type>.md: nothing classifies that path, and the run would refuse on it.
+test("normContent promulgates a template only for a type that declares a record schema", async () => {
+  const { normContent } = await import("../src/index.ts");
+  const pkg = async (type: string, withSchema: boolean): Promise<string> => {
+    const root = await mkdtemp(path.join(tmpdir(), `vibeops-norm-${type}-`));
+    await mkdir(path.join(root, "templates"), { recursive: true });
+    await writeFile(path.join(root, "templates", `${type}.md`), `# ${type}\n`);
+    await writeFile(
+      path.join(root, "index.mjs"),
+      `export default { root: ${JSON.stringify(root)}, unit: { type: ${JSON.stringify(type)}, template: "./templates/${type}.md", ` +
+        `authoring: "./authoring.md", migrations: "./migrations", ${withSchema ? 'schema: { carrier: "table", required: ["Status"] }, ' : ""}` +
+        `numbered: false, pad: 0, depth: 1, dirs: ["project/${type}"] } };`,
+    );
+    return path.join(root, "index.mjs");
+  };
+  const nota = await pkg("nota", true);
+  const licenca = await pkg("licenca", false);
+
+  const content = await normContent({ types: { nota, licenca } }, undefined);
+
+  assert.ok(content.has("project/templates/nota.md"), "a record type's template is norm content");
+  assert.ok(!content.has("project/templates/licenca.md"), "a type with no record schema promulgates nothing under project/templates");
+});
