@@ -72,6 +72,8 @@ test("--list composes every entry, in order: the derived record schemas, the der
       "config-managed-committed",
       "config-state-leftover",
       "modules-omits-builtin",
+      "disabled-declared",
+      "runner-provenance",
     ],
   );
 });

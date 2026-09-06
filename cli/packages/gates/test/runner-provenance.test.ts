@@ -63,3 +63,17 @@ test("a snapshot that outranks a live sibling checkout is flagged", async () => 
   assert.match(outcome.findings[0]!.evidence, /outranks the live sibling checkout/);
   assert.equal(outcome.examined, 1);
 });
+
+test("in the runner's own repository — where ../vibe-ops is the repository itself — the snapshot has no sibling, and the gate skips", async () => {
+  const workspace = await mkdtemp(path.join(tmpdir(), "vibeops-runner-provenance-self-"));
+  const repoRoot = path.join(workspace, "vibe-ops");
+  await mkdir(repoRoot, { recursive: true });
+  await writeSnapshot(repoRoot);
+  const own = path.join(repoRoot, "cli", "packages", "module-check", "sh", "check-agents-md.sh");
+  await mkdir(path.dirname(own), { recursive: true });
+  await writeFile(own, "#!/bin/sh\necho source\n");
+
+  const result = await runnerProvenance.run(ctx(repoRoot));
+  assert.ok("skipped" in result, JSON.stringify(result));
+  assert.match(result.skipped, /own source/);
+});

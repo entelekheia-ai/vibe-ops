@@ -350,9 +350,13 @@ async function selfTest(
       continue;
     }
     const { files, expect, options } = entry.fixture;
+    // The fixture repository sits one level INSIDE the temporary root, so a fixture file addressed as
+    // `../sibling/…` — a gate that reads the repository's neighbour, like runner-provenance — lands inside
+    // the root and is removed with it, never in the shared temp directory.
     const root = await mkdtemp(path.join(tmpdir(), `vibeops-selftest-${label}-`));
+    await mkdir(path.join(root, "repo"), { recursive: true });
     // realpath: on macOS the temp root is a symlink, and the document store resolves what it is handed.
-    const repoRoot = tryRealpath(root);
+    const repoRoot = tryRealpath(path.join(root, "repo"));
     try {
       for (const [name, body] of Object.entries(files)) {
         await mkdir(path.dirname(path.join(repoRoot, name)), { recursive: true });
@@ -376,7 +380,7 @@ async function selfTest(
         );
       }
     } finally {
-      await rm(repoRoot, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
     }
   }
 

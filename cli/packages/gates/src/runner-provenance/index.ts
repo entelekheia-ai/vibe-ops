@@ -7,11 +7,11 @@
 // snapshot exists for — and a defect the moment a live sibling also resolves, because the snapshot never
 // updates itself and now permanently outranks the tree that does.
 //
-// Not composed anywhere yet (Plan-025 Track 4 item 6) — which population this belongs to is a separate
-// decision.
+// Composed into `governance` since 2026-09-06 — the ops every consumer's pre-commit runs, which is where a
+// repository under this workspace meets the sibling checkout.
 
 import { defineGate } from "@entelekheia/vibe-ops-core";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import path from "node:path";
 
 const SNAPSHOT_PATH = "scripts/check-agents-md.sh";
@@ -29,6 +29,11 @@ export default defineGate(
       return { findings: [], skipped: `no ${SNAPSHOT_PATH} in this repository — nothing to check provenance for` };
     }
     const sibling = path.join(repoRoot, SIBLING_RUNNER);
+    // In the runner's own repository `../vibe-ops` resolves to the repository itself: its snapshot has no
+    // sibling to outrank, only its own source, and that pair is dogfooding-drift's question, not this one.
+    if (existsSync(sibling) && realpathSync(sibling).startsWith(`${realpathSync(repoRoot)}${path.sep}`)) {
+      return { findings: [], skipped: "this repository is the live runner's own source — a snapshot here has no sibling to outrank" };
+    }
     if (!existsSync(sibling)) {
       // A snapshot with no live sibling to shadow is exactly the shape it was written for — a
       // repository cloned on its own, where the snapshot IS the only source.

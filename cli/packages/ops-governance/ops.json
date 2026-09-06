@@ -62,6 +62,29 @@
           "vibeops.config.mjs": "export default { modules: [\"check\"] };\n"
         }
       }
+    },
+    {
+      "gate": "disabled-declared",
+      "fixture": {
+        "expect": [
+          "disabled-declared"
+        ],
+        "files": {
+          "vibeops.config.mjs": "export default { settings: { governance: { disabled: { \"record-header-rfc\": true } } } };\n"
+        }
+      }
+    },
+    {
+      "gate": "runner-provenance",
+      "fixture": {
+        "expect": [
+          "runner-provenance"
+        ],
+        "files": {
+          "scripts/check-agents-md.sh": "#!/bin/sh\necho snapshot\n",
+          "../vibe-ops/cli/packages/module-check/sh/check-agents-md.sh": "#!/bin/sh\necho sibling\n"
+        }
+      }
     }
   ]
 }
