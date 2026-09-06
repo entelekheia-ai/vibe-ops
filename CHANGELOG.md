@@ -35,6 +35,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   / `unset`; no install noun.
 - The gate script unsets `GIT_DIR` and friends on entry, so a commit from a linked worktree no longer
   runs fixture `git` calls inside the real repository.
+- `records.dirs.<type>` joins the managed layer's writable set (the folder a survey adopts), through
+  `config set` / `unset`; `harness sync` brings the comment above the four clone-local names in
+  `.gitignore` up to date inside the promulgation commit; the three config gates moved from `self` to
+  `governance`, joined by `modules-omits-builtin` (warns when a declared `modules` list hides a built-in
+  noun from the MCP server); `BUILTIN_MODULES` is exported by core.
 
 ### Added — two parameterised gates carry ten fragments' worth of detection (Plan-037)
 

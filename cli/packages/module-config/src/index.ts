@@ -8,7 +8,7 @@ import { defineModule, loadConfig, loadLayerFile } from "@entelekheia/vibe-ops-c
 import type { LoadedConfig } from "@entelekheia/vibe-ops-core";
 import { attributingLayers, effectiveKeys, getPath, originLabel } from "./keys.ts";
 import type { LayerRef } from "./keys.ts";
-import { isTypesBinding, notWritableMessage, setTypesBinding, unsetTypesBinding } from "./write.ts";
+import { isWritableHere, notWritableMessage, setBinding, unsetBinding } from "./write.ts";
 
 interface OriginReport {
   readonly origin?: string;
@@ -113,13 +113,12 @@ export default defineModule(
       const key = context.args[0];
       const value = context.args[1];
       if (typeof key !== "string" || key === "" || typeof value !== "string") {
-        return { code: 2, summary: "config set needs a key and a value: config set types.<name> <package>" };
+        return { code: 2, summary: "config set needs a key and a value: config set types.<name> <package>, or config set records.dirs.<type> <folder>" };
       }
-      if (!isTypesBinding(key)) {
+      if (!isWritableHere(key)) {
         return { code: 2, summary: notWritableMessage(key) };
       }
-      const [, name] = key.split(".");
-      const { code, lines } = await setTypesBinding(context.repoRoot, name!, value);
+      const { code, lines } = await setBinding(context.repoRoot, key, value);
       if (context.flags.json !== true) for (const line of lines) context.log(line);
       return { code, summary: lines[0]!, data: { key, value, lines } };
     }
@@ -127,13 +126,12 @@ export default defineModule(
     if (context.command === "unset") {
       const key = context.args[0];
       if (typeof key !== "string" || key === "") {
-        return { code: 2, summary: "config unset needs a key: config unset types.<name>" };
+        return { code: 2, summary: "config unset needs a key: config unset types.<name>, or config unset records.dirs.<type>" };
       }
-      if (!isTypesBinding(key)) {
+      if (!isWritableHere(key)) {
         return { code: 2, summary: notWritableMessage(key) };
       }
-      const [, name] = key.split(".");
-      const { code, lines } = await unsetTypesBinding(context.repoRoot, name!);
+      const { code, lines } = await unsetBinding(context.repoRoot, key);
       if (context.flags.json !== true) for (const line of lines) context.log(line);
       return { code, summary: lines[0]!, data: { key, lines } };
     }

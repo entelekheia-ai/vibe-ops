@@ -138,7 +138,7 @@ Five refusals, each a non-zero exit naming a file or a package:
 - **R2 — unparseable.** Existing behaviour, new file.
 - **R3 — no repository.** No `.git` ancestor; a write never lands above the toplevel.
 - **R4 — key not writable.** The set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`,
-  `harness.agreed` (the last added 2026-09-04, see Consent in §6).
+  `harness.agreed` (added 2026-09-04, see Consent in §6), `records.dirs.<type>` (added 2026-09-06, see §5).
 - **R5 — name already owned.** The **managed** layer at this toplevel binds the local name to another
   package: a managed `types.plan` bound to `@acme/governance-plan` refuses a write binding `plan` to
   `@entelekheia/governance-plan`, naming both. A `declared` binding of the same name is R1. This makes
@@ -172,9 +172,9 @@ is on disk and absent from the index, and uses `git check-ignore` only to name t
 
 | Verb | Writes | Policy verb | Reach |
 |---|---|---|---|
-| `/vibe-ops:setup repo` — a new repository, or an existing one being adopted | `types` | `create` where the name is absent; `adopt` where `declared` holds it | plugin |
+| `/vibe-ops:setup repo` — a new repository, or an existing one being adopted | `types`; `records.dirs.<type>` for a folder the survey adopts under another name (amended 2026-09-06) | `create` where the name is absent; `adopt` where `declared` holds it | plugin |
 | `/vibe-ops:migrate` | `types` on a rebind; removal of a `types` entry whose package is uninstalled, naming the noun and the records directory that stop resolving | `migrate`, references updated in the same run | plugin |
-| `vibe-ops harness sync` | `harness.applied`, `harness.boundary`; the retired state file's keys removed | `create` or `migrate`; `leave` for a file it may not reach | CLI (npm) + plugin (MCP) |
+| `vibe-ops harness sync` | `harness.applied`, `harness.boundary`, `harness.agreed`; the retired state file's keys removed; the comment above the four clone-local names in `.gitignore`, a keyed write on a seed file (amended 2026-09-06) | `create` or `migrate`; `leave` for a file it may not reach, or a block the repository reshaped | CLI (npm) + plugin (MCP) |
 | `vibe-ops ownership set <glob> <class> --reason` | one `ownership` entry | `create`; `adopt` where `declared` holds the same `match` | CLI (npm) + plugin (MCP) |
 | `ownership get`/`list`; `config get`/`list --show-origin` | nothing | `audit` | CLI (npm) + plugin (MCP) |
 
@@ -367,7 +367,21 @@ gate off. In `cli/packages/gates/test/config-shadow.test.ts`, `config-managed-co
   held while every committed form was executable. The repository's override still lives in the configuration
   the repository commits; that configuration is now a hand-written file and a tool-written one.
 - **The writable key set is closed**: `types`, `ownership`, `harness.applied`, `harness.boundary`,
-  `harness.agreed` (amended 2026-09-04). `harness.source` stays hand-written and unwritable.
+  `harness.agreed` (amended 2026-09-04), `records.dirs.<type>` (amended 2026-09-06, maintainer decision:
+  the folder a survey ADOPTS under another name — `project/rfcs` for `rfc` — is a tool's record of a
+  decision, so `setup` writes it through `config set records.dirs.<type>`, refused R1 when the hand-written
+  file already declares that type's folder; per type, like `types.<name>`). `harness.source` and
+  `records.templates` stay hand-written and unwritable: the templates travel in the governance packages
+  and land where the search order already looks, so a declared path only ever restates the default.
+- **The gates live in `governance`** (amended 2026-09-06): the three config-cascade gates were composed
+  into `self` at Track 5 and moved, because `governance` is the ops every consumer's pre-commit runs and
+  a gate that fires only in this repository protects no other repository's managed file. A fourth,
+  `modules-omits-builtin`, warns when a declared `modules` list hides a built-in noun from the MCP
+  server — the list is the repository's, so the finding reports and the fix is theirs.
+- **The harness's block in `.gitignore` is its key** (amended 2026-09-06): `sync` rewrites the comment
+  above the four clone-local names inside the promulgation tree when the four stand together in the
+  template's order, and leaves a block the repository reshaped, saying so — §7's keyed-write rule applied
+  to a seed file, the same way step 7 applies it to the state file.
 - **`vibeops.config.json` is `shaped`, and `shaped` generalises** from "structure versus content" to "the
   parts a recorded rule names versus the rest" — four classes, enum and authority order unchanged; a fifth
   class is rejected. A class governs file-level writes from a norm's content map; a keyed write through the

@@ -37,14 +37,10 @@ test("--list composes the entries this ops owns", async () => {
   const { context } = contextFor(REPO, {}, { list: true });
   const result = await ops.run(context);
   const data = result.data as { gates: readonly { label: string }[] };
-  // Four entries since Plan-032 Track 5 added the three config-cascade gates beside
-  // `unstated-destination` — each with its own fixture, asserted below by the self-test entry.
-  assert.deepEqual(data.gates.map((gate) => gate.label), [
-    "unstated-destination",
-    "config-shadow",
-    "config-managed-committed",
-    "config-state-leftover",
-  ]);
+  // One entry: the three config-cascade gates Plan-032 Track 5 composed here moved to `governance`
+  // (2026-09-06), the ops every consumer's pre-commit runs — a gate that only fires in this repository
+  // protects nobody's managed file but ours.
+  assert.deepEqual(data.gates.map((gate) => gate.label), ["unstated-destination"]);
 });
 
 // The remaining entry reads the migration notes as its SUBJECT rather than as an authority, so the

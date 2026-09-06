@@ -59,3 +59,5 @@ export type { Document, DocumentStore } from "./document.ts";
 export type { Layer, UncoveredLayer } from "./injections.ts";
 export { describedText, lineAt, proseText, walkLayersWithHostPositions } from "./position.ts";
 export type { HostPositionedLayer } from "./position.ts";
+export { BUILTIN_MODULES } from "./builtins.ts";
+export type { BuiltinModule } from "./builtins.ts";

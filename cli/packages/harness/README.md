@@ -96,7 +96,9 @@ uncommitted work, everything — is untouched. It stops at the branch and the ta
 On success the promulgation commit itself carries `vibeops.config.json` — the managed layer, holding
 which version of each type it applied, the boundary it applied under, and the receipt of the classes the
 repository consented to — so `status` answers from the tree once that branch merges. A leftover
-`vibeops.config.local.json` from before RFC-0004 seeds that map on the first run and is then deleted.
+`vibeops.config.local.json` from before RFC-0004 seeds that map on the first run and is then deleted, and
+the comment above the four clone-local names in `.gitignore` is brought up to date in the same commit
+when the four stand together as the template wrote them.
 
 ### Three ways it will refuse, all exiting non-zero
 

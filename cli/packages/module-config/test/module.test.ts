@@ -147,3 +147,24 @@ test("config unset removes a types binding, and refuses when there is nothing to
   const onDisk = JSON.parse(await readFile(path.join(repo, MANAGED_FILENAME), "utf8"));
   assert.equal(onDisk.types?.plan, undefined);
 });
+
+test("config set / unset accept records.dirs.<type> — the folder a survey adopts — and nothing else under records", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-config-records-dirs-"));
+  spawnSync("git", ["-C", repo, "init", "-q"]);
+
+  const set = await configModule.run(await ctx(repo, "set", ["records.dirs.rfc", "project/rfcs"]));
+  assert.equal(set.code, 0, JSON.stringify(set));
+  const onDisk = JSON.parse(await readFile(path.join(repo, MANAGED_FILENAME), "utf8"));
+  assert.deepEqual(onDisk, { records: { dirs: { rfc: "project/rfcs" } } });
+
+  const repeat = await configModule.run(await ctx(repo, "set", ["records.dirs.rfc", "project/rfcs"]));
+  assert.match(repeat.summary, /already bound/);
+
+  const templates = await configModule.run(await ctx(repo, "set", ["records.templates.rfc", "x.md"]));
+  assert.equal(templates.code, 2);
+  assert.match(templates.summary, /not writable/);
+
+  const unset = await configModule.run(await ctx(repo, "unset", ["records.dirs.rfc"]));
+  assert.equal(unset.code, 0, JSON.stringify(unset));
+  assert.deepEqual(JSON.parse(await readFile(path.join(repo, MANAGED_FILENAME), "utf8")), {});
+});

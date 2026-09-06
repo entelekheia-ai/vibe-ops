@@ -78,8 +78,9 @@ nothing into it.
 Two divergences are `adopt` by default, not `migrate` — a governance folder that uses a different but
 consistent name (`rfcs/` for `rfc/`, a top-level `plans/`), and a `project/` subfolder holding something
 other than what the governance rule expects but referenced as authoritative by the repo's own docs. Rename
-neither. Report the gap list and the verbs, and **confirm before writing** — this is the point where the
-run is destructive if the judgement is wrong.
+neither; an adopted folder name is recorded in Step 3a as `records.dirs.<type>`, so every resolver and
+gate finds it without the repository restating the default. Report the gap list and the verbs, and
+**confirm before writing** — this is the point where the run is destructive if the judgement is wrong.
 
 **The governance bindings are part of the gap list**, one row per `types.<name>` the target needs beyond
 the shipped defaults (`license`, `classification`, a type a package brings), read with
@@ -172,7 +173,8 @@ Yours, never the scaffolder's, after Step 3 and before the license. For every bi
 marked `create`:
 
 ```bash
-(cd "$TARGET" && vibe-ops config set types.<name> <package>)   # e.g. types.license @entelekheia/governance-license
+(cd "$TARGET" && vibe-ops config set types.<name> <package>)        # e.g. types.license @entelekheia/governance-license
+(cd "$TARGET" && vibe-ops config set records.dirs.<type> <folder>)   # a folder the survey adopted, e.g. records.dirs.rfc project/rfcs
 ```
 
 It writes one key into `vibeops.config.json` — the **managed** layer, committed, the only config file a

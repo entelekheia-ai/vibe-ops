@@ -466,12 +466,14 @@ export async function loadLayerFile(file: string): Promise<VibeOpsConfig | undef
 // ---------------------------------------------------------------------------------------------------------
 
 /** The writable key set is closed: `types`, `ownership`, `harness.applied`, `harness.boundary`,
- *  `harness.agreed`. Nothing else — `harness.source` stays hand-written and unwritable, like every other
- *  `VibeOpsConfig` key. */
+ *  `harness.agreed`, and `records.dirs.<type>` (RFC-0004, amended 2026-09-06: the folder a survey ADOPTS
+ *  is a tool's record, not a person's computation). Nothing else — `harness.source` and
+ *  `records.templates` stay hand-written and unwritable, like every other `VibeOpsConfig` key. */
 export interface ManagedConfigPatch {
   readonly types?: TypesConfig;
   readonly ownership?: readonly OwnershipNarrowing[];
   readonly harness?: Pick<HarnessConfig, "applied" | "boundary" | "agreed">;
+  readonly records?: { readonly dirs?: Readonly<Record<string, string>> };
 }
 
 export interface WriteManagedConfigOptions {
@@ -507,6 +509,7 @@ function isWritablePath(segments: readonly string[]): boolean {
   if (top === "types") return segments.length === 1 || segments.length === 2;
   if (top === "ownership") return segments.length === 1;
   if (top === "harness") return segments.length === 2 && (second === "applied" || second === "boundary" || second === "agreed");
+  if (top === "records") return segments.length === 3 && second === "dirs" && segments[2] !== "";
   return false;
 }
 
@@ -516,6 +519,17 @@ function isWritablePath(segments: readonly string[]): boolean {
 function collectPatchPaths(patch: Record<string, unknown>): string[][] {
   const paths: string[][] = [];
   for (const [key, value] of Object.entries(patch)) {
+    if (key === "records" && value !== null && typeof value === "object") {
+      const dirs = (value as { dirs?: unknown }).dirs;
+      if (dirs !== null && typeof dirs === "object") {
+        const types = Object.keys(dirs as Record<string, unknown>);
+        if (types.length === 0) paths.push(["records", "dirs"]);
+        else for (const type of types) paths.push(["records", "dirs", type]);
+      } else {
+        paths.push(["records"]);
+      }
+      continue;
+    }
     if ((key === "harness" || key === "types") && value !== null && typeof value === "object") {
       const sub = Object.keys(value as Record<string, unknown>);
       if (sub.length === 0) paths.push([key]);
@@ -557,6 +571,12 @@ function holdsPatchedKey(holder: VibeOpsConfig, patch: ManagedConfigPatch): bool
   if (patch.harness?.applied !== undefined && holder.harness?.applied !== undefined) return true;
   if (patch.harness?.boundary !== undefined && holder.harness?.boundary !== undefined) return true;
   if (patch.harness?.agreed !== undefined && holder.harness?.agreed !== undefined) return true;
+  if (
+    patch.records?.dirs !== undefined &&
+    Object.keys(patch.records.dirs).some((type) => holder.records?.dirs?.[type as RecordType] !== undefined)
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -578,30 +598,35 @@ function applyPatch(current: Record<string, unknown>, patch: ManagedConfigPatch)
   if (patch.harness !== undefined) {
     next.harness = { ...(current.harness as HarnessConfig | undefined), ...patch.harness };
   }
+  if (patch.records?.dirs !== undefined) {
+    const records = (current.records as { dirs?: Record<string, string> } | undefined) ?? {};
+    next.records = { ...records, dirs: { ...records.dirs, ...patch.records.dirs } };
+  }
   return next;
 }
 
 /** Deletes each dotted path (already validated by `isWritablePath`), dropping an emptied `types`/`harness`
  *  object entirely so its absence reads as absence rather than as `{}`. */
 function applyRemove(obj: Record<string, unknown>, removePaths: readonly string[][]): Record<string, unknown> {
+  // Recursive on purpose: `records.dirs.<type>` is three deep, and an object emptied at any depth is
+  // dropped rather than left as `{}`, so absence reads as absence.
+  const without = (node: Record<string, unknown>, segments: readonly string[]): Record<string, unknown> => {
+    const [head, ...rest] = segments as [string, ...string[]];
+    if (rest.length === 0) {
+      const { [head]: _dropped, ...kept } = node;
+      return kept;
+    }
+    const child = node[head];
+    if (child === undefined || child === null || typeof child !== "object") return node;
+    const trimmed = without(child as Record<string, unknown>, rest);
+    if (Object.keys(trimmed).length === 0) {
+      const { [head]: _empty, ...kept } = node;
+      return kept;
+    }
+    return { ...node, [head]: trimmed };
+  };
   let next = obj;
-  for (const segments of removePaths) {
-    if (segments.length === 1) {
-      const { [segments[0]!]: _dropped, ...rest } = next;
-      next = rest;
-      continue;
-    }
-    const [top, key] = segments as [string, string];
-    const child = next[top];
-    if (child === undefined || typeof child !== "object") continue;
-    const { [key]: _dropped, ...restChild } = child as Record<string, unknown>;
-    if (Object.keys(restChild).length === 0) {
-      const { [top]: _empty, ...rest } = next;
-      next = rest;
-    } else {
-      next = { ...next, [top]: restChild };
-    }
-  }
+  for (const segments of removePaths) next = without(next, segments);
   return next;
 }
 
@@ -637,7 +662,7 @@ export async function writeManagedConfig(
       return {
         ok: false,
         refusal: "R4",
-        message: `${segments.join(".")} is not writable — the managed layer accepts only types, ownership, harness.applied, harness.boundary and harness.agreed`,
+        message: `${segments.join(".")} is not writable — the managed layer accepts only types, ownership, harness.applied, harness.boundary, harness.agreed and records.dirs.<type>`,
       };
     }
   }

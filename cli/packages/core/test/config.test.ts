@@ -542,3 +542,31 @@ test("loadLayerFile reads one named file's own config, without merging the casca
 
   assert.equal(await loadLayerFile(path.join(dir, "vibeops.config.local.json")), undefined, "a file that does not exist");
 });
+
+test("records.dirs.<type> is writable per type, refused under R1 when declared, and removed by its three-segment path", async () => {
+  const dir = await repoWithManaged("vibeops-write-records-dirs-", { types: { plan: "@acme/plan" } });
+
+  const written = await writeManagedConfig(dir, { records: { dirs: { rfc: "project/rfcs" } } });
+  assert.equal(written.ok, true);
+  let onDisk = JSON.parse(await readFile(path.join(dir, MANAGED_FILENAME), "utf8"));
+  assert.deepEqual(onDisk, { types: { plan: "@acme/plan" }, records: { dirs: { rfc: "project/rfcs" } } });
+
+  const { config } = await loadConfig(dir, dir);
+  assert.equal(config.records?.dirs?.rfc, "project/rfcs", "the cascade reads it back per type");
+
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { records: { dirs: { adr: "decisions" } } };`);
+  const refused = await writeManagedConfig(dir, { records: { dirs: { adr: "project/adr" } } });
+  assert.equal(refused.ok, false);
+  assert.equal((refused as { refusal: string }).refusal, "R1");
+  const other = await writeManagedConfig(dir, { records: { dirs: { task: "project/tasks" } } });
+  assert.equal(other.ok, true, "R1 is per type: a declared adr does not block a managed task");
+
+  const templates = await writeManagedConfig(dir, { records: { templates: { rfc: "x.md" } } } as never);
+  assert.equal(templates.ok, false);
+  assert.equal((templates as { refusal: string }).refusal, "R4", "records.templates stays hand-written");
+
+  const removed = await writeManagedConfig(dir, {}, { remove: ["records.dirs.rfc", "records.dirs.task"] });
+  assert.equal(removed.ok, true);
+  onDisk = JSON.parse(await readFile(path.join(dir, MANAGED_FILENAME), "utf8"));
+  assert.deepEqual(onDisk, { types: { plan: "@acme/plan" } }, "an emptied records.dirs and records are dropped, not left as {}");
+});

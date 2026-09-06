@@ -26,6 +26,8 @@ export type { ResolvedHarness, Surface } from "./resolve.ts";
 export { classOf, composedOwnership, entryFor, ownershipPath, readOwnership, widens } from "./ownership.ts";
 export type { ComposedBoundary, ComposedEntry, DoubleClaim, Ownership, OwnershipClass, OwnershipEntry, RefusedNarrowing } from "./ownership.ts";
 export { boundaryRefusals, currentBranch, normContent, sync } from "./sync.ts";
+export { IGNORE_BLOCK_COMMENT, IGNORE_BLOCK_NAMES, migrateIgnoreBlock } from "./ignore-block.ts";
+export type { IgnoreBlockOutcome } from "./ignore-block.ts";
 export type { RefusedPath, SyncOptions, SyncResult } from "./sync.ts";
 
 export default defineModule(
@@ -101,6 +103,8 @@ export default defineModule(
         for (const one of result.swallowed) context.log(`  SWALLOWED ${one.path} — ${one.rule}`);
         if (result.branch !== undefined) context.log(`branch: ${result.branch}${result.tag === undefined ? "" : `  tag: ${result.tag}`}`);
         if (result.retiredState !== undefined) context.log(`retired  vibeops.config.local.json (${result.retiredState}) — its map now lives in vibeops.config.json on ${result.branch}`);
+        if (result.ignoreBlock?.outcome === "rewritten") context.log(`ignore   .gitignore — the clone-local block's comment brought up to date on ${result.branch}`);
+        if (result.ignoreBlock?.outcome === "left") context.log(`ignore   .gitignore left — ${result.ignoreBlock.reason}`);
       }
 
       // Refusals and swallowed paths both exit non-zero, for the same reason: each leaves the target in a

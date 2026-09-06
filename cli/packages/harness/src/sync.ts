@@ -33,6 +33,7 @@ import type { Ownership, OwnershipClass } from "./ownership.ts";
 import { activateGovernance, effectiveGovernanceBindings, MANAGED_FILENAME, STATE_FILENAME, writeManagedConfig } from "@entelekheia/vibe-ops-core";
 import type { HarnessConfig } from "@entelekheia/vibe-ops-core";
 import { shippedVersionsFromPackages, shippedVersionsFromPinned } from "./status.ts";
+import { migrateIgnoreBlock } from "./ignore-block.ts";
 import type { VersionedType } from "./status.ts";
 
 export interface SyncOptions {
@@ -83,6 +84,13 @@ export interface SyncResult {
    * a dry run, and on any run that produced no branch.
    */
   readonly retiredState?: "emptied" | "deleted";
+  /**
+   * What happened to the harness's block in `.gitignore` — the four clone-local names and their comment:
+   * `rewritten` when the comment was brought up to date inside the promulgation tree (a keyed write, the
+   * file itself stays the repository's), `left` with the reason when the block is not in the shape the
+   * template wrote. Absent when unchanged, when there is no `.gitignore`, and on a dry run.
+   */
+  readonly ignoreBlock?: { readonly outcome: "rewritten" | "left"; readonly reason?: string };
 }
 
 /** A `.json` config file as bytes on disk — parsed, never imported, and named when it cannot be parsed. */
@@ -291,6 +299,21 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
       await writeFile(destination, content.get(file)!, "utf8");
     }
 
+    // The harness's block in .gitignore, brought up to date in the promulgation tree — a keyed write on a
+    // seed file, the same rule step 7 applies to the state file. Counted as touched only when it changed.
+    let ignoreBlock: SyncResult["ignoreBlock"];
+    const ignoreFile = path.join(worktree, ".gitignore");
+    if (existsSync(ignoreFile)) {
+      const migrated = migrateIgnoreBlock(await readFile(ignoreFile, "utf8"));
+      if (migrated.outcome === "rewritten") {
+        await writeFile(ignoreFile, migrated.text, "utf8");
+        touched.push(".gitignore");
+        ignoreBlock = { outcome: "rewritten" };
+      } else if (migrated.outcome === "left") {
+        ignoreBlock = { outcome: "left", reason: migrated.reason };
+      }
+    }
+
     // RFC-0004 §6 steps 1–3. The committed map is read back from THIS working tree, never from the
     // caller's merged config; the leftover state file at the repository root seeds it once, for the
     // types this run leaves untouched (step 7 deletes that file); the staged types land at their shipped
@@ -335,10 +358,10 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
       .map((file) => ({ path: file, rule: ignoredBy(worktree, file) }));
 
     if (swallowed.length > 0) {
-      return { branch, written, seeded, refused, swallowed, boundary, applied: {} };
+      return { branch, written, seeded, refused, swallowed, boundary, applied: {}, ignoreBlock };
     }
     if (staged.size === 0) {
-      return { branch, written: [], seeded: [], refused, swallowed: [], boundary, applied: {} };
+      return { branch, written: [], seeded: [], refused, swallowed: [], boundary, applied: {}, ignoreBlock };
     }
 
     const committed = git(worktree, ["commit", "-q", "-m", `chore(norm): promulgate ownership@${installed.version}`]);
@@ -368,7 +391,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
     // been folded into the committed map above and is retired.
     const retiredState = await retireStateFile(repoRoot);
 
-    return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied, retiredState };
+    return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied, retiredState, ignoreBlock };
   } catch (error) {
     unwinding = true;
     throw error;

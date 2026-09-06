@@ -66,6 +66,16 @@ export default defineGate(
       }
     }
 
+    for (const type of Object.keys(managed.records?.dirs ?? {})) {
+      examined += 1;
+      if (declared.records?.dirs?.[type as keyof typeof declared.records.dirs] !== undefined) {
+        findings.push({
+          rule: "config-shadow",
+          evidence: `records.dirs.${type} is set in both ${declaredRef.file} and ${managedRef.file}`,
+        });
+      }
+    }
+
     return examined === 0
       ? { findings: [], skipped: "the managed layer holds no key that could shadow the declared one" }
       : { findings, examined };

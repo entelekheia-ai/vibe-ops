@@ -68,6 +68,10 @@ test("--list composes every entry, in order: the derived record schemas, the der
       "template-version-log",
       "markdown-link",
       "breadcrumb",
+      "config-shadow",
+      "config-managed-committed",
+      "config-state-leftover",
+      "modules-omits-builtin",
     ],
   );
 });

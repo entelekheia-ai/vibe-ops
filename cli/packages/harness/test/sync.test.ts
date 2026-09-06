@@ -348,3 +348,39 @@ test("a dry run and a refused run leave the leftover state file alone", async ()
   assert.ok(refused.refused.length > 0);
   assert.ok(existsSync(state), "step 7 runs only after a branch and a tag exist");
 });
+
+test("the ignore block's comment is brought up to date in the promulgation tree, as a keyed write on a seed file", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+  await writeFile(
+    path.join(repoRoot, ".gitignore"),
+    "node_modules/\n\n# The machine's own layer, and the only config file this tooling writes rather than reads.\n# Tracking it would turn every promulgation into a diff.\nvibeops.config.local.ts\nvibeops.config.local.mjs\nvibeops.config.local.js\nvibeops.config.local.json\n\n# mine\n*.log\n",
+  );
+  git(repoRoot, ["add", "."]);
+  git(repoRoot, ["commit", "-q", "-m", "ignore"]);
+
+  const result = await sync({ repoRoot, sourceRoot, dryRun: false });
+
+  assert.deepEqual(result.ignoreBlock, { outcome: "rewritten" });
+  const changed = git(repoRoot, ["diff", "--name-only", "main", result.branch!]).split("\n");
+  assert.ok(changed.includes(".gitignore"), changed.join(", "));
+  const after = git(repoRoot, ["show", `${result.branch}:.gitignore`]);
+  assert.ok(after.includes("The .json name is retired"), after);
+  assert.ok(after.startsWith("node_modules/\n\n"), "everything above the block is untouched");
+  assert.ok(after.endsWith("vibeops.config.local.json\n\n# mine\n*.log"), "everything below the block is untouched");
+  assert.equal(await readFile(path.join(repoRoot, ".gitignore"), "utf8").then((t) => t.includes("machine's own layer")), true, "the caller's checkout is untouched");
+});
+
+test("an ignore block the repository reshaped is left, with the reason", async () => {
+  const repoRoot = await target();
+  const sourceRoot = await source();
+  await writeFile(path.join(repoRoot, ".gitignore"), "# theirs\nvibeops.config.local.ts\nvibeops.config.local.json\n");
+  git(repoRoot, ["add", "."]);
+  git(repoRoot, ["commit", "-q", "-m", "ignore"]);
+
+  const result = await sync({ repoRoot, sourceRoot, dryRun: false });
+
+  assert.equal(result.ignoreBlock?.outcome, "left");
+  assert.match(result.ignoreBlock?.reason ?? "", /not listed together/);
+  assert.equal(git(repoRoot, ["show", `${result.branch}:.gitignore`]), "# theirs\nvibeops.config.local.ts\nvibeops.config.local.json");
+});

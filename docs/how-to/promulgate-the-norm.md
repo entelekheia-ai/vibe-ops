@@ -110,7 +110,9 @@ did before the run.
 
 Do not hand-edit it; a hand edit loses to `vibeops.config.ts` and reads as a tool write. A leftover
 `vibeops.config.local.json` from before this file existed seeds the map on the first run and is deleted
-by it.
+by it. The same run brings the comment above the four `vibeops.config.local.*` names in `.gitignore` up to
+date — only that comment, only when the four stand together as the template wrote them; a block you
+reshaped is left, and the run says so.
 
 ## Common questions
 

@@ -131,3 +131,17 @@ test("the base declares vibeops.config.json as shaped, from the harness, and nam
   assert.equal(classOf(boundary!, "vibeops.config.local.js"), "repo");
   assert.equal(classOf(boundary!, "vibeops.config.local.json"), undefined, "vibeops.config.local.json is leaving and is not classified");
 });
+
+// The comment the harness rewrites must be the one the setup template ships, or the two drift apart the
+// day someone edits one of them — asserted against the template file when this tree carries it.
+test("the ignore block's comment is byte-identical to the setup template's", async () => {
+  const { IGNORE_BLOCK_COMMENT, IGNORE_BLOCK_NAMES, migrateIgnoreBlock } = await import("../src/index.ts");
+  const template = path.resolve(import.meta.dirname, "../../../../plugin/skills/setup/templates/root/gitignore");
+  const { readFile } = await import("node:fs/promises");
+  const text = await readFile(template, "utf8").catch(() => undefined);
+  if (text === undefined) return; // an npm-only install carries no plugin tree
+  const lines = text.split("\n");
+  const first = lines.indexOf(IGNORE_BLOCK_NAMES[0]);
+  assert.deepEqual(lines.slice(first - IGNORE_BLOCK_COMMENT.length, first), [...IGNORE_BLOCK_COMMENT]);
+  assert.equal(migrateIgnoreBlock(text).outcome, "unchanged", "the template itself is already current");
+});

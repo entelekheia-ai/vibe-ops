@@ -14,6 +14,54 @@
     {
       "gate": "breadcrumb",
       "emits": true
+    },
+    {
+      "gate": "config-shadow",
+      "fixture": {
+        "expect": [
+          "config-shadow"
+        ],
+        "files": {
+          ".git": "fixture — presence is all findGitToplevel checks\n",
+          "vibeops.config.mjs": "export default { types: { plan: \"@acme/governance-plan\" } };\n",
+          "vibeops.config.json": "{\"types\":{\"plan\":\"@acme/governance-plan\"}}\n"
+        }
+      }
+    },
+    {
+      "gate": "config-managed-committed",
+      "fixture": {
+        "expect": [
+          "config-managed-committed"
+        ],
+        "files": {
+          ".git": "fixture — presence is all this gate's on-disk check needs\n",
+          "vibeops.config.json": "{}\n"
+        }
+      }
+    },
+    {
+      "gate": "config-state-leftover",
+      "fixture": {
+        "expect": [
+          "config-state-leftover"
+        ],
+        "files": {
+          ".git": "fixture — presence is all findGitToplevel checks\n",
+          "vibeops.config.local.json": "{\"harness\":{\"applied\":{\"plan\":3}}}\n"
+        }
+      }
+    },
+    {
+      "gate": "modules-omits-builtin",
+      "fixture": {
+        "expect": [
+          "modules-omits-builtin"
+        ],
+        "files": {
+          "vibeops.config.mjs": "export default { modules: [\"check\"] };\n"
+        }
+      }
     }
   ]
 }
