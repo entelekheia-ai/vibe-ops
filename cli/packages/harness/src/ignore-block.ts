@@ -26,27 +26,49 @@ export type IgnoreBlockOutcome =
   | { readonly outcome: "rewritten"; readonly text: string }
   | { readonly outcome: "left"; readonly reason: string };
 
+/** The contiguous `#` lines immediately above `index`, as a start index. */
+function commentStart(lines: readonly string[], index: number): number {
+  let start = index;
+  while (start > 0 && lines[start - 1]!.startsWith("#")) start -= 1;
+  return start;
+}
+
 /**
- * Rewrites the comment above the four names when the four stand together, in order, and the comment
- * differs. The comment is every contiguous `#` line immediately above the first name. Anything else —
- * names absent, scattered, or in another order — is left, with the reason, because a block that does
- * not match the shape the template wrote is one the repository reshaped, and that is theirs.
+ * Brings the block to the template's current shape. Two shipped shapes are recognised: the four names
+ * together, in order (the template since RFC-0004), and the three executable names together with the
+ * `.json` name in a block of its own further down (the template before it — ADR-0015 added the state
+ * file as a second block). Either becomes one block of four under the current comment; the comment is
+ * every contiguous `#` line immediately above each block, and a blank line that separated the second
+ * block goes with it. Anything else — names absent, scattered, or in another order — is left, with the
+ * reason, because a block that matches neither shape is one the repository reshaped, and that is theirs.
  */
 export function migrateIgnoreBlock(text: string): IgnoreBlockOutcome {
   const lines = text.split("\n");
   const first = lines.indexOf(IGNORE_BLOCK_NAMES[0]);
   if (first === -1) return { outcome: "left", reason: `${IGNORE_BLOCK_NAMES[0]} is not listed` };
-  for (let i = 1; i < IGNORE_BLOCK_NAMES.length; i += 1) {
+  for (let i = 1; i < 3; i += 1) {
     if (lines[first + i] !== IGNORE_BLOCK_NAMES[i]) {
-      return { outcome: "left", reason: `the four clone-local names are not listed together in the template's order` };
+      return { outcome: "left", reason: "the clone-local names are not listed together in the template's order" };
     }
   }
-  let start = first;
-  while (start > 0 && lines[start - 1]!.startsWith("#")) start -= 1;
-  const current = lines.slice(start, first);
-  if (current.length === IGNORE_BLOCK_COMMENT.length && current.every((line, i) => line === IGNORE_BLOCK_COMMENT[i])) {
-    return { outcome: "unchanged" };
+  const start = commentStart(lines, first);
+  const fourth = IGNORE_BLOCK_NAMES[3];
+  let body: string[];
+  if (lines[first + 3] === fourth) {
+    // The current shape. Unchanged when the comment already matches.
+    const current = lines.slice(start, first);
+    if (current.length === IGNORE_BLOCK_COMMENT.length && current.every((line, i) => line === IGNORE_BLOCK_COMMENT[i])) {
+      return { outcome: "unchanged" };
+    }
+    body = lines.slice(first + 4);
+  } else {
+    // The older shape: the .json name in its own block, further down, with its own comment.
+    const json = lines.indexOf(fourth, first + 3);
+    if (json === -1) return { outcome: "left", reason: `${fourth} is not listed` };
+    let jsonStart = commentStart(lines, json);
+    if (jsonStart > 0 && lines[jsonStart - 1] === "") jsonStart -= 1;
+    body = [...lines.slice(first + 3, jsonStart), ...lines.slice(json + 1)];
   }
-  const next = [...lines.slice(0, start), ...IGNORE_BLOCK_COMMENT, ...lines.slice(first)];
+  const next = [...lines.slice(0, start), ...IGNORE_BLOCK_COMMENT, ...IGNORE_BLOCK_NAMES, ...body];
   return { outcome: "rewritten", text: next.join("\n") };
 }

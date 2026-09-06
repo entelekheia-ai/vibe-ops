@@ -21,6 +21,7 @@ test("a declared list that omits built-ins names each missing noun", async () =>
   const named = result.findings.map((f) => f.evidence.match(/built-in "([^"]+)"/)![1]);
   assert.deepEqual(named.sort(), BUILTIN_MODULES.filter((n) => n !== "check" && n !== "plan").sort());
   assert.equal(result.examined, BUILTIN_MODULES.length);
+  assert.ok(result.findings.every((f) => f.evidence.startsWith(`modules (${path.join(root, "vibeops.config.mjs")})`)), "the file that sets the list is the one named");
 });
 
 test("a complete list, and no list at all, produce no finding", async () => {

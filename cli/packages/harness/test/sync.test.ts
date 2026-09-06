@@ -381,6 +381,34 @@ test("an ignore block the repository reshaped is left, with the reason", async (
   const result = await sync({ repoRoot, sourceRoot, dryRun: false });
 
   assert.equal(result.ignoreBlock?.outcome, "left");
-  assert.match(result.ignoreBlock?.reason ?? "", /not listed together/);
+  assert.match(result.ignoreBlock?.reason ?? "", /not listed together|is not listed/);
   assert.equal(git(repoRoot, ["show", `${result.branch}:.gitignore`]), "# theirs\nvibeops.config.local.ts\nvibeops.config.local.json");
+});
+
+test("the older two-block ignore shape — three names, then the .json in its own block — becomes one block of four", async () => {
+  const { migrateIgnoreBlock, IGNORE_BLOCK_COMMENT } = await import("../src/index.ts");
+  const old = [
+    "graphify-out/",
+    "",
+    "# Clone-local vibe-ops configuration. Layers over the committed vibeops.config.ts and holds what is true",
+    "# of one clone on one machine.",
+    "vibeops.config.local.ts",
+    "vibeops.config.local.mjs",
+    "vibeops.config.local.js",
+    "",
+    "# Written by `vibe-ops harness sync`: which template version this clone was promulgated to.",
+    "vibeops.config.local.json",
+    "",
+    "# theirs",
+    "*.log",
+    "",
+  ].join("\n");
+  const migrated = migrateIgnoreBlock(old);
+  assert.equal(migrated.outcome, "rewritten");
+  const text = (migrated as { text: string }).text;
+  assert.equal(
+    text,
+    ["graphify-out/", "", ...IGNORE_BLOCK_COMMENT, "vibeops.config.local.ts", "vibeops.config.local.mjs", "vibeops.config.local.js", "vibeops.config.local.json", "", "# theirs", "*.log", ""].join("\n"),
+  );
+  assert.equal(migrateIgnoreBlock(text).outcome, "unchanged", "idempotent: the second pass finds the current shape");
 });

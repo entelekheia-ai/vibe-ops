@@ -3,7 +3,7 @@
 // is the repository's preference (declared, never tool-written), so this only reports; the fix is theirs:
 // add the name, or delete the list and inherit every built-in.
 
-import { BUILTIN_MODULES, defineGate, loadConfig } from "@entelekheia/vibe-ops-core";
+import { BUILTIN_MODULES, defineGate, loadConfig, loadLayerFile } from "@entelekheia/vibe-ops-core";
 import type { GateFinding } from "@entelekheia/vibe-ops-core";
 
 export default defineGate(
@@ -17,7 +17,15 @@ export default defineGate(
     const declared = config.modules;
     if (declared === undefined) return { findings: [], skipped: "no modules list is declared — every built-in is exposed" };
     const missing = BUILTIN_MODULES.filter((name) => !declared.includes(name));
-    const where = layers.map((one) => one.file).join(", ");
+    // Name the file that sets the list — the nearest layer holding `modules` — not every layer read.
+    let where = "the configuration cascade";
+    for (const layer of layers) {
+      const own = await loadLayerFile(layer.file).catch(() => undefined);
+      if (own?.modules !== undefined) {
+        where = layer.file;
+        break;
+      }
+    }
     const findings: GateFinding[] = missing.map((name) => ({
       rule: "modules-omits-builtin",
       level: "warn", // an omission can be deliberate; the fix is the repository's, and a repository that wants it to block raises it through settings.governance.level
