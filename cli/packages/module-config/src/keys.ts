@@ -92,12 +92,18 @@ export async function attributingLayers(
 export function effectiveKeys(config: VibeOpsConfig): readonly string[] {
   const keys: string[] = [];
   const expandable = new Set(["types", "harness", "settings", "records"]);
+  // `merge` returns a literal with every top-level field present, `undefined` where nothing set it — an
+  // own enumerable property, so `Object.keys` lists it. A key nothing set is not an effective key.
   for (const top of Object.keys(config)) {
     const value = (config as Record<string, unknown>)[top];
+    if (value === undefined) continue;
     if (expandable.has(top) && value !== null && typeof value === "object" && !Array.isArray(value)) {
-      const subKeys = Object.keys(value as Record<string, unknown>);
-      if (subKeys.length === 0) keys.push(top);
-      else for (const sub of subKeys) keys.push(`${top}.${sub}`);
+      const subKeys = Object.entries(value as Record<string, unknown>)
+        .filter(([, sub]) => sub !== undefined)
+        .map(([sub]) => sub);
+      if (subKeys.length === 0) {
+        if (Object.keys(value as Record<string, unknown>).length === 0) keys.push(top);
+      } else for (const sub of subKeys) keys.push(`${top}.${sub}`);
     } else {
       keys.push(top);
     }

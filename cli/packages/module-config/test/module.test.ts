@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import configModule from "../src/index.ts";
 import type { ModuleContext } from "@entelekheia/vibe-ops-core";
 import { loadConfig, MANAGED_FILENAME } from "@entelekheia/vibe-ops-core";
@@ -78,6 +79,16 @@ test("config list derives keys from the loaded config, not a hardcoded list", as
   assert.ok(names.includes("types.task"));
   assert.ok(names.includes("settings.governance"));
   assert.ok(names.includes("harness.applied"));
+});
+
+test("config list names only keys something set — never a field merge left undefined", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-config-one-key-"));
+  spawnSync("git", ["-C", repo, "init", "-q"]);
+  await writeFile(path.join(repo, "vibeops.config.json"), JSON.stringify({ types: { task: "@acme/x" } }));
+  const result = await configModule.run(await ctx(repo, "list"));
+  assert.equal(result.code, 0);
+  const { keys } = result.data as { keys: readonly { key: string }[] };
+  assert.deepEqual(keys.map((k) => k.key), ["types.task"], "exactly the one key the file sets; no harness/ownership/modules ghosts");
 });
 
 test("config list --show-origin names the file behind every effective key", async () => {
