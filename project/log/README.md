@@ -5,6 +5,13 @@ whole piece of work (that is `project/adr/<id>-log.md`). Grouped by `path:` pref
 a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
 [`new-log`](../../plugin/skills/new-log/SKILL.md) for how an entry is written.
 
+## `.githooks/pre-commit/`
+
+- [`committing-from-a-linked-worktree-ran-the-gate-fixtures-inside-the-real-repository.md`](committing-from-a-linked-worktree-ran-the-gate-fixtures-inside-the-real-repository.md) —
+  Committing from a linked worktree failed the nudge-behaviour check under pre-commit only, and the
+  fixture's git init had reinitialised the real repository as bare — git exports GIT_DIR and GIT_INDEX_FILE
+  to a worktree's hooks, and every git call a fixture makes then lands in the committing repository.
+
 ## `(repository root)`
 
 - [`adding-a-second-foundation-package-to-the-cli-workspace.md`](adding-a-second-foundation-package-to-the-cli-workspace.md) —
@@ -56,7 +63,7 @@ a single breadcrumb in `RETIRED.md` once every path under it stops existing. See
   own mkdtemp workspace, or parallel test files silently share the same parent directory and pollute each
   other's fixtures.
 
-## `cli/packages/module-check/sh/`
+## `cli/packages/module-check/sh/checks/`
 
 - [`guarding-a-fragment-on-plugin-dir-while-globbing-root.md`](guarding-a-fragment-on-plugin-dir-while-globbing-root.md) —
   A shell fragment whose existence guard tests `$PLUGIN_DIR` and whose loop globs `$ROOT` reads nothing in
