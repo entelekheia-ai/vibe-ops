@@ -184,7 +184,7 @@ file holds the operator's preferences, and neither should restate the other. Nea
 `settings` merges one level deep so a repo overriding one module's settings does not discard the home
 file's settings for every other module.
 
-**Each directory holds three layers, not one file** ([RFC-0004](../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md)):
+**Each directory holds three layers, not one file** ([RFC-0004](../project/rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)):
 `local` (`vibeops.config.local.{ts,mjs,js}`, the operator's, clone-local and gitignored), `declared`
 (`vibeops.config.{ts,mjs,js}`, committed, hand-written) and **`managed`** (`vibeops.config.json`,
 committed, **the only config file this tooling writes** — parsed rather than imported, one key per owning

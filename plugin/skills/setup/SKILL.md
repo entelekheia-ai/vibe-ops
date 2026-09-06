@@ -86,7 +86,7 @@ the shipped defaults (`license`, `classification`, a type a package brings), rea
 `vibe-ops config get types.<name>`: `create` when no layer binds the name; `adopt` when the hand-written
 `vibeops.config.ts` already binds it, or the managed file binds it to another package — reported, left
 untouched, and the run still exits 0; `leave` for a name the target's own docs bind on purpose to something
-else. A binding *is* the install of a governance ([RFC-0004](../../../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) §5):
+else. A binding *is* the install of a governance ([RFC-0004](../../../project/rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) §5):
 there is no install verb, only this write.
 
 If the user asked for an `audit`, stop here: report the gap list and write nothing.

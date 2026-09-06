@@ -16,12 +16,13 @@ vibe-ops-template: rfc@2
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Implemented |
 | Created | 2026-09-03 |
 | Accepted | 2026-09-03 — Danilo Borges, maintainer sign-off; the two Open Questions carried, neither blocking |
+| Implemented | 2026-09-06 — Plan-032 Tracks 2–6 merged; the canonical description now lives in cli/AGENTS.md (Configuration) and docs/how-to/promulgate-the-norm.md |
 | Author | Danilo Borges |
-| Depends on | [RFC-0002](0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md), [RFC-0003](0003-a-governance-type-as-a-pluggable-unit.md) |
-| Related | [ADR-0014](../adr/0014-clone-local-configuration-layers-rather-than-replaces.md), [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md), [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-031](../plans/shipped/031-ownership-fragments-and-the-shaped-class.md), [Plan-032](../plans/032-the-ownership-verb-and-the-configuration-it-writes.md), [Plan-033](../plans/shipped/033-one-artifact-one-governance.md) |
+| Depends on | [RFC-0002](../0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md), [RFC-0003](../0003-a-governance-type-as-a-pluggable-unit.md) |
+| Related | [ADR-0014](../../adr/0014-clone-local-configuration-layers-rather-than-replaces.md), [ADR-0015](../../adr/0015-a-third-config-layer-the-tooling-writes.md), [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-031](../../plans/shipped/031-ownership-fragments-and-the-shaped-class.md), [Plan-032](../../plans/032-the-ownership-verb-and-the-configuration-it-writes.md), [Plan-033](../../plans/shipped/033-one-artifact-one-governance.md) |
 
 ---
 
@@ -390,17 +391,17 @@ gate off. In `cli/packages/gates/test/config-shadow.test.ts`, `config-managed-co
 
 ## Related
 
-- [RFC-0002](0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) — the reach of
+- [RFC-0002](../0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) — the reach of
   each channel, and the `prepare` rule this RFC keeps.
-- [RFC-0003](0003-a-governance-type-as-a-pluggable-unit.md) — the verb's shape, and the one-slot decision
+- [RFC-0003](../0003-a-governance-type-as-a-pluggable-unit.md) — the verb's shape, and the one-slot decision
   this RFC amends.
-- [ADR-0014](../adr/0014-clone-local-configuration-layers-rather-than-replaces.md) and
-  [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md) — both amended; each gains a
+- [ADR-0014](../../adr/0014-clone-local-configuration-layers-rather-than-replaces.md) and
+  [ADR-0015](../../adr/0015-a-third-config-layer-the-tooling-writes.md) — both amended; each gains a
   supersession pointer sentence at implementation.
-- [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — activation is the
+- [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — activation is the
   config, which is why writing `types` is the whole act of installing a governance.
-- [Plan-031](../plans/shipped/031-ownership-fragments-and-the-shaped-class.md),
-  [Plan-032](../plans/032-the-ownership-verb-and-the-configuration-it-writes.md),
-  [Plan-033](../plans/shipped/033-one-artifact-one-governance.md).
+- [Plan-031](../../plans/shipped/031-ownership-fragments-and-the-shaped-class.md),
+  [Plan-032](../../plans/032-the-ownership-verb-and-the-configuration-it-writes.md),
+  [Plan-033](../../plans/shipped/033-one-artifact-one-governance.md).
 - `cli/packages/core/src/config.ts`, `cli/packages/harness/src/sync.ts`,
   `cli/packages/harness/ownership.json`, `plugin/references/ownership.md`.

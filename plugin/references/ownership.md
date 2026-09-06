@@ -28,7 +28,7 @@ whole value of the declaration is that there is exactly one answer.
 tooling claims — while everything written under the headings is the repository's and survives every
 migration; promulgation never writes a record, migration does. The **managed configuration**,
 `vibeops.config.json` (RFC-0004): the tooling owns the keys a recorded rule names — `types`,
-`ownership`, `harness.applied`, `harness.boundary` — each written through the module that owns it, while
+`ownership`, `harness.applied`, `harness.boundary`, `harness.agreed` — each written through the module that owns it, while
 the repository owns the file's existence and every other key, which every write preserves. The definition
 that covers both is "the parts a recorded rule names versus the rest". Authority orders
 `norm > shaped > seed > repo`, strictly: a move rightward is a narrowing and applies silently; a move
@@ -85,7 +85,7 @@ by hand in `vibeops.config.ts` or by `ownership set` into the managed `vibeops.c
 would **widen** past the highest class any fragment declared for that match, when its class is not in the
 vocabulary, or when it carries no reason — a reclassification is a ledger entry, and a bare class is not
 one. (Which file a tool writes, and what it may write there, is
-[RFC-0004](../../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md); the hand-written
+[RFC-0004](../../project/rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md); the hand-written
 `.ts` outranks the managed file, so a declared entry always wins over a tool-written one on the same
 match.)
 

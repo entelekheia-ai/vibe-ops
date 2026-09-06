@@ -85,7 +85,7 @@ Report the counts before touching anything.
 behind it. Two rows belong in the report: a name bound to a package that is no longer installed (its noun
 and its records directory have stopped resolving — say which), and a name whose package moved the type to
 another package (a rebind). Both are `migrate` in the policy's terms, and both are written into the managed
-layer only ([RFC-0004](../../../project/rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) §5);
+layer only ([RFC-0004](../../../project/rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) §5);
 a binding in the hand-written `vibeops.config.ts` is reported and left to the person who wrote it.
 
 **Delegate this whole step to the `vibe-ops:governance-auditor` agent** — the four inputs are in

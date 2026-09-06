@@ -20,7 +20,7 @@ vibe-ops-template: plan@3
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
 | Depends on | [Plan-031](./shipped/031-ownership-fragments-and-the-shaped-class.md) |
-| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) |
+| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) |
 
 > **This began as a deliberate stub.** RFC-0003 scoped this work out on purpose: the model works with a
 > hand-written declaration, and the verb cannot be specified without settling whether the committed
@@ -36,7 +36,7 @@ vibe-ops-template: plan@3
 > never a new install noun — and the committed home for **`harness.applied`** (clone-local until then, so
 > two clones of one repository could disagree undetectably). One format decision, three writers.
 >
-> **Track 1 done 2026-09-03.** [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md)
+> **Track 1 done 2026-09-03.** [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)
 > was drafted, reviewed and accepted the same day. Tracks 2–6 below are cut from its Implementation
 > Notes and are the contract for the work.
 
@@ -94,7 +94,7 @@ consent fix in `sync`; the sync ceremony; the `config` and `ownership` nouns; th
 
 ## Design
 
-Designed in [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) and not restated
+Designed in [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) and not restated
 here. Three facts drive the track cut:
 
 - **Core first, alone.** Every later track reads through `loadConfig` and writes through
@@ -113,7 +113,7 @@ here. Three facts drive the track cut:
 Written 2026-08-22, when this plan's scope widened to every tool-written committed value; revised
 2026-09-03 with the RFC.
 
-1. **[RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md)** — the whole design,
+1. **[RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)** — the whole design,
    with the `file:line` of everything it changes. Its Implementation Notes are the contract for Tracks 2–6.
 2. **`cli/packages/core/src/config.ts`** — the cascade as it is: three halves in `loadOne`, `merge` per
    key, and `writeHarnessState`, the only writer today. The RFC's §1–§4 are edits to this file.
@@ -166,14 +166,14 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
       deletes the leftover, and that a non-widening bump promulgates and records the new boundary;
       `config.test.ts` proves `vibeops.config.local.json` appears in `leave` unread; `hook.test.ts`
       proves a managed file alone leaves the Stop gate off.
-- [ ] **Track 5 — The nouns and the gates.** `config get` / `config list --show-origin` and
+- [x] **Track 5 — The nouns and the gates.** Landed 2026-09-06 (sonnet delegation behind the gate, sonnet review: one blocker fixed before merge). `config get` / `config list --show-origin` and
       `ownership get` / `list --show-origin` / `set` in `cli/packages/cli/src`, exposed over MCP like every
       other noun; `config-shadow`, `config-managed-committed` and `config-state-leftover` under
       `cli/packages/gates/src/`, each with the fixture it fails. Acceptance: `config list --show-origin`
       on this repository names the file behind every effective key; `ownership set` refuses an unknown
       class, a missing reason and a widening, naming what stopped it; each gate fires on its fixture and
       passes on this repository.
-- [ ] **Track 6 — The skills, the prose, the migration.** `setup` writes `types` after Step 3 in the
+- [x] **Track 6 — The skills, the prose, the migration.** Landed 2026-09-06: skills and prose 74cc687; the one repository holding a state file promulgated by a real `harness sync` and its branch merged; RFC-0004 Implemented. `setup` writes `types` after Step 3 in the
       caller's own step and verifies at Step 7, routing an R1 or R5 refusal into the gap list as an
       `adopt` that exits 0; `migrate` writes `types` on a rebind and removes an entry whose package is
       uninstalled, naming the noun and the records directory that stop resolving; the gitignore template
@@ -293,7 +293,7 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 
 - [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the scope decision that created this
   plan, and the constraints the verb must honour.
-- [RFC-0004](../rfc/0004-the-managed-layer-the-configuration-a-tool-writes.md) — Track 1's deliverable;
+- [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) — Track 1's deliverable;
   the design every other track implements.
 - [ADR-0014](../adr/0014-clone-local-configuration-layers-rather-than-replaces.md),
   [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md) — amended by RFC-0004.
