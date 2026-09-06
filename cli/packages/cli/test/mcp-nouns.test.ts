@@ -458,3 +458,87 @@ test("a flag two verbs declare with different domains publishes the union, and s
     "a scoped requirement must not reach the shared shape — records census takes no type and must stay reachable",
   );
 });
+
+// ── Plan-032 Track 5 ────────────────────────────────────────────────────────────────────────────────
+// config and ownership, over MCP like every other noun: positionals reach the schema, and each verb
+// answers the same way it does from a terminal.
+
+test("Track 5 (Plan-032) over MCP: config and ownership are tools, and their positionals reach MCP", async () => {
+  const c = await client(["config", "ownership"]);
+  const tools = (await c.listTools()).tools;
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["config", "ownership"]);
+
+  for (const tool of tools) {
+    const properties = (tool.inputSchema as { properties?: Record<string, unknown> }).properties ?? {};
+    assert.ok("args" in properties, `${tool.name} must accept positionals over MCP`);
+    assert.ok(!("confirm" in properties), `${tool.name} declares no destructive verb`);
+  }
+});
+
+test("Track 5 (Plan-032) over MCP: config get/list/set/unset answer through the structured channel", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-mcp-config-"));
+  execFileSync("git", ["-C", repo, "init", "-q"]);
+  await writeFile(path.join(repo, "vibeops.config.json"), JSON.stringify({ types: { plan: "@acme/governance-plan" } }));
+
+  const c = await client(["config"]);
+
+  const got = await call(c, "config", { repo, command: "get", args: ["types.plan"] });
+  assert.equal(got.exitCode, 0, got.text);
+  assert.equal((got.data as { value: string }).value, "@acme/governance-plan");
+
+  const missing = await call(c, "config", { repo, command: "get", args: ["types.nope"] });
+  assert.equal(missing.exitCode, 1);
+  assert.match(String(missing.summary), /types\.nope/);
+
+  const listed = await call(c, "config", { repo, command: "list", "show-origin": true });
+  assert.equal(listed.exitCode, 0, listed.text);
+  const rows = (listed.data as { keys: readonly { key: string; origin?: string }[] }).keys;
+  assert.ok(rows.some((r) => r.key === "types.plan" && /managed:/.test(r.origin ?? "")));
+
+  const set = await call(c, "config", { repo, command: "set", args: ["types.task", "@acme/governance-task"] });
+  assert.equal(set.exitCode, 0, set.text);
+  assert.match(String(set.summary), /^written managed:/);
+
+  const refused = await call(c, "config", { repo, command: "set", args: ["harness.applied", "x"] });
+  assert.notEqual(refused.exitCode, 0);
+  assert.match(String(refused.summary), /harness sync/);
+
+  const unset = await call(c, "config", { repo, command: "unset", args: ["types.task"] });
+  assert.equal(unset.exitCode, 0, unset.text);
+
+  const unsetAgain = await call(c, "config", { repo, command: "unset", args: ["types.task"] });
+  assert.notEqual(unsetAgain.exitCode, 0);
+  assert.match(String(unsetAgain.summary), /nothing to remove/);
+});
+
+test("Track 5 (Plan-032) over MCP: ownership get/list/set answer through the structured channel", async () => {
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-mcp-ownership-"));
+  execFileSync("git", ["-C", repo, "init", "-q"]);
+
+  const c = await client(["ownership"]);
+
+  const got = await call(c, "ownership", { repo, command: "get", args: ["CLAUDE.md"] });
+  assert.equal(got.exitCode, 0, got.text);
+  assert.equal((got.data as { origin: string }).origin, "harness");
+
+  const listed = await call(c, "ownership", { repo, command: "list" });
+  assert.equal(listed.exitCode, 0, listed.text);
+  assert.ok((listed.data as { paths: readonly unknown[] }).paths.length > 0);
+
+  const written = await call(c, "ownership", {
+    repo,
+    command: "set",
+    args: ["scratch/one-off.md", "seed"],
+    reason: "written once, then the repository owns it",
+  });
+  assert.equal(written.exitCode, 0, written.text);
+  assert.match(String(written.summary), /^written managed:/);
+
+  const unknownClass = await call(c, "ownership", { repo, command: "set", args: ["scratch/x.md", "nope"], reason: "because" });
+  assert.notEqual(unknownClass.exitCode, 0);
+  assert.match(String(unknownClass.summary), /not a class/);
+
+  const noReason = await call(c, "ownership", { repo, command: "set", args: ["scratch/x.md", "seed"] });
+  assert.notEqual(noReason.exitCode, 0);
+  assert.match(String(noReason.summary), /--reason/);
+});

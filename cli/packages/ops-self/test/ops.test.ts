@@ -37,9 +37,14 @@ test("--list composes the entries this ops owns", async () => {
   const { context } = contextFor(REPO, {}, { list: true });
   const result = await ops.run(context);
   const data = result.data as { gates: readonly { label: string }[] };
-  // One entry since Plan-037 moved `template-heading-drift` to `mirror`, whose subject is a pair. A
-  // single-entry composition is not a defect; a composition whose subject needs an "and" is.
-  assert.deepEqual(data.gates.map((gate) => gate.label), ["unstated-destination"]);
+  // Four entries since Plan-032 Track 5 added the three config-cascade gates beside
+  // `unstated-destination` — each with its own fixture, asserted below by the self-test entry.
+  assert.deepEqual(data.gates.map((gate) => gate.label), [
+    "unstated-destination",
+    "config-shadow",
+    "config-managed-committed",
+    "config-state-leftover",
+  ]);
 });
 
 // The remaining entry reads the migration notes as its SUBJECT rather than as an authority, so the

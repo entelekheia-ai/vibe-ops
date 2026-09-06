@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { loadConfig, MANAGED_FILENAME, searchPath, settingsFor, writeManagedConfig } from "../src/config.ts";
+import { loadConfig, loadLayerFile, MANAGED_FILENAME, searchPath, settingsFor, writeManagedConfig } from "../src/config.ts";
 import type { ManagedConfigPatch } from "../src/config.ts";
 
 /** A `.git` DIRECTORY at `dir` — the ordinary-checkout form of the toplevel marker RFC-0004 §2 reads. */
@@ -528,4 +528,17 @@ test("writeManagedConfig accepts harness.agreed, refuses it under R1 when declar
   assert.equal(removed.ok, true);
   onDisk = JSON.parse(await readFile(path.join(dir, MANAGED_FILENAME), "utf8"));
   assert.deepEqual(onDisk.harness, { applied: { plan: 1 } }, "agreed removed, applied untouched");
+});
+
+test("loadLayerFile reads one named file's own config, without merging the cascade", async () => {
+  const dir = await repoWithManaged("vibeops-loadlayerfile-", { types: { plan: "@acme/governance-plan" } });
+  await writeFile(path.join(dir, "vibeops.config.mjs"), `export default { types: { task: "@acme/governance-task" } };`);
+
+  const managed = await loadLayerFile(path.join(dir, MANAGED_FILENAME));
+  assert.deepEqual(managed?.types, { plan: "@acme/governance-plan" }, "only the named file's own content, no merge with the declared layer");
+
+  const declared = await loadLayerFile(path.join(dir, "vibeops.config.mjs"));
+  assert.deepEqual(declared?.types, { task: "@acme/governance-task" });
+
+  assert.equal(await loadLayerFile(path.join(dir, "vibeops.config.local.json")), undefined, "a file that does not exist");
 });

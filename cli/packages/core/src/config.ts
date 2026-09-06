@@ -449,6 +449,18 @@ export function settingsFor<T = Record<string, unknown>>(config: VibeOpsConfig, 
   return config.settings?.[id] as T | undefined;
 }
 
+/**
+ * Loads exactly one layer file by its full path, reusing the same JSON-vs-import logic `loadOne` applies
+ * per candidate — for a caller that already knows which file it wants (`config list --show-origin`
+ * attributing an effective key to the file behind it) rather than the merged cascade `loadConfig` returns.
+ * `undefined` when the file does not exist; throws the same way `loadFile` does on unparseable JSON or a
+ * `.ts`/`.mjs`/`.js` file with no default export.
+ */
+export async function loadLayerFile(file: string): Promise<VibeOpsConfig | undefined> {
+  const found = await loadFile(file);
+  return found?.config;
+}
+
 // ---------------------------------------------------------------------------------------------------------
 // The managed layer's writer (RFC-0004 §4).
 // ---------------------------------------------------------------------------------------------------------

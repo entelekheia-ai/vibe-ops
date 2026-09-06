@@ -1,7 +1,7 @@
 export { defineModule, SOURCE_FLAG } from "./module.ts";
 export type { ModuleCommand, ModuleDefinition, ModuleFlag, ModulePlugin, ModuleResult } from "./module.ts";
 export type { ModuleContext, Surface } from "./context.ts";
-export { loadConfig, MANAGED_FILENAME, searchPath, settingsFor, STATE_FILENAME, writeManagedConfig } from "./config.ts";
+export { loadConfig, loadLayerFile, MANAGED_FILENAME, searchPath, settingsFor, STATE_FILENAME, writeManagedConfig } from "./config.ts";
 export type { HarnessConfig } from "./config.ts";
 export type {
   ConfigLayer,
