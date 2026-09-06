@@ -14,6 +14,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — `setup` ends with the norm promulgated, in both modes
+
+- `setup` (both modes) now ends with the norm promulgated and merged — `harness sync`, the merge of
+  `vibe-ops/norm-<n>`, and `harness resolve`/`config list --show-origin` proving the managed
+  `vibeops.config.json` exists. Measured 2026-09-06: a repository green on every check after both modes
+  still had no managed layer, and nothing reported it.
+
 ### Added — the managed configuration layer, and the nouns over it (Plan-032, RFC-0004)
 
 - `vibeops.config.json`, the **managed** layer: the one config file a tool writes, committed, read at the

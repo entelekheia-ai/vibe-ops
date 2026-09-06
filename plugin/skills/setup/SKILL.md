@@ -223,6 +223,27 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   one), and `vibeops.config.json` is staged — an unstaged managed file is what the
   `config-managed-committed` gate exists to catch.
 
+- **Promulgate the norm, so the repository ends with the managed layer written.** The baseline above lays
+  down the templates but records nowhere which template versions were applied or which ownership boundary
+  this clone agreed to — that record is `vibeops.config.json`'s `harness.{applied,boundary,agreed}`, and
+  only `harness sync` writes it. A repository handed over without it looks finished and is not: `harness
+  status` answers *never promulgated to*, and nothing fails. (Measured 2026-09-06: a repository set up
+  through both modes of this skill and green on every check still had no managed layer.)
+
+  ```bash
+  (cd "$TARGET" && vibe-ops harness sync --dry-run --confirm)                     # what it would write
+  (cd "$TARGET" && vibe-ops harness sync --confirm --accept-boundary <installed>)  # <installed> from the dry-run's boundary
+  (cd "$TARGET" && git merge --no-ff vibe-ops/norm-<n>)                            # sync stops at a branch on purpose
+  (cd "$TARGET" && vibe-ops harness resolve . && vibe-ops config list --show-origin)
+  ```
+
+  `sync` is half a ceremony by design — it ends at a branch and a tag and never merges — so the merge is
+  this step's, and a first promulgation on a fresh repository is an ordinary fast-forward-sized diff (the
+  norm's copies of the five templates plus the managed file). `harness resolve` must then report the
+  managed file present and `config list --show-origin` must name `managed:vibeops.config.json` behind
+  every `harness.*` key. Do this **before** the CI offer and before hand-off: a promulgation deferred to
+  "later" is the one that never happens, because nothing reports its absence.
+
 - **Offer the CI copy — do not install it.** Ask once, and take no for an answer:
 
   > CI cannot reach an installed plugin, so running this check on every push means copying it into the
@@ -354,6 +375,12 @@ mv "$TARGET/scripts/checks" "$TARGET/scripts/checks.off" && "$TARGET/scripts/che
 That must **fail**, naming the missing directory. If it passes, the gate would silently report success
 while running none of the repository's own rules, which is the exact failure `_run.sh` exists to prevent.
 
+**Then confirm the managed layer exists.** `vibe-ops harness resolve "$TARGET"` reports `managed:
+vibeops.config.json`; absent means the repository was never promulgated to, and the gate above is running
+against templates whose applied versions nobody recorded. Run the promulgation from Step 7 of mode `repo`
+(`harness sync` dry-run, sync with the boundary accepted, merge the branch) — it is idempotent on a
+repository already promulgated to, and `harness status` must report nothing behind afterwards.
+
 ### H3 — One worked example, or an honest empty
 
 A harness with no fragments is scaffolding. Offer `/vibe-ops:new-signal` for the first one, and take no
@@ -378,6 +405,7 @@ is local config, it does not travel with a clone, and a tracked hook nobody wire
 - [ ] The composition assertion was proven by moving `scripts/checks/` away and observing a failure —
       not by reading `_run.sh`
 - [ ] If the gate was installed: `core.hooksPath` set, and named in the report as local-only config
+- [ ] `harness resolve` reports the managed `vibeops.config.json` present; `harness status` reports nothing behind
 - [ ] No fragment was written from this skill; `new-signal` was offered and its refusal recorded
 - [ ] No CI was recommended for a repository with no remote
 
@@ -395,6 +423,8 @@ is local config, it does not travel with a clone, and a tracked hook nobody wire
       reported untouched); `config list --show-origin` confirms the origin; `vibeops.config.json` is staged
 - [ ] `license-setup` completed (real `LICENSE` text, not the plugin's own; `AGENTS.md` license-rules section present)
 - [ ] `check-agents-md.sh` run against the target after staging, and green
+- [ ] The norm was promulgated and merged: `vibeops.config.json` carries `harness.applied` for every
+      template type, `harness.boundary`, and `harness.agreed`; `harness status` reports nothing behind
 - [ ] The CI copy was **offered once**; if accepted, both CI steps pass locally before staging — if
       declined, the target has no `scripts/` and no `.github/workflows/check.yml`
 - [ ] `AGENTS.md` passes the `authoring-agents-md` before-commit checklist (self-contained; no personal-memory slugs)
