@@ -56,7 +56,7 @@ kept as one file so the pieces are found together.
 
 ### Out of scope
 
-- Anything that writes committed configuration — [Plan-032](032-the-ownership-verb-and-the-configuration-it-writes.md)'s
+- Anything that writes committed configuration — [Plan-032](./shipped/032-the-ownership-verb-and-the-configuration-it-writes.md)'s
   format RFC gates all of it, including governance install/update through the setup verbs.
 - The ops work — [Plan-034](./shipped/034-the-ops-become-data-and-the-governances-feed-them.md) /
   [Plan-035](035-the-audience-boundary.md).

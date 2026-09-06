@@ -14,6 +14,28 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — the managed configuration layer, and the nouns over it (Plan-032, RFC-0004)
+
+- `vibeops.config.json`, the **managed** layer: the one config file a tool writes, committed, read at the
+  repository toplevel below the hand-written `vibeops.config.*`; `writeManagedConfig` with five refusals
+  (a hand-declared key, unparseable JSON, no repository, a key outside `types` / `ownership` /
+  `harness.applied` / `harness.boundary` / `harness.agreed`, a name bound elsewhere). The clone-local
+  `vibeops.config.local.json` is retired: never read, named in `LoadedConfig.leave`, deleted by the next
+  `harness sync`.
+- `harness sync` writes `harness.applied`, `harness.boundary` and the `harness.agreed` receipt into the
+  promulgation commit itself, and consents against the receipt — only a path whose class widened is
+  refused; a bump that widens nothing promulgates. An unchanged tracked file no longer counts as
+  swallowed, so a repository already holding the norm re-promulgates as a one-file commit.
+- Nouns `config` (`get`, `list --show-origin`, `set types.<name>`, `unset types.<name>`) and `ownership`
+  (`get`, `list --show-origin`, `set <match> <class> --reason`), over the CLI and MCP; three gates in
+  `self`: `config-shadow`, `config-managed-committed`, `config-state-leftover`.
+- `ownership.json` v2 / `ownership.md`: `vibeops.config.json` is `shaped`, the class generalised to
+  "the parts a recorded rule names versus the rest"; the declared-config matches cover `.ts`/`.mjs`/`.js`.
+- `setup` binds governance types (Step 3a) and `migrate` rebinds or removes them, through `config set`
+  / `unset`; no install noun.
+- The gate script unsets `GIT_DIR` and friends on entry, so a commit from a linked worktree no longer
+  runs fixture `git` calls inside the real repository.
+
 ### Added — two parameterised gates carry ten fragments' worth of detection (Plan-037)
 
 - **`mirror`** — produce a left, produce a right, report what is in the left and not in the right. A

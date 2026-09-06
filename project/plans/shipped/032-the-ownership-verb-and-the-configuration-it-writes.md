@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-08-20 |
 | Author | Danilo Borges |
-| Depends on | [Plan-031](./shipped/031-ownership-fragments-and-the-shaped-class.md) |
-| Related | [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) |
+| Depends on | [Plan-031](./031-ownership-fragments-and-the-shaped-class.md) |
+| Related | [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](../../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) |
 
 > **This began as a deliberate stub.** RFC-0003 scoped this work out on purpose: the model works with a
 > hand-written declaration, and the verb cannot be specified without settling whether the committed
@@ -36,7 +36,7 @@ vibe-ops-template: plan@3
 > never a new install noun — and the committed home for **`harness.applied`** (clone-local until then, so
 > two clones of one repository could disagree undetectably). One format decision, three writers.
 >
-> **Track 1 done 2026-09-03.** [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)
+> **Track 1 done 2026-09-03.** [RFC-0004](../../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)
 > was drafted, reviewed and accepted the same day. Tracks 2–6 below are cut from its Implementation
 > Notes and are the contract for the work.
 
@@ -94,7 +94,7 @@ consent fix in `sync`; the sync ceremony; the `config` and `ownership` nouns; th
 
 ## Design
 
-Designed in [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) and not restated
+Designed in [RFC-0004](../../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) and not restated
 here. Three facts drive the track cut:
 
 - **Core first, alone.** Every later track reads through `loadConfig` and writes through
@@ -113,7 +113,7 @@ here. Three facts drive the track cut:
 Written 2026-08-22, when this plan's scope widened to every tool-written committed value; revised
 2026-09-03 with the RFC.
 
-1. **[RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)** — the whole design,
+1. **[RFC-0004](../../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md)** — the whole design,
    with the `file:line` of everything it changes. Its Implementation Notes are the contract for Tracks 2–6.
 2. **`cli/packages/core/src/config.ts`** — the cascade as it is: three halves in `loadOne`, `merge` per
    key, and `writeHarnessState`, the only writer today. The RFC's §1–§4 are edits to this file.
@@ -184,7 +184,7 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
       a repository with a hand-declared `types` name reports it as shadowed and writes nothing; the
       migrated repository's `harness status` answers from the managed file with the state file gone;
       `npm run typecheck`, `npm test` and `vibe-ops check .` green at close, nothing left pending here.
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` (2026-09-06) — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -279,7 +279,44 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 
 ## Outcomes & Retrospective
 
-(No outcomes yet.)
+Closed 2026-09-06. Every goal against what exists:
+
+- **The format RFC before any verb code** — held. RFC-0004 was accepted 2026-09-03 and no track wrote
+  code before it; the one amendment (the `harness.agreed` receipt) was made to the Accepted RFC with a
+  dated paragraph rather than re-decided in code.
+- **One committed serialised member a tool writes** — `vibeops.config.json`, three layers per directory,
+  read at the git toplevel, every write reporting `written managed:<file>` and what shadows it, R1
+  naming the hand-written file. Exists as specified; `config set types.license …` on this repository
+  refuses with the file's name.
+- **Install and update through the existing verbs** — `setup` Step 3a and `migrate`'s bindings step,
+  both through `config set`/`unset`, a verb the RFC's table did not name and Track 5 gained by addendum:
+  the table gave the skills the write and no noun carried it. No install noun.
+- **`harness.applied`/`boundary` committed with the files they describe** — and `agreed` beside them.
+  A second clone of the migrated repository answers `harness status` identically with no clone-local file.
+- **The `ownership` and `config` nouns** — as specified, plus the two writers above; every origin is
+  `<layer>:<file>`.
+- **Three gates with fixtures** — `self --self-test`: 4 of 4 fire; green here.
+
+Success criteria: all six run at closure and met (the second-clone comparison on a fresh local clone; the
+R1 refusal on this repository; the widening refusal and a managed narrowing on a scratch repository; the
+self-test; a scan of every governed repository for a leftover state file — none).
+
+**Predictions that were wrong.** RFC-0004 §6 said "the implementation makes `sync` call
+`boundaryRefusals`" as if its input existed; two review rounds and the acceptance missed that nothing
+recorded the classes agreed to. The receipt was designed mid-implementation, with the file rendered for
+the maintainer before deciding. A design that names a function as the fix must name where its arguments
+come from. Second: the plan cut Track 2 as "adds and retires" and the retirement had to move to Track 4
+because the harness still imported the old API — a track boundary that crosses a package's import graph
+is not a boundary the test gate lets you keep.
+
+**Cut or moved.** Nothing cut. The consent fix moved from Track 3 to Track 4 (input missing); the export
+removal moved from Track 2 to Track 4 (importers). Open Question 1 (overlapping globs) and 2
+(home-directory layers render — they do) stay as the RFC left them; the first waits for a real overlap.
+
+**What it cost.** Three delegations behind the test gate (Track 2 sonnet/medium 220K tokens; Track 5
+sonnet/medium 278K after one stall; two adversarial reviews, opus/high 149K and sonnet/high 142K) — each
+review found exactly one real blocker at a scope boundary the implementer had been told to keep. Tracks
+3, 4 and 6 in the main loop.
 
 ## Open questions
 
@@ -291,13 +328,13 @@ Written 2026-08-22, when this plan's scope widened to every tool-written committ
 
 ## Related
 
-- [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the scope decision that created this
+- [RFC-0003](../../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the scope decision that created this
   plan, and the constraints the verb must honour.
-- [RFC-0004](../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) — Track 1's deliverable;
+- [RFC-0004](../../rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) — Track 1's deliverable;
   the design every other track implements.
-- [ADR-0014](../adr/0014-clone-local-configuration-layers-rather-than-replaces.md),
-  [ADR-0015](../adr/0015-a-third-config-layer-the-tooling-writes.md) — amended by RFC-0004.
-- [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — why writing `types`
+- [ADR-0014](../../adr/0014-clone-local-configuration-layers-rather-than-replaces.md),
+  [ADR-0015](../../adr/0015-a-third-config-layer-the-tooling-writes.md) — amended by RFC-0004.
+- [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — why writing `types`
   is the whole act of installing a governance.
-- [Plan-031](./shipped/031-ownership-fragments-and-the-shaped-class.md),
-  [Plan-033](./shipped/033-one-artifact-one-governance.md).
+- [Plan-031](./031-ownership-fragments-and-the-shaped-class.md),
+  [Plan-033](./033-one-artifact-one-governance.md).

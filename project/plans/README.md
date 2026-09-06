@@ -27,7 +27,7 @@ pluggable unit. Three plans shipped it; four carry what is left.
 | 034 | [the ops become data, and the governances feed them](./shipped/034-the-ops-become-data-and-the-governances-feed-them.md) | Backlog | nothing |
 | 035 | [the audience boundary](035-the-audience-boundary.md) | Backlog | nothing (034 shipped) |
 | 031 | [ownership fragments, and the shaped class](./shipped/031-ownership-fragments-and-the-shaped-class.md) | Backlog | nothing |
-| 032 | [the ownership verb, and the configuration it writes](032-the-ownership-verb-and-the-configuration-it-writes.md) | In Progress (Tracks 1–4 done; next Track 5, the nouns and the gates) | nothing |
+| 032 | [the ownership verb, and the configuration it writes](./shipped/032-the-ownership-verb-and-the-configuration-it-writes.md) | Shipped | — |
 | 036 | [the proxy grows](036-the-proxy-grows.md) | Backlog | nothing (opportunistic) |
 
 ## Suggested attack order
@@ -42,10 +42,8 @@ policy (terminal records keep their shape; living ones migrate opportunistically
 **1. Plan-035 — the audience boundary.** While the `.json` collection is fresh — the
 field is meant to be born in the data form rather than added to the TypeScript shape and migrated later.
 
-**2. Plan-032 — the configuration format RFC.** The largest unknown, and now the gate on three separate
-capabilities (ownership narrowing, governance install/update, a committed `harness.applied`). Worth
-attacking only after 031 has produced a real narrowing to serialise; starting earlier means designing a
-format for one hypothetical writer.
+**Plan-032 shipped 2026-09-06** — RFC-0004, the managed layer, the sync ceremony with its receipt, the
+`config` and `ownership` nouns, three gates; the one repository holding a state file migrated.
 
 **3. Plan-036 — the proxy grows.** Opportunistic throughout: each track is small and independent, and
 Track 1 (package-exported snippets) is what finally empties `35-dogfooding-drift.sh`'s pair list.

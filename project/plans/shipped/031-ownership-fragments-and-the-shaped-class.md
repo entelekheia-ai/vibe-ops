@@ -64,7 +64,7 @@ narrowing, hand-written; migration/adoption reading the declaration; the accepta
 ### Out of scope
 
 - The `ownership` verb surface (`get`/`list`/`set`) and the configuration-format question it drags in —
-  [Plan-032](../032-the-ownership-verb-and-the-configuration-it-writes.md), per RFC-0003's scope decision.
+  [Plan-032](./032-the-ownership-verb-and-the-configuration-it-writes.md), per RFC-0003's scope decision.
 - Overlapping-but-unequal glob claims — deliberately unresolved in RFC-0003 until a real overlap exists;
   identical claims conflict, and that covers the case that exists.
 
