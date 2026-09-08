@@ -17,7 +17,7 @@
 # failure — an ADR, a plan's Decision Log, this contract itself — writes the elided form, and a guard
 # that fires on the description of the rule is a guard people switch off.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_machine_paths() {
   head_
@@ -53,7 +53,7 @@ check_machine_paths() {
 
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    fail "$id" "a machine path appears in $line"
+    fail "$id" "${line%%:*}: a machine path appears here — ${line#*:}"
     hits=$((hits + 1))
   done <<EOF
 $(git -C "$ROOT" grep -nE -- "$pattern" -- '*.md' 2>/dev/null | grep -v '/templates/' || true)

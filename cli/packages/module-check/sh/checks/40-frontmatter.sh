@@ -6,7 +6,7 @@
 # A rule with no description: is never surfaced to the agent — it is a file that exists and does
 # nothing, which is worse than an absent one because it reads as covered.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_frontmatter() {
   head_
@@ -18,10 +18,10 @@ check_frontmatter() {
   for rule in "$ROOT"/.agents/rules/*.md; do
     [ -e "$rule" ] || continue
     if [ "$(head -n 1 "$rule")" != "---" ]; then
-      fail "$id" "${rule#"$ROOT"/} has no frontmatter block"
+      fail "$id" "${rule#"$ROOT"/}: has no frontmatter block"
       problems=$((problems + 1))
     elif ! sed -n '2,/^---$/p' "$rule" | grep -q '^description:[[:space:]]*[^[:space:]]'; then
-      fail "$id" "${rule#"$ROOT"/} has no description: — a rule without one is never surfaced"
+      fail "$id" "${rule#"$ROOT"/}: has no description: — a rule without one is never surfaced"
       problems=$((problems + 1))
     fi
   done

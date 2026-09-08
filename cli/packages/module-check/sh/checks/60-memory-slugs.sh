@@ -12,7 +12,7 @@
 # with fenced blocks and inline code spans removed first: syntax quoted as code is being *shown*, not
 # used. A check that cries wolf gets ignored, and this one guards something real.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_memory_slugs() {
   head_
@@ -34,7 +34,9 @@ check_memory_slugs() {
     done < <(tracked_md)
   )
   if [ -n "$hits" ]; then
-    printf '%s\n' "$hits" | while read -r line; do fail "$id" "wiki-style memory link: $line"; done
+    printf '%s\n' "$hits" | while read -r line; do
+      fail "$id" "${line%%:*}: wiki-style memory link — ${line#*:}"
+    done
     FAILURES=$((FAILURES + 1))
   else
     pass "$id" "no personal-memory links in tracked markdown"

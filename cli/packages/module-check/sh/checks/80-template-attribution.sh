@@ -15,7 +15,7 @@
 # project/templates/ belongs to that repository and its author's name there is correct; only what is
 # copied elsewhere is the plugin author's to keep out.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_template_attribution() {
   head_
@@ -26,7 +26,7 @@ check_template_attribution() {
   fi
   while IFS= read -r hit; do
     [ -z "$hit" ] && continue
-    fail "$id" "hardcoded attribution in a shipped template: $hit"
+    fail "$id" "${hit%%:*}: hardcoded attribution in a shipped template — ${hit#*:}"
     problems=$((problems + 1))
   done <<EOF
 $(git -C "$ROOT" grep -nE 'Copyright \(c\) [0-9]{4}' -- 'skills/*/templates/*' 2>/dev/null || true)

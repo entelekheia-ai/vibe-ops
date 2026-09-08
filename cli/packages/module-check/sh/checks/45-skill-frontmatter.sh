@@ -18,7 +18,7 @@
 # Deliberately not a full YAML parser. It catches the one fault that has actually
 # occurred and is invisible on inspection: an unquoted scalar containing ": ".
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_skill_frontmatter() {
   head_
@@ -31,7 +31,7 @@ check_skill_frontmatter() {
     [ -e "$skill" ] || continue
     local rel="${skill#"$ROOT"/}"
     if [ "$(head -n 1 "$skill")" != "---" ]; then
-      fail "$id" "$rel has no frontmatter block"
+      fail "$id" "$rel: has no frontmatter block"
       problems=$((problems + 1))
       continue
     fi
@@ -49,7 +49,7 @@ check_skill_frontmatter() {
       problems=$((problems + 1))
     fi
     if ! sed -n '2,/^---$/p' "$skill" | grep -q '^description:[[:space:]]*[^[:space:]]'; then
-      fail "$id" "$rel has no description: — a skill without one is never matched"
+      fail "$id" "$rel: has no description: — a skill without one is never matched"
       problems=$((problems + 1))
     fi
   done

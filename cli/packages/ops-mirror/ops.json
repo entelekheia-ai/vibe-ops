@@ -105,6 +105,169 @@
       }
     },
     {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-machine-paths",
+      "paths": [
+        "**/*.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "machine-paths",
+        "against": "classification",
+        "options": {
+          "level": "confidential",
+          "rule": "file-path",
+          "subject": "an absolute path from someone's machine",
+          "forbid": [
+            "(?:/Users/|/home/|[Cc]:[\\\\/]+Users[\\\\/]+)[A-Za-z0-9][^\\s\"'`)]*"
+          ]
+        }
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-template-attribution",
+      "paths": [
+        "<plugin>/skills/*/templates/**/*.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "template-attribution",
+        "against": "classification",
+        "options": {
+          "level": "confidential",
+          "rule": "template-attribution",
+          "subject": "an attribution a target repository never made",
+          "forbid": [
+            "Copyright \\(c\\) [0-9]{4}"
+          ]
+        }
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-bridge",
+      "paths": [
+        ".claude/**"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "bridge",
+        "against": "bridge"
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-budget",
+      "paths": [
+        "AGENTS.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "budget",
+        "against": "budget"
+      }
+    },
+    {
+      "gate": "fragment-parity",
+      "label": "fragment-parity-dogfooding-drift",
+      "paths": [
+        "GOVERNANCE.md",
+        "cli/packages/governance-*/templates/*.md",
+        ".agents/rules/governance.md"
+      ],
+      "options": {
+        "runner": "cli/packages/module-check/sh/check-agents-md.sh",
+        "fragment": "dogfooding-drift",
+        "against": "mirror",
+        "options": {
+          "compare": "text",
+          "ignore": [
+            "copyright"
+          ],
+          "rule": "dogfooding-drift",
+          "subject": "this repository's own copy and the copy it ships",
+          "pairs": [
+            [
+              "cli/packages/governance-plan/templates/plan.md",
+              "<plugin>/skills/setup/templates/project/templates/plan.md"
+            ],
+            [
+              "cli/packages/governance-task/templates/task.md",
+              "<plugin>/skills/setup/templates/project/templates/task.md"
+            ],
+            [
+              "cli/packages/governance-adr/templates/adr.md",
+              "<plugin>/skills/setup/templates/project/templates/adr.md"
+            ],
+            [
+              "cli/packages/governance-rfc/templates/rfc.md",
+              "<plugin>/skills/setup/templates/project/templates/rfc.md"
+            ],
+            [
+              "cli/packages/governance-log/templates/log.md",
+              "<plugin>/skills/setup/templates/project/templates/log.md"
+            ],
+            [
+              ".agents/rules/governance.md",
+              "<plugin>/skills/setup/templates/agents/rules/governance.md"
+            ],
+            [
+              "GOVERNANCE.md",
+              "<plugin>/skills/setup/templates/root/GOVERNANCE.md"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "fragment-parity-completeness",
+      "options": {
+        "compare": "group",
+        "rule": "fragment-uncovered",
+        "subject": "a shell fragment with neither a fragment-parity entry nor a declared exemption",
+        "left": {
+          "scan": "id=\"([a-z-]+)\"",
+          "in": [
+            "cli/packages/module-check/sh/checks/10-budget.sh",
+            "cli/packages/module-check/sh/checks/15-manifest-sync.sh",
+            "cli/packages/module-check/sh/checks/20-links.sh",
+            "cli/packages/module-check/sh/checks/25-hooks-registration.sh",
+            "cli/packages/module-check/sh/checks/27-nudge-behaviour.sh",
+            "cli/packages/module-check/sh/checks/30-bridge.sh",
+            "cli/packages/module-check/sh/checks/35-dogfooding-drift.sh",
+            "cli/packages/module-check/sh/checks/40-frontmatter.sh",
+            "cli/packages/module-check/sh/checks/45-skill-frontmatter.sh",
+            "cli/packages/module-check/sh/checks/50-private-names.sh",
+            "cli/packages/module-check/sh/checks/52-machine-paths.sh",
+            "cli/packages/module-check/sh/checks/55-references-completeness.sh",
+            "cli/packages/module-check/sh/checks/60-memory-slugs.sh",
+            "cli/packages/module-check/sh/checks/70-plugin-root-paths.sh",
+            "cli/packages/module-check/sh/checks/80-template-attribution.sh",
+            "cli/packages/module-check/sh/checks/90-license-texts.sh",
+            "cli/packages/module-check/sh/checks/95-command-references.sh"
+          ]
+        },
+        "right": {
+          "scan": "\"(?:fragment|exempt)\": \"([a-z-]+)\"",
+          "in": [
+            "cli/packages/ops-mirror/ops.json"
+          ]
+        },
+        "exemptions": [
+          { "exempt": "private-names", "reason": "never names a file — the deny-list value must not be echoed anywhere, including in a comparison's evidence" },
+          { "exempt": "hooks-registration", "reason": "mirror group entry — file is the prose subject, never a path (gates/src/mirror/index.ts)" },
+          { "exempt": "references-completeness", "reason": "mirror group entry, same reason" },
+          { "exempt": "plugin-root-paths", "reason": "mirror scan entry, same reason" },
+          { "exempt": "command-references", "reason": "mirror scan entry, same reason" },
+          { "exempt": "license-texts", "reason": "mirror rows entry — file is always SOURCES.tsv, never the licence that failed" },
+          { "exempt": "manifest-sync", "reason": "Plan-038 Track 1 — the shell fail() carries no <file>: prefix in any of its four comparisons" },
+          { "exempt": "nudge-behaviour", "reason": "Plan-038 Track 1 — its port is a node test, not a loadable gate" }
+        ]
+      }
+    },
+    {
       "gate": "mirror",
       "label": "manifest-version",
       "emits": true,

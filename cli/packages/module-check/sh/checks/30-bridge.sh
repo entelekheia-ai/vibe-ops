@@ -7,7 +7,7 @@
 # symlink that git checked out as text (core.symlinks=false) — which looks like a working rule file
 # containing one line of nonsense.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_bridge() {
   head_
@@ -23,15 +23,15 @@ check_bridge() {
       *) continue ;;
     esac
     if [ "$mode" != "120000" ]; then
-      fail "$id" "$path is a regular file — .claude/ must hold a relative symlink into .agents/"
+      fail "$id" "$path: a regular file — .claude/ must hold a relative symlink into .agents/"
       problems=$((problems + 1))
       continue
     fi
     if [ ! -L "$ROOT/$path" ]; then
-      fail "$id" "$path is a symlink in git but not on disk — checked out as text (core.symlinks=false)"
+      fail "$id" "$path: a symlink in git but not on disk — checked out as text (core.symlinks=false)"
       problems=$((problems + 1))
     elif [ ! -e "$ROOT/$path" ]; then
-      fail "$id" "$path is a symlink whose target does not exist"
+      fail "$id" "$path: a symlink whose target does not exist"
       problems=$((problems + 1))
     fi
   done <<EOF

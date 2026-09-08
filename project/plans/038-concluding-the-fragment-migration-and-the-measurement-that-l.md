@@ -154,13 +154,27 @@ produce silent agreement — that is the exact failure the gate's own header was
       deliberately not compared and what still covers it. Acceptance: no fragment is retired later on
       the strength of a port that does less than it did.
 
-- [ ] **Track 2 — One parity entry per comparable pair.** Add the thirteen missing
-      `fragment-parity` entries to `cli/packages/ops-mirror/ops.json`, each naming its fragment, its
-      port and the port's options, and add the `mirror` completeness entry that fails when a composed
-      fragment has neither an entry nor an exemption. Pairs found structurally incomparable by file
-      path become declared exemptions with their reason, not entries. At the end every fragment is
-      accounted for by machine. Acceptance: `vibe-ops mirror --verbose` names both versions
-      (`instrument`) for every wired pair, and deleting one entry fails the completeness check.
+- [x] **Track 2 — One parity entry per comparable pair.** Auditing all seventeen `fail()` call sites
+      found the track's own premise wrong twice over: three of the four entries wired before this
+      track (`frontmatter`, `skill-frontmatter`, `memory-slugs`) compared a vacuous or near-vacuous set,
+      because their message carried no `<file>:` prefix and the repository is clean; and `mirror`'s
+      `file` for a group/scan comparison is the prose `subject`, never a path
+      (`gates/src/mirror/index.ts:348`), which structurally rules out every fragment ported to that
+      shape regardless of message format. Normalized `fail()` (one line, `CHECK_VERSION` bumped) for
+      the eight fragments proved comparable by reading their port's finding shape: `frontmatter`,
+      `skill-frontmatter`, `memory-slugs` (repaired), plus `machine-paths`, `template-attribution`,
+      `bridge`, `budget`, `dogfooding-drift` (newly wired) — nine `fragment-parity` entries in total.
+      Eight fragments are declared exemptions in the completeness entry's own `options.exemptions`:
+      `private-names` (never names a file, by design), `hooks-registration`,
+      `references-completeness`, `plugin-root-paths`, `command-references` (all `mirror` group/scan —
+      structurally excluded), `license-texts` (`mirror` `rows` — always names `SOURCES.tsv`), and the
+      two from Track 1 (`manifest-sync`, `nudge-behaviour`). The completeness entry
+      (`fragment-parity-completeness`) scans every fragment's own `local id="…"` declaration against
+      every literal `"fragment":`/`"exempt":` string in `ops.json` itself — live, not a remembered
+      list — so deleting either an entry or its exemption fails, naming the uncovered fragment.
+      Acceptance met: `vibe-ops mirror --verbose` shows `(compared …)` naming both versions for all
+      nine entries, and deleting `fragment-parity-budget` fails `fragment-uncovered` naming `budget`
+      (restored after verifying).
 
 - [ ] **Track 3 — The shared fixture, both sides.** Extend `self_test` in
       `cli/packages/module-check/sh/check-agents-md.sh` to run `vibe-ops check` over the same `$tmp`
@@ -279,10 +293,55 @@ Run from the repository root:
   a fixture a second time — `npm test` already does that on every run.
   Date / Author: 2026-09-07 / Danilo Borges
 
+- Decision: three `fragment-parity` entries wired before this plan (`frontmatter`, `skill-frontmatter`,
+  `memory-slugs`) had been comparing a vacuous or near-vacuous set since they were written, and the
+  fix is to reshape the shell fragment's message, not to touch `fragment-parity` or the port.
+  Rationale: `failedFilesFor()` extracts everything before the first `:` in `FAIL  [<id>] <file>: …`;
+  `40-frontmatter.sh` and `45-skill-frontmatter.sh` mostly had no colon at all, and `60-memory-slugs.sh`
+  put unrelated prose before it. The repository being clean meant the shell side was always empty, so
+  the entries reported "agreement" while never comparing a real file — the exact failure the gate's own
+  header warns about, occurring inside the gate itself. Each port already names a real path in its
+  findings; the cheaper and more honest fix is the one-line message reshape, not new gate logic.
+  Date / Author: 2026-09-07 / Danilo Borges
+
+- Decision: a fragment ported to a `mirror` **group** or **scan** entry can never get a
+  `fragment-parity` entry, and this is structural, not a per-fragment judgement call.
+  Rationale: `mirror`'s finding `file` is `comparison.where`, which equals the prose `subject` for
+  every comparison mode except `pairs` (`where: a`, the left path) and `rows` (`where` is always the
+  rows file, e.g. `SOURCES.tsv`) — `gates/src/mirror/index.ts:328-348`. `hooks-registration`,
+  `references-completeness`, `plugin-root-paths`, `command-references` (all group/scan) and
+  `license-texts` (`rows`) are exemptions for this one structural reason, stated once here rather than
+  five times in `ops.json`.
+  Date / Author: 2026-09-07 / Danilo Borges
+
+- Decision: `private-names` is a permanent exemption, not a gap to close later.
+  Rationale: `50-private-names.sh` deliberately reports only which deny-list line matched
+  (`source: list:$N`), never the file, because the offending string must never be echoed anywhere,
+  including in a comparison's evidence — the fragment's own header states this. Naming the file would
+  not leak the string itself, but making that judgement call is outside the "changing any port's
+  detection" boundary this track set for itself.
+  Date / Author: 2026-09-07 / Danilo Borges
+
+- Decision: the completeness entry reads `ops.json` itself via a `mirror` `scan` comparison, rather
+  than a separate hand-maintained roster file.
+  Rationale: `scan`'s regex runs over raw file text and already matches concrete named files outside
+  an entry's own `paths` population (`gates/src/mirror/index.ts:267-269`), so it can read the fragment
+  ids declared in every `checks/*.sh` file (`local id="…"`) as the left set, and every literal
+  `"fragment":`/`"exempt":` string already sitting in `ops.json`'s own entries as the right set — with
+  no new source type and no second list to fall out of sync with the first. Exemptions are declared as
+  `{ "exempt": "…", "reason": "…" }` objects inside the completeness entry's own `options.exemptions`,
+  which the same scan pattern reads.
+  Date / Author: 2026-09-07 / Danilo Borges
+
 ## Outcomes & Retrospective
 
-Track 1 is closed. `npm test` (643/643) and `npm run typecheck` are green. Neither exemption is yet
-mechanically enforced — Track 2 adds the completeness entry that will read them.
+Track 1 and Track 2 are closed. `npm test` (643/643) and `npm run typecheck` are green after a
+from-scratch build. All nine comparable fragments now have a live `fragment-parity` entry; the other
+eight are exemptions the completeness entry can see and enforce mechanically — proved by deleting
+`fragment-parity-budget` and observing `fragment-uncovered` name `budget` by itself, then restoring it.
+Plan-022's corpus-width and no-divergence conditions now have evidence for nine pairs where three months
+ago they had it for one; its third condition (a shared, deliberately-broken fixture) is still Track 3's
+job.
 
 ---
 

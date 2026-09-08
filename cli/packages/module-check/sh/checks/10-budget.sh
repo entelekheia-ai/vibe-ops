@@ -6,18 +6,21 @@
 # AGENTS.md stays under a line budget. Over budget the instruction is to relocate content and leave a
 # pointer, not to compress prose — a shorter file that says the same things is not the goal.
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_budget() {
   head_
   local id="budget" max="${AGENTS_MD_MAX_LINES:-150}" n
   if [ ! -f "$ROOT/AGENTS.md" ]; then
+    # Unprefixed, deliberately: the port (gates/src/budget) reports this same fault with no `file` of
+    # its own — there is no AGENTS.md to name — and a prefix here would manufacture a path the port
+    # never claims, which `fragment-parity` would then read as a divergence.
     fail "$id" "no AGENTS.md at the repository root"
     return
   fi
   n=$(wc -l < "$ROOT/AGENTS.md" | tr -d ' ')
   if [ "$n" -gt "$max" ]; then
-    fail "$id" "AGENTS.md is $n lines, over the $max-line budget — relocate content and leave a pointer"
+    fail "$id" "AGENTS.md: $n lines, over the $max-line budget — relocate content and leave a pointer"
   else
     pass "$id" "AGENTS.md is $n/$max lines"
   fi

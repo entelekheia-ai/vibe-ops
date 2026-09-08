@@ -52,7 +52,7 @@ strip_leading_copyright_comment() {
   ' "$1"
 }
 
-CHECK_VERSION=1
+CHECK_VERSION=2
 
 check_dogfooding_drift() {
   head_
@@ -94,7 +94,7 @@ check_dogfooding_drift() {
     a=$(strip_leading_copyright_comment "$own")
     b=$(strip_leading_copyright_comment "$ship")
     if [ "$a" != "$b" ]; then
-      fail "$id" "${pair%%::*} and ${pair##*::} have diverged (past the copyright header) — one was edited without the other"
+      fail "$id" "${pair%%::*}: diverged from ${pair##*::} (past the copyright header) — one was edited without the other"
       problems=$((problems + 1))
     fi
   done
