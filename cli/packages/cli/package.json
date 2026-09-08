@@ -25,14 +25,15 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
+    "@entelekheia/governance-base": "^0.0.1",
+    "@entelekheia/governance-plan": "^0.0.1",
     "@entelekheia/vibe-ops-agents-md": "^0.0.1",
     "@entelekheia/vibe-ops-core": "^0.0.1",
-    "@entelekheia/vibe-ops-module-check": "^0.0.1",
     "@entelekheia/vibe-ops-harness": "^0.0.1",
-    "@entelekheia/governance-base": "^0.0.1",
+    "@entelekheia/vibe-ops-module-check": "^0.0.1",
+    "@entelekheia/vibe-ops-module-records": "^0.0.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^3.25.0",
-    "@entelekheia/governance-plan": "^0.0.1"
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
