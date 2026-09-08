@@ -1,14 +1,14 @@
-// `vibe-ops check` — the governance gate.
+// `vibe-ops check` — the governance gate, and since Plan-038 track 6 the WHOLE of it.
 //
-// The seventeen checks are still shell fragments under this package's own sh/checks/, unchanged from
-// what every repository's .githooks/pre-commit runs. This module is their front door, not a rewrite:
-// porting them to TypeScript is a separate act, and doing it as part of packaging would have meant
-// shipping seventeen freshly-written checks with no history of having caught anything.
+// Two halves, reported as one `N checks, M failed` line: the shell fragments still under this package's
+// own sh/checks/ — eight, after track 7 retired the nine whose ports met Plan-022's bar — and the ops
+// this repository declares in `config.ops`. Before track 6 this module was a wrapper around the runner
+// and nothing else, so a commit gate ran the fragments and none of the gates written to replace them.
 //
-// sh/ ships in `files`, so the fragments travel with an install and are resolved relative to this
-// module — never from PATH and never by searching upward for a checkout.
+// sh/ ships in `files`, so the surviving fragments travel with an install and are resolved relative to
+// this module — never from PATH and never by searching upward for a checkout.
 
-import { defineModule, effectiveOps, settingsFor } from "@entelekheia/vibe-ops-core";
+import { defineModule, effectiveOps, opsSpecifier, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, ModulePlugin, ModuleResult, OpsFinding, OpsPopulation, OpsSkip } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -29,7 +29,7 @@ async function runOpsSelfTest(
 ): Promise<{ id: string; code: number; output: string }> {
   const lines: string[] = [];
   try {
-    const loaded = (await import(packageName)) as { default: ModulePlugin };
+    const loaded = (await import(opsSpecifier(packageName, context.repoRoot))) as { default: ModulePlugin };
     const result = await loaded.default.run({
       ...context,
       flags: { "self-test": true },
@@ -43,10 +43,13 @@ async function runOpsSelfTest(
 }
 
 /**
- * The nine rule ids a fragment-parity port must still fail on the SAME fixture the shell runner's own
- * `--self-test` breaks (plan-038 track 3) — one id per ported fragment, and which ops composes each is
- * `OPS_FOR_PARITY` below. Not the whole population either ops runs: only the ids this repository has
- * proved comparable (`project/tasks/002-...`, now folded into Plan-038's Decision Log).
+ * The nine rule ids that must still fail on the SAME fixture the shell runner's own `--self-test` breaks
+ * — one per fragment retired in track 7, and which ops composes each is `OPS_FOR_PARITY` below.
+ *
+ * THIS LIST IS NOW THE ONLY THING HOLDING THOSE NINE CHECKS. Their fragments are deleted and the
+ * `fragment-parity` gate that compared them is deleted, so nothing else in this repository asserts that
+ * the ports which replaced them still detect anything. That is why `build_fixture` keeps every defect the
+ * retired fragments used to catch: the fixture stopped being their evidence and became the ports'.
  */
 const PARITY_RULE_IDS = [
   "links",
@@ -153,7 +156,7 @@ async function runComposedOps(context: ModuleContext): Promise<readonly OpsRun[]
     const lines: string[] = [];
     let plugin: ModulePlugin;
     try {
-      plugin = ((await import(packageName)) as { default: ModulePlugin }).default;
+      plugin = ((await import(opsSpecifier(packageName, context.repoRoot))) as { default: ModulePlugin }).default;
     } catch (error) {
       const why = error instanceof Error ? error.message : String(error);
       runs.push({

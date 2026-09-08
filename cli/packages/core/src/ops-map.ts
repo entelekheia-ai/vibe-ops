@@ -21,6 +21,8 @@
 // ACTIVATION IMPORTS, exactly as `governance-map.ts` argues: a config binding is the repository's
 // explicit trust declaration, and the import is dynamic, so core gains no compile-time edge to any ops.
 
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { VibeOpsConfig } from "./config.ts";
 
 /** The shipped composition — the ops that name nothing outside the repository being checked. */
@@ -42,4 +44,22 @@ export function effectiveOps(config: VibeOpsConfig | undefined): Readonly<Record
     merged[name] = value;
   }
   return merged;
+}
+
+/**
+ * What to hand `import()` for one declared ops — a package name unchanged, a PATH resolved against the
+ * repository being checked.
+ *
+ * A relative specifier is the shape a repository writing its own detectors uses, and it is the one that
+ * silently means something else: `import("./ops/local.mjs")` inside a built module resolves against
+ * THAT MODULE'S directory, so a consumer's own ops resolved to a path under `module-check/dist/` and was
+ * reported missing. Measured 2026-09-08 against a scratch repository, and the reason a repository could
+ * not compose a detector of its own at all — which is the whole point of the config being the registry.
+ *
+ * `repoRoot` rather than the config file's own directory: an ops is declared by the repository being
+ * checked, and the cascade means the file carrying the declaration may sit above it.
+ */
+export function opsSpecifier(declared: string, repoRoot: string): string {
+  if (!declared.startsWith(".") && !declared.startsWith("/")) return declared;
+  return pathToFileURL(path.resolve(repoRoot, declared)).href;
 }

@@ -1,14 +1,14 @@
 // harness catalog — what exists and is not composed into anything this repository actually runs.
 //
 // "Composed" spans two systems that share nothing but the word: the seventeen shell fragments
-// `check.sh` runs at commit time (`check --list`), and the TypeScript gates the three ops packages wire
+// `check.sh` runs at commit time (`check --list`), and the TypeScript gates the declared ops packages wire
 // into `vibe-ops agents-md`/`governance`/`for-vibe-ops` (each ops's own `--list`). A gate that has no shell
 // precedent — most of them — would show up as "available but not composed" if only the shell side were
 // read, even when an ops already runs it on every commit. That false gap is exactly the wrong
 // recommendation this verb exists to prevent ("build something already written and merely unwired"), so
 // `composed` here is the union of both readings, not `check --list` alone.
 
-import { effectiveOps } from "@entelekheia/vibe-ops-core";
+import { effectiveOps, opsSpecifier } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, ModulePlugin } from "@entelekheia/vibe-ops-core";
 import { readdirSync } from "node:fs";
 import path from "node:path";
@@ -50,7 +50,7 @@ async function shellComposed(context: ModuleContext): Promise<ShellComposed> {
 async function gatesComposed(context: ModuleContext): Promise<ReadonlySet<string>> {
   const ids = new Set<string>();
   for (const specifier of Object.values(effectiveOps(context.config))) {
-    const ops = await loadPlugin(specifier);
+    const ops = await loadPlugin(opsSpecifier(specifier, context.repoRoot));
     if (ops === undefined) continue; // an ops that fails to load composes nothing from here — fail open, not a guess
     const result = await ops.run({ ...context, command: undefined, flags: { list: true }, log: () => {} });
     const gates = (result.data as { gates?: readonly { gate: string } [] } | undefined)?.gates ?? [];
