@@ -222,12 +222,14 @@ produce silent agreement — that is the exact failure the gate's own header was
 
 - [ ] **Track 7 — Delete the shell side.** For every fragment whose three conditions hold, remove the
       fragment; then remove `cli/packages/module-check/sh/` entirely, the `fragment-parity` gate
-      folder, all its entries and the completeness entry, and the pair table in the runner. Two things
+      folder, all its entries and the completeness entry, and the pair table in the runner. Three things
       Track 5 found that this track inherits: `scripts/check.sh` lives **inside** the directory being
       removed (the `scripts` symlink points there) and must be relocated rather than deleted with it;
-      and the CI offer in `plugin/skills/setup/SKILL.md:255-262` is the last surface copying fragments,
+      the CI offer in `plugin/skills/setup/SKILL.md:255-262` is the last surface copying fragments,
       with no replacement until the CLI is published — so publication is a precondition here, not a
-      separate wish. Record in this plan what the pairs were for. At the end the checks exist once.
+      separate wish; and **the bar is not met for all nine pairs** (measured below), so this track
+      retires per fragment, never in bulk. Record in this plan what the pairs were for. At the end the
+      checks exist once.
       Acceptance: `npm test` and `vibe-ops check --self-test` are green, `git grep -n fragment-parity`
       returns nothing outside `project/`, and reintroducing a defect each retired fragment used to catch
       still fails the run.
@@ -400,12 +402,32 @@ Run from the repository root:
   one that refuses.
   Date / Author: 2026-09-08 / Danilo Borges
 
+- Decision: the bar is read as a state, measured on demand — there is no waiting period, and Track 7
+  retires per fragment rather than in bulk, because the bar is currently met for eight of nine.
+  Rationale: Plan-022 exists precisely to abolish "once parity has been green *for long enough*", which
+  it calls "a deferral whose trigger cannot fire — a permanent state wearing the costume of a temporary
+  one"; its own Track 1 acceptance is that no document states the condition in terms of elapsed time. So
+  the question is answerable now, and the answer is not uniform. Measured 2026-09-08 via
+  `vibe-ops mirror --verbose`: conditions 2 (no divergence) and 3 (both sides fail the shared fixture,
+  Track 3's `ports` phase) hold for all nine. Condition 1 (a corpus wide enough to exercise the check)
+  holds for eight — `links` 83, `machine-paths` 83, `memory-slug` 32, `template-attribution` 12,
+  `skill-frontmatter` 11, `frontmatter` 2, `dogfooding-drift` 2, `budget` 1 — and **fails outright for
+  `bridge`, at zero examined**. Waiting cannot fix that one: `.claude/**`, its declared population, is
+  entirely covered by the ops's own `ignore`, so retiring `bridge` needs the population changed or an
+  explicit exemption, not more time. The three thin ones (`budget`, `frontmatter`, `dogfooding-drift`)
+  are a judgement this plan's own log already refuses to delegate.
+  Date / Author: 2026-09-08 / Danilo Borges
+
 - Decision: `runner-provenance` stays composed through Track 5 rather than retiring with the branches
   it guards.
   Rationale: it reports a copied-in snapshot silently outranking a live sibling checkout. Track 5
-  removes both branches from the *template*, but eight sibling repositories under this workspace root
-  still carry the old `_run.sh` — six of them already drifted off `RUNNER_IN_CHECKOUT` — so the gate
-  still has a live subject: the installed base. It retires in Track 7 with the rest of the apparatus.
+  removes both branches from the *template*, but the installed base still carries the old `_run.sh`, so
+  the gate still has a live subject. It retires in Track 7 with the rest of the apparatus.
+  Measured 2026-09-08 while checking that claim, and it corrects a comment this repository had been
+  carrying: the sibling branch does **not** resolve nothing. Every consumer under the authoring
+  workspace resolves it today, through two different spellings of the path, because `scripts/` here is a
+  symlink to `cli/packages/module-check/sh/` and both spellings land on it. None of them holds a
+  snapshot, so Track 7's deletion removes the only branch any of them has.
   Date / Author: 2026-09-08 / Danilo Borges
 
 ## Outcomes & Retrospective
