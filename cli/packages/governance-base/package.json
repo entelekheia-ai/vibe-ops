@@ -1,9 +1,14 @@
 {
   "name": "@entelekheia/governance-base",
-  "version": "0.0.1",
-  "description": "The reusable governance components: where a record type lives, its template, its next number \u2014 and the defineGovernance sugar a per-artifact package is built from",
+  "version": "0.1.0",
+  "description": "The reusable governance components: where a record type lives, its template, its next number — and the defineGovernance sugar a per-artifact package is built from",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/governance-base"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,7 +26,7 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.0.1"
+    "@entelekheia/vibe-ops-core": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

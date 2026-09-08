@@ -1,9 +1,15 @@
 {
   "name": "@entelekheia/vibe-ops-harness",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "description": "The CLI-internal harness module (no governance of its own): repo shape, promulgation, the applied-version comparison — and the BASE half of the ownership boundary",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/harness"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -22,13 +28,13 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-agents-md": "^0.0.1",
-    "@entelekheia/vibe-ops-core": "^0.0.1",
-    "@entelekheia/vibe-ops-gates": "^0.0.1",
-    "@entelekheia/vibe-ops-governance": "^0.0.1",
-    "@entelekheia/vibe-ops-module-check": "^0.0.1",
-    "@entelekheia/governance-base": "^0.0.1",
-    "@entelekheia/vibe-ops-for-vibe-ops": "^0.0.1"
+    "@entelekheia/vibe-ops-agents-md": "^0.1.0",
+    "@entelekheia/vibe-ops-core": "^0.1.0",
+    "@entelekheia/vibe-ops-gates": "^0.1.0",
+    "@entelekheia/vibe-ops-governance": "^0.1.0",
+    "@entelekheia/vibe-ops-module-check": "^0.1.0",
+    "@entelekheia/governance-base": "^0.1.0",
+    "@entelekheia/vibe-ops-for-vibe-ops": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

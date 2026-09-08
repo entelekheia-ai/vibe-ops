@@ -76,3 +76,63 @@ test("a declared ops that does not resolve is named, never quietly composed out 
   assert.match(named.evidence, /did not resolve/);
   assert.notEqual(result.code, 0, "an unresolvable declared ops must fail the run, not warn");
 });
+
+// THE SELF-TEST'S OWN BLIND SPOT. `config.ops` takes a package name OR a path to a repository's own
+// collection, and only the first was ever loaded as a module. A `.json` collection is not importable at
+// all without an import attribute, and a `.mjs` one default-exports the definition rather than the
+// plugin — so both answered "self-test could not run", which reads as a broken ops rather than as the
+// loader having no branch for the form. Found by eita, whose `.vibe-ops/ops.json` is exactly this shape.
+//
+// The fixture tree lives INSIDE this repository, not in the system temp directory: a gate imports
+// `defineGate` by package name, and a file under /tmp resolves no `node_modules` by walking up.
+test("an ops declared by path is self-tested like any other — both file forms, not only a package name", async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+  const nodePath = await import("node:path");
+  const dir = mkdtempSync(nodePath.join(repoRoot, "vibe-ops-ops-by-path-"));
+  const rel = (name: string) => `./${nodePath.basename(dir)}/${name}`;
+  writeFileSync(
+    nodePath.join(dir, "gate.mjs"),
+    `import { defineGate } from "@entelekheia/vibe-ops-core";
+export default defineGate(
+  { id: "path-declared", version: 1, summary: "every .txt is a finding, so the fixture cannot pass by accident",
+    defaultPaths: ["**/*.txt"] },
+  async ({ files }) => ({ findings: files.map((f) => ({ file: f, line: 1, evidence: "seen" })), examined: files.length }),
+);`,
+  );
+  const definition = {
+    id: "by-path",
+    version: "0.0.1",
+    summary: "declared by path, not by package name",
+    gates: [
+      {
+        gate: rel("gate.mjs"),
+        label: "path-declared",
+        paths: ["*.txt"],
+        fixture: { files: { "a.txt": "x\n" }, expect: ["path-declared"] },
+      },
+    ],
+  };
+  writeFileSync(nodePath.join(dir, "ops.json"), JSON.stringify(definition));
+  writeFileSync(nodePath.join(dir, "ops.mjs"), `export default ${JSON.stringify(definition)};`);
+
+  try {
+    for (const form of ["ops.json", "ops.mjs"]) {
+      const { config } = await loadConfig(repoRoot);
+      const { context } = await contextFor({
+        config: { ...config, ops: { "by-path": rel(form) } },
+        flags: { "self-test": true },
+      });
+      const result = await check.run(context);
+      const suites = (result.data as { suites?: readonly { id: string; output: string }[] }).suites ?? [];
+      const mine = suites.find((suite) => suite.id === "by-path");
+      assert.ok(mine !== undefined, `${form}: the ops was not self-tested at all`);
+      // The regression is the branch, so this asserts the collection was READ and COMPOSED — not that
+      // its gate passes. "could not run" is what both forms answered before; the count line is only
+      // reachable once the ops became a plugin and its fixtures were walked.
+      assert.doesNotMatch(mine.output, /could not run/, `${form}: the loader has no branch for this form`);
+      assert.match(mine.output, /1 of 1 gates carry a fixture/, `${form}: loaded, but no fixture was walked`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

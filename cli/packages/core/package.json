@@ -1,20 +1,38 @@
 {
   "name": "@entelekheia/vibe-ops-core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "The module contract, the vibeops.config.ts cascade, and the eita emission seam",
   "type": "module",
   "license": "Apache-2.0",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "files": ["dist", "queries"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/core"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "queries"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "dependencies": {
     "tree-sitter": "0.25.1",
     "@tree-sitter-grammars/tree-sitter-markdown": "0.3.2",
     "@tree-sitter-grammars/tree-sitter-yaml": "0.7.1"
   },
-  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
 }

@@ -8,7 +8,7 @@
 // sh/ ships in `files`, so the surviving fragments travel with an install and are resolved relative to
 // this module — never from PATH and never by searching upward for a checkout.
 
-import { defineModule, defineOps, effectiveOps, opsSpecifier, parseOpsDefinition, settingsFor } from "@entelekheia/vibe-ops-core";
+import { defineModule, defineOps, effectiveOps, loadOpsPlugin, opsSpecifier, parseOpsDefinition, settingsFor } from "@entelekheia/vibe-ops-core";
 import { PARITY_FIXTURE } from "./fixture.ts";
 import type { ModuleContext, ModulePlugin, ModuleResult, OpsFinding, OpsPopulation, OpsSkip } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
@@ -30,8 +30,8 @@ async function runOpsSelfTest(
 ): Promise<{ id: string; code: number; output: string }> {
   const lines: string[] = [];
   try {
-    const loaded = (await import(opsSpecifier(packageName, context.repoRoot))) as { default: ModulePlugin };
-    const result = await loaded.default.run({
+    const plugin = await loadOpsPlugin(opsSpecifier(packageName, context.repoRoot));
+    const result = await plugin.run({
       ...context,
       flags: { "self-test": true },
       log: (line: string) => lines.push(line),

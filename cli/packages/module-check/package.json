@@ -1,9 +1,15 @@
 {
   "name": "@entelekheia/vibe-ops-module-check",
-  "version": "0.0.1",
-  "description": "The governance gate as a vibe-ops module \u2014 budget, links, the rules bridge, licence texts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The governance gate as a vibe-ops module — budget, links, the rules bridge, licence texts",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/module-check"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -22,10 +28,10 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.0.1",
-    "@entelekheia/vibe-ops-governance": "^0.0.1",
-    "@entelekheia/vibe-ops-agents-md": "^0.0.1",
-    "@entelekheia/vibe-ops-for-vibe-ops": "^0.0.1"
+    "@entelekheia/vibe-ops-core": "^0.1.0",
+    "@entelekheia/vibe-ops-governance": "^0.1.0",
+    "@entelekheia/vibe-ops-agents-md": "^0.1.0",
+    "@entelekheia/vibe-ops-for-vibe-ops": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

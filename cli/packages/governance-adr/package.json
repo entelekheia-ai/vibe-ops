@@ -1,17 +1,42 @@
 {
   "name": "@entelekheia/governance-adr",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "description": "The adr governance: its type declaration, template, authoring rules and migration notes — one artifact, one package (ADR-0019)",
   "type": "module",
   "license": "Apache-2.0",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/governance-adr"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed — the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
-  "files": ["dist", "type.json", "templates", "migrations", "authoring.md", "ownership.json"],
+  "files": [
+    "dist",
+    "type.json",
+    "templates",
+    "migrations",
+    "authoring.md",
+    "ownership.json"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=22.18" },
-  "dependencies": { "@entelekheia/governance-base": "^0.0.1" },
-  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@entelekheia/governance-base": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
 }

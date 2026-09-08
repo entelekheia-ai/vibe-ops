@@ -20,8 +20,15 @@
 // a `module-`. Trying the legacy prefix first costs nothing once both fail: import() rejects fast on a
 // name that resolves to nothing installed.
 
-import { effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
+import { effectiveGovernanceBindings, setHostResolver } from "@entelekheia/vibe-ops-core";
 import type { ModulePlugin, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
+
+// Core loads gates, ops and governance packages by name on this CLI's behalf, and a bare specifier
+// resolves from the module that wrote it — core's own dist/, whose resolution only walks up. Where this
+// executable carries its own copies (a bundled install, a pnpm store, a consumer pinning two versions)
+// that is a different directory, and core reports the package as absent. Handing core this CLI's
+// resolver makes it look here first; the fallback to its own resolution is unchanged.
+setHostResolver((specifier) => import.meta.resolve(specifier));
 
 export const BUILTIN_PREFIX = "@entelekheia/vibe-ops-module-";
 export const OPS_PREFIX = "@entelekheia/vibe-ops-";

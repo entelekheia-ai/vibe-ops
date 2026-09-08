@@ -1,21 +1,37 @@
 {
   "name": "@entelekheia/vibe-ops-gates",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "description": "Detectors for the agents-md ops, ported from cli/packages/module-check/sh/checks/ — TypeScript, one folder per gate",
   "type": "module",
   "license": "Apache-2.0",
-  "exports": {
-    "./*": { "types": "./dist/*/index.d.ts", "default": "./dist/*/index.js" }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/gates"
   },
-  "files": ["dist"],
+  "exports": {
+    "./*": {
+      "types": "./dist/*/index.d.ts",
+      "default": "./dist/*/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=22.18" },
-  "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.0.1",
-    "@entelekheia/governance-base": "^0.0.1"
+  "engines": {
+    "node": ">=22.18"
   },
-  "devDependencies": { "@types/node": "^26.1.1", "typescript": "^7.0.2" }
+  "dependencies": {
+    "@entelekheia/vibe-ops-core": "^0.1.0",
+    "@entelekheia/governance-base": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
 }

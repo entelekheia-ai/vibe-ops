@@ -10,6 +10,7 @@
 // of observation is recombinable only if it holds no opinion about what it is pointed at.
 
 import path from "node:path";
+import { resolveFromHost } from "./host-resolver.ts";
 import { pathToFileURL } from "node:url";
 import type { DocumentStore } from "./document.ts";
 
@@ -195,7 +196,7 @@ export async function loadGate(name: string, repoRoot?: string): Promise<GatePlu
   const specifier = gateSpecifierFor(name, repoRoot);
   let imported: { default?: GatePlugin };
   try {
-    imported = (await import(specifier)) as { default?: GatePlugin };
+    imported = (await import(resolveFromHost(specifier))) as { default?: GatePlugin };
   } catch (cause) {
     throw new Error(
       `cannot load gate "${name}" (resolved to ${specifier}). A built-in gate is a folder under ` +

@@ -1,16 +1,22 @@
 {
   "name": "@entelekheia/governance-plan",
-  "version": "0.0.1",
-  "description": "The plan governance: its type declaration, template, authoring rules and migration notes \u2014 one artifact, one package (ADR-0019)",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The plan governance: its type declaration, template, authoring rules and migration notes — one artifact, one package (ADR-0019)",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/governance-plan"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
   },
-  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed \u2014 the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
+  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed — the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
   "files": [
     "dist",
     "type.json",
@@ -27,8 +33,8 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/governance-base": "^0.0.1",
-    "@entelekheia/vibe-ops-core": "^0.0.1"
+    "@entelekheia/governance-base": "^0.1.0",
+    "@entelekheia/vibe-ops-core": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

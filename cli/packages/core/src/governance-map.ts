@@ -17,6 +17,7 @@
 // layering (core below, governances on top) holds at build time.
 
 import path from "node:path";
+import { resolveFromHost } from "./host-resolver.ts";
 import type { VibeOpsConfig } from "./config.ts";
 
 /** The shipped bindings — a product statement, not discovery. A new DEFAULT type is an edit here. */
@@ -104,7 +105,7 @@ export async function activateGovernance(
   if (activationCache.has(binding.packageName)) return activationCache.get(binding.packageName);
   let activated: ActivatedGovernance | undefined;
   try {
-    const imported = (await import(binding.packageName)) as { default?: unknown };
+    const imported = (await import(resolveFromHost(binding.packageName))) as { default?: unknown };
     activated = isActivated(imported.default) ? imported.default : undefined;
   } catch {
     activated = undefined;

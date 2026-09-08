@@ -17,7 +17,10 @@
     "clean": "rm -rf cli/packages/*/dist cli/packages/*/*.tsbuildinfo",
     "pretest": "npm run clean && npm run build",
     "test": "node --test \"cli/packages/*/test/*.test.ts\"",
-    "check": "sh cli/packages/module-check/sh/check.sh"
+    "check": "sh cli/packages/module-check/sh/check.sh",
+    "_comment_release": "`version` runs on the release workflow after it consumes the changesets: `changeset version` rewrites every manifest, and the lockfile has to follow or the next `npm ci` installs the previous versions. `release` publishes in dependency order — plain `changeset publish` is concurrent and order-blind, which would leave a dependent on the registry un-installable until its dependency landed.",
+    "version": "changeset version && npm install --package-lock-only",
+    "release": "node cli/scripts/publish-in-order.mjs"
   },
   "engines": {
     "node": ">=22.18"

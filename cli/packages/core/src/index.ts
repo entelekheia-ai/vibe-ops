@@ -19,8 +19,10 @@ export type {
 } from "./config.ts";
 export { activateGovernance, activatedTemplatePaths, DEFAULT_GOVERNANCE_BINDINGS, effectiveGovernanceBindings } from "./governance-map.ts";
 export type { ActivatedGovernance, GovernanceBinding } from "./governance-map.ts";
-export { DEFAULT_OPS, effectiveOps, opsSpecifier } from "./ops-map.ts";
+export { DEFAULT_OPS, effectiveOps, opsSpecifier, loadOpsPlugin } from "./ops-map.ts";
 export { createEmitter, UndeclaredObservationError } from "./emit.ts";
+export { setHostResolver, resolveFromHost } from "./host-resolver.ts";
+export type { HostResolver } from "./host-resolver.ts";
 export type { Emitter, EmitterOptions, Observation } from "./emit.ts";
 export { defineGate, gateSpecifierFor, loadGate, GATE_PREFIX } from "./gate.ts";
 export type { GateDefinition, GateFinding, GateFix, GateOutcome, GatePlugin, GateRunContext } from "./gate.ts";

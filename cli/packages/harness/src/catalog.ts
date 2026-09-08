@@ -8,7 +8,7 @@
 // recommendation this verb exists to prevent ("build something already written and merely unwired"), so
 // `composed` here is the union of both readings, not `check --list` alone.
 
-import { effectiveOps, opsSpecifier } from "@entelekheia/vibe-ops-core";
+import { effectiveOps, loadOpsPlugin, opsSpecifier } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, ModulePlugin } from "@entelekheia/vibe-ops-core";
 import { readdirSync } from "node:fs";
 import path from "node:path";
@@ -50,8 +50,16 @@ async function shellComposed(context: ModuleContext): Promise<ShellComposed> {
 async function gatesComposed(context: ModuleContext): Promise<ReadonlySet<string>> {
   const ids = new Set<string>();
   for (const specifier of Object.values(effectiveOps(context.config))) {
-    const ops = await loadPlugin(opsSpecifier(specifier, context.repoRoot));
-    if (ops === undefined) continue; // an ops that fails to load composes nothing from here — fail open, not a guess
+    // loadOpsPlugin, not loadPlugin: an ops declared by PATH is a gate collection rather than a module,
+    // and importing it as one throws. That threw here too, into a catch that skipped the ops — so its
+    // gates were reported as available-but-uncomposed while the gate ran them on every commit, which is
+    // worse than the same bug in `check --self-test`, where at least it said so.
+    let ops;
+    try {
+      ops = await loadOpsPlugin(opsSpecifier(specifier, context.repoRoot));
+    } catch {
+      continue; // genuinely unresolvable: composes nothing from here — fail open, not a guess
+    }
     const result = await ops.run({ ...context, command: undefined, flags: { list: true }, log: () => {} });
     const gates = (result.data as { gates?: readonly { gate: string } [] } | undefined)?.gates ?? [];
     for (const g of gates) ids.add(g.gate);

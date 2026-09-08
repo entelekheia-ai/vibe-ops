@@ -1,9 +1,14 @@
 {
   "name": "@entelekheia/vibe-ops-cli",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Run vibe-ops modules from a terminal or expose them as stateless MCP tools",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/cli"
+  },
   "bin": {
     "vibe-ops": "./dist/bin.js"
   },
@@ -18,25 +23,60 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && chmod +x dist/bin.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepack": "node ../../scripts/bundle-internals.mjs",
+    "postpack": "node ../../scripts/bundle-internals.mjs --clean"
   },
   "engines": {
     "node": ">=22.18"
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
-    "@entelekheia/governance-base": "^0.0.1",
-    "@entelekheia/governance-plan": "^0.0.1",
-    "@entelekheia/vibe-ops-agents-md": "^0.0.1",
-    "@entelekheia/vibe-ops-core": "^0.0.1",
-    "@entelekheia/vibe-ops-harness": "^0.0.1",
-    "@entelekheia/vibe-ops-module-check": "^0.0.1",
-    "@entelekheia/vibe-ops-module-records": "^0.0.1",
+    "@entelekheia/governance-adr": "^0.1.0",
+    "@entelekheia/governance-base": "^0.1.0",
+    "@entelekheia/governance-classification": "^0.1.0",
+    "@entelekheia/governance-license": "^0.1.0",
+    "@entelekheia/governance-log": "^0.1.0",
+    "@entelekheia/governance-plan": "^0.1.0",
+    "@entelekheia/governance-rfc": "^0.1.0",
+    "@entelekheia/governance-task": "^0.1.0",
+    "@entelekheia/vibe-ops-agents-md": "^0.1.0",
+    "@entelekheia/vibe-ops-core": "^0.1.0",
+    "@entelekheia/vibe-ops-exposure": "^0.1.0",
+    "@entelekheia/vibe-ops-for-vibe-ops": "^0.1.0",
+    "@entelekheia/vibe-ops-gates": "^0.1.0",
+    "@entelekheia/vibe-ops-governance": "^0.1.0",
+    "@entelekheia/vibe-ops-harness": "^0.1.0",
+    "@entelekheia/vibe-ops-mirror": "^0.1.0",
+    "@entelekheia/vibe-ops-module-check": "^0.1.0",
+    "@entelekheia/vibe-ops-module-config": "^0.1.0",
+    "@entelekheia/vibe-ops-module-ownership": "^0.1.0",
+    "@entelekheia/vibe-ops-module-records": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "typescript": "^7.0.2"
-  }
+  },
+  "bundleDependencies": [
+    "@entelekheia/governance-adr",
+    "@entelekheia/governance-classification",
+    "@entelekheia/governance-license",
+    "@entelekheia/governance-log",
+    "@entelekheia/governance-plan",
+    "@entelekheia/governance-rfc",
+    "@entelekheia/governance-task",
+    "@entelekheia/vibe-ops-agents-md",
+    "@entelekheia/vibe-ops-exposure",
+    "@entelekheia/vibe-ops-for-vibe-ops",
+    "@entelekheia/vibe-ops-gates",
+    "@entelekheia/vibe-ops-governance",
+    "@entelekheia/vibe-ops-harness",
+    "@entelekheia/vibe-ops-mirror",
+    "@entelekheia/vibe-ops-module-check",
+    "@entelekheia/vibe-ops-module-config",
+    "@entelekheia/vibe-ops-module-ownership",
+    "@entelekheia/vibe-ops-module-records"
+  ]
 }
