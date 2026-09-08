@@ -264,6 +264,12 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   Both must pass before you stage them — a CI job added red is a broken window on day one. Declining is a
   normal outcome and writes nothing; the skill still works without it, because the skills that change
   instruction surfaces run the check from the plugin.
+
+  **This is the one surface still copying fragments, and it is deliberate.** The commit gate moved to
+  `vibe-ops check` (Plan-038 Track 5), but CI cannot follow: the CLI is not published to a registry, and
+  a CI runner has neither a vibe-ops checkout to link from nor an installed plugin to reach. Until it is
+  publishable, a snapshot is the only shape CI can take, and stating that is better than offering a job
+  that cannot start.
 - Print next steps: review `AGENTS.md`, `npm install && npm run typecheck`, `gh repo create` when ready, and
   "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
   `/vibe-ops:close-task`, not a plain delete."
@@ -323,7 +329,7 @@ and template belong to that skill, and reproducing them by hand drops whatever i
 `TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/harness`.
 
 - `TPL/checks/_run.sh` → `scripts/checks/_run.sh`. Composition plus the integrity assertion, shared by
-  every caller. **This is the load-bearing file**: without it, a bare run of the runner composes only the
+  every caller. **This is the load-bearing file**: without it, a bare `vibe-ops check` composes only the
   built-ins, omits every fragment the repository owns, and still reports success.
 - `TPL/check.sh` → `scripts/check.sh`, `chmod +x`. The manual entrypoint, so the correct invocation has a
   name shorter than the mistake.
@@ -331,33 +337,25 @@ and template belong to that skill, and reproducing them by hand drops whatever i
   `git config core.hooksPath .githooks`, which is local config that no clone inherits.
 - `scripts/checks/` — create it. It holds this repository's own fragments and starts empty.
 
-**The runner has to be reachable from a hook, and a hook has no `CLAUDE_PLUGIN_ROOT`.** So a repository
-that wants the gate needs another way to reach it. `_run.sh`'s `resolve_runner()` tries three sources in
-order — a snapshot copied into `$TARGET`, a sibling `vibe-ops` checkout, then `${CLAUDE_PLUGIN_ROOT}` —
-and **which one to install is a real choice, not always the snapshot**:
+**The gate is `vibe-ops` on `PATH`, and nothing is copied into `$TARGET`.** `_run.sh` runs
+`vibe-ops check`; there is no snapshot to take, no sibling checkout to resolve, and nothing that goes
+stale — which is what three resolution branches and a copied-in runner existed to manage.
 
-| `$TARGET` is… | Install | Because |
-|---|---|---|
-| a repository that will be cloned or used on its own (public, or leaves this workspace) | the snapshot below | the sibling checkout will not exist once the repository travels alone |
-| inside a workspace that keeps several repositories beside one `vibe-ops` checkout, and stays there | **nothing** — the sibling branch in `_run.sh` already finds `$TARGET/../vibe-ops` | a copy here is a stale duplicate the day `vibe-ops` gains a check, and one was found doing exactly that, dated to this repository's first commit, in a real workspace (Plan-020 Track 3) |
+State the requirement out loud, because it is the one thing that can leave a repository without a gate:
 
-The snapshot, when it is the right call:
+> The commit gate runs the `vibe-ops` CLI. A machine without it on `PATH` gets a refusal, not a silent
+> pass — including a contributor who clones this repository on its own. Install it with
+> `npm link -w @entelekheia/vibe-ops-cli` from a vibe-ops checkout.
 
-```bash
-mkdir -p "$TARGET/scripts"
-cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" "$TARGET/scripts/"  # plugin-root-paths: allow
-cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" "$TARGET/scripts/"    # the built-in fragments, plugin-root-paths: allow
-chmod +x "$TARGET/scripts/check-agents-md.sh"
-```
-
-Never run it out of habit for a repository the sibling branch already reaches — verify first:
-`[ -x "$TARGET/../vibe-ops/scripts/check-agents-md.sh" ]`. It does not update itself either way; refreshing
-a snapshot already taken is a deliberate re-copy, same caveat Step 7 states for the CI offer.
+This is the same precondition the plugin already carries everywhere else — its MCP server is started as
+`vibe-ops mcp` from `PATH`, and its skill-scoped hooks name the same binary — so a machine that can run
+this skill can already run the gate. Verify it anyway rather than assuming: `command -v vibe-ops`.
 
 ### H2 — Prove it before handing it over
 
 ```bash
-"$TARGET/scripts/check-agents-md.sh" --self-test    # the runner still fails a broken repository
+command -v vibe-ops                                 # the gate's only requirement, checked first
+vibe-ops check --self-test                          # every detector still fails a broken fixture
 "$TARGET/scripts/check.sh"                          # this repository is green through the real path
 ```
 
@@ -392,16 +390,17 @@ fails are one act with its own skill; reproducing it inline is how the fixture r
 
 ### H4 — Report
 
-Say which of the four the repository now has — fragment directory, manual entrypoint, commit gate,
-runner snapshot — and which it declined. Name `core.hooksPath` explicitly if the gate was installed: it
-is local config, it does not travel with a clone, and a tracked hook nobody wired is silently absent.
+Say which of the three the repository now has — fragment directory, manual entrypoint, commit gate — and
+which it declined. Name `core.hooksPath` explicitly if the gate was installed: it is local config, it
+does not travel with a clone, and a tracked hook nobody wired is silently absent. Name the `vibe-ops`
+requirement too: it is the one thing that can leave a fully-installed harness unable to run.
 
 ## Checklist — mode `harness`
 
 - [ ] The mode was chosen by the user, not inferred
 - [ ] `scripts/checks/_run.sh` present; `scripts/check.sh` present and executable
-- [ ] Runner snapshot copied in **if** a hook was installed, and its snapshot nature stated out loud
-- [ ] `--self-test` passes and `check.sh` is green **before** hand-off
+- [ ] `command -v vibe-ops` resolves, and the requirement was stated out loud in the report
+- [ ] `vibe-ops check --self-test` passes and `check.sh` is green **before** hand-off
 - [ ] The composition assertion was proven by moving `scripts/checks/` away and observing a failure —
       not by reading `_run.sh`
 - [ ] If the gate was installed: `core.hooksPath` set, and named in the report as local-only config
@@ -422,7 +421,7 @@ is local config, it does not travel with a clone, and a tracked hook nobody wire
 - [ ] Every non-default `types.<name>` from the survey is bound (`create` written to the managed file, `adopt`
       reported untouched); `config list --show-origin` confirms the origin; `vibeops.config.json` is staged
 - [ ] `license-setup` completed (real `LICENSE` text, not the plugin's own; `AGENTS.md` license-rules section present)
-- [ ] `check-agents-md.sh` run against the target after staging, and green
+- [ ] `vibe-ops check "$TARGET"` run after staging, and green
 - [ ] The norm was promulgated and merged: `vibeops.config.json` carries `harness.applied` for every
       template type, `harness.boundary`, and `harness.agreed`; `harness status` reports nothing behind
 - [ ] The CI copy was **offered once**; if accepted, both CI steps pass locally before staging — if

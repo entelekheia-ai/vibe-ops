@@ -2,9 +2,9 @@
 # pre-commit — run the governance gate before a commit is allowed to land.
 #
 # Wiring only, no check logic: the checks are fragments under scripts/checks/, composed with the
-# runner's built-ins by scripts/checks/_run.sh. To run the identical thing by hand without committing,
-# use scripts/check.sh — never the runner directly (see _run.sh for why a bare invocation is a silent
-# trap).
+# built-ins by scripts/checks/_run.sh, which runs `vibe-ops check`. To run the identical thing by hand
+# without committing, use scripts/check.sh — never `vibe-ops check` directly (see _run.sh for why a
+# bare invocation is a silent trap, and for the PATH requirement).
 #
 # `set -e` is deliberately absent: the runner's exit code is captured, never propagated by accident.
 #

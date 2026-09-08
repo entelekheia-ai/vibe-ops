@@ -2,9 +2,11 @@
 # pre-commit — run this repository's own governance gate before a commit is allowed to land.
 #
 # Bespoke, not the harness template every *consumer* repository under this workspace root gets: this
-# repository IS the built-ins, so it calls cli/packages/module-check/sh/check-agents-md.sh directly ("."), with no
-# VIBE_OPS_CHECK_DIRS to compose and no runner to resolve — it already has the one it ships. Plan-020
-# Track 3.
+# repository IS the built-ins, so it runs `vibe-ops check` with no VIBE_OPS_CHECK_DIRS to compose —
+# there is no second fragment directory to add. Plan-020 Track 3.
+#
+# It stopped invoking check-agents-md.sh by path in Plan-038 Track 5. `vibe-ops` resolves from PATH,
+# and a machine without it gets the refusal below rather than a commit that was never checked.
 #
 # `set -e` deliberately absent: the runner's exit code is captured, never propagated by accident.
 #
@@ -17,20 +19,29 @@ set -uo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
 
+if ! command -v vibe-ops >/dev/null 2>&1; then
+  echo "pre-commit: no \`vibe-ops\` on PATH — the gate cannot run. Commit refused." >&2
+  echo "  npm link -w @entelekheia/vibe-ops-cli   # from this checkout" >&2
+  exit 2
+fi
+
 GIT_DIR=$(git rev-parse --git-dir)
 export GATE_ARTIFACT_DIR="$GIT_DIR/gate-artifacts"
 mkdir -p "$GATE_ARTIFACT_DIR"
 
-# This repository's own fragments' self-test, when and only when a fragment changed — the same
-# discipline every consumer's gate applies to its own extra fragments.
+# The self-test, when and only when a fragment changed — the same discipline every consumer's gate
+# applies to its own extra fragments. Since Plan-038 this is `vibe-ops check --self-test`, which is
+# strictly more than the fragments' own: it also chains each ops's fixture and the `ports` phase that
+# makes a fragment and its port fail on ONE shared input. More expensive, on the one trigger that had
+# already accepted the cost of a self-test.
 if git diff --cached --name-only --diff-filter=ACMR | grep -q '^cli/packages/module-check/sh/checks/'; then
-  if ! "$ROOT/cli/packages/module-check/sh/check-agents-md.sh" --self-test; then
+  if ! vibe-ops check --self-test; then
     echo "pre-commit: the built-in checks' self-test failed — commit refused." >&2
     exit 1
   fi
 fi
 
-OUT=$("$ROOT/cli/packages/module-check/sh/check-agents-md.sh" "$ROOT" 2>&1)
+OUT=$(vibe-ops check --verbose "$ROOT" 2>&1)
 RC=$?
 
 if [ "${GATE_VERBOSE:-}" = "1" ]; then

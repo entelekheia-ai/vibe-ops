@@ -111,9 +111,15 @@ It runs from the plugin, reads your repository and **writes nothing into it**, s
 to keep up to date. If you want the same check on every push, `setup` offers to copy it in as a CI
 job, and tells you that copy is a snapshot.
 
+The same check can guard your commits: `setup harness` installs a `pre-commit` that runs `vibe-ops check`.
+**That gate needs the `vibe-ops` CLI on your `PATH`** — it is what composes the checks, so a machine
+without it gets a refusal rather than a commit that was never checked. Nothing is copied into your
+repository to make this work, and nothing goes stale.
+
 ## Requirements
 
-Claude Code with plugin support. Scaffolded repos default to Node ≥ 22 and TypeScript (ESM) — adjust to
+Claude Code with plugin support, and the `vibe-ops` CLI on `PATH` — the plugin's MCP server, its hooks and
+the commit gate all run it by name. Scaffolded repos default to Node ≥ 22 and TypeScript (ESM) — adjust to
 taste.
 
 ## License

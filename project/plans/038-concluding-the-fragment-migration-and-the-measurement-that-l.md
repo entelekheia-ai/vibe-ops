@@ -198,20 +198,39 @@ produce silent agreement — that is the exact failure the gate's own header was
       been silently printing `ok 0 examined, 2 ignored` the whole time — it now reports `SKIP` naming
       why, and `ops-mirror/test/ops.test.ts` asserts exactly that instead of `(compared `.
 
-- [ ] **Track 5 — The consumer contract moves to Node.** `plugin/skills/setup/templates/harness/check.sh`
-      and the target's `scripts/check.sh` stop composing fragments and call `vibe-ops check`;
-      `plugin/skills/setup/SKILL.md:349` stops copying `sh/checks/` into a target. Retire the
-      "Node-free and standalone" claim in `cli/AGENTS.md` and state the new requirement in
-      `README.md` and the setup skill. At the end a consumer reads the requirement before hitting it.
-      Acceptance: a fresh `setup harness` into a scratch repository produces a working pre-commit that
-      never references a fragment.
+- [x] **Track 5 — The consumer contract moves to Node.** Every gate now runs `vibe-ops check`.
+      `_run.sh`'s `resolve_runner()` — snapshot, sibling checkout, `CLAUDE_PLUGIN_ROOT` — is gone, and
+      with it everything copied into a target: the binary resolves from `PATH` and from nowhere else,
+      refusing with the install recipe when absent. **A third caller turned out to be in scope**: this
+      repository's own `.githooks/pre-commit` and `scripts/check.sh` (a symlink into
+      `cli/packages/module-check/sh/`) named the runner by path too, and Goal 4 names `scripts/check.sh`
+      explicitly. `setup`'s H1 lost the snapshot block, `cli/AGENTS.md` retired "Node-free and
+      standalone", and `README.md` states the requirement in `Requirements`. Acceptance proved both
+      ways: a scratch repository scaffolded from the templates runs eighteen checks (seventeen built-in
+      plus its own fragment, so `VIBE_OPS_CHECK_DIRS` still reaches through the CLI) and commits through
+      the real `pre-commit`; with `vibe-ops` off `PATH` both gates refuse with exit 2 naming the recipe,
+      rather than passing.
 
-- [ ] **Track 6 — Delete the shell side.** For every fragment whose three conditions hold, remove the
+- [ ] **Track 6 — The verb becomes the composition.** `vibe-ops check` is still only the shell runner
+      (`module-check/src/index.ts:283` spawns it; the ops run only under `--self-test`), so Track 5 moved
+      who composes without changing what runs. This track makes the verb compose the ops, which is what
+      every consumer's gate now points at — and it owns the question Track 5 deferred: what replaces a
+      target's own `scripts/checks/` fragments, given that `ops-mirror` and `ops-for-vibe-ops` are
+      meaningless in a repository holding no vibe-ops checkout. Acceptance: `vibe-ops check` in a
+      repository that installs no ops package still says what it did and did not read, rather than
+      reporting a clean sweep over nothing.
+
+- [ ] **Track 7 — Delete the shell side.** For every fragment whose three conditions hold, remove the
       fragment; then remove `cli/packages/module-check/sh/` entirely, the `fragment-parity` gate
-      folder, all its entries and the completeness entry, and the pair table in the runner. Record in
-      this plan what the pairs were for. At the end the checks exist once. Acceptance: `npm test` and
-      `vibe-ops check --self-test` are green, `git grep -n fragment-parity` returns nothing outside
-      `project/`, and reintroducing a defect each retired fragment used to catch still fails the run.
+      folder, all its entries and the completeness entry, and the pair table in the runner. Two things
+      Track 5 found that this track inherits: `scripts/check.sh` lives **inside** the directory being
+      removed (the `scripts` symlink points there) and must be relocated rather than deleted with it;
+      and the CI offer in `plugin/skills/setup/SKILL.md:255-262` is the last surface copying fragments,
+      with no replacement until the CLI is published — so publication is a precondition here, not a
+      separate wish. Record in this plan what the pairs were for. At the end the checks exist once.
+      Acceptance: `npm test` and `vibe-ops check --self-test` are green, `git grep -n fragment-parity`
+      returns nothing outside `project/`, and reintroducing a defect each retired fragment used to catch
+      still fails the run.
 
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, and the check
       for whether Plan-022 is now fully discharged. The plan file itself is kept.
@@ -362,7 +381,41 @@ Run from the repository root:
   out of its `(compared ` loop into a dedicated `SKIP` assertion.
   Date / Author: 2026-09-07 / Danilo Borges
 
+- Decision: the gate resolves `vibe-ops` from `PATH` and from nowhere else — no snapshot, no sibling
+  checkout, no `CLAUDE_PLUGIN_ROOT`, no npm dependency.
+  Rationale: the CLI is unpublished (`npm view @entelekheia/vibe-ops-cli` → E404), so a target cannot
+  declare a dependency on it and `npx` cannot fetch it; `PATH` is the only reachable source. It is also
+  not a new burden — the plugin already starts its MCP server as `vibe-ops mcp` from `PATH` and its
+  skill-scoped hooks name the same binary, so a machine that can run `setup` can already run the gate.
+  The three-branch resolution existed because the runner was a standalone shell script needing no
+  install; the fragments were the only reason that was possible.
+  Date / Author: 2026-09-08 / Danilo Borges
+
+- Decision: a repository cloned alone, by someone without the CLI, now has no gate — accepted, and
+  written where a consumer reads it rather than left to be discovered.
+  Rationale: the snapshot branch's entire purpose was surviving that clone, so removing it spends
+  exactly that. The alternative is keeping a second implementation of every check alive in shell
+  forever, which is what this plan exists to end. The refusal names the install recipe and says there is
+  deliberately no fallback, because a gate that passes silently for want of its checker is worse than
+  one that refuses.
+  Date / Author: 2026-09-08 / Danilo Borges
+
+- Decision: `runner-provenance` stays composed through Track 5 rather than retiring with the branches
+  it guards.
+  Rationale: it reports a copied-in snapshot silently outranking a live sibling checkout. Track 5
+  removes both branches from the *template*, but eight sibling repositories under this workspace root
+  still carry the old `_run.sh` — six of them already drifted off `RUNNER_IN_CHECKOUT` — so the gate
+  still has a live subject: the installed base. It retires in Track 7 with the rest of the apparatus.
+  Date / Author: 2026-09-08 / Danilo Borges
+
 ## Outcomes & Retrospective
+
+Tracks 1–5 are closed. Track 5 moved every gate under this workspace root — the shipped template and
+this repository's own — onto `vibe-ops check`, and cost the property that made a copied-in snapshot
+worth having: a repository cloned alone by someone without the CLI now gets a refusal rather than a
+check. That is the trade this plan set out to make, stated where a consumer reads it rather than
+discovered on a broken pre-commit. It also split what was one deletion track into two, because
+`vibe-ops check` is still the shell runner and every consumer now points at it.
 
 Tracks 1–4 are closed. `npm test` (643/643) and `npm run typecheck` are green after a from-scratch
 build. All nine comparable fragments now have a live `fragment-parity` entry; the other eight are
