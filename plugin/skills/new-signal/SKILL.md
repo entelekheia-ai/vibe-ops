@@ -73,10 +73,9 @@ files:
 export default { ops: { local: "./.vibe-ops/ops.json" } };
 ```
 
-`vibe-ops check` then composes it beside the defaults and reports it in the same line. Verified end to
-end on 2026-09-08 in a scratch repository with nothing installed but the CLI: the entry fired
-(`FAIL [todo-left] notes.md:3`). Steps 1–3 and 5–8 all apply unchanged; Step 4 is the entry above rather
-than a new file.
+`vibe-ops check` composes it beside the defaults and reports it in the same `N checks, M failed` line.
+Nothing needs installing beyond the CLI on `PATH`. Steps 1–3 and 5–8 apply unchanged; Step 4 is the entry
+above rather than a new file.
 
 ### A local gate: one file, no dependencies
 
@@ -109,8 +108,7 @@ export default {
   "gates": [ { "gate": "./.vibe-ops/no-shouting.mjs", "label": "no-shouting", "paths": ["**/*.md"] } ] }
 ```
 
-Verified end to end on 2026-09-08 in a scratch repository: `FAIL [shouting-heading] notes.md:3`, composed
-into the same `N checks, M failed` line as the built-ins.
+The finding lands in the same `N checks, M failed` line as the built-ins.
 
 `definition.version` is required and is an integer, for the same reason it is on a shipped gate: two
 readings filed under one rule are comparable only while the detector between them has not moved.
@@ -119,9 +117,9 @@ readings filed under one rule are comparable only while the detector between the
 
 **Writing the gate in TypeScript against core's types.** `import { defineGate } from
 "@entelekheia/vibe-ops-core"` resolves that bare specifier from the importing file, and the packages are
-**not published** — so outside this checkout there is nothing to resolve and no way to install it
-(measured 2026-09-08; `npm link` does not close it either, only the CLI is linked globally). Write the
-plain-JavaScript form above instead; it is not a downgrade, it is the same object without the compile-time
+**not published** — so outside this checkout there is nothing to resolve and no way to install it, and
+`npm link` does not close it either: only the CLI is linked globally. Write the plain-JavaScript form
+above instead; it is not a downgrade, it is the same object without the compile-time
 check. A gate that belongs to every repository is the other case, and it belongs in this checkout anyway.
 
 ---
