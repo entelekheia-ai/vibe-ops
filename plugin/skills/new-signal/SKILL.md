@@ -35,25 +35,58 @@ ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # a gates t
 vibe-ops config get ops 2>/dev/null                                  # ops this repository declares
 ```
 
-| What you found | Where the gate goes |
-|---|---|
-| a `packages/gates/` tree **and** an ops package to compose it into | that tree, and one entry in the ops that owns the population |
-| neither, but `vibe-ops` runs here | an ops of the repository's own, declared in `config.ops` — **read the blocker below first** |
-| `vibe-ops` does not run here | stop; run `/vibe-ops:setup harness` first |
+**The question that decides everything after is not "which repository is this" — it is whether the
+detection you need already exists as a gate.**
 
-### The blocker, stated before you spend an hour on it
+| What you need | Where it goes | Works today? |
+|---|---|---|
+| an existing gate (`classification`, `mirror`, `markdown-link`, `budget`, …) over a population of yours | one entry in an ops — the repository's own, declared in `config.ops` | **yes, anywhere** |
+| a **new** gate, because nothing detects this shape yet | `packages/gates/src/<id>/index.ts`, composed by an ops | only inside the vibe-ops checkout — see below |
 
-**A repository that is not the vibe-ops checkout itself cannot author a gate today.** A gate file must
-`import { defineGate, defineOps } from "@entelekheia/vibe-ops-core"`, Node resolves that bare specifier
-from the importing file, and those packages are **not published** — so a consumer repository has nothing
-to resolve and no way to install it. Measured 2026-09-08 against a scratch repository: `config.ops`
-accepts the path and reports `Cannot find package '@entelekheia/vibe-ops-core'`, loudly and by name.
-`npm link` does not close it either; only the CLI is linked globally.
+### Composing an existing gate: a local `ops.json`, and nothing else
 
-So, honestly: **inside the vibe-ops workspace this procedure works end to end. Outside it, stop at Step 3
-and write the guide alone**, saying that the guard waits on publication. Do not hand someone a gate file
-that cannot load — a detector that fails to import is indistinguishable, in a busy log, from one that
-found nothing.
+An ops collection is a **JSON file**, and the gates it names resolve out of the installed CLI's own core
+— so a repository composes detectors of its own with no import, no dependency and no publication. Two
+files:
+
+```jsonc
+// ops/local.ops.json — this repository's own composition
+{
+  "id": "local",
+  "version": "0.0.1",
+  "summary": "this repository's own detectors",
+  "gates": [
+    { "gate": "classification", "label": "no-todo", "paths": ["**/*.md"],
+      "options": { "level": "internal", "rule": "todo-left",
+                   "subject": "an unfinished note left in a committed document",
+                   "forbid": ["TODO"] } }
+  ]
+}
+```
+
+```ts
+// vibeops.config.ts — a path resolves against the repository root; a bare name resolves as a package
+export default { ops: { local: "./ops/local.ops.json" } };
+```
+
+`vibe-ops check` then composes it beside the defaults and reports it in the same line. Verified end to
+end on 2026-09-08 in a scratch repository with nothing installed but the CLI: the entry fired
+(`FAIL [todo-left] notes.md:3`). Steps 1–3 and 5–8 all apply unchanged; Step 4 is the entry above rather
+than a new file.
+
+### The blocker, and it is narrower than it looks
+
+**Writing a NEW gate outside the vibe-ops checkout does not work today.** A gate file must
+`import { defineGate } from "@entelekheia/vibe-ops-core"`, Node resolves that bare specifier from the
+importing file, and the packages are **not published** — so a consumer repository has nothing to resolve
+and no way to install it. Measured 2026-09-08: `config.ops` accepts the path and reports
+`Cannot find package '@entelekheia/vibe-ops-core'`, loudly and by name. `npm link` does not close it;
+only the CLI is linked globally.
+
+So when Step 2 says the shape needs a detector that does not exist yet, and you are outside this
+checkout: **write the guide, compose the closest existing gate if one gets part of the way, and say which
+part waits on publication.** Do not hand someone a gate file that cannot load — a detector that fails to
+import is indistinguishable, in a busy log, from one that found nothing.
 
 ---
 
@@ -126,9 +159,9 @@ Three properties are where a first gate goes wrong:
   documentation.
 
 Then compose it: one entry in the ops that owns this population, `{ gate: "<signal-id>", paths: [...] }`.
-**A gate nothing composes is a file.** If the repository has no ops of its own, the entry goes in one it
-declares in `config.ops` — a path there resolves against the repository root, and a name resolves as a
-package.
+**A gate nothing composes is a file.** If the repository has no ops of its own, the entry goes in the
+local `ops.json` from Step 0 — `config.ops` resolves a path against the repository root and a bare name
+as a package.
 
 Three rules with teeth:
 
@@ -244,8 +277,8 @@ is the failure this whole procedure is against.
 
 ## Checklist
 
-- [ ] Step 0 ran: the surface was read off the repository, and the publication blocker was checked before
-      any gate file was written
+- [ ] Step 0 ran: whether an existing gate already detects this shape was decided BEFORE a new gate was
+      considered, and the publication blocker was checked before any gate file was written
 - [ ] The signal id names the failure, not the check or the tool
 - [ ] Step 2 ran: mechanically visible, not already existing, and block-versus-warn decided by the
       sixty-second test rather than by severity

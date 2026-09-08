@@ -8,7 +8,7 @@
 // sh/ ships in `files`, so the surviving fragments travel with an install and are resolved relative to
 // this module — never from PATH and never by searching upward for a checkout.
 
-import { defineModule, effectiveOps, opsSpecifier, settingsFor } from "@entelekheia/vibe-ops-core";
+import { defineModule, defineOps, effectiveOps, opsSpecifier, parseOpsDefinition, settingsFor } from "@entelekheia/vibe-ops-core";
 import { PARITY_FIXTURE } from "./fixture.ts";
 import type { ModuleContext, ModulePlugin, ModuleResult, OpsFinding, OpsPopulation, OpsSkip } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
@@ -168,7 +168,18 @@ async function runComposedOps(context: ModuleContext): Promise<readonly OpsRun[]
     const lines: string[] = [];
     let plugin: ModulePlugin;
     try {
-      plugin = ((await import(opsSpecifier(packageName, context.repoRoot))) as { default: ModulePlugin }).default;
+      // A DECLARED `.json` IS AN OPS COLLECTION, NOT A MODULE. `ops.json` is already the canonical form
+      // an ops package carries (`parseOpsDefinition`; each `src/index.ts` is typing sugar over it), and
+      // reading one directly is what lets a repository compose detectors of its own **today**: the gates
+      // it names resolve through `loadGate` out of the installed core, so nothing has to be imported from
+      // the repository's side and nothing has to be published first. Writing a NEW gate still does — see
+      // the blocker in the `new-signal` skill.
+      if (packageName.endsWith(".json")) {
+        const file = path.resolve(context.repoRoot, packageName);
+        plugin = defineOps(parseOpsDefinition(readFileSync(file, "utf8"), file));
+      } else {
+        plugin = ((await import(opsSpecifier(packageName, context.repoRoot))) as { default: ModulePlugin }).default;
+      }
     } catch (error) {
       const why = error instanceof Error ? error.message : String(error);
       runs.push({
