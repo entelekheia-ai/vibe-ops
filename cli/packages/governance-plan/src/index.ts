@@ -285,3 +285,5 @@ export type { PlanShape } from "./plan-file.ts";
 export { planStatusFindings } from "./status.ts";
 export type { PlanStatusFinding } from "./status.ts";
 export { planModeGuidance } from "./context-text.ts";
+export { planProgressNudge } from "./nudge.ts";
+export type { PlanProgressNudge } from "./nudge.ts";

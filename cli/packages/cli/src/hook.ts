@@ -30,9 +30,23 @@ import { runPlanFileHook } from "./plan-file.ts";
 import { runPlanStatusHook } from "./plan-status.ts";
 import { runHarnessStatusHook } from "./harness-status.ts";
 import { runCheckGlobalHook } from "./check-global.ts";
+import { runPlanProgressHook } from "./plan-progress.ts";
+import { runSessionCleanupHook } from "./session-cleanup.ts";
 
 /** The surfaces `hook` dispatches to, in the order `--help` lists them. */
-export const HOOK_SURFACES = ["ops", "plan-context", "plan-file", "plan-status", "new-context", "task-guard", "prefer-mcp", "harness-status", "check-global"] as const;
+export const HOOK_SURFACES = [
+  "ops",
+  "plan-context",
+  "plan-file",
+  "plan-status",
+  "new-context",
+  "task-guard",
+  "prefer-mcp",
+  "harness-status",
+  "check-global",
+  "plan-progress",
+  "session-cleanup",
+] as const;
 
 /**
  * `vibe-ops hook <surface> [args]`. Returns 2 with a message naming the valid set when the surface is
@@ -61,6 +75,11 @@ export async function runHook(argv: readonly string[]): Promise<number> {
   // Stop, not PostToolUse — and the one surface here that speaks on a clean run. Both are argued in
   // check-global.ts, next to the reader.
   if (surface === "check-global") return runCheckGlobalHook();
+  // Also takes `--state-dir`, for the same reason harness-status takes `--plugin`: the state directory
+  // is host-specific (CLAUDE_PLUGIN_DATA), and the registration supplies it rather than this module
+  // reading the variable itself.
+  if (surface === "plan-progress") return runPlanProgressHook(rest);
+  if (surface === "session-cleanup") return runSessionCleanupHook(rest);
 
   process.stderr.write(
     `vibe-ops hook needs a surface: ${HOOK_SURFACES.join(", ")} (got ${surface === undefined ? "nothing" : surface})\n`,

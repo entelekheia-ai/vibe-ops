@@ -20,17 +20,26 @@
 # resolve-governance.sh's PLAN_ACTIVE / LIVING outputs instead. Several cases below exist specifically
 # to prove a repo with a DIFFERENT taxonomy is handled correctly, not just a repo with none.
 #
-# Usage: scripts/test-plan-progress-nudge.sh
+# Ported (project/plans/040-*.md Track 7) to drive `vibe-ops hook plan-progress` — the CLI surface that
+# replaced `plugin/hooks/plan-progress-nudge.sh` — instead of the shell script directly. Every assertion
+# below is unchanged; only the thing invoked, and the env-var-vs-flag shape of the state directory, moved.
+# One case did not survive the port: the old script's no-jq/jq-fallback agreement test had no TypeScript
+# counterpart to port, because the new `touchedRepos` has exactly one JSON parser (there is no fallback
+# path to disagree with itself).
+#
+# Usage: cli/test/test-plan-progress-nudge.sh
 # Exit codes: 0 all assertions passed · 1 at least one failed · 2 bad setup.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-VOR=$(cd "$SCRIPT_DIR/.." && pwd)
-HOOK="$VOR/hooks/plan-progress-nudge.sh"
-HELPER="$VOR/scripts/session-touched-repos.sh"
+REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+CLI_BIN="$REPO_ROOT/cli/packages/cli/dist/bin.js"
 
-[[ -f "$HOOK" ]] || { echo "test-plan-progress-nudge: hook not found at $HOOK"; exit 2; }
+[[ -f "$CLI_BIN" ]] || {
+  echo "test-plan-progress-nudge: built CLI not found at $CLI_BIN — run npm run build first"
+  exit 2
+}
 
 FAILURES=0
 ok()   { printf 'ok    %s\n' "$1"; }
@@ -42,7 +51,7 @@ trap 'rm -rf "$TMPROOT"' EXIT
 # --- fixture builders ------------------------------------------------------------------------------
 
 # new_repo <name> — an empty git repo under $TMPROOT, no commits required: `git rev-parse
-# --show-toplevel` works against a bare .git directory alone, which is all session-touched-repos.sh needs.
+# --show-toplevel` works against a bare .git directory alone, which is all the touched-repos scan needs.
 # Returns the PHYSICAL path (pwd -P): on macOS $TMPDIR resolves through /var -> /private/var, and
 # `git rev-parse --show-toplevel` always returns the resolved form — a fixture that recorded the
 # unresolved form in its synthetic transcript would fail the plan-self-write suppression check for a
@@ -85,18 +94,18 @@ write_plan() {
   fi
 }
 
-# transcript_line <file_path> — one minified assistant tool_use record, matching both the jq path and
-# the no-jq fallback's `"name":"X"` substring scan.
+# transcript_line <file_path> — one minified assistant tool_use record.
 transcript_line() {
   printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"%s","old_string":"a","new_string":"b"}}]}}\n' "$1"
 }
 
-# hook_call <payload_json> <state_dir> — runs the hook with an isolated state directory and this repo
-# checkout as CLAUDE_PLUGIN_ROOT, so it exercises the actual scripts under test, not an install.
+# hook_call <payload_json> <state_dir> — runs `vibe-ops hook plan-progress` with an isolated state
+# directory passed as --state-dir, the same way hooks.json's own registration supplies it by expanding
+# ${CLAUDE_PLUGIN_DATA} — never via an env var this process reads.
 hook_call() {
   local payload="$1" state_dir="$2"
   mkdir -p "$state_dir"
-  printf '%s' "$payload" | CLAUDE_PLUGIN_ROOT="$VOR" CLAUDE_PLUGIN_DATA="$state_dir" sh "$HOOK"
+  printf '%s' "$payload" | node "$CLI_BIN" hook plan-progress --state-dir "$state_dir"
 }
 
 stop_payload() {
@@ -327,8 +336,12 @@ test_already_nudged_suppressed_once() {
   fi
 }
 
-# --- Case 9: two plans across two repos in one turn are BOTH tracked, not just the last one ---------
-test_multiple_repos_both_tracked() {
+# --- Case 9: one turn touching two repos names only the first (sorted) repo's plan, and the other ----
+# --- repo still gets its own turn on a later firing (measured against the pre-port script directly: ---
+# --- "at most one plan per firing" means the second repo's candidate is neither named nor added to  ---
+# --- the outstanding set on the same firing — only the WRITTEN-suppression and already-nudged cases  ---
+# --- keep scanning every repository; a fresh candidate does not). ------------------------------------
+test_second_repo_gets_its_own_later_turn() {
   local repoA repoB tsc sid=t9 state="$TMPROOT/state-t9"
   repoA=$(new_repo repo-t9a)
   repoB=$(new_repo repo-t9b)
@@ -349,14 +362,27 @@ test_multiple_repos_both_tracked() {
   transcript_line "$repoA/README.md" >>"$tsc"
   transcript_line "$repoB/README.md" >>"$tsc"
 
-  hook_call "$(stop_payload "$sid" "$tsc")" "$state" >/dev/null
+  local first
+  first=$(hook_call "$(stop_payload "$sid" "$tsc")" "$state")
 
-  local nudged
-  nudged=$(sed -n 's/^NUDGED=//p' "$state/vibe-ops-progress-$sid")
-  if [[ "$nudged" == *"repo-t9a"* && "$nudged" == *"repo-t9b"* ]]; then
-    ok "two repos' plans in one turn are both kept in the outstanding set, not just the last"
+  local nudged_after_first
+  nudged_after_first=$(sed -n 's/^NUDGED=//p' "$state/vibe-ops-progress-$sid")
+  if [[ "$first" == *"repo-t9a"* && "$nudged_after_first" == *"repo-t9a"* && "$nudged_after_first" != *"repo-t9b"* ]]; then
+    ok "one firing names only the first (sorted) repository's plan, and only that one enters the outstanding set"
   else
-    fail "expected both repos in NUDGED, got: $nudged"
+    fail "expected repo-t9a alone this firing, got out=[$first] nudged=[$nudged_after_first]"
+  fi
+
+  # A later firing, with a fresh write into repo B only, gives that repository its own turn.
+  transcript_line "$repoB/README.md" >>"$tsc"
+  local second
+  second=$(hook_call "$(stop_payload "$sid" "$tsc")" "$state")
+  local nudged_after_second
+  nudged_after_second=$(sed -n 's/^NUDGED=//p' "$state/vibe-ops-progress-$sid")
+  if [[ "$second" == *"repo-t9b"* && "$nudged_after_second" == *"repo-t9b"* ]]; then
+    ok "the second repository's plan is named and tracked on its own later firing"
+  else
+    fail "expected repo-t9b on the second firing, got out=[$second] nudged=[$nudged_after_second]"
   fi
 }
 
@@ -364,10 +390,10 @@ test_multiple_repos_both_tracked() {
 test_malformed_payloads_are_silent() {
   local state="$TMPROOT/state-t10" out rc
 
-  out=$(printf '' | CLAUDE_PLUGIN_ROOT="$VOR" CLAUDE_PLUGIN_DATA="$state" sh "$HOOK"); rc=$?
+  out=$(printf '' | node "$CLI_BIN" hook plan-progress --state-dir "$state"); rc=$?
   if [[ -z "$out" && $rc -eq 0 ]]; then ok "empty payload: exit 0, silent"; else fail "empty payload: rc=$rc out=$out"; fi
 
-  out=$(printf 'not json at all {{{' | CLAUDE_PLUGIN_ROOT="$VOR" CLAUDE_PLUGIN_DATA="$state" sh "$HOOK"); rc=$?
+  out=$(printf 'not json at all {{{' | node "$CLI_BIN" hook plan-progress --state-dir "$state"); rc=$?
   if [[ -z "$out" && $rc -eq 0 ]]; then ok "garbage payload: exit 0, silent"; else fail "garbage payload: rc=$rc out=$out"; fi
 
   out=$(hook_call "$(stop_payload missing-t10 "$TMPROOT/does-not-exist.jsonl")" "$state"); rc=$?
@@ -435,37 +461,6 @@ test_sweep_never_deletes_its_own_directory() {
   fi
 }
 
-# --- Case 13: the no-jq fallback in session-touched-repos.sh agrees with the jq path -----------------
-test_no_jq_fallback_matches_jq_path() {
-  local repo tsc
-  repo=$(new_repo repo-t13)
-  tsc="$TMPROOT/t13.jsonl"
-  transcript_line "$repo/README.md" >"$tsc"
-  # A spurious file_path-shaped substring inside an unrelated field must not be picked up by either path.
-  printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"echo \\"file_path\\": not-a-real-edit"}}]}}\n' >>"$tsc"
-
-  local with_jq without_jq
-  with_jq=$(sh "$HELPER" "$tsc" 0)
-  without_jq=$(PATH="/usr/bin:/bin" command -v jq >/dev/null 2>&1 && echo present || echo absent)
-  if command -v jq >/dev/null 2>&1; then
-    # Force the fallback branch by hiding jq behind a restricted PATH containing only what the script needs.
-    local shim="$TMPROOT/no-jq-path"
-    mkdir -p "$shim"
-    for b in sh awk sed grep tail wc tr git dirname sort cat; do
-      p=$(command -v "$b" 2>/dev/null) && ln -sf "$p" "$shim/$b"
-    done
-    without_jq=$(PATH="$shim" sh "$HELPER" "$tsc" 0)
-  else
-    without_jq="$with_jq"   # jq already absent on this machine; both paths are the same path
-  fi
-
-  if [[ "$with_jq" == "$without_jq" ]]; then
-    ok "jq path and no-jq fallback attribute the same paths/repos on a transcript with a spurious substring"
-  else
-    fail "jq and no-jq paths disagree — with_jq=[$with_jq] without_jq=[$without_jq]"
-  fi
-}
-
 test_different_taxonomy_enumerates_its_own_sections
 test_no_end_marker_points_at_template_not_sections
 test_unknown_taxonomy_is_silent
@@ -474,11 +469,10 @@ test_stale_hardcoded_word_is_not_matched
 test_first_stop_is_silent
 test_writing_the_plan_itself_is_silent
 test_already_nudged_suppressed_once
-test_multiple_repos_both_tracked
+test_second_repo_gets_its_own_later_turn
 test_malformed_payloads_are_silent
 test_no_write_turn_is_free
 test_sweep_never_deletes_its_own_directory
-test_no_jq_fallback_matches_jq_path
 
 if [[ $FAILURES -gt 0 ]]; then
   echo "test-plan-progress-nudge: $FAILURES assertion(s) failed"
