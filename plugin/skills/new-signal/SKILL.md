@@ -1,17 +1,17 @@
 ---
 name: new-signal
-description: 'Turn one rule into a matched pair: the prose that steers the agent, the deterministic guard that enforces it, and the fixture proving the guard fires. Use when an instruction says "never do X" and nothing checks it, when a harness audit finds prose describing machinery, when a repeated review comment should become a check, or "/new-signal <the rule>". Creates one signal per run; it has no update mode — an existing guard is edited in place.'
+description: 'Turn one rule into a matched pair: the prose that steers the agent, the gate that enforces it, and the fixture proving the gate fires. Use when an instruction says "never do X" and nothing checks it, when a harness audit finds prose describing machinery, when a repeated review comment should become a check, when judging whether an existing gate covers everything a check it replaced did, or "/new-signal <the rule>". Creates one signal per run; it has no update mode — an existing gate is edited in place.'
 argument-hint: "<the rule, in one sentence>"
 effort: inherit
 ---
 
-# /new-signal — a rule, the guard that enforces it, and proof the guard works
+# /new-signal — a rule, the gate that enforces it, and proof the gate works
 
 An instruction that says *never commit a machine path* is a `grep` written in English. It costs always-on
 attention, it is honoured by choice, and when it is not honoured **nothing reports it** — the work simply
 proceeds differently and the divergence is found later by someone looking for something else.
 
-This skill converts one such rule into a pair: the prose stays, and a deterministic guard starts failing
+This skill converts one such rule into a pair: the prose stays, and a deterministic gate starts failing
 on the thing the prose asks nobody to do.
 
 **Read [`${CLAUDE_PLUGIN_ROOT}/references/harness-pair.md`](../../references/harness-pair.md) first.** It
@@ -21,28 +21,39 @@ that file is the reasoning, and it is not repeated here.
 
 **This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records one
 signal at a point in time. Running it twice correctly produces two signals; it has no update mode — a
-guard that needs to change is edited in place, and a rule that has been superseded gets its guard deleted
+gate that needs to change is edited in place, and a rule that has been superseded gets its gate deleted
 rather than re-scaffolded.
 
-## Step 0 — Which detector surface this repository has
+## Step 0 — Where this repository can put a gate, and whether it can at all
 
-**Two exist, and they are not interchangeable.** Decide before Step 4, because everything from there on
-differs — where the sensor is written, what its contract is, where its fixture lives, and who is allowed
-to make it emit.
+**A new detector is a gate. There is no second surface.** Shell fragments are being retired and none is
+written any more; a repository still holding some is holding history, and editing one that exists is not
+covered here.
 
 ```bash
-ls scripts/checks/_run.sh 2>/dev/null          # the shell harness
-ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # the composed one
+ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # a gates tree of its own
+vibe-ops config get ops 2>/dev/null                                  # ops this repository declares
 ```
 
-| What you found | The sensor is | Read |
-|---|---|---|
-| `scripts/checks/_run.sh` | a **shell fragment** the runner composes | Steps 4–7 as written, "shell" column |
-| a `packages/gates/` tree | a **gate**, composed by an **ops** | Steps 4–7, "gate" column, and `cli/AGENTS.md` §Gates and ops |
-| neither | nothing to compose a sensor into | stop; run `/vibe-ops:setup harness` first |
+| What you found | Where the gate goes |
+|---|---|
+| a `packages/gates/` tree **and** an ops package to compose it into | that tree, and one entry in the ops that owns the population |
+| neither, but `vibe-ops` runs here | an ops of the repository's own, declared in `config.ops` — **read the blocker below first** |
+| `vibe-ops` does not run here | stop; run `/vibe-ops:setup harness` first |
 
-**A repository holding both gets the gate.** Fragments are being retired; write a new detector as one only
-when there is no `packages/gates/`. Editing a fragment that already exists is not covered by this rule.
+### The blocker, stated before you spend an hour on it
+
+**A repository that is not the vibe-ops checkout itself cannot author a gate today.** A gate file must
+`import { defineGate, defineOps } from "@entelekheia/vibe-ops-core"`, Node resolves that bare specifier
+from the importing file, and those packages are **not published** — so a consumer repository has nothing
+to resolve and no way to install it. Measured 2026-09-08 against a scratch repository: `config.ops`
+accepts the path and reports `Cannot find package '@entelekheia/vibe-ops-core'`, loudly and by name.
+`npm link` does not close it either; only the CLI is linked globally.
+
+So, honestly: **inside the vibe-ops workspace this procedure works end to end. Outside it, stop at Step 3
+and write the guide alone**, saying that the guard waits on publication. Do not hand someone a gate file
+that cannot load — a detector that fails to import is indistinguishable, in a busy log, from one that
+found nothing.
 
 ---
 
@@ -70,7 +81,7 @@ Three questions, in order. A no to the first two ends the run, and that is a leg
    text — yes. An intent, a tone, a judgement about whether an abstraction is right — no. Say so and stop:
    a guard that approximates a judgement produces false positives, and a check whose standard response is
    `--no-verify` trains the reflex it exists to prevent.
-2. **Does it already exist?** Search the repository, the composed built-ins (`check-agents-md.sh --list`),
+2. **Does it already exist?** Search the repository, what is already composed (`vibe-ops check --list`),
    and any linter already configured. **This is the most common failure of this whole genre**: a confident
    new guard for something already written and merely unwired. *Wire it* and *build it* differ by an order
    of magnitude and only one is usually true.
@@ -90,26 +101,19 @@ Two things this guide must carry that ordinary prose does not:
 - **The reason, not just the prohibition.** The guard already states the prohibition, mechanically and
   without argument. What the guard cannot carry is why anyone should care, and that is the half a reader
   needs in order to eventually decide the rule can go.
-- **The shapes the guard deliberately allows** belong in the *fragment's* header, not here — that is where
+- **The shapes the guard deliberately allows** belong in the *gate's* header, not here — that is where
   the pattern lives, and a near-miss documented three files away from the regex that implements it goes
   stale the first time the regex is tightened. Identify them now, because Step 4 has to encode them and
   Step 5 has to build them as decoys; write them down beside the pattern.
 
-## Step 4 — Write the sensor
+## Step 4 — Write the gate
 
-Where, and against which contract, follows from Step 0.
+A folder at `packages/gates/src/<signal-id>/index.ts`, default-exporting `defineGate({ id, version,
+summary }, run)`. `run` receives `{ files, documents, options }` and returns `{ findings, examined }`; a
+finding is `{ rule, file, line?, evidence }`, where `rule` names the failure and is what every reading is
+filed under.
 
-**Shell fragment.** A file at `scripts/checks/NN-<signal-id>.sh`, defining `check_<signal_id>` with `-` as
-`_`. Pick `NN` from the gap in what is already composed; the number is ordering only, and a fragment sorts
-near the ones it is thematically adjacent to. The contract is in the runner's own header: a fragment may
-use `fail`/`pass`/`skip`, `head_`, `norm_rel`, `tracked_md` and `$ROOT`, declares `CHECK_VERSION` as an
-integer, and **must not write anything into `$ROOT`**.
-
-**Gate.** A folder at `packages/gates/src/<signal-id>/index.ts`, default-exporting `defineGate({ id,
-version, summary }, run)`. `run` receives `{ files, documents, options }` and returns
-`{ findings, examined }`; a finding is `{ rule, file, line?, evidence }`, where `rule` names the failure
-and is what every reading is filed under. Three properties have no shell equivalent and are where a first
-gate goes wrong:
+Three properties are where a first gate goes wrong:
 
 - **A gate does not choose its population.** It is handed `files` and reads them. Never filter by a
   repository-specific path rule inside the detector — that belongs to the ops entry's `paths`, and to the
@@ -122,21 +126,22 @@ gate goes wrong:
   documentation.
 
 Then compose it: one entry in the ops that owns this population, `{ gate: "<signal-id>", paths: [...] }`.
-**A gate nothing composes is a file**, exactly as an unwired fragment is.
+**A gate nothing composes is a file.** If the repository has no ops of its own, the entry goes in one it
+declares in `config.ops` — a path there resolves against the repository root, and a name resolves as a
+package.
 
-Four rules with teeth:
+Three rules with teeth:
 
-- **`skip` is a verdict, not a fallback.** A check that examined nothing reports `skip` with the reason,
-  never `pass`. A pass over an empty population is indistinguishable from a real one, and that is how a
-  check goes quiet without anyone noticing.
+- **`skip` is a verdict, not a fallback.** A gate that examined nothing reports `skipped` with the reason,
+  never a clean result. A pass over an empty population is indistinguishable from a real one, and that is
+  how a check goes quiet without anyone noticing.
 - **Decide whether a finding may be named**, and say why in the header. Most may: the offending text is
   already in the tree, so printing it discloses nothing and hiding it leaves nobody able to fix it. Some
-  may not — a check searching for material that must not be published cannot print what it found, and
+  may not — a gate searching for material that must not be published cannot print what it found, and
   reports only where the entry came from.
 - **The guard must not fire on the guide.** A document explaining the rule contains the shape the rule
   forbids, in elided or quoted form. Make the pattern narrow enough to pass it, and say in the header
   which elisions are deliberate. A guard that flags its own documentation is one people switch off.
-- **Do not make it emit yet.** The emit line is Step 7, and it is added only once the guard is proven.
 
 ## Step 5 — Build the fixture it fails, and prove it red
 
@@ -147,26 +152,25 @@ An input that violates the rule, plus **at least one decoy** — a near-miss fro
 fire. A fixture with only violations passes whether or not the check distinguishes anything, so the decoy
 is what gives the assertion meaning.
 
-Where it goes follows from Step 0: for a **fragment**, the repository's `scripts/checks/self-test.sh`; for
-a **gate**, the owning ops's own test suite, extending the broken fixture it already builds rather than
-starting a second one — a fixture that lives beside the others is run by whoever runs them, and a private
-one is run by whoever remembers it. Assert the evidence string **this** signal alone produces, not only
-its rule name: a rule name in a list passes on any finding filed under it, including one the detector
-already made before this change.
+It goes in the owning ops's own entry (`fixture: { expect, files }`), extending the broken fixture that
+ops already builds rather than starting a second one — a fixture that lives beside the others is run by
+whoever runs them, and a private one is run by whoever remembers it. Assert the evidence string **this**
+signal alone produces, not only its rule name: a rule name in a list passes on any finding filed under it,
+including one the detector already made before this change.
 
 Then assert both directions:
 
 ```sh
-# the fixture, before the fragment is in place — must NOT report the signal
-# the fixture, with the fragment  — must report it exactly as many times as there are real violations
+# the fixture, before the gate is composed — must NOT report the signal
+# the fixture, with the gate composed   — must report it exactly as many times as there are real violations
 ```
 
 Run it and **watch it fail before it passes**. An assertion written against a check that already passes
 has proven nothing.
 
-**A fixture must not inherit the operator's environment.** Clear what
-the run must not see, once, where the fixture is built — once rather than per invocation, so an assertion
-added later inherits the isolation instead of the bug.
+**A fixture must not inherit the operator's environment.** Clear what the run must not see, once, where
+the fixture is built — once rather than per invocation, so an assertion added later inherits the isolation
+instead of the bug.
 
 ## Step 6 — Prove it green on the real repository, and handle the backlog
 
@@ -183,12 +187,12 @@ The third row is not a defeat. A rule that is right in general and wrong in one 
 **declared and visible**, never inferred from something incidental like whether the repository has a
 remote yet.
 
-### If the fragment ships to repositories other than this one
+### If the gate ships to repositories other than this one
 
-A guard written inside a plugin — or inside any tree that other repositories compose their checks from —
-does not land in one repository. It lands in **every repository the runner composes it into**, on the
-next run, with no release and no opt-in. "Run the full gate" then checks the one repository you happen to
-be standing in, which is the one place the backlog was least likely to be.
+A gate composed into an ops that other repositories install does not land in one repository. It lands in
+**every repository composing that ops**, on their next run, with no opt-in. "Run the full gate" then
+checks the one repository you happen to be standing in, which is the one place the backlog was least
+likely to be.
 
 So before it lands, run it against **every repository that composes it**, and apply Step 6's table to each
 independently. Expect the answers to differ: the same guard is routinely correct in one repository and
@@ -200,20 +204,17 @@ Skipping this is invisible from inside the authoring repository, where everythin
 ## Step 7 — Make it report, if there is anywhere to report to
 
 Only after Steps 5 and 6. The shape, the population rules and the absent-destination guarantee are all in
-[`harness-pair.md`](../../references/harness-pair.md). **Who adds it differs by surface, and this is the
-one place the two disagree outright:**
+[`harness-pair.md`](../../references/harness-pair.md).
 
-- **Shell fragment** — the fragment adds its own emit call, resolving the emitter as
-  `$HOME_ROOT/sh/gate-emit.sh` rather than the literal `${CLAUDE_PLUGIN_ROOT}` path; that file's "Where
-  the emitter lives" section says why the literal path is usually silently absent.
-- **Gate** — **add nothing to the gate.** Emission is `{ gate: "…", emits: true }` on the ops entry, and
-  the ops builds the emitter itself from the repository's `artifactDir`.
+**Add nothing to the gate.** Emission is `{ gate: "…", emits: true }` on the ops entry, and the ops builds
+the emitter itself from the repository's `artifactDir`. A gate that reached for an emitter would be
+deciding something the composition owns.
 
 Emit only a signal that is behavioural and recurrent. A structural property stays corrected once
 corrected, and its series is a flat line.
 
-**Then prove the absent case by diff, not by argument**: with the destination variable unset, the check's
-output must be byte-identical to what it produced before the emit line existed.
+**Then prove the absent case by diff, not by argument**: with `artifactDir` unset, the run's output must
+be byte-identical to what it produced before `emits` was added.
 
 A repository with no destination stops at Step 6 with a complete, working pair. That is not a partial
 result — the guard is useful on the day it lands, and the measurement is what tells you later whether the
@@ -221,27 +222,43 @@ guide can go.
 
 ## Step 8 — Report what was made, and what was not
 
-Name the signal id, the guide's path, the fragment's path, the fixture's assertions, and whether it emits.
-State plainly whether the guard was **proven red first** — if it was not, the pair is unverified and
-should be said to be.
+Name the signal id, the guide's path, the gate's path, the ops entry that composes it, the fixture's
+assertions, and whether it emits. State plainly whether the guard was **proven red first** — if it was
+not, the pair is unverified and should be said to be.
+
+## Judging an existing gate instead of writing one
+
+The same questions answer a different job: **does a gate that already exists do everything a check it
+replaced did?** That is not a comparison a tool can run once the two are not the same shape, so it is
+asked here, per check, and answered in writing:
+
+1. What does the old check detect — every branch of it, read from its source, not from its name?
+2. Which gate and which `rule` covers each branch, and where is it composed?
+3. **What input makes the gate fail?** If no fixture already proves it, Step 5 applies before any
+   retirement: a port nobody has watched fail is a port nobody has tested.
+4. What does the old check do that nothing covers? That is the answer, and it is a legitimate one — it
+   means the old check stays, or the gap gets its own signal through Steps 1–7.
+
+Write the answers down where the retirement decision lives. A retirement justified by "the port exists"
+is the failure this whole procedure is against.
 
 ## Checklist
 
-- [ ] Step 0 ran: the detector surface was read off the repository, not assumed
+- [ ] Step 0 ran: the surface was read off the repository, and the publication blocker was checked before
+      any gate file was written
 - [ ] The signal id names the failure, not the check or the tool
 - [ ] Step 2 ran: mechanically visible, not already existing, and block-versus-warn decided by the
       sixty-second test rather than by severity
-- [ ] For a gate: it chooses neither its population nor whether its findings block, and it is composed
-      into an ops — a gate nothing composes is a file
+- [ ] The gate chooses neither its population nor whether its findings block, and it is composed into an
+      ops — a gate nothing composes is a file
 - [ ] The guide carries the reason and the deliberately-allowed near-misses, not just the prohibition
-- [ ] The fragment reports `skip` with a reason when its population is empty — never `pass`
-- [ ] Whether a finding may be named was decided, and the reason is in the fragment's header
+- [ ] The gate reports `skipped` with a reason when its population is empty
+- [ ] Whether a finding may be named was decided, and the reason is in the gate's header
 - [ ] The guard does not fire on the guide that explains it, and the deliberate elisions are documented
 - [ ] The fixture carries at least one decoy, and the assertion was **observed red before green**
-- [ ] The fixture clears whatever environment it must not inherit
 - [ ] The full gate is green on the real repository, or the backlog decision is stated
-- [ ] If the fragment ships to other repositories: run against **each** of them, with Step 6's table
-      applied independently — not just against the repository it was authored in
+- [ ] If the ops ships to other repositories: run against **each** of them, with Step 6's table applied
+      independently
 - [ ] If it emits: absent-destination proven by diff against the pre-emit output, not asserted
 - [ ] The report says whether the guard was proven red first
 
@@ -254,17 +271,17 @@ different enough to be useless. That distinction is where this file is thinnest.
 
 Two failure modes that look like the skill working:
 
-- **A fixture written after the fragment passed.** It will assert exactly what the fragment already does,
+- **A fixture written after the gate passed.** It will assert exactly what the gate already does,
   including its bugs, and it will never have been red. If a run produces one, Step 5 needs a sharper
   prompt rather than a longer one.
 - **A guard whose backlog was "fixed" by narrowing the pattern until the tree was clean.** That is the
   third row of Step 6's table reached by accident instead of by decision, and the resulting guard checks
   whatever happened to be easy.
 
-**When a repository's detector surface changes, this file is part of that change.** The symptom to check
-for is a step that names exactly one place a sensor can live.
+**Step 0's blocker has an expiry.** When `@entelekheia/vibe-ops-core` is published, a consumer repository
+can author a gate and the "stop at Step 3" instruction becomes wrong — delete it then, and check whether
+Step 4's composition paragraph still describes how a consumer declares its own ops.
 
 Fold back what the run taught: a Step 2 question that decided the outcome and is not among the three, a
-near-miss class Step 3 does not name, a sensor contract the runner or `defineGate` enforces that Step 4
-does not state.
+near-miss class Step 3 does not name, a gate contract `defineGate` enforces that Step 4 does not state.
 If a run produced no edits, say so — a pair that fit the procedure exactly is signal too.

@@ -24,7 +24,7 @@ root points here with `source: "./plugin"`. To iterate without installing, use
 | `/vibe-ops:close-plan` | Close a plan — retrospective against its own goals, demotion check, issue closed, then the file moves to `shipped/` with its number. Never deleted. |
 | `/vibe-ops:migrate [path]` | Bring artifacts up to the current template version, per artifact rather than per plugin. |
 | `/vibe-ops:new-migration <type>` | Move a template's version and write the migration note, as one act. |
-| `/vibe-ops:new-signal <rule>` | Turn one rule into a matched trio: the prose, the guard, and the fixture proving the guard fires. |
+| `/vibe-ops:new-signal <rule>` | Turn one rule into a matched trio: the prose, the gate, and the fixture proving the gate fires. |
 | `/vibe-ops:authoring-agents-md` · `authoring-readme` | Write or repair the two files a newcomer — human or agent — reads first. |
 | `/vibe-ops:license-setup` | `LICENSE`, `NOTICE`/`AUTHORS` for a fork, optional header enforcement. |
 

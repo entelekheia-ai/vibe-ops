@@ -381,9 +381,15 @@ repository already promulgated to, and `harness status` must report nothing behi
 
 ### H3 — One worked example, or an honest empty
 
-A harness with no fragments is scaffolding. Offer `/vibe-ops:new-signal` for the first one, and take no
-for an answer — a repository whose rules are not yet written down has nothing to guard, and that is a
-real answer rather than a gap.
+A harness composing only the built-ins is a repository that has not yet written down a rule of its own,
+which is a real answer rather than a gap. Offer `/vibe-ops:new-signal` for the first one and take no for
+an answer.
+
+**Say what that offer can and cannot deliver here.** A detector is a gate now, and a gate must import
+`@entelekheia/vibe-ops-core`, which is not published — so outside the vibe-ops checkout `new-signal`
+writes the guide and stops, naming the guard as waiting on publication. That is a complete and useful
+half; presenting it as a whole one is what makes someone go looking for a gate file that was never
+written.
 
 Do **not** write a fragment from here. Naming a rule, writing the guard, and building the fixture it
 fails are one act with its own skill; reproducing it inline is how the fixture requirement gets dropped.
@@ -405,7 +411,7 @@ requirement too: it is the one thing that can leave a fully-installed harness un
       not by reading `_run.sh`
 - [ ] If the gate was installed: `core.hooksPath` set, and named in the report as local-only config
 - [ ] `harness resolve` reports the managed `vibeops.config.json` present; `harness status` reports nothing behind
-- [ ] No fragment was written from this skill; `new-signal` was offered and its refusal recorded
+- [ ] No detector was written from this skill; `new-signal` was offered, with its publication limit stated, and its refusal recorded
 - [ ] No CI was recommended for a repository with no remote
 
 ## Checklist — mode `repo`

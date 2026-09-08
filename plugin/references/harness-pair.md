@@ -124,13 +124,15 @@ The emitter — `gate-emit.sh` — turns one tool's diagnostics into the neutral
 plugin, so a fragment composed from here can emit in any repository the plugin reaches rather than only in
 one that separately installed something.
 
-**Resolve it as `$HOME_ROOT/sh/gate-emit.sh`, never the literal `${CLAUDE_PLUGIN_ROOT}` path.**
-`check-agents-md.sh` already sets `HOME_ROOT` to wherever it itself was resolved from — a target
-repository's own snapshot, a sibling checkout inside a workspace that keeps one, or a real plugin install —
-and every fragment sourced by it can already read that global. `${CLAUDE_PLUGIN_ROOT}` is usually unset
-(see `resolve_runner()`'s own header in `skills/setup/templates/harness/checks/_run.sh`), so a fragment
-resolving the emitter through it literally would silently do nothing everywhere the sibling or snapshot
-path is what actually found the runner. Found rolling this out for real (Plan-020 Track 5).
+**A gate does not resolve it at all, and must not try.** Emission for a gate is `emits: true` on the ops
+entry that composes it, and the ops builds the emitter from the repository's `artifactDir`. A gate
+reaching for `gate-emit.sh` would be deciding what the composition owns.
+
+`gate-emit.sh` survives for the other producer — **a tool whose diagnostics need turning into the neutral
+artifact**, where there is no ops to do it. A shell fragment used to be that caller and resolved it as
+`$HOME_ROOT/sh/gate-emit.sh` (never the literal `${CLAUDE_PLUGIN_ROOT}` path, which is usually unset);
+since Plan-038 the runner no longer sets `HOME_ROOT` for anyone new, so a tool wrapper resolves the
+emitter from wherever it was itself installed and says so where it does it.
 
 It standardizes **shape**; the translator on the receiving side standardizes **meaning**. That split is
 not tidiness — the emitter has to run inside the gate because it captures what only the producing side can
