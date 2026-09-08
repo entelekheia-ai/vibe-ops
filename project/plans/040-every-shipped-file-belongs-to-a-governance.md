@@ -145,7 +145,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       every activated package's facets. At the end, no file under `plugin/` reads a reference by path and
       `vibe-ops check` is green.
 
-- [ ] **Track 2 — The manifest that admits the new shapes, and the ADR behind it.** `parseTypeUnit` makes
+- [x] **Track 2 — The manifest that admits the new shapes, and the ADR behind it.** `parseTypeUnit` makes
       `template` and `dirs` optional, and adds `facets`, `lifecycle` and `targets`; a manifest may declare
       `units: [...]`, each a full type unit, and `activateGovernance` caches by `package#type` instead of
       by package name. `records norm --facet template` on a policy-only type refuses, naming it as such.
@@ -260,6 +260,15 @@ Every criterion below is observed on an ordinary run, with no flag an operator h
   constructed is isolation nobody verified.
   Date / Author: 2026-09-08 / Danilo Borges
 
+- Decision: A manifest field this plan adds gets a reader in the track that adds it, rather than waiting
+  for the track that consumes it. `lifecycle` was specified for Track 6's renderer, and was declared on
+  `governance-plan` and wired into `plan resolve` in Track 2 instead.
+  Rationale: this plan's own motivation is that a file with no owner has no version, no migration and no
+  reader — and a field with no reader is the same debt one level down. Wiring it immediately also proved
+  the parse against a real type: changing the declaration moved `PLAN_ACTIVE`, which no test of the
+  parser alone would have shown.
+  Date / Author: 2026-09-08 / Danilo Borges
+
 ## Outcomes & Retrospective
 
 **Track 7 landed** (`01bf2db`): `plan-progress` and `session-cleanup` are CLI hook surfaces, the nudge's
@@ -282,6 +291,16 @@ were **a guard that did not guard**: a gate passing over an empty population, a 
 layer of a ladder its resolver reads whole, and a test suite reporting a skip whose reason was false. All
 three were green. None of them would have been found by running the suite, because each was the suite
 agreeing with itself.
+
+**Track 2 landed** (`adb3c7a`): a manifest may declare `units`, a binding picks one with `#type`, and the
+activation cache is keyed by `<package>#<type>`. Goal 2's mechanism is not in place yet, but the hinge
+is: Tracks 3, 4 and 5 can now each add a type.
+
+The defect that track removed is the one worth carrying forward, because it is the same shape as the
+three above. Keyed by package name, a second binding to a package was handed whatever the first had
+resolved — a real unit, with a template and facets, answering every question about the wrong artifact
+and reporting nothing. It could not have been noticed from any output, which is why the test states that
+case in words rather than asserting a return value.
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
