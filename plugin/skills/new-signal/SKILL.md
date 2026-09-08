@@ -35,17 +35,20 @@ ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # a gates t
 vibe-ops config get ops 2>/dev/null                                  # ops this repository declares
 ```
 
-**Three shapes, and all three work outside the vibe-ops checkout.** Pick by what the detection is, not
-by which repository you are standing in:
+**A detector belongs to the repository that needs it.** Almost every signal is about one repository's own
+rules, so the normal shape is local — a file in your repository, composed by your repository, checked in
+with your repository. Pick by what the detection is:
 
 | What you need | Where it goes |
 |---|---|
-| an existing gate (`classification`, `mirror`, `markdown-link`, `budget`, …) over a population of yours | one entry in a local `ops.json` — **no new code at all** |
-| a detector this repository owns and nobody else wants | a **local gate**: a plain `.mjs` in the repository, named by path from that same `ops.json` |
-| a detector every repository should get | a gate in the vibe-ops checkout (`packages/gates/src/<id>/index.ts`), composed by a shipped ops |
+| an existing gate (`classification`, `mirror`, `markdown-link`, `budget`, …) over a population of yours | one entry in your `ops.json` — **no new code at all** |
+| a detector about **this** repository's rules | a **local gate**: a plain `.mjs` in your repository, named by path from that same `ops.json` |
+| a detector every repository that installs vibe-ops should get | a gate contributed to the vibe-ops checkout, composed by a shipped ops |
 
-Try them in that order. The first is a config edit; the second is one file with no dependencies; only the
-third obliges you to be working inside vibe-ops itself.
+Try them in that order. The first is a config edit; the second is one file with no dependencies. **The
+third is a contribution**, not the default: it asks every consumer to run your rule, so it has to be
+right for repositories you have never seen — and it is the only one that needs you to be working inside
+vibe-ops itself.
 
 ### Composing an existing gate: a local `ops.json`, and nothing else
 
@@ -113,14 +116,13 @@ The finding lands in the same `N checks, M failed` line as the built-ins.
 `definition.version` is required and is an integer, for the same reason it is on a shipped gate: two
 readings filed under one rule are comparable only while the detector between them has not moved.
 
-### The one thing that still needs the vibe-ops checkout
+### Why the local gate is plain JavaScript
 
-**Writing the gate in TypeScript against core's types.** `import { defineGate } from
-"@entelekheia/vibe-ops-core"` resolves that bare specifier from the importing file, and the packages are
-**not published** — so outside this checkout there is nothing to resolve and no way to install it, and
-`npm link` does not close it either: only the CLI is linked globally. Write the plain-JavaScript form
-above instead; it is not a downgrade, it is the same object without the compile-time
-check. A gate that belongs to every repository is the other case, and it belongs in this checkout anyway.
+`import { defineGate } from "@entelekheia/vibe-ops-core"` resolves that bare specifier from the importing
+file, and the vibe-ops packages are not on a registry — so outside the vibe-ops checkout there is nothing
+to resolve and no way to install it. The plain object above is not a workaround for that: it is the
+contract. `defineGate` adds a compile-time check and nothing else, and the same validation runs again at
+load time for every gate regardless of how it was built.
 
 ---
 
@@ -176,9 +178,9 @@ Two things this guide must carry that ordinary prose does not:
 ## Step 4 — Write the gate
 
 **A local gate is the file from Step 0** — a plain `.mjs` exporting `{ definition, run }`, named by path
-from the repository's own `ops.json`. **A shipped gate** is a folder at `packages/gates/src/<signal-id>/
-index.ts` inside this checkout, default-exporting `defineGate({ id, version, summary }, run)`. The
-contract below is identical for both; only the wrapper and the location differ. `run` receives `{ files, documents, options }` and returns `{ findings, examined }`; a
+from your own `ops.json`. **A contributed gate** is a folder under `packages/gates/src/<signal-id>/` in
+the vibe-ops checkout, default-exporting `defineGate({ id, version, summary }, run)`. The contract below
+is identical for both; only the wrapper and the location differ. `run` receives `{ files, documents, options }` and returns `{ findings, examined }`; a
 finding is `{ rule, file, line?, evidence }`, where `rule` names the failure and is what every reading is
 filed under.
 
@@ -195,7 +197,7 @@ Three properties are where a first gate goes wrong:
   documentation.
 
 Then compose it: one entry in the ops that owns this population — `{ gate: "<signal-id>", paths: [...] }`
-for a shipped gate, `{ gate: "./.vibe-ops/<name>.mjs", label: "<signal-id>", paths: [...] }` for a local
+for a contributed gate, `{ gate: "./.vibe-ops/<name>.mjs", label: "<signal-id>", paths: [...] }` for a local
 one. **A gate nothing composes is a file.** If the repository has no ops of its own, the entry goes in
 the local `ops.json` from Step 0, which `config.ops` names by path.
 
@@ -256,7 +258,7 @@ The third row is not a defeat. A rule that is right in general and wrong in one 
 **declared and visible**, never inferred from something incidental like whether the repository has a
 remote yet.
 
-### If the gate ships to repositories other than this one
+### If the gate is contributed rather than local
 
 A gate composed into an ops that other repositories install does not land in one repository. It lands in
 **every repository composing that ops**, on their next run, with no opt-in. "Run the full gate" then
