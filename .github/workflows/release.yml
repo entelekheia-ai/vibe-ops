@@ -1,0 +1,79 @@
+# Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Publishes this repository's three public packages to npm through trusted publishing (OIDC): no token
+# is stored anywhere. npm accepts this workflow's identity because it is declared on npmjs.com under each
+# package's Trusted Publishers — owner `entelekheia-ai`, repository `vibe-ops`, workflow `release.yml`.
+#
+# THE FILENAME IS PART OF THAT DECLARATION. Renaming this file breaks publishing for every package, and
+# the failure arrives as a 404 that names nothing.
+#
+# Every push to main runs the gates. While `.changeset/*.md` files are pending, changesets/action opens or
+# refreshes the "Version Packages" pull request instead of publishing. Merging that pull request is the
+# release. The eighteen internal packages are `private` and travel inside the CLI's tarball
+# (`bundleDependencies`), so they are versioned here and never published — see cli/AGENTS.md.
+#
+# The first version of each package was published from a maintainer's terminal, because a trusted
+# publisher can only be declared on a package that already exists.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write # the Version Packages pull request, and the release tag
+  pull-requests: write
+  id-token: write # the OIDC token. Without it, npm answers 404 and explains nothing.
+
+jobs:
+  release:
+    # Trusted publishing does not accept a self-hosted runner.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 } # changesets resolves the base branch through history
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24' # OIDC needs Node >= 22.14 and npm >= 11.5.1
+          registry-url: https://registry.npmjs.org # writes the .npmrc, required even with no token
+
+      - run: npm ci
+
+      # The gate. A published version cannot be recalled, so it runs before anything is published and
+      # `npm test` builds first through pretest — the packages typecheck against each other's dist.
+      - name: gates — build, typecheck, tests
+        run: |
+          npm run typecheck
+          npm test
+
+      # The composition has to prove it still detects, on this repository and on its own fixtures: a gate
+      # that silently stopped firing reports the same clean tree a working one reports.
+      - name: the gate proves itself, then runs
+        run: |
+          node cli/packages/cli/dist/bin.js check --self-test
+          node cli/packages/cli/dist/bin.js check
+
+      - uses: changesets/action@v1
+        id: changesets
+        with:
+          # `npm run version` runs `changeset version` and refreshes the lockfile — without that, the
+          # next `npm ci` installs the versions this release just replaced.
+          version: npm run version
+          # NOT plain `changeset publish`: it publishes with Promise.all and no topological ordering, so
+          # a dependent can land on the registry before the dependency it declares. `npm run release`
+          # walks cli/scripts/publish-in-order.mjs, which also skips anything already on the registry —
+          # so a rerun after a partial failure finishes the remainder instead of failing on a conflict.
+          publish: npm run release
+          title: 'Version Packages'
+          commit: 'release: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
