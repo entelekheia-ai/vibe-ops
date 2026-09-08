@@ -176,12 +176,18 @@ produce silent agreement — that is the exact failure the gate's own header was
       nine entries, and deleting `fragment-parity-budget` fails `fragment-uncovered` naming `budget`
       (restored after verifying).
 
-- [ ] **Track 3 — The shared fixture, both sides.** Extend `self_test` in
-      `cli/packages/module-check/sh/check-agents-md.sh` to run `vibe-ops check` over the same `$tmp`
-      fixture and assert each port's rule fires there, alongside the existing per-fragment
-      assertions. At the end agreement between a fragment and its port is evidence: both have been
-      made to fail on purpose, on one input. Acceptance: removing a detection line from any wired
-      port makes `--self-test` fail naming that port.
+- [x] **Track 3 — The shared fixture, both sides.** The track's own text was wrong: `vibe-ops check`
+      is the shell runner itself, so pointing it at `$tmp` would re-run the fragments and never touch
+      a port (see Decision Log). Built instead: `check-agents-md.sh`'s fixture construction factored
+      out of `self_test()` into `build_fixture`, reachable through a new `--emit-fixture <dir>` seam;
+      `module-check`'s own `--self-test`, which already chains each ops's self-test in-process, gained
+      a `ports` phase that builds the fixture through that seam and runs `governance`, `agents-md`,
+      `exposure` and `mirror` — the four ops composing the nine proved-comparable fragments — against
+      it, asserting every one of the nine rule ids (`links`, `budget`, `bridge`, `frontmatter`,
+      `skill-frontmatter`, `memory-slug`, `file-path`, `template-attribution`, `dogfooding-drift`)
+      fails there. Agreement between a fragment and its port is now evidence: both fail on purpose, on
+      one shared input, in one command (`vibe-ops check --self-test`). Acceptance proved live:
+      disabling `budget`'s only detection line made the new phase fail naming `budget`; restored.
 
 - [ ] **Track 4 — A comparison over nothing is not a comparison.** `fragment-parity` today returns a
       clean result when it examined zero files. Make it return `skipped` naming the empty population,
@@ -333,15 +339,29 @@ Run from the repository root:
   which the same scan pattern reads.
   Date / Author: 2026-09-07 / Danilo Borges
 
+- Decision: Track 3's own written text ("run `vibe-ops check` over the same fixture") was wrong, and
+  the fixture seam moved instead: shell keeps the definition, TypeScript keeps the assertion.
+  Rationale: `vibe-ops check` **is** the shell runner (`module-check/src/index.ts:20` spawns
+  `sh/check-agents-md.sh`); pointing it at the fixture re-runs the fragments and never reaches a port.
+  The nine ports live in four ops packages (`governance`, `agents-md`, `exposure`, `mirror`), none of
+  which accept a positional repository root — reaching them needed an in-process `ModuleContext`, the
+  same pattern each `ops-*/test/ops.test.ts` already uses. `check-agents-md.sh` gained `--emit-fixture
+  <dir>` (builds the fixture, no assertion, undocumented in `--help`); `module-check`'s own
+  `--self-test`, which already chains ops self-tests in-process, gained a `ports` phase that builds the
+  fixture through that seam and asserts all nine proved-comparable rule ids fail there. Proved live:
+  disabling `budget`'s only detection line made the phase fail naming `budget`; restored.
+  Date / Author: 2026-09-07 / Danilo Borges
+
 ## Outcomes & Retrospective
 
-Track 1 and Track 2 are closed. `npm test` (643/643) and `npm run typecheck` are green after a
-from-scratch build. All nine comparable fragments now have a live `fragment-parity` entry; the other
-eight are exemptions the completeness entry can see and enforce mechanically — proved by deleting
+Tracks 1–3 are closed. `npm test` (643/643) and `npm run typecheck` are green after a from-scratch
+build. All nine comparable fragments now have a live `fragment-parity` entry; the other eight are
+exemptions the completeness entry can see and enforce mechanically — proved by deleting
 `fragment-parity-budget` and observing `fragment-uncovered` name `budget` by itself, then restoring it.
-Plan-022's corpus-width and no-divergence conditions now have evidence for nine pairs where three months
-ago they had it for one; its third condition (a shared, deliberately-broken fixture) is still Track 3's
-job.
+Plan-022's three conditions are now all evidenced together: corpus-width and no-divergence for nine
+pairs (Track 2), and the third — a shared, deliberately-broken fixture both sides are made to fail on —
+by Track 3's `ports` self-test phase, proved live by disabling `budget`'s detection and watching it
+name `budget`.
 
 ---
 

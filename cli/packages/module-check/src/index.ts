@@ -8,10 +8,11 @@
 // sh/ ships in `files`, so the fragments travel with an install and are resolved relative to this
 // module — never from PATH and never by searching upward for a checkout.
 
-import { defineModule } from "@entelekheia/vibe-ops-core";
+import { defineModule, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, ModulePlugin, ModuleResult } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -47,6 +48,94 @@ async function runOpsSelfTest(
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
     return { id, code: 2, output: `FAIL  [${id}] self-test could not run: ${why}` };
+  }
+}
+
+/**
+ * The nine rule ids a fragment-parity port must still fail on the SAME fixture the shell runner's own
+ * `--self-test` breaks (plan-038 track 3) — one id per ported fragment, and which ops composes each is
+ * `OPS_FOR_PARITY` below. Not the whole population either ops runs: only the ids this repository has
+ * proved comparable (`project/tasks/002-...`, now folded into Plan-038's Decision Log).
+ */
+const PARITY_RULE_IDS = [
+  "links",
+  "budget",
+  "bridge",
+  "frontmatter",
+  "skill-frontmatter",
+  "memory-slug",
+  "file-path",
+  "template-attribution",
+  "dogfooding-drift",
+] as const;
+
+/** Which ops composes each id above — read once, so a reader can check the claim against the table in
+ *  cli/AGENTS.md rather than trusting this list. */
+const OPS_FOR_PARITY = ["governance", "agents-md", "exposure", "mirror"] as const;
+
+/**
+ * The port side of the parity fixture: build the SAME broken repository the shell runner's own
+ * --self-test uses (via `--emit-fixture`, plan-038 track 3), run the four ops that compose the nine
+ * proved-comparable fragments against it in-process, and assert every one of them still fails there.
+ *
+ * `config: {}` is load-bearing, not a placeholder — `loadConfig` searches upward to the operator's
+ * home directory, and whether this fixture fails must never depend on whichever machine runs it.
+ *
+ * This does not assert an exit code or the absence of other findings. Two kinds of extra noise are
+ * expected and accepted here rather than suppressed: `dogfooding-drift` reports six pairs (the
+ * `governance-*` template pairs) as "named but not there" because the fixture carries only the
+ * GOVERNANCE.md pair, and every `fragment-parity-*` entry these same ops also carry reports itself
+ * skipped, because the fixture has no `sh/check-agents-md.sh` runner of its own to compare against.
+ */
+async function runPortsAgainstFixture(): Promise<{ id: string; code: number; output: string }> {
+  const tmp = mkdtempSync(path.join(tmpdir(), "vibeops-check-parity-"));
+  try {
+    const emitted = spawnSync(RUNNER, ["--emit-fixture", tmp], { encoding: "utf8" });
+    if (emitted.error || emitted.status !== 0) {
+      const why = emitted.error?.message ?? emitted.stderr ?? `exit ${String(emitted.status)}`;
+      return { id: "ports", code: 2, output: `FAIL  [ports] could not build the parity fixture: ${why}` };
+    }
+
+    const lines: string[] = [];
+    const seen = new Set<string>();
+    let hadError = false;
+    for (const opsId of OPS_FOR_PARITY) {
+      const opsLines: string[] = [];
+      const context: ModuleContext = {
+        repoRoot: tmp,
+        flags: {},
+        args: [],
+        config: {},
+        settings: settingsFor({}, opsId),
+        surface: "cli",
+        log: (line: string) => opsLines.push(line),
+        warn: (line: string) => opsLines.push(`warning: ${line}`),
+      };
+      try {
+        const loaded = (await import(`@entelekheia/vibe-ops-${opsId}`)) as { default: ModulePlugin };
+        const result = await loaded.default.run({ ...context, flags: { verbose: true } });
+        opsLines.push(result.summary);
+      } catch (error) {
+        hadError = true;
+        const why = error instanceof Error ? error.message : String(error);
+        opsLines.push(`FAIL  [ports] ${opsId} self-test could not run: ${why}`);
+      }
+      for (const line of opsLines) {
+        const match = REPORT_LINE.exec(line);
+        if (match && match[1] === "FAIL") seen.add(match[2]!);
+      }
+      lines.push(...opsLines);
+    }
+
+    const missing = PARITY_RULE_IDS.filter((id) => !seen.has(id));
+    const code = hadError || missing.length > 0 ? 1 : 0;
+    const summary =
+      missing.length > 0
+        ? `ports: did not fail on the shared fixture: ${missing.join(", ")}`
+        : `ports: all ${String(PARITY_RULE_IDS.length)} proved-comparable fragments failed on the shared fixture`;
+    return { id: "ports", code, output: [...lines, summary].join("\n") };
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
   }
 }
 
@@ -260,6 +349,13 @@ export default defineModule(
         suites.push(ops);
         if (context.surface === "cli" && context.flags["json"] !== true) context.log(ops.output);
       }
+      // Plan-038 track 3: each ops's own fixture above proves it fires on ITS OWN broken input. This
+      // suite proves the shell fragment and its port fire on the SAME one — the comparison that gives
+      // the nine `fragment-parity` entries in ops-mirror/ops.json meaning, none of which has ever run
+      // over an input where either side actually fails.
+      const ports = await runPortsAgainstFixture();
+      suites.push(ports);
+      if (context.surface === "cli" && context.flags["json"] !== true) context.log(ports.output);
       const failed = suites.filter((suite) => suite.code !== 0).map((suite) => suite.id);
       return {
         code: failed.length > 0 ? 1 : 0,

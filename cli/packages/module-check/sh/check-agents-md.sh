@@ -315,46 +315,16 @@ compose_denylist() {
     "$sources" "$(wc -l < "$VIBE_OPS_DENYLIST" | tr -d ' ')"
 }
 
-# --- self-test ----------------------------------------------------------------------------------
-# Acceptance for this script is "fails on a deliberately broken copy and passes on this repository".
-# The second half is running it; this is the first half, so the claim is not taken on trust.
+# --- fixture -------------------------------------------------------------------------------------
+# The one deliberately-broken repository both this script's own --self-test and the TypeScript side's
+# `check --self-test` assert against (plan-038 track 3) — built once, here, so there is exactly one
+# definition of "broken" rather than two that can drift apart without either side noticing.
 
-self_test() {
-  local expected got rc irc before after leftover zero_got disabled_got
-
-  # The fixture must be judged on its own merits, never on the operator's environment. An engineer
-  # running this from inside the repository that declares itself the private layer would otherwise
-  # inherit VIBE_OPS_PRIVATE_LAYER, machine-paths would skip on the broken fixture, and the assertion
-  # below would fail for a reason that has nothing to do with the check. Unset once here rather than
-  # per invocation, so an invocation added later inherits the isolation instead of the bug.
-  unset VIBE_OPS_PRIVATE_LAYER
-  # Same hazard, same fix, second instance: an operator's shell that happens to carry a declared
-  # disablement would make the fixture below pass a check it should fail, for a reason that has
-  # nothing to do with the check. Cleared once, here, rather than per invocation.
-  unset VIBE_OPS_DISABLED_CHECKS
-  # Third instance, and the one that actually escaped. Every fragment that emits writes into
-  # GATE_ARTIFACT_DIR, and this fixture is DESIGNED to be broken — so inheriting the variable means the
-  # fixture's own fabricated findings are spooled into whatever destination the operator set, and from
-  # there a drain ingests them as if a real repository had violated the rule. Measured 2026-08-07: a
-  # pre-commit in this repository staged a fragment, which ran this self-test with GATE_ARTIFACT_DIR
-  # exported by the hook, and the fixture's deliberate machine path reached the production registry as a
-  # reading over 9 files — indistinguishable, in the record, from a real violation. Nothing errored and
-  # both the self-test and the gate passed.
-  unset GATE_ARTIFACT_DIR
-  # not local: the EXIT trap runs after this function has returned
-  tmp=$(mktemp -d) || exit 2
-  denylist=$(mktemp) || exit 2
-  fragdir=$(mktemp -d) || exit 2
-  # a TMPDIR of its own for the runs under test. Asserting against the shared one would mean asserting
-  # that nothing else on the machine wrote a temporary file during those two seconds, which is not true
-  # and made this check fail about one run in six.
-  runtmp=$(mktemp -d) || exit 2
-  # a second, separate fixture: a repository with zero ${CLAUDE_PLUGIN_ROOT}/ references anywhere, to
-  # prove plugin-root-paths reports itself skipped rather than vacuously passed when it examined nothing
-  zero=$(mktemp -d) || exit 2
-  trap 'rm -rf "$tmp" "$denylist" "$fragdir" "$runtmp" "$zero"' EXIT
-
-  git -C "$tmp" init -q
+# build_fixture <dir> — populate an already-`git init`-ed directory with a repository broken the same
+# five ways this script's own header describes, and `git add -A` it. Callers own the temp directory's
+# lifetime (creation and cleanup); this only writes into it.
+build_fixture() {
+  local tmp="$1"
   mkdir -p "$tmp/.agents/rules" "$tmp/.claude/rules"
   # over budget, a link that does not resolve, one that climbs out of the repo, a memory slug
   { yes 'padding line' | head -n 200; } > "$tmp/AGENTS.md"
@@ -416,6 +386,49 @@ self_test() {
   printf 'adr rules\n' > "$tmp/references/records/adr.md"
   printf 'plan rules\n' > "$tmp/references/records/plan.md"
   git -C "$tmp" add -A >/dev/null 2>&1
+}
+
+# --- self-test ----------------------------------------------------------------------------------
+# Acceptance for this script is "fails on a deliberately broken copy and passes on this repository".
+# The second half is running it; this is the first half, so the claim is not taken on trust.
+
+self_test() {
+  local expected got rc irc before after leftover zero_got disabled_got
+
+  # The fixture must be judged on its own merits, never on the operator's environment. An engineer
+  # running this from inside the repository that declares itself the private layer would otherwise
+  # inherit VIBE_OPS_PRIVATE_LAYER, machine-paths would skip on the broken fixture, and the assertion
+  # below would fail for a reason that has nothing to do with the check. Unset once here rather than
+  # per invocation, so an invocation added later inherits the isolation instead of the bug.
+  unset VIBE_OPS_PRIVATE_LAYER
+  # Same hazard, same fix, second instance: an operator's shell that happens to carry a declared
+  # disablement would make the fixture below pass a check it should fail, for a reason that has
+  # nothing to do with the check. Cleared once, here, rather than per invocation.
+  unset VIBE_OPS_DISABLED_CHECKS
+  # Third instance, and the one that actually escaped. Every fragment that emits writes into
+  # GATE_ARTIFACT_DIR, and this fixture is DESIGNED to be broken — so inheriting the variable means the
+  # fixture's own fabricated findings are spooled into whatever destination the operator set, and from
+  # there a drain ingests them as if a real repository had violated the rule. Measured 2026-08-07: a
+  # pre-commit in this repository staged a fragment, which ran this self-test with GATE_ARTIFACT_DIR
+  # exported by the hook, and the fixture's deliberate machine path reached the production registry as a
+  # reading over 9 files — indistinguishable, in the record, from a real violation. Nothing errored and
+  # both the self-test and the gate passed.
+  unset GATE_ARTIFACT_DIR
+  # not local: the EXIT trap runs after this function has returned
+  tmp=$(mktemp -d) || exit 2
+  denylist=$(mktemp) || exit 2
+  fragdir=$(mktemp -d) || exit 2
+  # a TMPDIR of its own for the runs under test. Asserting against the shared one would mean asserting
+  # that nothing else on the machine wrote a temporary file during those two seconds, which is not true
+  # and made this check fail about one run in six.
+  runtmp=$(mktemp -d) || exit 2
+  # a second, separate fixture: a repository with zero ${CLAUDE_PLUGIN_ROOT}/ references anywhere, to
+  # prove plugin-root-paths reports itself skipped rather than vacuously passed when it examined nothing
+  zero=$(mktemp -d) || exit 2
+  trap 'rm -rf "$tmp" "$denylist" "$fragdir" "$runtmp" "$zero"' EXIT
+
+  git -C "$tmp" init -q
+  build_fixture "$tmp"
   # a deny-list living outside the fixture. "padding line" is in the fixture spelled with a space; the
   # entry here is hyphenated, so a hit proves the composed spelling variants are what got searched for.
   printf '# comment line, ignored\npadding-line\n' > "$denylist"
@@ -558,6 +571,18 @@ case "${1:-}" in
     compose_checks
     self_test
     exit $?
+    ;;
+  --emit-fixture)
+    # Internal seam for `check --self-test`'s TypeScript-side comparison (plan-038 track 3) — builds
+    # the SAME broken repository this script's own --self-test uses and exits, without asserting
+    # anything. Not documented in --help: a caller outside module-check has no use for a fixture with
+    # no runner to compare it against.
+    dir="${2:?--emit-fixture requires a directory}"
+    [ -d "$dir" ] || { echo "not a directory: $dir" >&2; exit 2; }
+    git -C "$dir" init -q
+    build_fixture "$dir"
+    echo "$dir"
+    exit 0
     ;;
   --list)
     compose_checks
