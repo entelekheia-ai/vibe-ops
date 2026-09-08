@@ -96,6 +96,23 @@ standalone"; `README.md` states the requirement in `Requirements` and beside the
   track's job, but nothing recorded that it had to happen at all.
   Evidence: `ls -l scripts` → `scripts -> cli/packages/module-check/sh`.
 
+## Routing (`/route-learnings`, 2026-09-08)
+
+Six candidates, **zero promoted**, one falsified. The hard call was the one that looked most like a
+textbook `type: workspace` entry — that every consumer's gate resolves the runner through a symlink none
+of them names, and loses it together. It was rejected on two grounds: it is time-bounded (void once
+Track 7 lands and the consumers migrate), and it is *actionable* rather than merely true, so its home is
+the onboarding rule that someone reads before touching a gate, not a tier that only gets consulted. The
+learnings base sitting at 59/60 sharpened the question but did not decide it.
+
+The falsified one is the finding: verifying that candidate disproved a claim two documents written
+earlier the same day were carrying — that six consumers' sibling branch "resolved nothing". All of them
+resolve. Both copies were corrected rather than dropped.
+
+**Demotion:** yes. Track 5's PATH guard made the old rule's warning — that a copied-in snapshot *wins the
+resolution order* and shadows the live runner — impossible to state, since there is no resolution order
+left. That sentence was deleted rather than reworded.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually
