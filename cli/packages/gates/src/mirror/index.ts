@@ -31,8 +31,8 @@ type CompareKind = "text" | "sha" | "group";
 type Ignorable = "copyright" | "trailing-newline";
 
 /**
- * Where one side comes from. `file` `column` `json` `capture` yield one value; `scan` `entries`
- * `resolving` yield a set.
+ * Where one side comes from. `file` `column` `json` `jsonSelect` `capture` yield one value; `scan`
+ * `entries` `resolving` yield a set.
  */
 type Source =
   /** The named file's content. `${N}` expands to column N when the comparison came from a row. */
@@ -41,8 +41,31 @@ type Source =
   | { readonly column: number }
   /** A top-level field of a JSON file. An array field yields its members as a set. */
   | { readonly json: string; readonly in: string }
-  /** The first capture of a pattern against a file's text. */
-  | { readonly capture: string; readonly in: string }
+  /**
+   * A field read from ONE ENTRY of an array in a JSON file, the entry chosen by matching one of its
+   * own fields against a value read elsewhere — a name held in one document selecting a row in
+   * another. `match.from`/`match.json` name where the needle comes from; `match.field` names which
+   * field of each array entry it is compared against. `manifest-sync` needs this because a
+   * marketplace listing carries many plugins and the one that is THIS plugin is named only inside
+   * the plugin's own manifest — hardcoding an index would pass silently the day the plugin is
+   * renamed.
+   */
+  | {
+      readonly jsonSelect: {
+        readonly array: string;
+        readonly match: { readonly field: string; readonly from: string; readonly json: string };
+        readonly field: string;
+      };
+      readonly in: string;
+    }
+  /**
+   * The first capture of a pattern against a file's text. `optional` means an absent match — the file
+   * missing, or the pattern finding nothing — is not evidence of drift and skips the comparison rather
+   * than reporting it: a CHANGELOG whose only heading is `## [Unreleased]` has not diverged from
+   * anything, it has simply not shipped yet, and a repository that never cuts a release must not fail
+   * this comparison forever.
+   */
+  | { readonly capture: string; readonly in: string; readonly optional?: boolean }
   /** Every capture of a pattern across a population of files — a set, with where each was first seen. */
   | { readonly scan: string; readonly in: readonly string[] }
   /** Directory entries — a set. `matching` narrows it to the names a rule is actually about. */
@@ -191,6 +214,41 @@ function reduce(
     }
   }
 
+  if ("jsonSelect" in source) {
+    const relative = expand(source.in, columns);
+    const absolute = path.resolve(repoRoot, relative);
+    if (!existsSync(absolute)) return { members: [], from: relative, absent: relative };
+    const { array: arrayField, match, field } = source.jsonSelect;
+
+    const matchAbsolute = path.resolve(repoRoot, expand(match.from, columns));
+    if (!existsSync(matchAbsolute)) {
+      return { members: [], from: relative, absent: `${match.from} (needed to select the entry)` };
+    }
+    let needle: string | undefined;
+    try {
+      const matchParsed = JSON.parse(readFileSync(matchAbsolute, "utf8")) as Record<string, unknown>;
+      const value = matchParsed[match.json];
+      needle = value === undefined || value === null ? undefined : String(value);
+    } catch {
+      return { members: [], from: relative, absent: `${match.from} (unreadable JSON)` };
+    }
+    if (needle === undefined) return { members: [], from: relative, absent: `${match.from} (${match.json})` };
+
+    try {
+      const parsed = JSON.parse(readFileSync(absolute, "utf8")) as Record<string, unknown>;
+      const array = parsed[arrayField];
+      const entry = Array.isArray(array)
+        ? (array as readonly Record<string, unknown>[]).find((item) => String(item?.[match.field]) === needle)
+        : undefined;
+      if (entry === undefined) {
+        return { members: [], from: relative, absent: `${relative} (no ${arrayField} entry with ${match.field}="${needle}")` };
+      }
+      return { members: jsonMembers(entry[field]), from: `${relative} (${arrayField}[${match.field}="${needle}"].${field})` };
+    } catch {
+      return { members: [], from: relative, absent: `${relative} (unreadable JSON)` };
+    }
+  }
+
   if ("capture" in source) {
     const relative = expand(source.in, columns);
     const absolute = path.resolve(repoRoot, relative);
@@ -300,9 +358,13 @@ export default defineGate(
       const left = reduce(comparison.left, base);
       const right = reduce(comparison.right, { ...base, left });
 
-      // An absent subject is reported as absent: "these two differ" would be true and useless.
+      // An absent subject is reported as absent: "these two differ" would be true and useless. The one
+      // exception is a side that declared itself `optional` — an anticipated absence, not a broken one.
       const absent = left.absent ?? right.absent;
       if (absent !== undefined && compare !== "group") {
+        const leftOptional = left.absent !== undefined && "capture" in comparison.left && comparison.left.optional === true;
+        const rightOptional = right.absent !== undefined && "capture" in comparison.right && comparison.right.optional === true;
+        if (leftOptional || rightOptional) continue;
         findings.push({
           rule,
           file: comparison.where,

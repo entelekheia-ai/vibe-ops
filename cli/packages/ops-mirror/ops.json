@@ -106,6 +106,120 @@
     },
     {
       "gate": "mirror",
+      "label": "manifest-version",
+      "emits": true,
+      "options": {
+        "compare": "text",
+        "rule": "manifest-version-drift",
+        "subject": "the plugin version, in plugin.json and its marketplace listing",
+        "left": {
+          "json": "version",
+          "in": "<plugin>/.claude-plugin/plugin.json"
+        },
+        "right": {
+          "jsonSelect": {
+            "array": "plugins",
+            "match": {
+              "field": "name",
+              "from": "<plugin>/.claude-plugin/plugin.json",
+              "json": "name"
+            },
+            "field": "version"
+          },
+          "in": ".claude-plugin/marketplace.json"
+        }
+      },
+      "fixture": {
+        "expect": [
+          "manifest-version-drift"
+        ],
+        "files": {
+          ".claude-plugin/plugin.json": "{\"name\": \"thing\", \"version\": \"0.1.0\"}",
+          ".claude-plugin/marketplace.json": "{\"plugins\": [{\"name\": \"thing\", \"version\": \"0.2.0\"}]}"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "manifest-description",
+      "options": {
+        "compare": "text",
+        "rule": "manifest-description-drift",
+        "subject": "the plugin description, in plugin.json and its marketplace listing",
+        "left": {
+          "json": "description",
+          "in": "<plugin>/.claude-plugin/plugin.json"
+        },
+        "right": {
+          "jsonSelect": {
+            "array": "plugins",
+            "match": {
+              "field": "name",
+              "from": "<plugin>/.claude-plugin/plugin.json",
+              "json": "name"
+            },
+            "field": "description"
+          },
+          "in": ".claude-plugin/marketplace.json"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "manifest-keywords",
+      "options": {
+        "compare": "group",
+        "bothWays": true,
+        "rule": "manifest-keywords-drift",
+        "subject": "the plugin keywords, in plugin.json and its marketplace listing",
+        "left": {
+          "json": "keywords",
+          "in": "<plugin>/.claude-plugin/plugin.json"
+        },
+        "right": {
+          "jsonSelect": {
+            "array": "plugins",
+            "match": {
+              "field": "name",
+              "from": "<plugin>/.claude-plugin/plugin.json",
+              "json": "name"
+            },
+            "field": "keywords"
+          },
+          "in": ".claude-plugin/marketplace.json"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
+      "label": "manifest-changelog-version",
+      "emits": true,
+      "options": {
+        "compare": "text",
+        "rule": "manifest-changelog-drift",
+        "subject": "the plugin version and CHANGELOG.md's newest released heading",
+        "left": {
+          "json": "version",
+          "in": "<plugin>/.claude-plugin/plugin.json"
+        },
+        "right": {
+          "capture": "^## \\[(?!Unreleased)([^\\]]+)\\]",
+          "in": "CHANGELOG.md",
+          "optional": true
+        }
+      },
+      "fixture": {
+        "expect": [
+          "manifest-changelog-drift"
+        ],
+        "files": {
+          ".claude-plugin/plugin.json": "{\"version\": \"0.2.0\"}",
+          "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n\n## [0.1.0] — 2026-01-01\n"
+        }
+      }
+    },
+    {
+      "gate": "mirror",
       "label": "dogfooding-drift",
       "options": {
         "compare": "text",

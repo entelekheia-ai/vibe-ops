@@ -182,6 +182,100 @@ test("manifest: a version captured from prose compares with one read from JSON",
   assert.equal(outcome.findings.length, 1, "0.9.0 shipped with no changelog entry naming it");
 });
 
+test("manifest: a CHANGELOG holding only Unreleased has not diverged from anything, and is not compared", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "plugin.json"), JSON.stringify({ version: "0.9.0" }));
+  await writeFile(path.join(repoRoot, "CHANGELOG.md"), `# Changelog\n\n## [Unreleased]\n\nnothing shipped yet\n`);
+  const outcome = await mirror.run(
+    ctx(repoRoot, {
+      compare: "text",
+      left: { json: "version", in: "plugin.json" },
+      right: { capture: "^## \\[(?!Unreleased)([^\\]]+)\\]", in: "CHANGELOG.md", optional: true },
+      subject: "the released version",
+    }),
+  );
+  assert.deepEqual(outcome.findings, [], "a repository that has never cut a release must not fail this comparison forever");
+});
+
+test("manifest: an optional side missing its file entirely is also not a finding", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "plugin.json"), JSON.stringify({ version: "0.9.0" }));
+  const outcome = await mirror.run(
+    ctx(repoRoot, {
+      compare: "text",
+      left: { json: "version", in: "plugin.json" },
+      right: { capture: "^## \\[(?!Unreleased)([^\\]]+)\\]", in: "CHANGELOG.md", optional: true },
+      subject: "the released version",
+    }),
+  );
+  assert.deepEqual(outcome.findings, []);
+});
+
+// ── manifest-sync: a field selected from the ONE entry of an array that names this plugin ───────────
+
+const MANIFEST_SELECT = {
+  compare: "text",
+  left: { json: "version", in: "plugin.json" },
+  right: {
+    jsonSelect: {
+      array: "plugins",
+      match: { field: "name", from: "plugin.json", json: "name" },
+      field: "version",
+    },
+    in: "marketplace.json",
+  },
+  rule: "manifest-version-drift",
+  subject: "the plugin version",
+};
+
+test("manifest: a field read from the marketplace entry this plugin's own name selects agrees", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "plugin.json"), JSON.stringify({ name: "vibe-ops", version: "0.9.0" }));
+  await writeFile(
+    path.join(repoRoot, "marketplace.json"),
+    JSON.stringify({ plugins: [{ name: "other-plugin", version: "1.0.0" }, { name: "vibe-ops", version: "0.9.0" }] }),
+  );
+  const outcome = await mirror.run(ctx(repoRoot, MANIFEST_SELECT));
+  assert.deepEqual(outcome.findings, []);
+});
+
+test("manifest: the marketplace entry this plugin's name selects has drifted", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "plugin.json"), JSON.stringify({ name: "vibe-ops", version: "0.9.0" }));
+  await writeFile(
+    path.join(repoRoot, "marketplace.json"),
+    JSON.stringify({ plugins: [{ name: "vibe-ops", version: "0.8.0" }] }),
+  );
+  const outcome = await mirror.run(ctx(repoRoot, MANIFEST_SELECT));
+  assert.equal(outcome.findings.length, 1);
+  assert.match(outcome.findings[0]!.evidence, /the plugin version/);
+});
+
+test("manifest: a name that selects no entry is reported as absent, not compared against nothing", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "plugin.json"), JSON.stringify({ name: "vibe-ops", version: "0.9.0" }));
+  await writeFile(path.join(repoRoot, "marketplace.json"), JSON.stringify({ plugins: [{ name: "other-plugin", version: "1.0.0" }] }));
+  const outcome = await mirror.run(ctx(repoRoot, MANIFEST_SELECT));
+  assert.equal(outcome.findings.length, 1);
+  assert.match(outcome.findings[0]!.evidence, /is named but not there/);
+});
+
+test("manifest: renaming the plugin moves which entry is selected, rather than passing silently against a stale index", async () => {
+  const repoRoot = await repo();
+  await writeFile(path.join(repoRoot, "plugin.json"), JSON.stringify({ name: "renamed-plugin", version: "0.9.0" }));
+  await writeFile(
+    path.join(repoRoot, "marketplace.json"),
+    JSON.stringify({
+      plugins: [
+        { name: "renamed-plugin", version: "0.9.0" },
+        { name: "unrelated-plugin", version: "9.9.9" },
+      ],
+    }),
+  );
+  const outcome = await mirror.run(ctx(repoRoot, MANIFEST_SELECT));
+  assert.deepEqual(outcome.findings, [], "the entry selected followed the rename, not a fixed position");
+});
+
 // ── hooks-registration: a declared set against the scripts on disk, both ways ───────────────────────
 
 const HOOKS = {
