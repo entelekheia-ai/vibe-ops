@@ -24,24 +24,28 @@ signal at a point in time. Running it twice correctly produces two signals; it h
 gate that needs to change is edited in place, and a rule that has been superseded gets its gate deleted
 rather than re-scaffolded.
 
-## Step 0 — Where this repository can put a gate, and whether it can at all
+## Step 0 — Which of the three shapes this detector is
 
 **A new detector is a gate. There is no second surface.** Shell fragments are being retired and none is
 written any more; a repository still holding some is holding history, and editing one that exists is not
-covered here.
+covered here. What the repository already composes is worth reading before you add to it:
 
 ```bash
 ls cli/packages/gates 2>/dev/null || ls packages/gates 2>/dev/null   # a gates tree of its own
 vibe-ops config get ops 2>/dev/null                                  # ops this repository declares
 ```
 
-**The question that decides everything after is not "which repository is this" — it is whether the
-detection you need already exists as a gate.**
+**Three shapes, and all three work outside the vibe-ops checkout.** Pick by what the detection is, not
+by which repository you are standing in:
 
-| What you need | Where it goes | Works today? |
-|---|---|---|
-| an existing gate (`classification`, `mirror`, `markdown-link`, `budget`, …) over a population of yours | one entry in an ops — the repository's own, declared in `config.ops` | **yes, anywhere** |
-| a **new** gate, because nothing detects this shape yet | `packages/gates/src/<id>/index.ts`, composed by an ops | only inside the vibe-ops checkout — see below |
+| What you need | Where it goes |
+|---|---|
+| an existing gate (`classification`, `mirror`, `markdown-link`, `budget`, …) over a population of yours | one entry in a local `ops.json` — **no new code at all** |
+| a detector this repository owns and nobody else wants | a **local gate**: a plain `.mjs` in the repository, named by path from that same `ops.json` |
+| a detector every repository should get | a gate in the vibe-ops checkout (`packages/gates/src/<id>/index.ts`), composed by a shipped ops |
+
+Try them in that order. The first is a config edit; the second is one file with no dependencies; only the
+third obliges you to be working inside vibe-ops itself.
 
 ### Composing an existing gate: a local `ops.json`, and nothing else
 
@@ -50,7 +54,7 @@ An ops collection is a **JSON file**, and the gates it names resolve out of the 
 files:
 
 ```jsonc
-// ops/local.ops.json — this repository's own composition
+// .vibe-ops/ops.json — this repository's own composition
 {
   "id": "local",
   "version": "0.0.1",
@@ -66,7 +70,7 @@ files:
 
 ```ts
 // vibeops.config.ts — a path resolves against the repository root; a bare name resolves as a package
-export default { ops: { local: "./ops/local.ops.json" } };
+export default { ops: { local: "./.vibe-ops/ops.json" } };
 ```
 
 `vibe-ops check` then composes it beside the defaults and reports it in the same line. Verified end to
@@ -74,19 +78,51 @@ end on 2026-09-08 in a scratch repository with nothing installed but the CLI: th
 (`FAIL [todo-left] notes.md:3`). Steps 1–3 and 5–8 all apply unchanged; Step 4 is the entry above rather
 than a new file.
 
-### The blocker, and it is narrower than it looks
+### A local gate: one file, no dependencies
 
-**Writing a NEW gate outside the vibe-ops checkout does not work today.** A gate file must
-`import { defineGate } from "@entelekheia/vibe-ops-core"`, Node resolves that bare specifier from the
-importing file, and the packages are **not published** — so a consumer repository has nothing to resolve
-and no way to install it. Measured 2026-09-08: `config.ops` accepts the path and reports
-`Cannot find package '@entelekheia/vibe-ops-core'`, loudly and by name. `npm link` does not close it;
-only the CLI is linked globally.
+**A gate does not have to be built against anything.** `loadGate` accepts any module whose default export
+carries `{ definition, run }` and revalidates the definition itself — a gate that never called
+`defineGate` reaches that check intact. So a repository writes one in plain JavaScript, with no imports,
+no `package.json` and nothing installed but the CLI on `PATH`:
 
-So when Step 2 says the shape needs a detector that does not exist yet, and you are outside this
-checkout: **write the guide, compose the closest existing gate if one gets part of the way, and say which
-part waits on publication.** Do not hand someone a gate file that cannot load — a detector that fails to
-import is indistinguishable, in a busy log, from one that found nothing.
+```js
+// .vibe-ops/no-shouting.mjs — no imports; `documents` and `files` arrive from the ops
+export default {
+  definition: { id: "no-shouting", version: 1, summary: "no ALL-CAPS headings" },
+  run: ({ files, documents }) => {
+    const findings = [];
+    for (const file of files) {
+      for (const [i, line] of (documents.get(file)?.text ?? "").split("\n").entries()) {
+        if (/^#+\s+[A-Z][A-Z ]{4,}$/.test(line)) {
+          findings.push({ rule: "shouting-heading", file, line: i + 1, evidence: line.trim() });
+        }
+      }
+    }
+    return { findings, examined: files.length };
+  },
+};
+```
+
+```jsonc
+// .vibe-ops/ops.json — a path is repository-relative; a bare name is a built-in; @scope/x is a package
+{ "id": "local", "version": "0.0.1", "summary": "this repository's own detectors",
+  "gates": [ { "gate": "./.vibe-ops/no-shouting.mjs", "label": "no-shouting", "paths": ["**/*.md"] } ] }
+```
+
+Verified end to end on 2026-09-08 in a scratch repository: `FAIL [shouting-heading] notes.md:3`, composed
+into the same `N checks, M failed` line as the built-ins.
+
+`definition.version` is required and is an integer, for the same reason it is on a shipped gate: two
+readings filed under one rule are comparable only while the detector between them has not moved.
+
+### The one thing that still needs the vibe-ops checkout
+
+**Writing the gate in TypeScript against core's types.** `import { defineGate } from
+"@entelekheia/vibe-ops-core"` resolves that bare specifier from the importing file, and the packages are
+**not published** — so outside this checkout there is nothing to resolve and no way to install it
+(measured 2026-09-08; `npm link` does not close it either, only the CLI is linked globally). Write the
+plain-JavaScript form above instead; it is not a downgrade, it is the same object without the compile-time
+check. A gate that belongs to every repository is the other case, and it belongs in this checkout anyway.
 
 ---
 
@@ -141,8 +177,10 @@ Two things this guide must carry that ordinary prose does not:
 
 ## Step 4 — Write the gate
 
-A folder at `packages/gates/src/<signal-id>/index.ts`, default-exporting `defineGate({ id, version,
-summary }, run)`. `run` receives `{ files, documents, options }` and returns `{ findings, examined }`; a
+**A local gate is the file from Step 0** — a plain `.mjs` exporting `{ definition, run }`, named by path
+from the repository's own `ops.json`. **A shipped gate** is a folder at `packages/gates/src/<signal-id>/
+index.ts` inside this checkout, default-exporting `defineGate({ id, version, summary }, run)`. The
+contract below is identical for both; only the wrapper and the location differ. `run` receives `{ files, documents, options }` and returns `{ findings, examined }`; a
 finding is `{ rule, file, line?, evidence }`, where `rule` names the failure and is what every reading is
 filed under.
 
@@ -158,10 +196,10 @@ Three properties are where a first gate goes wrong:
   example counts as a mention. A line-based regex over the raw text is how a gate accuses its own
   documentation.
 
-Then compose it: one entry in the ops that owns this population, `{ gate: "<signal-id>", paths: [...] }`.
-**A gate nothing composes is a file.** If the repository has no ops of its own, the entry goes in the
-local `ops.json` from Step 0 — `config.ops` resolves a path against the repository root and a bare name
-as a package.
+Then compose it: one entry in the ops that owns this population — `{ gate: "<signal-id>", paths: [...] }`
+for a shipped gate, `{ gate: "./.vibe-ops/<name>.mjs", label: "<signal-id>", paths: [...] }` for a local
+one. **A gate nothing composes is a file.** If the repository has no ops of its own, the entry goes in
+the local `ops.json` from Step 0, which `config.ops` names by path.
 
 Three rules with teeth:
 
