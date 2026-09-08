@@ -9,9 +9,9 @@ belongs to another. The decisions themselves are ADRs and are linked rather than
 ## What it replaced
 
 A check fragment fuses three things: what it detects, where it looks, and whether the result is worth
-recording. `20-links.sh` is the honest example. It finds links by deleting everything between backticks
-and then matching `](...)` on what remains — correct for its own purpose, because link syntax quoted as
-code is not a link.
+recording. `20-links.sh` — retired since Plan-038 Track 7, once its port met the bar — was the honest
+example. It found links by deleting everything between backticks and then matching `](...)` on what
+remained — correct for its own purpose, because link syntax quoted as code is not a link.
 
 The cost of that approach is not that it is imprecise. It is that **it cannot see a category at all**. An
 archival reference in this repository is written as `` `git show <sha>:<path>` `` — inside a code span,

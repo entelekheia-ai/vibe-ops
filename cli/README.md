@@ -35,7 +35,7 @@ vibe-ops check --list           # what would run, and the file each check comes 
 vibe-ops check --self-test      # assert the checks still fire on a deliberately broken fixture
 vibe-ops check --verbose        # the full run, not only what failed
 
-vibe-ops agents-md               # the first ops — runs beside `check`, not instead of it (RFC-0001)
+vibe-ops agents-md               # the first ops — `check` composes it beside the shell fragments (RFC-0001)
 vibe-ops agents-md --list        # the gates composed, and the paths each runs over
 vibe-ops agents-md --audit       # the same report, always exit 0
 vibe-ops agents-md --file AGENTS.md         # scope to one file — does not need to be tracked
@@ -74,8 +74,9 @@ vibe-ops hook ops agents-md --fix pairing       # a PostToolUse hook's own comma
                                              # to say. What a skill's `hooks:` block names directly.
 ```
 
-A clean run prints one summary line. The expensive reader is an agent, not a terminal, and seventeen `ok`
-lines say nothing the summary does not.
+A clean run prints one summary line. The expensive reader is an agent, not a terminal, and dozens of `ok`
+lines — the eight surviving shell fragments plus every gate the composed ops run — say nothing the
+summary does not.
 
 ## Configuration
 
@@ -153,7 +154,7 @@ behaves identically under MCP and under a terminal.
 |---|---|
 | [`@entelekheia/vibe-ops-core`](packages/core/) | The contract, the config cascade, the observation emitter |
 | [`@entelekheia/vibe-ops-cli`](packages/cli/) | The `vibe-ops` binary, dispatch, the MCP server, and the `hook` surface a skill's `hooks:` block calls by name |
-| [`@entelekheia/vibe-ops-module-check`](packages/module-check/) | The governance gate — seventeen shell fragments |
+| [`@entelekheia/vibe-ops-module-check`](packages/module-check/) | The governance gate — eight shell fragments still, composed by `vibe-ops check` beside the TypeScript ops |
 | [`@entelekheia/vibe-ops-gates`](packages/gates/) | Detectors with no notion of scope, one per gate — what an ops composes |
 | [`@entelekheia/vibe-ops-agents-md`](packages/ops-agents-md/) | The first ops: the instruction surface, composed from `vibe-ops-gates` |
 | [`@entelekheia/vibe-ops-governance`](packages/ops-governance/) | The second ops: adr/plan/rfc/task header tables, links, and archival breadcrumbs |

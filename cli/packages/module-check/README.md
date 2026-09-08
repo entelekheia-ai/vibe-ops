@@ -20,7 +20,7 @@ where every caller of the gate reads it:
 
 ```ts
 settings: {
-  check: { "machine-paths": "the private layer, tracked in project/plans/020" },
+  check: { disabled: { "private-names": "the private layer, tracked in project/plans/020" } },
 },
 ```
 
@@ -32,12 +32,16 @@ an editor is a different configuration each time — which is how a known backlo
 A declared id that no composed check answers to is reported. It changes no run, which is precisely why it
 would otherwise sit in the config reading as though something were switched off.
 
-## The checks are shell, and stay shell
+## Eight checks are shell, and stay shell until their port earns it
 
-`sh/checks/` holds one fragment per check, composed at run time by `sh/check-agents-md.sh`. This package
-is their front door, not a rewrite: porting them would have shipped freshly-written checks with no history
-of having caught anything, and every one of them exists because a failure got through by hand at least
-once.
+`sh/checks/` holds one fragment per remaining check, composed at run time by `sh/check-agents-md.sh`. This
+package is their front door, not a rewrite: writing a new one from scratch would ship a freshly-written
+check with no history of having caught anything, and every fragment here exists because a failure got
+through by hand at least once. Nine fragments crossed that bar already — a corpus wide enough, no
+divergence from their TypeScript port ever reported, and both sides made to fail on one shared fixture —
+and Plan-038 Track 7 deleted them, along with `fragment-parity`, the gate that had measured the
+comparison. `vibe-ops check` composes what is left here beside the TypeScript ops declared in
+`config.ops`, merging both into one `N checks, M failed` line.
 
 `--self-test` is the acceptance criterion for the runner itself. **A check that detects nothing passes
 exactly like a check that works**, so the fixture is deliberately broken and every check must fire on it.

@@ -22,24 +22,18 @@ vibe-ops governance --verbose    # the full run, not only what failed
 | `template-version` (per type: `adr`, `plan`, `rfc`, `task`, `log`, `research`) | that type's records | **yes** |
 | `markdown-link` | the gate's own default (`**/*.md`) | **yes** |
 | `breadcrumb` | the gate's own default (`**/*.md`) | **yes** |
-| `fragment-parity` (`links` vs `markdown-link`) | `**/*.md` | no — temporary by construction |
 
 `markdown-link` and `breadcrumb` emit because both recur for as long as this repository has markdown —
 links rot as files move, and every task closure adds another breadcrumb a rewritten history can break.
 `record-header` does not: once a record declares a `Status` it keeps it, and a series of zeros there
 says nothing about whether the guide is working. `record-frontmatter` is the same reading for a type whose
 fields travel in YAML frontmatter rather than a header table — which one a type gets is decided by its own
-`types/<t>/type.json`, under `schema.carrier`, not by anything here. `fragment-parity` does not either — it exists to be
-deleted the day `20-links.sh` is, and a series that dies with its subject is one nobody reads.
+`types/<t>/type.json`, under `schema.carrier`, not by anything here.
 
 Research carries no schema: nothing in this repository declares its shape, and inventing one is a
 decision for the skill that would create research documents, not for this ops.
 
-## `fragment-parity` — the comparison RFC-0001 asks for before a fragment is removed
-
-Runs `cli/packages/module-check/sh/check-agents-md.sh` fresh on every invocation, parses its
-`FAIL  [links] <file>: …` lines, and compares the set of files it names against what `markdown-link`
-itself finds over the same population. Only one direction is a finding — `port-regression`, when the
-shell fragment flagged a file the port did not. The port catching something the fragment misses is the
-expected, desired direction, and is not reported. Costs one shell invocation (~2s) and is not on the
-commit path.
+`markdown-link`'s shell precedent, `20-links.sh`, and `fragment-parity` — the gate that compared the
+two — were both retired in Plan-038 Track 7, once a corpus wide enough showed no divergence between them
+and both sides were made to fail on one shared fixture. This ops never actually carried a
+`fragment-parity` entry of its own: the comparison for `20-links.sh` lived in `ops-mirror`, not here.

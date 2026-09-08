@@ -67,10 +67,11 @@ private note may name a repository file; a repository file never points back.
 
 ## What is checked, and what cannot be
 
-`check-agents-md.sh` catches three shapes mechanically, and only three: personal-memory slugs
-(`memory-slugs`), machine paths (`machine-paths`), and names the operator supplies to the run
-(`private-names`, which reports itself **skipped** rather than passed when it was given nothing to look
-for — "no private name found" and "I was not asked to look for any" are different answers).
+`vibe-ops check` catches three shapes mechanically, and only three: personal-memory slugs (`memory-slug`,
+composed under `exposure`), machine paths (`file-path`, composed under `exposure`), and names the operator
+supplies to the run (`private-names`, which reports itself **skipped** rather than passed when it was
+given nothing to look for — "no private name found" and "I was not asked to look for any" are different
+answers).
 
 This includes **negative** references: a validation command written into a document that spells out the
 private names it greps for has already leaked them. The pattern belongs in the guard script, never in prose.

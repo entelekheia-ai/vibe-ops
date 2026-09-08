@@ -35,7 +35,9 @@ The three "don't do this or it breaks" invariants are in
   is silently unread. The alternative is not writing the file: a path-scoped rule under `.agents/rules/`
   loads exactly when work touches those paths. See
   [`plugin/references/instruction-surfaces.md`](plugin/references/instruction-surfaces.md).
-- **The gate is `vibe-ops check`**, and it is the same seventeen fragments a consumer's `pre-commit` runs.
+- **The gate is `vibe-ops check`**, and since Plan-038 Track 6 it composes both halves — the shell
+  fragments still under `module-check/sh/checks/` and the TypeScript ops declared in `config.ops` — into
+  one `N checks, M failed` line, the same composition a consumer's `pre-commit` runs.
   `claude plugin validate . --strict` is the first-party check and reads the manifest and frontmatter
   schemas; this gate is the layer on top, never a replacement.
 - **Everything this plugin writes into a target repo is in English**, whatever language the conversation

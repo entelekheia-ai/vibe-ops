@@ -36,10 +36,13 @@ because a caller that just reacted to one edit (the skill-scoped `hooks:` block 
 `vibe-ops hook ops agents-md --fix pairing`, see [RFC-0001](../../../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md))
 has no business rewriting a file the edit never touched.
 
-## Runs beside the shell gate, not instead of it
+## The fragments this ops ported are gone; the ports are what runs now
 
-`vibe-ops check` still runs `module-check/sh/checks/10-budget.sh`, `30-bridge.sh`, `40-frontmatter.sh`,
-`45-skill-frontmatter.sh` and `60-memory-slugs.sh` — five of this ops's seven entries port one of those
-fragments each; `pairing` and `claude-md-content` have no shell precedent. The two runners are meant to
-be run against the same repository and compared, finding by finding, before the shell fragments are
-ever removed. That removal is a separate, later act, tracked in RFC-0001.
+Plan-038 Track 7 retired `module-check/sh/checks/10-budget.sh`, `30-bridge.sh`, `40-frontmatter.sh` and
+`45-skill-frontmatter.sh` once a corpus wide enough showed no divergence from the gates that ported them
+and both sides were made to fail on one shared fixture — the comparison RFC-0001 asks for before a
+fragment is removed. Four of this ops's seven entries ported one of those fragments each (`budget`,
+`bridge`, and `check-frontmatter` under both its default and `skill-frontmatter` labels); `pairing`,
+`claude-md-content` and `check-frontmatter`'s `agent-frontmatter` label have no shell precedent.
+`vibe-ops check` composes this ops beside the eight fragments still shell — under `module-check/sh/checks/`
+— none of which this ops itself ported.

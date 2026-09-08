@@ -45,8 +45,12 @@ id**, so a slice left behind is never read and the entry runs unconfigured — s
 Here that meant a twelve-path policy switching off at once. Moving an entry between compositions means
 moving its configuration in the same commit.
 
-## The four `fragment-parity` entries are the shortest-lived members
+## `fragment-parity` was the shortest-lived member, and it is gone
 
-Each compares a shell fragment against the gate that ports it — the evidence RFC-0001 requires before a
-fragment is removed at all. They retire with the fragments they read; this ops outlives them, because
-the other entries compare pairs that are not going away.
+At its widest this ops carried nine `fragment-parity` entries, each comparing a shell fragment against
+the gate that ported it — the evidence RFC-0001 requires before a fragment is removed at all. Plan-038
+Track 7 retired all nine at once, once every one of them had shown a corpus wide enough, no divergence
+ever reported, and both sides made to fail on one shared fixture — and deleted `fragment-parity` itself
+in the same commit, since a gate that holds no repository knowledge of its own is composed nowhere once
+its last entry leaves. This ops outlives it: the entries that remain compare pairs that are not going
+away, which `fragment-parity`'s subject — a fragment mid-retirement — never was.
