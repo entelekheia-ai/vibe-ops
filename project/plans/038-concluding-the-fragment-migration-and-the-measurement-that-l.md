@@ -224,19 +224,25 @@ produce silent agreement — that is the exact failure the gate's own header was
       (17 fragments + 51 gates), one `N checks, M failed` line — the shape Track 5 wired eight gates to
       grep — and a declared ops that does not resolve is named and fails the run. Four tests hold it.
 
-- [ ] **Track 7 — Delete the shell side.** For every fragment whose three conditions hold, remove the
-      fragment; then remove `cli/packages/module-check/sh/` entirely, the `fragment-parity` gate
-      folder, all its entries and the completeness entry, and the pair table in the runner. Three things
-      Track 5 found that this track inherits: `scripts/check.sh` lives **inside** the directory being
-      removed (the `scripts` symlink points there) and must be relocated rather than deleted with it;
-      the CI offer in `plugin/skills/setup/SKILL.md:255-262` is the last surface copying fragments,
-      with no replacement until the CLI is published — so publication is a precondition here, not a
-      separate wish; and **the bar is not met for all nine pairs** (measured below), so this track
-      retires per fragment, never in bulk. Record in this plan what the pairs were for. At the end the
-      checks exist once.
-      Acceptance: `npm test` and `vibe-ops check --self-test` are green, `git grep -n fragment-parity`
-      returns nothing outside `project/`, and reintroducing a defect each retired fragment used to catch
-      still fails the run.
+- [ ] **Track 7 — Delete the shell side, per fragment.** Half done. **The nine whose ports met
+      Plan-022's bar are retired**, with their nine `fragment-parity` entries and — unplanned, and the
+      right outcome — the `fragment-parity` gate itself, which the removal of its last entry left
+      composed nowhere. The fixture they were measured against is deliberately **unchanged**: it is now
+      the ports' evidence, and `check --self-test`'s `ports` phase still reports all nine failing on it.
+      Consumers were migrated first (four of eight; the maintainer holds the rest), because each ran the
+      runner by path and composed no ops, so a retired fragment would have removed a check from them
+      with nothing taking its place.
+      **The eight that remain have a port that was never compared** — `fragment-parity` cannot reach any
+      of them structurally, so the bar's third condition is unreachable and they need a different
+      evidence: that the gate does everything the fragment did, with the fixture that proves it. That
+      analysis is what the rewritten `new-signal` is for, and it runs before they go.
+      Still inherited from Track 5: `scripts/check.sh` lives **inside** `sh/` (the `scripts` symlink
+      points there) and must be relocated rather than deleted with it; and the CI offer in
+      `plugin/skills/setup/SKILL.md:255-262` is the last surface copying fragments, with no replacement
+      until the CLI is published — publication is a precondition, not a separate wish.
+      Acceptance: `npm test` and `vibe-ops check --self-test` green, `git grep -n fragment-parity`
+      returning nothing outside `project/`, and reintroducing a defect each retired fragment used to
+      catch still failing the run.
 
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, and the check
       for whether Plan-022 is now fully discharged. The plan file itself is kept.
@@ -406,6 +412,31 @@ Run from the repository root:
   one that refuses.
   Date / Author: 2026-09-08 / Danilo Borges
 
+- Decision: the seventeen are retired in two acts, not one — the nine the bar covers, then the eight it
+  cannot reach — and the fixture stays whole across both.
+  Rationale: Plan-022's third condition (both sides made to fail on one input) is **unreachable** for the
+  eight, not merely unmet: `fragment-parity` compares sets of file paths, and each of the eight either
+  names no file, names a prose subject, or has a node test rather than a gate as its port. Retiring them
+  on the same commit as the nine would have meant retiring them on no evidence while the commit message
+  claimed a bar. What they need instead is a demonstration that the gate does everything the fragment did
+  — which is the same question the gate-authoring skill asks, so the skill is written first and used as
+  the instrument. The fixture is untouched in both acts: ownership of that evidence moved to the ports
+  (`check --self-test`'s `ports` phase), so deleting a decoy along with the assertion that read it would
+  have weakened the only thing the ports are measured against.
+  Date / Author: 2026-09-08 / Danilo Borges
+
+- Decision: consumers are migrated onto `vibe-ops check` **before** any fragment is retired, and the
+  window where some are not is held open deliberately by the maintainer rather than closed by tooling.
+  Rationale: every repository under the authoring workspace ran `check-agents-md.sh` by path and called
+  the CLI never, so it composed no ops — a retired fragment would have removed that check from each of
+  them and delivered nothing in its place, silently. Four were migrated (17 checks → 46). Three more go
+  red on migration against pre-existing governance debt the fragments never looked for, and declaring
+  another repository's backlog off is a judgement about someone else's work; the maintainer holds those
+  and every other agent, so the degradation window has an owner instead of being a gap. The loud failure
+  the remaining repositories will get is the *runner's* disappearance, not a fragment's — verified: their
+  `_run.sh` exits 2 naming what it expected. That is why the runner is the last thing to go.
+  Date / Author: 2026-09-08 / Danilo Borges
+
 - Decision: which ops a repository composes is declared in `config.ops`, defaulting to the three that
   name nothing outside the repository being checked — and this repository declares its own two there.
   Rationale: nothing declared it before; an ops ran if its package happened to resolve, so what a
@@ -454,6 +485,12 @@ Run from the repository root:
   Date / Author: 2026-09-08 / Danilo Borges
 
 ## Outcomes & Retrospective
+
+Tracks 1–6 are closed and Track 7 is half done: nine fragments retired under the bar, eight left standing
+because the bar cannot reach them. The migration ends the way it was supposed to — the checks that were
+proved replaced exist once, and the ones that were not still guard. `vibe-ops check` is now the whole
+composition (50 checks: 8 fragments and 42 gates), which it was not when this plan opened; the ops had
+never been in this repository's own commit gate at all.
 
 Tracks 1–5 are closed. Track 5 moved every gate under this workspace root — the shipped template and
 this repository's own — onto `vibe-ops check`, and cost the property that made a copied-in snapshot
