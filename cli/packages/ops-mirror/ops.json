@@ -148,7 +148,7 @@
       "gate": "fragment-parity",
       "label": "fragment-parity-bridge",
       "paths": [
-        ".claude/**"
+        ".agents/**"
       ],
       "options": {
         "runner": "cli/packages/module-check/sh/check-agents-md.sh",

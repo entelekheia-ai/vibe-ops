@@ -121,21 +121,23 @@ test("every fragment-parity entry actually compared, and none reported a regress
     "fragment-parity-template-attribution",
     "fragment-parity-budget",
     "fragment-parity-dogfooding-drift",
+    // Back in the loop as of Plan-038 track 7. Track 4 found it silently passing over an empty population
+    // and made it SKIP instead; this track fixed the cause rather than the symptom — `.claude/**` was
+    // stripped by the ops-wide `ignore`, whose stated reason ("the same bytes, reported twice") is about
+    // CONTENT and does not apply to an entry whose subject is the symlinks themselves.
+    "fragment-parity-bridge",
   ]) {
     assert.ok(
       logs.some((line) => line.includes(`[${label}]`) && line.includes("(compared ")),
       `${label} did not report a comparison:\n${logs.join("\n")}`,
     );
   }
-  // `.claude/**` — fragment-parity-bridge's own declared population — is entirely covered by this ops's
-  // own `ignore` (Plan-038 track 4's zero-population change turns what used to be a silent
-  // `ok 0 examined` into an honest SKIP here, in THIS repository's own checkout, not a fixture — the
-  // acceptance criterion firing on real data rather than only on a synthetic one).
+  // The ninth pair examines a real population as of track 7, which is what Plan-022's first condition
+  // asks for. Asserted as a COUNT rather than only as "(compared", because the shape this pair failed at
+  // was a comparison that ran over nothing and reported agreement — and that reads identically to a real
+  // one in every field except this number.
   assert.ok(
-    logs.some(
-      (line) =>
-        line.includes("SKIP  [fragment-parity-bridge]") && line.includes("zero examined is not a reading"),
-    ),
+    logs.some((line) => /ok +\[fragment-parity-bridge\] [1-9]\d* examined/.test(line)),
     logs.join("\n"),
   );
   assert.ok(!logs.some((line) => line.includes("port-regression")), logs.join("\n"));
