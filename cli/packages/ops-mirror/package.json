@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-mirror",
   "version": "0.1.0",
-  "private": true,
   "description": "What one place claims, another place must confirm — the drift surface",
   "type": "module",
   "license": "Apache-2.0",

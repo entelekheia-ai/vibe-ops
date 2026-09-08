@@ -14,6 +14,35 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-08
+
+### Changed — the CLI is on npm, so the install recipe stops asking for a checkout
+
+- `@entelekheia/vibe-ops-cli` is published, and **`npm i -g @entelekheia/vibe-ops-cli` is now the install
+  recipe everywhere it appears** — the README, `docs/how-to/install-and-verify.md`, `cli/README.md`, and,
+  most consequentially, the refusal message `setup harness` writes into every repository it onboards. That
+  message previously told an outside contributor to clone a *second* repository before they could commit
+  to the one in front of them; the gate has refused without the CLI since Plan-038 Track 5, and this is
+  what makes that refusal actionable by someone who has none of this tooling.
+- `npm link -w @entelekheia/vibe-ops-cli` is now documented as the *contributor* path, not the only one.
+  Only one of the two answers on `PATH` at a time, and `vibe-ops --version` cannot tell them apart while
+  the tree and the registry carry the same number — so `readlink -f "$(command -v vibe-ops)"` is part of
+  verifying an install rather than a debugging step.
+- The root README's Install section names both halves. The plugin's MCP server starts as `vibe-ops mcp`
+  and seven of its nine hook registrations invoke `vibe-ops` by name, so a machine with only the plugin
+  fails loudly — the section used to install only the plugin.
+
+**All twenty-one packages are published, and none is bundled.** The shape shipped first — three published
+and eighteen carried inside the CLI's tarball via `bundleDependencies` — was wrong twice. It broke
+`npm i -g` outright, because a global install cannot hoist and the two non-bundled `@entelekheia/*`
+dependencies had to land in the very directory the bundle already occupied; npm extracted neither and the
+binary died on `Cannot find package '@entelekheia/vibe-ops-core'`. And it contradicted the point of
+`config.types`: a default carried inside the CLI is present whether or not anyone asked for it, so
+binding `plan` to a third-party package left the shipped one installed anyway. Publishing all of them
+fixes both. Getting there found three defects local development could not see — a `harness ↔ module-records` dependency cycle, a `core` that resolved gates and governance
+packages from its own location instead of the host's, and a `runOpsSelfTest` that assumed every `ops` id
+named an installed npm module.
+
 ### Changed — `setup` ends with the norm promulgated, in both modes
 
 - `setup` (both modes) now ends with the norm promulgated and merged — `harness sync`, the merge of

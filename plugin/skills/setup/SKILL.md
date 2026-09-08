@@ -345,7 +345,7 @@ State the requirement out loud, because it is the one thing that can leave a rep
 
 > The commit gate runs the `vibe-ops` CLI. A machine without it on `PATH` gets a refusal, not a silent
 > pass — including a contributor who clones this repository on its own. Install it with
-> `npm link -w @entelekheia/vibe-ops-cli` from a vibe-ops checkout.
+> `npm i -g @entelekheia/vibe-ops-cli`, which needs neither a vibe-ops checkout nor this plugin.
 
 This is the same precondition the plugin already carries everywhere else — its MCP server is started as
 `vibe-ops mcp` from `PATH`, and its skill-scoped hooks name the same binary — so a machine that can run

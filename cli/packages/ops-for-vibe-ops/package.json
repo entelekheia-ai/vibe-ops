@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-for-vibe-ops",
   "version": "0.1.0",
-  "private": true,
   "description": "What this repository claims about itself, checked against what it is",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-log",
   "version": "0.1.0",
-  "private": true,
   "description": "The log governance: its type declaration, template, authoring rules and migration notes — one artifact, one package (ADR-0019)",
   "type": "module",
   "license": "Apache-2.0",

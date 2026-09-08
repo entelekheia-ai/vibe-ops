@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-license",
   "version": "0.1.0",
-  "private": true,
   "description": "The licence texts this tooling hands out, their pinned sources, and the rules for applying one",
   "type": "module",
   "license": "Apache-2.0",

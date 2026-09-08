@@ -1,5 +1,16 @@
 # @entelekheia/vibe-ops-module-check
 
+## 0.1.1
+
+### Patch Changes
+
+- The gate's refusal names the registry install, not a checkout
+
+  `check.sh` refuses with `npm i -g @entelekheia/vibe-ops-cli` first, and offers `npm link -w` second as
+  the path for someone working on this repository. Until the CLI was published there was only the second,
+  so a machine without `vibe-ops` was told to clone a repository before it could commit — advice that was
+  correct for a contributor to vibe-ops and useless to everyone else the gate refuses.
+
 ## 0.1.0
 
 ### Minor Changes

@@ -109,7 +109,7 @@ The three "don't do this or it breaks" invariants are in
   the CLI's `hook` surface reads the `PostToolUse` payload itself and answers in the hook's protocol, so
   no skill needs to hand-parse JSON or hand-roll the response envelope. **This makes the plugin and the
   CLI co-dependent** — a machine without `vibe-ops` on PATH gets a loud hook failure, not a silent no-op,
-  by design (`cli/README.md` has the install recipe: `npm link -w @entelekheia/vibe-ops-cli`). Sensor:
+  by design (`npm i -g @entelekheia/vibe-ops-cli`; `cli/README.md` has the full recipe). Sensor:
   [`25-hooks-registration.sh`](../cli/packages/module-check/sh/unported/checks/25-hooks-registration.sh) validates
   every skill's `hooks:` block shape, not only `hooks/hooks.json`. See
   [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md#specification) and

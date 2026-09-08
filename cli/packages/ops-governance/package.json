@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-governance",
   "version": "0.1.0",
-  "private": true,
   "description": "The governance surface as a vibe-ops ops: records, links, and archival references",
   "type": "module",
   "license": "Apache-2.0",

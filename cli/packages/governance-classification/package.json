@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-classification",
   "version": "0.1.0",
-  "private": true,
   "description": "The information-classification policy: the four levels and what each permits in a committed file",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-gates",
   "version": "0.1.0",
-  "private": true,
   "description": "Detectors for the agents-md ops, ported from cli/packages/module-check/sh/checks/ — TypeScript, one folder per gate",
   "type": "module",
   "license": "Apache-2.0",

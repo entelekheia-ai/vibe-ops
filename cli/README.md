@@ -6,26 +6,33 @@ MCP tools.
 
 ## Install
 
-Not published to a registry yet. From a clone of this repository:
-
 ```bash
-npm install          # from the repository root — one node_modules for the whole tree
-npm run build
-node cli/packages/cli/dist/bin.js check
-```
-
-To get `vibe-ops` as a command on PATH — the plugin's skill-scoped hooks call it by name, not by path —
-link the workspace instead of installing from a registry:
-
-```bash
-npm link -w @entelekheia/vibe-ops-cli   # from the repository root, after npm install && npm run build
+npm i -g @entelekheia/vibe-ops-cli
 vibe-ops check
 ```
 
-`npm link` resolves the three internal `@entelekheia/vibe-ops-*` dependencies from this workspace's own
-`node_modules` rather than a registry, so it works even though nothing here is published. Rebuilding
-(`npm run build`) is picked up by the next invocation — each run of the command is a fresh process, so
-there is no server to restart.
+`vibe-ops` on `PATH` is the whole requirement — the plugin's skill-scoped hooks and its MCP server call
+it by name, not by path.
+
+**Every package is published, and that is what makes them opt-in.** The CLI declares the ones it needs
+and npm installs the closure, so `npm i -g` is still one command — but a record type is a *package name*
+in `config.types`, and a repository that binds `plan` to `@acme/jira-plan` never resolves
+`@entelekheia/governance-plan` at all. That only works while every default is a real package on the
+registry: a default carried inside the CLI's own tarball is present whether or not anyone asked for it,
+which is the opposite of opt-in.
+
+### To work on the CLI itself
+
+```bash
+npm install          # from the repository root — one node_modules for the whole tree
+npm run build        # core builds first, explicitly; see AGENTS.md for why
+npm link -w @entelekheia/vibe-ops-cli
+```
+
+`npm link` points `vibe-ops` at this working tree, so `npm run build` is live in the next invocation —
+each run is a fresh process, and there is no server to restart. It replaces a global install and is
+replaced by one; `npm ls -g --depth=0` says which of the two is currently on `PATH`, and `readlink -f
+"$(command -v vibe-ops)"` says it more directly.
 
 ## Usage
 
