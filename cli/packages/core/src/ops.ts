@@ -306,7 +306,7 @@ async function resolveAll(
 ): Promise<Resolved[]> {
   const resolved: Resolved[] = [];
   for (const entry of entries) {
-    const gate = await loadGate(entry.gate);
+    const gate = await loadGate(entry.gate, repoRoot);
     if (BARE.test(entry.gate) && gate.definition.id !== entry.gate) {
       throw new Error(
         `ops "${opsId}" composes "${entry.gate}", which loaded a gate whose id is ` +

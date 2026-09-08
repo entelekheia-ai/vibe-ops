@@ -9,6 +9,8 @@
 // Same relationship eita has between a trait and a profile, and for the same reason: a versioned unit
 // of observation is recombinable only if it holds no opinion about what it is pointed at.
 
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { DocumentStore } from "./document.ts";
 
 /** One thing the gate saw. Never a verdict about the repository — see `level`. */
@@ -174,13 +176,23 @@ export function defineGate(
  */
 export const GATE_PREFIX = "@entelekheia/vibe-ops-gates/";
 
-export function gateSpecifierFor(name: string): string {
-  if (name.startsWith("@") || name.startsWith(".") || name.startsWith("/")) return name;
+/**
+ * `repoRoot` is what makes a repository-local gate reachable. A relative specifier handed to `import()`
+ * resolves against THE IMPORTING MODULE — this file, inside core's own `dist/` — so `./.vibe-ops/x.mjs`
+ * was looked for under `vibe-ops-core/dist/` and reported missing. Measured 2026-09-08 against a scratch
+ * repository. Absent `repoRoot` the old behaviour stands, which keeps every caller that resolves a
+ * package name unaffected.
+ */
+export function gateSpecifierFor(name: string, repoRoot?: string): string {
+  if (name.startsWith("@")) return name;
+  if (name.startsWith(".") || name.startsWith("/")) {
+    return repoRoot === undefined ? name : pathToFileURL(path.resolve(repoRoot, name)).href;
+  }
   return `${GATE_PREFIX}${name}`;
 }
 
-export async function loadGate(name: string): Promise<GatePlugin> {
-  const specifier = gateSpecifierFor(name);
+export async function loadGate(name: string, repoRoot?: string): Promise<GatePlugin> {
+  const specifier = gateSpecifierFor(name, repoRoot);
   let imported: { default?: GatePlugin };
   try {
     imported = (await import(specifier)) as { default?: GatePlugin };
