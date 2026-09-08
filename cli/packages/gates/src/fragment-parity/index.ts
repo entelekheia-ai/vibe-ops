@@ -81,6 +81,13 @@ export default defineGate(
     if (!existsSync(runnerPath)) {
       return { findings: [], examined: 0, skipped: `no runner at ${runner} — nothing to compare against` };
     }
+    // A population of zero is not a comparison, the same way it is not a reading for `classification`
+    // (`gates/src/classification/index.ts:123`) or `mirror` (`gates/src/mirror/index.ts:279`) — an
+    // entry scoped to a path this repository does not have must say so rather than print `ok` for
+    // having examined nothing (Plan-038 track 4).
+    if (files.length === 0) {
+      return { findings: [], examined: 0, skipped: `${fragment}: no file in the population — zero examined is not a reading` };
+    }
 
     const spawned = spawnSync(runnerPath, [repoRoot], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
     const shellFailures = failedFilesFor(spawned.stdout ?? "", fragment);

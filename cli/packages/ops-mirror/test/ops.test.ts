@@ -119,7 +119,6 @@ test("every fragment-parity entry actually compared, and none reported a regress
     "fragment-parity-memory-slug",
     "fragment-parity-machine-paths",
     "fragment-parity-template-attribution",
-    "fragment-parity-bridge",
     "fragment-parity-budget",
     "fragment-parity-dogfooding-drift",
   ]) {
@@ -128,6 +127,17 @@ test("every fragment-parity entry actually compared, and none reported a regress
       `${label} did not report a comparison:\n${logs.join("\n")}`,
     );
   }
+  // `.claude/**` — fragment-parity-bridge's own declared population — is entirely covered by this ops's
+  // own `ignore` (Plan-038 track 4's zero-population change turns what used to be a silent
+  // `ok 0 examined` into an honest SKIP here, in THIS repository's own checkout, not a fixture — the
+  // acceptance criterion firing on real data rather than only on a synthetic one).
+  assert.ok(
+    logs.some(
+      (line) =>
+        line.includes("SKIP  [fragment-parity-bridge]") && line.includes("zero examined is not a reading"),
+    ),
+    logs.join("\n"),
+  );
   assert.ok(!logs.some((line) => line.includes("port-regression")), logs.join("\n"));
 });
 

@@ -189,13 +189,14 @@ produce silent agreement — that is the exact failure the gate's own header was
       one shared input, in one command (`vibe-ops check --self-test`). Acceptance proved live:
       disabling `budget`'s only detection line made the new phase fail naming `budget`; restored.
 
-- [ ] **Track 4 — A comparison over nothing is not a comparison.** `fragment-parity` today returns a
-      clean result when it examined zero files. Make it return `skipped` naming the empty population,
-      the way `classification` and `mirror` already do
-      (`gates/src/classification/index.ts:122`, `gates/src/mirror/index.ts:279`). At the end
-      Plan-022's corpus-width condition is readable from the run rather than inferred from
-      `data.population`. Acceptance: an entry scoped to a path this repository does not have prints
-      `SKIP` naming why, and never `ok`.
+- [x] **Track 4 — A comparison over nothing is not a comparison.** `fragment-parity` returned `ok`
+      when it examined zero files. Now returns `skipped` naming the empty population, the same shape
+      `classification` and `mirror` already use (`gates/src/classification/index.ts:122`,
+      `gates/src/mirror/index.ts:279`). Acceptance fired on real data during implementation, not a
+      synthetic fixture: `fragment-parity-bridge` has a zero population in this repository's own
+      checkout (`.claude/**`, its declared paths, fully covered by the ops's own `ignore`) and had
+      been silently printing `ok 0 examined, 2 ignored` the whole time — it now reports `SKIP` naming
+      why, and `ops-mirror/test/ops.test.ts` asserts exactly that instead of `(compared `.
 
 - [ ] **Track 5 — The consumer contract moves to Node.** `plugin/skills/setup/templates/harness/check.sh`
       and the target's `scripts/check.sh` stop composing fragments and call `vibe-ops check`;
@@ -352,16 +353,26 @@ Run from the repository root:
   disabling `budget`'s only detection line made the phase fail naming `budget`; restored.
   Date / Author: 2026-09-07 / Danilo Borges
 
+- Decision: `fragment-parity`'s zero-population skip (Track 4) surfaced a pre-existing vacuous pass in
+  this repository's own checkout, not only in a synthetic fixture, so the fix carried a live behaviour
+  change rather than a purely defensive one.
+  Rationale: `fragment-parity-bridge` declares `.claude/**` as its population, which this ops's own
+  `ignore` config covers entirely — `0 examined, 2 ignored` was printing `ok` before the fix and now
+  prints `SKIP` naming why. `ops-mirror/test/ops.test.ts`'s comparison-ran assertion moved that label
+  out of its `(compared ` loop into a dedicated `SKIP` assertion.
+  Date / Author: 2026-09-07 / Danilo Borges
+
 ## Outcomes & Retrospective
 
-Tracks 1–3 are closed. `npm test` (643/643) and `npm run typecheck` are green after a from-scratch
+Tracks 1–4 are closed. `npm test` (643/643) and `npm run typecheck` are green after a from-scratch
 build. All nine comparable fragments now have a live `fragment-parity` entry; the other eight are
 exemptions the completeness entry can see and enforce mechanically — proved by deleting
 `fragment-parity-budget` and observing `fragment-uncovered` name `budget` by itself, then restoring it.
 Plan-022's three conditions are now all evidenced together: corpus-width and no-divergence for nine
 pairs (Track 2), and the third — a shared, deliberately-broken fixture both sides are made to fail on —
 by Track 3's `ports` self-test phase, proved live by disabling `budget`'s detection and watching it
-name `budget`.
+name `budget`. Track 4's zero-population fix landed on live evidence rather than a hypothetical: one
+of the nine entries had a real vacuous pass in this repository's own checkout the whole time.
 
 ---
 
