@@ -92,6 +92,51 @@ day its subject left.
   Evidence: `SELF-TEST FAILED: a declared-off check did not report SKIP naming its reason`, fixed by a
   substitution of the subject only.
 
+## The eight, audited — one retirable
+
+Eight fact sheets, four subagents reading in parallel, every load-bearing claim re-verified by hand
+before it was believed. The result inverts the track's expectation: **seven of the eight ports do less
+than the fragment they were written to replace.**
+
+| Fragment | Verdict | What the port does not do |
+|---|---|---|
+| `nudge-behaviour` | **retirable** | nothing — 7 of 7 assertions covered, one strengthened |
+| `private-names` | not retirable | population is `**/*.md`; the fragment's `git grep` has no pathspec (344 tracked non-markdown files), matches case-insensitively (`-i`) and literally (`-F`) where the gate compiles `new RegExp(pattern)` — case-sensitive, metacharacters live |
+| `hooks-registration` | not retirable | the `description` count check, and the **entire** skill-scoped `hooks:` population (four failure branches) — roughly half the fragment |
+| `references-completeness` | not retirable | the `vibe-ops-reference: <name>@<n>` token check (nothing in the repository reads that token) and the whole `references/*.md` population; the port checks only that `authoring.md` **exists** |
+| `license-texts` | not retirable | the `{{placeholder}}` guard, and the verification that this repository's own `LICENSE` is the real Apache-2.0 text — no ops entry reads `LICENSE` at all |
+| `plugin-root-paths` | not retirable | climb-out detection and its `plugin-root-paths: allow` marker — `mirror` has no notion of either |
+| `command-references` | not retirable | the fenced-code-block decoy; `mirror`'s `scan` reads raw text with no fence awareness, so a usage example would become a false positive |
+| `manifest-sync` | cannot tell | four comparisons map one-to-one, but `manifest-description` and `manifest-keywords` carry no fixture, and the port turns three of the fragment's designed SKIPs (absent `marketplace.json`, absent `plugin.json`, no matching entry) into FAILs |
+
+### What the audit turned up
+
+- Observation: `plugin-root-path`'s port passes the exact lines the fragment's decoy was written for, and
+  passes them **by coincidence**. The fragment fails a `${CLAUDE_PLUGIN_ROOT}/../…` reference unless the
+  line carries `plugin-root-paths: allow`; the port does a plain `existsSync` on the resolved path, and in
+  this checkout `plugin/../cli/…` resolves because `cli/` is `plugin/`'s sibling. In an installed plugin —
+  a version-pinned cache directory with no sibling `cli/` — it would not resolve, so the port's verdict on
+  the one input that matters depends on which tree it runs in. That is the failure the climb check exists
+  to catch, reproduced inside its own replacement.
+  Evidence: `grep -n '\.\./\|climb' gates/src/mirror/index.ts` finds only glob escaping;
+  `test -e plugin/../cli/packages/module-check/sh/check-agents-md.sh` succeeds;
+  `plugin/skills/setup/SKILL.md:257-258` are the live marked lines.
+
+- Observation: the eight were exempted from `fragment-parity` for a **mechanical** reason — the gate
+  compares sets of file paths and these produce none — and that exemption was read, by this plan
+  included, as though it said something about the ports. It does not. **Not one of these eight entries
+  carries a fixture**, so no one has ever watched any of these ports fail. Plan-022's third condition
+  exists for precisely this, and eight checks were routed around it by a technicality.
+  Evidence: no `fixture` key on `hooks-registration`, `authoring-completeness`, `license-text`,
+  `plugin-root-path`, `command-reference`, `manifest-description` or `manifest-keywords` in
+  `cli/packages/ops-mirror/ops.json`; the tests that look like theirs in `gates/test/mirror.test.ts`
+  build their own options objects and exercise the gate's mechanics, not these entries' configuration.
+
+- Observation: Plan-037 closed on "every one of the seventeen fragments now has a TypeScript
+  counterpart", which is true and was read as though it meant the counterpart did the same job. Seven do
+  less. The sentence that would have caught it is the one this audit asks — *which gate covers each
+  branch* — and nothing required it at the time.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually
