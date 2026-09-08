@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-09-08 |
 | Author | Danilo Borges |
 | Depends on | [RFC-0005](../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) |
