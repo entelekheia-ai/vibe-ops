@@ -150,10 +150,25 @@ Three questions, in order. A no to the first two ends the run, and that is a leg
    text — yes. An intent, a tone, a judgement about whether an abstraction is right — no. Say so and stop:
    a guard that approximates a judgement produces false positives, and a check whose standard response is
    `--no-verify` trains the reflex it exists to prevent.
-2. **Does it already exist?** Search the repository, what is already composed (`vibe-ops check --list`),
-   and any linter already configured. **This is the most common failure of this whole genre**: a confident
-   new guard for something already written and merely unwired. *Wire it* and *build it* differ by an order
-   of magnitude and only one is usually true.
+2. **Does it already exist — or would one line of the ordinary toolchain do it?** Two lookups, and the
+   second is the one that gets skipped. First: search the repository, what is already composed
+   (`vibe-ops check --list`), and any linter already configured. **This is the most common failure of this
+   whole genre**: a confident new guard for something already written and merely unwired. *Wire it* and
+   *build it* differ by an order of magnitude and only one is usually true.
+
+   Second, and it decides whether this skill should run at all: **does the build, the test runner or the
+   CI already detect this, or could it with one line?** A gate is governance tooling and **must not stand
+   in for a build or a CI**. Ask it out loud, in these words: *how did teams do this before?* Measured
+   2026-09-08 in a consumer repository — a local gate was written for "a type error in a file no build
+   compiles", proven red with a decoy and self-testing, and the answer was
+   `"pretest": "npm run build && npm run typecheck"`: one line, same case, same cost. The gate was
+   deleted. **The built thing worked**, which is why no amount of testing it would have surfaced the
+   waste; only the question did, and the same question had already killed a hand-written staleness
+   detector that `tsc --build` implements natively, in the same session.
+
+   What a gate legitimately adds over the one-liner, and the only grounds for writing one anyway: it
+   fires at a commit attempt by someone who did not run the suite, it carries a version so two readings
+   stay comparable, and its finding accumulates as a series. Name which of the three you are buying.
 3. **Would blocking on it punish the wrong action?** A violation repairable in sixty seconds without a
    context switch can block. One needing a ceremony — consolidating a corpus, rebuilding an index — must
    warn and name what fixes it. Getting this wrong is how a gate is switched off in its first week.
@@ -191,6 +206,12 @@ Three properties are where a first gate goes wrong:
   repository's own `ignore` config. A hardcoded exclusion here is invisible to the person it affects.
 - **A gate does not decide whether a finding blocks.** It declares a default `level`; the repository
   overrides it by rule, by label, or with `"*"`.
+- **A gate that invokes a toolchain resolves that toolchain from where it lives, not from the tree under
+  examination.** Resolving your own tool is not the same act as choosing your subject, which stays
+  `repoRoot` plus the population. Get it wrong and the gate is unverifiable by construction: a self-test
+  fixture tree **is** its own `repoRoot`, with no install inside it, so a gate that only looked there
+  reports `skipped` and can never fire on its own fixture — measured 2026-09-08 as `declared fixture did
+  not fire`, fixed by walking up from the gate's own file as a fallback.
 - **Read the parsed document, not the file.** `documents.get(file)` carries the tree; `proseText` masks
   code spans and `describedText` keeps them, and which one a detector reads decides whether a quoted
   example counts as a mention. A line-based regex over the raw text is how a gate accuses its own

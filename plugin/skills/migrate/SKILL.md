@@ -177,7 +177,16 @@ Per artifact: migrated, skipped (and why), or needs-a-decision (and what the dec
 migrates nothing and explains three blockers has done its job.
 
 **Never report a migration that did not happen.** The stamp is the evidence — an artifact whose stamp did
-not move was not migrated, whatever else the run did to it. For a binding the evidence is
+not move was not migrated, whatever else the run did to it.
+
+**Say out loud when the run leaves the repository declaring an old version, because nothing else will.**
+A local template is the authority, so a repository whose template declares `plan@0.1` beside records at
+`plan@0.1` is reported as *current* by every surface — `records handling` answers "current shape, handle
+it as written" and `harness audit` reports "0 behind the current template" — while the norm is two shapes
+ahead. Measured 2026-09-08. Declaring the real version is still right, and stamping the newest one would
+have been a false declaration; but the honest declaration is also the act that makes the debt silent, so
+the report is the only place it is ever said. Name the gap in versions and what adopting the newer shape
+would cost. For a binding the evidence is
 `config list --show-origin` after the run, not the command's exit code.
 
 Report the second population separately, and by its own evidence: the gate's verdict, not a count of
