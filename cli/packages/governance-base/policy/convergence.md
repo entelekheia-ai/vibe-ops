@@ -80,7 +80,8 @@ at all. Two things follow, and only the first is obvious:
 
 1. The target path.
 2. The target state — this skill's own `SKILL.md`, naming the steps or headings that declare it.
-3. This file, `${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`, for the verbs.
+3. This file, read with `vibe-ops records norm --type base --facet policy --name convergence --print`,
+   for the verbs.
 4. The scope — `audit` or the survey ahead of a full run, plus any narrowing to one file or folder.
 
 It returns a gap-list table (path · state · verb · evidence), the rows needing a human decision, and what
