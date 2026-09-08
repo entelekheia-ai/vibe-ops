@@ -99,7 +99,7 @@ Either way the `command` is `vibe-ops` directly: no `sh`, no wrapper, **no `comm
 without the CLI on `PATH` must fail loudly rather than present an install that looks like it works.
 
 Update `hooks.json`'s top-level `description` in the same edit. It states how many shipped `.sh` scripts
-are registered, and [`25-hooks-registration.sh`](../../cli/packages/module-check/sh/checks/25-hooks-registration.sh)
+are registered, and [`25-hooks-registration.sh`](../../cli/packages/module-check/sh/unported/checks/25-hooks-registration.sh)
 checks that number — a `command: "vibe-ops"` entry ships no script and does not count toward it.
 
 ## 5. Exercise it with a real payload on a real stdin
@@ -123,7 +123,7 @@ plugin only after an uninstall/install cycle.
 **A headless `claude -p` run does not deliver a `Stop` hook**, and each `-p` invocation ends its session —
 so `SessionEnd` clears per-session state and every resumed turn arrives as a *first* event. Session-scoped
 behaviour is exercised in a real session, or against fixtures the way
-[`27-nudge-behaviour.sh`](../../cli/packages/module-check/sh/checks/27-nudge-behaviour.sh) does.
+[`27-nudge-behaviour.sh`](../../cli/packages/module-check/sh/unported/checks/27-nudge-behaviour.sh) does.
 
 ## 6. If it keeps state, say who deletes it
 

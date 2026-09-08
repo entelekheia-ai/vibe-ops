@@ -39,7 +39,7 @@ keeps a third-party ops from shadowing a surface, and a surface added later from
 - **A malformed payload, an unresolvable ops, or a declared `records.*` path that does not exist produce
   no output and exit 0** — fail silent, never fail open while appearing to work (ADR-0009, obligation 3).
   The sensor for a broken *registration* is
-  [`25-hooks-registration.sh`](../../cli/packages/module-check/sh/checks/25-hooks-registration.sh), not
+  [`25-hooks-registration.sh`](../../cli/packages/module-check/sh/unported/checks/25-hooks-registration.sh), not
   this process's exit code.
 - **Output is exactly one line of JSON**, shaped
   `{"hookSpecificOutput":{"hookEventName":"<event>","additionalContext":"<text>"}}`.

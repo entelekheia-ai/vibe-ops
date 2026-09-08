@@ -1,7 +1,7 @@
 // `vibe-ops check` — the governance gate, and since Plan-038 track 6 the WHOLE of it.
 //
 // Two halves, reported as one `N checks, M failed` line: the shell fragments still under this package's
-// own sh/checks/ — eight, after track 7 retired the nine whose ports met Plan-022's bar — and the ops
+// own sh/unported/checks/ — eight, after track 7 retired the nine whose ports met Plan-022's bar — and the ops
 // this repository declares in `config.ops`. Before track 6 this module was a wrapper around the runner
 // and nothing else, so a commit gate ran the fragments and none of the gates written to replace them.
 //
@@ -9,16 +9,17 @@
 // this module — never from PATH and never by searching upward for a checkout.
 
 import { defineModule, effectiveOps, opsSpecifier, settingsFor } from "@entelekheia/vibe-ops-core";
+import { PARITY_FIXTURE } from "./fixture.ts";
 import type { ModuleContext, ModulePlugin, ModuleResult, OpsFinding, OpsPopulation, OpsSkip } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // dist/index.js -> ../sh
-const RUNNER = path.join(here, "..", "sh", "check-agents-md.sh");
+const RUNNER = path.join(here, "..", "sh", "unported", "check-agents-md.sh");
 
 /** One ops's self-test, as its own exit code and its own text. An ops that cannot be loaded is a failure,
  *  never a silent pass — an absent suite and a clean one are the same output otherwise. */
@@ -84,9 +85,20 @@ const OPS_FOR_PARITY = ["governance", "agents-md", "exposure", "mirror"] as cons
 async function runPortsAgainstFixture(): Promise<{ id: string; code: number; output: string }> {
   const tmp = mkdtempSync(path.join(tmpdir(), "vibeops-check-parity-"));
   try {
-    const emitted = spawnSync(RUNNER, ["--emit-fixture", tmp], { encoding: "utf8" });
-    if (emitted.error || emitted.status !== 0) {
-      const why = emitted.error?.message ?? emitted.stderr ?? `exit ${String(emitted.status)}`;
+    // Written from `PARITY_FIXTURE` rather than spawned out of the shell runner's `--emit-fixture`
+    // (Plan-038 track 7). The evidence for nine retired fragments' ports may not depend on a script that
+    // is itself being retired — a fixture reached through the thing it outlives is a fixture that leaves
+    // with it.
+    try {
+      for (const [relative, content] of Object.entries(PARITY_FIXTURE)) {
+        const destination = path.join(tmp, relative);
+        mkdirSync(path.dirname(destination), { recursive: true });
+        writeFileSync(destination, content);
+      }
+      spawnSync("git", ["-C", tmp, "init", "-q"], { encoding: "utf8" });
+      spawnSync("git", ["-C", tmp, "add", "-A"], { encoding: "utf8" });
+    } catch (error) {
+      const why = error instanceof Error ? error.message : String(error);
       return { id: "ports", code: 2, output: `FAIL  [ports] could not build the parity fixture: ${why}` };
     }
 

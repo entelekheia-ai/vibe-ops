@@ -48,14 +48,14 @@
         "left": {
           "scan": "id=\"([a-z-]+)\"",
           "in": [
-            "cli/packages/module-check/sh/checks/15-manifest-sync.sh",
-            "cli/packages/module-check/sh/checks/25-hooks-registration.sh",
-            "cli/packages/module-check/sh/checks/27-nudge-behaviour.sh",
-            "cli/packages/module-check/sh/checks/50-private-names.sh",
-            "cli/packages/module-check/sh/checks/55-references-completeness.sh",
-            "cli/packages/module-check/sh/checks/70-plugin-root-paths.sh",
-            "cli/packages/module-check/sh/checks/90-license-texts.sh",
-            "cli/packages/module-check/sh/checks/95-command-references.sh"
+            "cli/packages/module-check/sh/unported/checks/15-manifest-sync.sh",
+            "cli/packages/module-check/sh/unported/checks/25-hooks-registration.sh",
+            "cli/packages/module-check/sh/unported/checks/27-nudge-behaviour.sh",
+            "cli/packages/module-check/sh/unported/checks/50-private-names.sh",
+            "cli/packages/module-check/sh/unported/checks/55-references-completeness.sh",
+            "cli/packages/module-check/sh/unported/checks/70-plugin-root-paths.sh",
+            "cli/packages/module-check/sh/unported/checks/90-license-texts.sh",
+            "cli/packages/module-check/sh/unported/checks/95-command-references.sh"
           ]
         },
         "right": {

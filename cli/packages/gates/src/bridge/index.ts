@@ -1,4 +1,4 @@
-// Ported from cli/packages/module-check/sh/checks/30-bridge.sh. The .agents/ ↔ .claude/ bridge. Two
+// Ported from cli/packages/module-check/sh/unported/checks/30-bridge.sh. The .agents/ ↔ .claude/ bridge. Two
 // distinct failures: a real file where a symlink belongs, and a symlink that git checked out as text
 // (core.symlinks=false) — which looks like a working rule file containing one line of nonsense.
 //

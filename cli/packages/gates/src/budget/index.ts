@@ -1,4 +1,4 @@
-// Ported from cli/packages/module-check/sh/checks/10-budget.sh — behaviour unchanged, only the
+// Ported from cli/packages/module-check/sh/unported/checks/10-budget.sh — behaviour unchanged, only the
 // language. See project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md: this gate runs
 // beside the shell fragment until the two are shown to agree, achado por achado.
 //

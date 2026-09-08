@@ -1,4 +1,4 @@
-// Ports the detection half of module-check/sh/checks/20-links.sh onto the parsed model instead of a
+// Ports the detection half of module-check/sh/unported/checks/20-links.sh onto the parsed model instead of a
 // fenced-block-and-code-span-stripped-then-regexed file. The fragment strips backticks before it looks
 // for `](...)`, which is correct for its own purpose and the reason it has never seen a link written
 // inside a code span. This gate needs no equivalent stripping: a link inside a code_span never becomes

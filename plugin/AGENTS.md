@@ -58,7 +58,7 @@ The three "don't do this or it breaks" invariants are in
   in a headless `-p` run** (measured 2026-08-06, claude-code@2.1.221 — nothing reached the transcript),
   and each `-p` invocation ends its session, so `SessionEnd` clears per-session state and every resumed
   turn arrives as a *first* event. Exercise session-scoped behaviour in a real session, or against
-  fixtures — [`27-nudge-behaviour.sh`](../cli/packages/module-check/sh/checks/27-nudge-behaviour.sh) is
+  fixtures — [`27-nudge-behaviour.sh`](../cli/packages/module-check/sh/unported/checks/27-nudge-behaviour.sh) is
   the pattern.
 
 ### Releasing, and why the install goes stale
@@ -110,7 +110,7 @@ The three "don't do this or it breaks" invariants are in
   no skill needs to hand-parse JSON or hand-roll the response envelope. **This makes the plugin and the
   CLI co-dependent** — a machine without `vibe-ops` on PATH gets a loud hook failure, not a silent no-op,
   by design (`cli/README.md` has the install recipe: `npm link -w @entelekheia/vibe-ops-cli`). Sensor:
-  [`25-hooks-registration.sh`](../cli/packages/module-check/sh/checks/25-hooks-registration.sh) validates
+  [`25-hooks-registration.sh`](../cli/packages/module-check/sh/unported/checks/25-hooks-registration.sh) validates
   every skill's `hooks:` block shape, not only `hooks/hooks.json`. See
   [RFC-0001](../project/rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md#specification) and
   [Plan-009](../project/plans/shipped/009-the-first-skill-scoped-hook-and-the-cli-it-calls.md).

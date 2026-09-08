@@ -23,10 +23,10 @@ jobs:
       # Running this first means a check that has silently stopped detecting anything fails loudly
       # instead of reporting a clean tree.
       - name: Validator self-test
-        run: ./cli/packages/module-check/sh/check-agents-md.sh --self-test
+        run: ./cli/packages/module-check/sh/unported/check-agents-md.sh --self-test
 
       - name: Instruction files
-        run: ./cli/packages/module-check/sh/check-agents-md.sh
+        run: ./cli/packages/module-check/sh/unported/check-agents-md.sh
 
       # skills/license-setup ships templates/ensure-license-headers.sh into every repo the skill
       # touches; this is the first thing that ever actually executes it (issue #12).

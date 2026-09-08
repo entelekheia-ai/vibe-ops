@@ -34,7 +34,7 @@ mkdir -p "$GATE_ARTIFACT_DIR"
 # strictly more than the fragments' own: it also chains each ops's fixture and the `ports` phase that
 # makes a fragment and its port fail on ONE shared input. More expensive, on the one trigger that had
 # already accepted the cost of a self-test.
-if git diff --cached --name-only --diff-filter=ACMR | grep -q '^cli/packages/module-check/sh/checks/'; then
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^cli/packages/module-check/sh/unported/checks/'; then
   if ! vibe-ops check --self-test; then
     echo "pre-commit: the built-in checks' self-test failed — commit refused." >&2
     exit 1

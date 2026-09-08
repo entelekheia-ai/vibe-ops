@@ -1,4 +1,4 @@
-// Ported from cli/packages/module-check/sh/checks/40-frontmatter.sh and 45-skill-frontmatter.sh — the
+// Ported from cli/packages/module-check/sh/unported/checks/40-frontmatter.sh and 45-skill-frontmatter.sh — the
 // same detector against three schemas: *this markdown declares the frontmatter its type requires*. One
 // gate, an `options.schema` argument, and a third type costs a schema rather than a fragment
 // (RFC-0001, Implementation Notes) — `agent` is that third type, added by Plan-024 with no shell

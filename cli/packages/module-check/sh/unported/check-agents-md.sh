@@ -63,7 +63,15 @@ skip() { printf 'SKIP  [%s] %s\n' "$1" "$2"; }
 head_() { CHECKS=$((CHECKS + 1)); }
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-HOME_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+# Two levels, not one: this script moved into sh/unported/ when Plan-038 track 7 separated the fragments
+# whose ports do not yet cover them from the gate's own tree. `HOME_ROOT` is still the PACKAGE root — it
+# is what `gate-emit.sh` and every fragment resolve against — so it climbs past `unported/` as well.
+HOME_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+# Where this runner's own fragments live. Named once rather than spelled out at each of the four sites
+# that used to write the literal path — spelling a path in several places is how the harness template's
+# sibling branch came to disagree with reality for months without anything reporting it.
+# shellcheck disable=SC2034  # read by the composition below, not by any fragment
+FRAGMENT_DIR="$HOME_ROOT/sh/unported/checks"
 
 # --- path helpers -------------------------------------------------------------------------------
 # No realpath/readlink -f: neither is portable to a stock macOS. Paths here are always relative to
@@ -138,7 +146,7 @@ COMPOSED_SRC=()
 COMPOSED_VER=()
 
 compose_checks() {
-  local dirs="$HOME_ROOT/sh/checks${VIBE_OPS_CHECK_DIRS:+:$VIBE_OPS_CHECK_DIRS}"
+  local dirs="$FRAGMENT_DIR${VIBE_OPS_CHECK_DIRS:+:$VIBE_OPS_CHECK_DIRS}"
   local dir frag base id fn oldifs="$IFS"
   IFS=':'
   # shellcheck disable=SC2086
@@ -169,7 +177,7 @@ compose_checks() {
       # travels as such — which is the same rule the record side follows: report it, never default it.
       case "$CHECK_VERSION" in
         ''|*[!0-9]*)
-          if [ "$dir" = "$HOME_ROOT/sh/checks" ]; then
+          if [ "$dir" = "$FRAGMENT_DIR" ]; then
             echo "fragment $frag declares no integer CHECK_VERSION" >&2
             exit 2
           fi
@@ -182,7 +190,7 @@ compose_checks() {
     done
   done
   if [ "${#COMPOSED_IDS[@]}" -eq 0 ]; then
-    echo "no checks composed — expected fragments in $HOME_ROOT/sh/checks" >&2
+    echo "no checks composed — expected fragments in $FRAGMENT_DIR" >&2
     exit 2
   fi
 }
