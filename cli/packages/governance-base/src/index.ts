@@ -46,5 +46,21 @@ export type { Dispatch, DispatchOptions, MigrationNote } from "./dispatch.ts";
 export type { FoundCitation, FoundLink } from "./links.ts";
 export { parseTypeUnit, resolveTypeUnit, resolveTypeUnitAt } from "./type-unit.ts";
 export type { ResolvedTypeUnit, TypeUnit, TypeUnitCarrier, TypeUnitSchema } from "./type-unit.ts";
-export { listMigrationNotes as listNormMigrationNotes, migrationsDirFor, resolveNormFacet } from "./norm-facet.ts";
-export type { NormAnswer, NormFacet } from "./norm-facet.ts";
+export { describeNormType, listMigrationNotes as listNormMigrationNotes, migrationsDirFor, resolveNormFacet } from "./norm-facet.ts";
+export type { NormAnswer, NormFacet, NormTypeDescription } from "./norm-facet.ts";
+
+// `base` itself is an activatable, policy-only governance (Plan-040 Track 1, RFC-0005 §3): it ships no
+// record, only the policy files that used to live under `plugin/references/` —
+// `records norm --type base --facet policy --name convergence|migration`. Built with this package's own
+// `defineGovernance`, imported locally rather than through the package specifier: this IS
+// `@entelekheia/governance-base`, so importing itself would be circular for no reason. Its `type.json`
+// declares `facets` and no `template`/`authoring`/`migrations`, which is exactly the policy-only shape
+// `parseTypeUnit` now admits.
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { defineGovernance } from "./define-governance.ts";
+
+export default defineGovernance({
+  root: path.join(path.dirname(fileURLToPath(import.meta.url)), ".."),
+  version: "0.0.1",
+});

@@ -427,7 +427,7 @@ export default defineModule(
     }
 
     // No emitter: this module declares no `emits`. "checks-run"/"checks-failed" counted CHECKS, the
-    // taxonomy references/harness-pair.md forbids because it grows with the tooling instead of with
+    // taxonomy the harness-pair policy forbids (`vibe-ops harness policy --name pair`) because it grows with the tooling instead of with
     // the phenomena (RFC-0001, Rationale). agents-md's memory-slug gate is the replacement signal.
 
     // Exit 2 has two unrelated causes and used to print the same six words for both: the runner refusing

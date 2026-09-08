@@ -19,7 +19,7 @@ export interface GateFinding {
   /**
    * Names the FAILURE MODE, never the check — `machine-path`, not `52-machine-paths`. It defaults to
    * the gate's own id, and differs only when one gate detects more than one distinct failure.
-   * references/harness-pair.md states this as naming discipline; here it is the field.
+   * the harness-pair policy (`vibe-ops harness policy --name pair`) states this as naming discipline; here it is the field.
    */
   readonly rule: string;
   /** Repository-relative. Absent when the finding is about the repository rather than a file in it. */

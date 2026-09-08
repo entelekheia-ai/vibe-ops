@@ -55,7 +55,7 @@ the issue points *down* to the dossier path. Neither carries the other's content
 
 ## The exposure contract, and why the issue is the exposed half
 
-[`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../../plugin/references/exposure-contract.md) governs both artifacts,
+The exposure policy (`vibe-ops records norm --type classification --facet policy --name exposure --print`) governs both artifacts,
 but they are not equally exposed and the intuition runs backwards:
 
 - **The dossier is the safer one.** It is committed, and it is deleted at closure — a mistake in it lives in

@@ -103,7 +103,7 @@ fact about the repository, never a hand-maintained copy of the types it serves.
 
 - **The ops owns emission, never the gate.** Population (`--examined`) and moment are knowable only to
   the composition; a gate handed a file list cannot enforce "zero examined is not a reading"
-  ([`plugin/references/harness-pair.md`](../plugin/references/harness-pair.md)).
+  (`vibe-ops harness policy --name pair --print`).
 - **The emitter is built by the ops, not injected.** `defineOps` calls `createEmitter` itself, from
   `context.config.artifactDir` — emission is doubly opt-in the same way a plain module's is, but the
   decision of *what* emits lives in the composition's own entries (`{ gate: "…", emits: true }`).

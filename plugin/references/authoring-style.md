@@ -109,7 +109,7 @@ schemes" — leaks nothing greppable and is still unreadable to anyone outside t
 this-product's-history what is a general failure mode. Describe the failure mode, not its instance.
 
 That is the summary. The contract itself — what may cross, what the excluded half is written as instead,
-which section of each artifact actually leaks, and which three shapes a guard catches — is
-[`exposure-contract.md`](exposure-contract.md). It governs every record this plugin writes, not only the
+which section of each artifact actually leaks, and which three shapes a guard catches — is the exposure
+policy, `vibe-ops records norm --type classification --facet policy --name exposure --print`. It governs every record this plugin writes, not only the
 documents this file covers, and it is applied **while writing**: a published document describing its own
 private context cannot be fixed afterwards by editing the file.

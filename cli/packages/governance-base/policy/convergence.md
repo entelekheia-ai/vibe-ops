@@ -4,7 +4,7 @@ vibe-ops-reference: convergence-policy@2
 
 # Convergence policy — two kinds of skill, four verbs
 
-Decision record: [ADR-0001](../../project/adr/0001-skill-taxonomy-target-state-vs-event.md).
+Decision record: [ADR-0001](../../../../project/adr/0001-skill-taxonomy-target-state-vs-event.md).
 
 Skills in this plugin are invoked against repositories that already exist at least as often as against new
 ones. This file is how a skill knows which situation it is in and what it is allowed to do about it.

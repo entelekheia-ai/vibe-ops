@@ -6,7 +6,7 @@
 //
 // THE OPS OWNS EMISSION, NEVER THE GATE. The two things only the producing side can know both belong
 // to the composition: the POPULATION (how many files this entry decided were in scope) and the
-// MOMENT. A gate handed a file list cannot know either, and references/harness-pair.md's rule that
+// MOMENT. A gate handed a file list cannot know either, and the harness-pair policy's rule (`vibe-ops harness policy --name pair`) that
 // ZERO EXAMINED IS NOT A READING is therefore one only an ops can enforce.
 //
 // THE EMITTER IS BUILT HERE, NOT INJECTED. Emission is an ops concern and "if applicable" is decided

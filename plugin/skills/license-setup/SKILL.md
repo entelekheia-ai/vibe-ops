@@ -16,7 +16,7 @@ selected by answers instead of reinvented each time.
 
 **This is a target-state skill.** Whether the repo has a `LICENSE` already is a detail of the same job; a
 refresh reconciles what is there against the answers from Step 1. Apply the four verbs from
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) — in
+`vibe-ops records norm --type base --facet policy --name convergence --print` — in
 particular, a repo whose headers follow a coherent existing convention is an `adopt`, not a `migrate`.
 
 ---

@@ -36,7 +36,7 @@ import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
 import { composedOwnership } from "@entelekheia/vibe-ops-harness";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
-import { listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
+import { describeNormType, listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
 import type { NormFacet } from "@entelekheia/governance-base";
 import type { ListField } from "./show.ts";
 
@@ -154,7 +154,12 @@ export default defineModule(
             type: "string",
             description: "which facet of the type's unit",
             required: true,
-            choices: ["template", "authoring", "migrations"],
+            choices: ["template", "authoring", "migrations", "policy"],
+          },
+          {
+            name: "name",
+            type: "string",
+            description: "which of the type's facets.* policy files — required for, and only valid with, --facet policy",
           },
           { name: "print", type: "boolean", description: "print the facet's content (for migrations: the note paths)" },
         ],
@@ -203,10 +208,41 @@ export default defineModule(
     if (context.command === "norm") {
       const type = context.flags["type"];
       const facet = context.flags["facet"] as NormFacet;
+      const nameFlag = context.flags["name"];
+      const name = typeof nameFlag === "string" && nameFlag !== "" ? nameFlag : undefined;
       if (typeof type !== "string" || type === "") {
         return { code: 2, summary: "norm needs --type <record type>" };
       }
-      const answer = await resolveNormFacet(type, facet, context.repoRoot, context.config, context.sourceRoot);
+      // `--name` and `--facet policy` come as a pair, in both directions: one without the other is a
+      // request that cannot be answered — either "which facet" (no --name) or "--name means nothing
+      // here" (a facet with one fixed field already).
+      if (facet === "policy" && name === undefined) {
+        return { code: 2, summary: "norm --facet policy needs --name — which of the type's facets to serve" };
+      }
+      if (facet !== "policy" && name !== undefined) {
+        return { code: 2, summary: `norm --name only applies to --facet policy, not --facet ${facet}` };
+      }
+      // Both refusals below need to know what the type ACTUALLY declares, so they name it rather than
+      // reporting a bare "does not exist" — the same "visible and attributable" standard the rest of
+      // this facet ladder already holds itself to.
+      if (facet === "policy" || facet === "template") {
+        const description = await describeNormType(type, context.repoRoot, context.config, context.sourceRoot);
+        if (description !== undefined) {
+          if (facet === "template" && !description.hasTemplate) {
+            return { code: 2, summary: `${type} is policy-only — it declares no template` };
+          }
+          if (facet === "policy" && !description.facetNames.includes(name!)) {
+            return {
+              code: 2,
+              summary:
+                description.facetNames.length === 0
+                  ? `${type} declares no facets — nothing named "${name}" to serve`
+                  : `${type} declares no facet "${name}" — it has: ${description.facetNames.join(", ")}`,
+            };
+          }
+        }
+      }
+      const answer = await resolveNormFacet(type, facet, context.repoRoot, context.config, context.sourceRoot, name);
       if (answer === undefined) {
         return {
           code: 2,

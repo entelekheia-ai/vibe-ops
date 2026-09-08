@@ -19,7 +19,7 @@ vibe-ops-template: rfc@2
 | Status | Draft |
 | Created | 2026-08-19 |
 | Author | Danilo Borges |
-| Related | [RFC-0001](0001-gates-and-ops-as-the-cli-unit-of-composition.md) · [RFC-0002](0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) · [`plugin/references/ownership.md`](../../plugin/references/ownership.md) |
+| Related | [RFC-0001](0001-gates-and-ops-as-the-cli-unit-of-composition.md) · [RFC-0002](0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) · [`harness/policy/ownership.md`](../../cli/packages/harness/policy/ownership.md) |
 
 ---
 
@@ -330,8 +330,8 @@ them, so naming it after that one would misdescribe it.
   type contributes composition, and the detectors it composes are the generic ones that already exist.
 - [RFC-0002](0002-bootstrapping-a-repository-and-what-auto-configuration-may-decide.md) — the channel
   question. This RFC settles one part of it: the CLI is what binds, and the plugin surface derives.
-- [`plugin/references/ownership.md`](../../plugin/references/ownership.md) — the three classes and the test
+- [`harness/policy/ownership.md`](../../cli/packages/harness/policy/ownership.md) — the three classes and the test
   for placing a new path, which the fourth class extends.
-- [`plugin/references/harness-pair.md`](../../plugin/references/harness-pair.md) — why a reading over an
+- [`harness/policy/pair.md`](../../cli/packages/harness/policy/pair.md) — why a reading over an
   empty population is not a reading, which is the same argument behind refusing an ambiguous type name
   rather than resolving it.

@@ -31,13 +31,15 @@ test("harness declares its verbs and needsSource, and only the one that writes i
     harness.definition.commands?.map((c) => c.name),
     // `resolve` waited on Plan-027 Track 1 rather than being written alongside the other four: adding a
     // fifth resolver while four had already diverged would have added the defect that plan removes.
-    ["resolve", "shape", "status", "catalog", "audit", "sync"],
+    // `policy` joined in Plan-040 Track 1 — the harness's own policy prose (model, pair, ownership),
+    // moved out of `plugin/references/` since `harness` is CLI-internal and has no `records norm` ladder.
+    ["resolve", "shape", "status", "catalog", "audit", "policy", "sync"],
   );
   assert.equal(harness.definition.needsSource, true);
   assert.deepEqual(
     harness.definition.commands?.filter((c) => c.destructive === true).map((c) => c.name),
     ["sync"],
-    "five verbs read and one writes; a reading verb that asked for confirmation would teach people to skip it",
+    "six verbs read and one writes; a reading verb that asked for confirmation would teach people to skip it",
   );
 });
 

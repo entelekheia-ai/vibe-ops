@@ -22,7 +22,7 @@ document type — it is writing back before distilling.
 **Usage:** `/close-task <id>` — e.g. `/close-task 042`. Locate `project/tasks/<NNN>-<slug>.md`; if `<id>`
 matches nothing there, say so rather than guessing at a plan.
 
-**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one
+**This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It closes one
 unit of work, once. Routing what the work *taught* is governed by
 [`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
 promotion test lives there, not in this file.
@@ -164,7 +164,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    of a document that was never as exposed. The dossier is about to be deleted; the comment is permanent
    and, on a public repository, world-readable the instant it is posted — editing it later leaves an edit
    history. Apply
-   [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md) to
+   `vibe-ops records norm --type classification --facet policy --name exposure --print` to
    every line as you lift it: a repository name that explained a delay inside the dossier becomes the
    constraint it imposed; a path pasted from a terminal becomes a repository-relative one; a routed
    learning is named by *what* it was and where it landed, never by the private note it came from.

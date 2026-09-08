@@ -19,7 +19,7 @@ Four record types, one command. Which one to write is a real question, and the w
 If the user did not say which, ask — do not infer from the topic. A misfiled record is worse than a
 missing one, because the lifecycle attached to it is wrong from the start.
 
-**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records that
+**This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It records that
 something happened at a point in time. Running it twice correctly produces two records; it has no update
 mode. An existing record is advanced through its own lifecycle, never re-scaffolded.
 
@@ -122,7 +122,7 @@ conversation's language** — that is a product guarantee of this plugin, not a 
   nobody re-reads forty governance records first. So no machine path, no repository named that is not this
   one, no pointer to a private companion; anything outside this repository is stated as the *constraint it
   imposes*, never as a name. What may cross, and which section of each of the four types actually leaks, is
-  in [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md).
+  in the exposure policy: `vibe-ops records norm --type classification --facet policy --name exposure --print`.
   This is the one thing in the skill that a later edit cannot repair.
 
 ### For a plan: settle the delegation split before writing, and write it down

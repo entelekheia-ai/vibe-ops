@@ -20,13 +20,22 @@ import path from "node:path";
 import { resolveFromHost } from "./host-resolver.ts";
 import type { VibeOpsConfig } from "./config.ts";
 
-/** The shipped bindings — a product statement, not discovery. A new DEFAULT type is an edit here. */
+/**
+ * The shipped bindings — a product statement, not discovery. A new DEFAULT type is an edit here.
+ *
+ * `base` is the one entry here that ships no record — it activates `@entelekheia/governance-base`
+ * purely for the policy facets it now carries (`records norm --type base --facet policy --name …`,
+ * Plan-040 Track 1: `convergence-policy`, `template-shape-change`). Every governance package already
+ * depends on `governance-base`, so binding it by default costs a consumer nothing it did not already
+ * install, unlike `license`/`classification`, which stay opt-in because a repository may not want either.
+ */
 export const DEFAULT_GOVERNANCE_BINDINGS: Readonly<Record<string, string>> = {
   adr: "@entelekheia/governance-adr",
   rfc: "@entelekheia/governance-rfc",
   plan: "@entelekheia/governance-plan",
   task: "@entelekheia/governance-task",
   log: "@entelekheia/governance-log",
+  base: "@entelekheia/governance-base",
 };
 
 export interface GovernanceBinding {
@@ -64,9 +73,16 @@ export interface ActivatedGovernance {
   /** The parsed type.json; facet paths are package-relative, resolved against `root`. */
   readonly unit: {
     readonly type: string;
-    readonly template: string;
-    readonly authoring: string;
-    readonly migrations: string;
+    /**
+     * Absent for a POLICY-ONLY package — one that ships `facets` and no record of its own (`base`,
+     * Plan-040 Track 1). `isActivated` below no longer requires this to be a string; a caller reading
+     * it for a record (`activatedTemplatePaths`) must treat its absence as "this package has none".
+     */
+    readonly template?: string;
+    readonly authoring?: string;
+    readonly migrations?: string;
+    /** Named policy files this package serves through `records norm --facet policy --name <key>`. */
+    readonly facets?: Readonly<Record<string, string>>;
     /**
      * The record schema and layout facts an ops derivation reads (Plan-034). Optional in the interface
      * because core verifies only what it reads — `defineGovernance` stamps the full parsed type.json,
@@ -86,8 +102,12 @@ const activationCache = new Map<string, ActivatedGovernance | undefined>();
 
 function isActivated(value: unknown): value is ActivatedGovernance {
   if (typeof value !== "object" || value === null) return false;
-  const candidate = value as { root?: unknown; unit?: { type?: unknown; template?: unknown } };
-  return typeof candidate.root === "string" && typeof candidate.unit?.template === "string";
+  const candidate = value as { root?: unknown; unit?: { type?: unknown } };
+  // A record's template used to be required here; a policy-only package (`base`) declares `facets`
+  // and no template at all, so the shape check now asks only for what every activated unit truly has:
+  // a root and a type name. A caller after the record facets still treats their absence as an answer,
+  // never a crash — `activatedTemplatePaths` below is the one that reads `template` and guards it.
+  return typeof candidate.root === "string" && typeof candidate.unit?.type === "string";
 }
 
 /**
@@ -126,7 +146,9 @@ export async function activatedTemplatePaths(
   const out: Record<string, string> = {};
   for (const name of Object.keys(effectiveGovernanceBindings(config))) {
     const activated = await activateGovernance(name, config);
-    if (activated !== undefined) out[name] = path.resolve(activated.root, activated.unit.template);
+    // A policy-only package (`base`) activates but has no template — nothing to add for it here, the
+    // same "absence is an answer, never a crash" rule the rest of this file follows.
+    if (activated?.unit.template !== undefined) out[name] = path.resolve(activated.root, activated.unit.template);
   }
   return out;
 }

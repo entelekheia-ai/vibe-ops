@@ -26,7 +26,7 @@ hallucination — and unlike most documentation, being wrong here is worse than 
 
 **This is a target-state skill.** The target is the file described below; whether one exists already is a
 detail of the same job. Before changing an existing file, apply the four verbs from
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md). Two
+`vibe-ops records norm --type base --facet policy --name convergence --print`. Two
 other references carry rules this skill does not repeat:
 [`instruction-surfaces.md`](../../references/instruction-surfaces.md) (which surface gets a fact, the
 `.agents/`↔`.claude/` bridge, nested files) and
@@ -63,7 +63,7 @@ Decide what this file covers, because it decides everything else:
 
 Read the current file and produce a gap list before writing. **Delegate that survey to the
 `vibe-ops:governance-auditor` agent** — the four inputs are in
-[`convergence-policy.md`](../../references/convergence-policy.md), and the target state is this file's
+`vibe-ops records norm --type base --facet policy --name convergence --print`, and the target state is this file's
 Steps 1 and 3–8. It has no writing tool, and the listings stay in its context rather than yours. Run these
 yourself only if the agent is not in the session's listing:
 

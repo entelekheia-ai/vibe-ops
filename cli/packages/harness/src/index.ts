@@ -10,6 +10,7 @@ import { buildCatalog } from "./catalog.ts";
 import { buildAudit } from "./audit.ts";
 import { formatResolvedHarness, resolveHarness } from "./resolve.ts";
 import { sync } from "./sync.ts";
+import { isPolicyName, POLICY_NAMES, readPolicy, resolvePolicy } from "./policy.ts";
 
 export { behindEntries, formatBehind, shippedVersion, shippedVersions, TYPES } from "./status.ts";
 export type { BehindEntry, VersionedType } from "./status.ts";
@@ -29,6 +30,8 @@ export { boundaryRefusals, currentBranch, normContent, sync } from "./sync.ts";
 export { IGNORE_BLOCK_COMMENT, IGNORE_BLOCK_NAMES, migrateIgnoreBlock } from "./ignore-block.ts";
 export type { IgnoreBlockOutcome } from "./ignore-block.ts";
 export type { RefusedPath, SyncOptions, SyncResult } from "./sync.ts";
+export { isPolicyName, policyPath, POLICY_NAMES, readPolicy, resolvePolicy } from "./policy.ts";
+export type { PolicyAnswer, PolicyName } from "./policy.ts";
 
 export default defineModule(
   {
@@ -49,6 +52,17 @@ export default defineModule(
       { name: "status", summary: "which record types are behind the norm installed at --source" },
       { name: "catalog", summary: "gates/fragments available but not composed into any ops" },
       { name: "audit", summary: "guide and sensor inventory, with the governance overlay" },
+      {
+        // The harness's own policy prose (Plan-040 Track 1) — served here rather than through
+        // `records norm --facet policy`, because `harness` is a CLI-internal module with no `type.json`
+        // and no swappable binding: there is exactly one harness, the one this CLI ships.
+        name: "policy",
+        summary: `the harness's own policy prose (${POLICY_NAMES.join(", ")})`,
+        flags: [
+          { name: "name", type: "string", description: "which policy file", required: true, choices: [...POLICY_NAMES] },
+          { name: "print", type: "boolean", description: "print the file's content" },
+        ],
+      },
       {
         name: "sync",
         summary: "promulgate the installed norm onto a branch and a tag — never merged, never pushed",
@@ -209,6 +223,27 @@ export default defineModule(
         code: 0,
         summary: `${audit.guides.length} guide(s), ${audit.sensors.length} sensor(s), ${audit.governance.reduce((n, o) => n + o.count, 0)} governance record(s)`,
         data: audit,
+      };
+    }
+
+    if (context.command === "policy") {
+      const name = context.flags["name"];
+      if (typeof name !== "string" || !isPolicyName(name)) {
+        return { code: 2, summary: `harness policy needs --name, one of: ${POLICY_NAMES.join(", ")}` };
+      }
+      const answer = resolvePolicy(name);
+      if (context.flags["print"] === true && answer.exists) {
+        const body = readPolicy(name);
+        if (context.surface === "cli") context.log(body);
+        return { code: 0, summary: `harness policy ${name}`, data: { ...answer, body } };
+      }
+      if (context.surface === "cli" && context.flags["json"] !== true) {
+        context.log(`${answer.path}${answer.exists ? "" : "  (does not exist)"}`);
+      }
+      return {
+        code: answer.exists ? 0 : 1,
+        summary: `harness policy ${name}${answer.exists ? "" : ", not present"}`,
+        data: answer,
       };
     }
 

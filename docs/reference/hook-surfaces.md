@@ -23,6 +23,8 @@ member per hook **event**; the payload field, the guard and the reply's `hookEve
 | `prefer-mcp` **(temporary)** | `PreToolUse` | `tool_input.command`, `cwd` | the command invokes a `vibe-ops` module that is also an MCP tool |
 | `harness-status --plugin <dir>` | `SessionStart` | `cwd` | a record type's promulgated version is older than the installed template's |
 | `check-global` | `Stop` | `cwd`, `stop_hook_active` | the repository declares a `vibeops.config.*` of its own — **and then it reports whether or not anything failed**, the one surface here that speaks on a clean run |
+| `plan-progress --state-dir <dir>` | `Stop` | `session_id`, `transcript_path`, `stop_hook_active` | the turn wrote to a repository whose plan is active, and left that plan's living sections alone |
+| `session-cleanup --state-dir <dir>` | `SessionEnd` | `session_id` | always — it deletes this session's own state files and never writes to stdout |
 
 **`ops` is a reserved first word.** That surface takes an arbitrary ops name, so the reservation is what
 keeps a third-party ops from shadowing a surface, and a surface added later from shadowing an ops.
@@ -61,10 +63,9 @@ Emits this repository's plan format, its next plan number, and the living-sectio
 plan template's own `LIVING SECTIONS` markers — never a list written down a second time.
 
 - **Once per session.** The marker is `vibe-ops-plan-mode-<session_id>` in `$CLAUDE_PLUGIN_DATA`, falling
-  back to `$TMPDIR`, then `/tmp`. It is deleted at `SessionEnd` by
-  [`session-state-cleanup.sh`](../../plugin/hooks/session-state-cleanup.sh) and, for a session that
-  crashed, by the age sweep in [`plan-progress-nudge.sh`](../../plugin/hooks/plan-progress-nudge.sh). A
-  state directory that cannot be written costs a repeated injection, never a failed hook.
+  back to `$TMPDIR`, then `/tmp`. It is deleted at `SessionEnd` by `session-cleanup`, and, for a session
+  that crashed, by the age sweep in `plan-progress`. A state directory that cannot be written costs a
+  repeated injection, never a failed hook.
 - **Says nothing** when the repository keeps no plans (`DIR` unresolved) or has no plan template.
 - **`$CLAUDE_PROJECT_DIR`**, when set and different from the resolved repository root, adds a request for
   the plan's own `| Repository | <path> |` row. A single-repo session never sees that sentence.
@@ -140,6 +141,27 @@ are read from, passed explicitly because the registration expands `${CLAUDE_PLUG
 unreadable directory, or a malformed payload: silence and exit 0. Every error path fails open, because an
 advisory hook must never be why a session does not start.
 
+### `plan-progress --state-dir <dir>`
+
+Notices that a turn wrote into a repository whose plan is active and left that plan's living sections —
+`Decision Log`, `Outcomes & Retrospective` — untouched, and names that one plan.
+
+- **The decision is `governance-plan`'s**, in [`nudge.ts`](../../cli/packages/governance-plan/src/nudge.ts):
+  given the repositories written to, the paths written this turn, and the plans already asked about, it
+  returns at most one plan to name. Everything host-specific — reading the session transcript, the state
+  directory, the once-per-day log — stays in the CLI wrapper.
+- **At most one plan per firing, and every plan still walked.** A second repository's plan written in the
+  same turn is marked settled even though the firing named the other one; stopping the walk at the first
+  message would re-arm it on the next firing.
+- **Says nothing** when `stop_hook_active` is true, when no repository written to has an active plan, or
+  when the plan's living sections were part of the turn.
+
+### `session-cleanup --state-dir <dir>`
+
+Deletes this session's own state files at `SessionEnd` — the plan-mode marker and the nudge bookkeeping,
+keyed by `session_id`. It never writes to stdout, on any path. A state file belonging to another session
+is never touched; one left by a session that crashed is collected by `plan-progress`'s age sweep instead.
+
 ## A hook is never an MCP tool
 
 `type: command` is a process invocation: a hook cannot call a tool, and nothing here can be "moved to
@@ -186,14 +208,16 @@ Installed when the skill loads, gone when it finishes. Combined with `paths:` th
 standing — but `paths:` makes a skill *eligible* to load, and does not guarantee the load fires; a skill
 that was never invoked installs no hook. `25-hooks-registration.sh` validates this block's shape too.
 
-## What `plugin/hooks/` still ships as shell
+## `plugin/hooks/` ships no shell
 
-These are registrations, not CLI surfaces. Each is listed with what keeps it out of the namespace above.
+Every registration names `vibe-ops`. The last two scripts became the `plan-progress` and
+`session-cleanup` surfaces above, which is what makes the plugin a binding and nothing else: a second
+agent host registers the same commands against the same CLI, copying no script.
 
-| Script | Event | Why it is still a script |
-|---|---|---|
-| [`plan-progress-nudge.sh`](../../plugin/hooks/plan-progress-nudge.sh) | `Stop` | its body is session-transcript bookkeeping, which is not governance logic and has no CLI noun; it calls `vibe-ops plan resolve` for the part that is |
-| [`session-state-cleanup.sh`](../../plugin/hooks/session-state-cleanup.sh) | `SessionEnd` | session bookkeeping, deliberately out of scope |
+The decision logic each one carries went to the package it is about rather than into the CLI: the nudge's
+is [`nudge.ts`](../../cli/packages/governance-plan/src/nudge.ts) in `governance-plan`, because deciding
+that a plan's living sections were skipped is a plan's business. That is what a governance package
+exports for a hook — a handler, not a script.
 
 ## Exercising one
 

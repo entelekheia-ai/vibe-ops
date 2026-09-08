@@ -14,12 +14,12 @@ proceeds differently and the divergence is found later by someone looking for so
 This skill converts one such rule into a pair: the prose stays, and a deterministic gate starts failing
 on the thing the prose asks nobody to do.
 
-**Read [`${CLAUDE_PLUGIN_ROOT}/references/harness-pair.md`](../../references/harness-pair.md) first.** It
+**Read the harness-pair policy first: `vibe-ops harness policy --name pair --print`.** It
 is the contract — what binds three artifacts into one signal, why the fixture is a condition of
 installation rather than a recommendation, and what a sensor may never name. This file is the procedure;
-that file is the reasoning, and it is not repeated here.
+that policy is the reasoning, and it is not repeated here.
 
-**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records one
+**This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It records one
 signal at a point in time. Running it twice correctly produces two signals; it has no update mode — a
 gate that needs to change is edited in place, and a rule that has been superseded gets its gate deleted
 rather than re-scaffolded.
@@ -296,7 +296,7 @@ Skipping this is invisible from inside the authoring repository, where everythin
 ## Step 7 — Make it report, if there is anywhere to report to
 
 Only after Steps 5 and 6. The shape, the population rules and the absent-destination guarantee are all in
-[`harness-pair.md`](../../references/harness-pair.md).
+the harness-pair policy: `vibe-ops harness policy --name pair --print`.
 
 **Add nothing to the gate.** Emission is `{ gate: "…", emits: true }` on the ops entry, and the ops builds
 the emitter itself from the repository's `artifactDir`. A gate that reached for an emitter would be

@@ -41,8 +41,8 @@ hand, while every adopted repository still composed the full set. The field was 
 
 ## The exposure contract, and why a plan is the record most exposed to it
 
-Everything in
-[`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../../plugin/references/exposure-contract.md) applies. Three
+Everything the exposure policy states (`vibe-ops records norm --type classification --facet policy --name exposure --print`)
+applies. Three
 things make a plan the worst offender among the four types:
 
 - **It is often written from outside the repository it belongs to** — the case the `Repository` row exists

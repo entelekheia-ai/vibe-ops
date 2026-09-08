@@ -89,6 +89,20 @@ export default {
         // The same policy for the RFC lifecycle's archival halves — frozen on arrival by the
         // governance rule, so a version gap there is a fact about history, not a debt.
         "template-version-rfc": ["project/rfc/implemented/**", "project/rfc/rejected/**"],
+        // Plan-040 Track 1 moved five files out of `plugin/references/` into the governance package
+        // whose policy each is, served through `records norm --facet policy` instead of a path. A link
+        // to the old path inside a record that may no longer be edited — an implemented or rejected RFC,
+        // an archived plan, CHANGELOG (what a past release actually shipped) — is a fact about what the
+        // tree looked like when it was written, and repairing it would edit a frozen record.
+        // Every OTHER record is repaired instead of exempted: the links in RFC-0001 and RFC-0003 were
+        // repointed at the moved files in the same pass, which is why `project/rfc/**` is not listed
+        // here. A living surface — an `AGENTS.md`, a skill, an open RFC or plan — stays a finding.
+        "markdown-link": [
+          "CHANGELOG.md",
+          "project/rfc/implemented/**",
+          "project/rfc/rejected/**",
+          "project/plans/shipped/**",
+        ],
       },
       // Research needs no disablement any more: the per-type entries are derived from the activated
       // governances (Plan-034), and no governance package serves research — the type entered the old

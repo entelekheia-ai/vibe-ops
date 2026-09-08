@@ -130,10 +130,11 @@ behaviour is exercised in a real session, or against fixtures the way
 Per-session state goes in `$CLAUDE_PLUGIN_DATA` (falling back to `$TMPDIR`, then `/tmp`), named
 `vibe-ops-<kind>-<session_id>`. Two things must be true, and the first was once false for a year:
 
-- [`session-state-cleanup.sh`](../../plugin/hooks/session-state-cleanup.sh) deletes it at `SessionEnd` —
-  add the name there, or nothing ever collects it. Counted once: 13 stray markers on disk.
+- The `session-cleanup` surface deletes it at `SessionEnd` — add the name to
+  [`session-cleanup.ts`](../../cli/packages/cli/src/session-cleanup.ts), or nothing ever collects it.
+  Counted once: 13 stray markers on disk.
 - `SessionEnd` never fires for a crashed or killed session, which is what the age sweep in
-  `plan-progress-nudge.sh` exists for. Keeping the `vibe-ops-*` prefix is what puts a new file under it.
+  `plan-progress` exists for. Keeping the `vibe-ops-*` prefix is what puts a new file under it.
 
 A state directory that cannot be written must cost a repeated injection, never a failed hook.
 

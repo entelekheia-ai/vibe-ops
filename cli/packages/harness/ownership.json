@@ -1,5 +1,5 @@
 {
-  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the four classes is plugin/references/ownership.md.",
+  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the four classes is served by this package too: `vibe-ops harness policy --name ownership --print` (Plan-040 Track 1).",
   "version": 2,
   "classes": {
     "norm": "This tooling owns it. Promulgation overwrites it, and a local edit is drift to be reconciled rather than a preference to be preserved.",

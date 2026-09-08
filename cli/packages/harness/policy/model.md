@@ -9,7 +9,7 @@ human reading every line. The working equation is `Agent = Model + Harness`: the
 harness is built, and it is where a repository's own leverage lives.
 
 Deliberately repo-neutral, so it can be applied to a repository it knows nothing about. The procedure that
-applies it is [`../skills/setup/SKILL.md`](../skills/setup/SKILL.md), Step H.
+applies it is [`plugin/skills/setup/SKILL.md`](../../../../plugin/skills/setup/SKILL.md), Step H.
 
 **The measurements this rests on are commands, not readings.** `vibe-ops harness shape`, `harness audit`
 and `harness catalog` answer the factual half; everything below is the half that needs judgement. A number

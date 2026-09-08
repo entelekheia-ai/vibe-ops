@@ -13,13 +13,13 @@ for too long:
 | Mode | Brings to baseline | Read first |
 |---|---|---|
 | `repo` | the repository — package/build, `project/`, docs, the rules bridge, `AGENTS.md`, a license | Steps 0–7 below |
-| `harness` | what steers the agent and what verifies it — fragments, runner wiring, fixtures, the artifact path | [`harness-pair.md`](../../references/harness-pair.md), then Step H |
+| `harness` | what steers the agent and what verifies it — fragments, runner wiring, fixtures, the artifact path | the harness-pair policy (`vibe-ops harness policy --name pair --print`), then Step H |
 
 **`harness audit` is the assessment, and it is a mode of this skill rather than a skill of its own.**
 Auditing a repository as a harness and installing one into it are the same knowledge asked two ways: what
 the apparatus should be. Splitting them gave two surfaces that both had to know it, and the survey step of
 each was the same four shell commands written twice. It reads
-[`harness-model.md`](../../references/harness-model.md) and writes nothing.
+the harness-model policy (`vibe-ops harness policy --name model --print`) and writes nothing.
 
 **If the user did not say which, ask.** Do not infer from the topic: "set up this repo" means `repo` about
 as often as it means "it has an `AGENTS.md` and nothing checks it", and the two write into different
@@ -38,7 +38,7 @@ there; never invent structure from memory. Files named `gitignore`/`editorconfig
 **This is a target-state skill, in both modes.** The templates *are* the target state, and it is applied
 to repositories that already exist as often as to new ones — an empty directory is simply the maximum-gap
 case. Read
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) before
+`vibe-ops records norm --type base --facet policy --name convergence --print` before
 touching anything that is already there; the `adopt` verb is what stops this skill from flattening a
 convention the repo settled on deliberately.
 
@@ -60,7 +60,7 @@ list** against the target state described in Steps 2–5 — each entry marked *
 or *conflicting*, with the verb to apply.
 
 **Delegate the survey to the `vibe-ops:governance-auditor` agent**, passing the four inputs
-[`convergence-policy.md`](../../references/convergence-policy.md) names — the target path, *this file with
+`vibe-ops records norm --type base --facet policy --name convergence --print` names — the target path, *this file with
 Steps 2–5 as the target state*, that policy, and whether this is an `audit` or the survey ahead of a full
 run. It reads the disk with no writing tool, and returns the gap list without spending your context on the
 listings. Run the commands below yourself only if the agent is not in the session's listing:
@@ -276,7 +276,7 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
 
 ## Mode `harness` — Step H
 
-Read [`${CLAUDE_PLUGIN_ROOT}/references/harness-pair.md`](../../references/harness-pair.md) first. It is
+Read the harness-pair policy first: `vibe-ops harness policy --name pair --print`. It is
 the contract; this step is the installation.
 
 ### H0 — Survey, with commands rather than composed shell
@@ -292,7 +292,7 @@ vibe-ops harness catalog "$TARGET"   # every gate and fragment this install ship
 ```
 
 Produce the gap list, verb per gap, exactly as Step 0 does — including the delegation to
-`vibe-ops:governance-auditor`, with [`harness-pair.md`](../../references/harness-pair.md) and this step as
+`vibe-ops:governance-auditor`, with the harness-pair policy (`vibe-ops harness policy --name pair --print`) and this step as
 the target state it is given.
 
 **A repository with no remote cannot have CI**, and that is the single most common wrong recommendation
@@ -307,7 +307,7 @@ governance repository, and the sensors it needs are not the sensors a service ne
 ### H0a — If the user asked for `audit`, this is the whole run
 
 Stop before writing anything and report instead. Read
-[`${CLAUDE_PLUGIN_ROOT}/references/harness-model.md`](../../references/harness-model.md) — the two axes,
+`vibe-ops harness policy --name model --print` — the two axes,
 the lifecycle positions, the three tests that turn a gap into a recommendation, and the list of ways this
 audit has produced confident nonsense before.
 

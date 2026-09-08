@@ -176,7 +176,7 @@ export async function normContent(
     // policy itself — keeps no records there, and promulgating its template under that name wrote a
     // path no ownership fragment classifies: measured 2026-09-06 by a dry run into this repository,
     // which binds both and was refused for it.
-    if (activated.unit.schema === undefined) continue;
+    if (activated.unit.schema === undefined || activated.unit.template === undefined) continue;
     const from = path.resolve(activated.root, activated.unit.template);
     if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
   }

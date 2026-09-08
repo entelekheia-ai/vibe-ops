@@ -9,7 +9,7 @@ Promulgating a version of the norm into a repository is only safe if "the norm" 
 month shaping, and the first time it does, adoption ends. This file defines the edge.
 
 The declaration is **composed** since Plan-033: the base half (everything no single artifact owns) is
-[`cli/packages/harness/ownership.json`](../../cli/packages/harness/ownership.json), and each
+[`cli/packages/harness/ownership.json`](../ownership.json), and each
 activated governance package ships an `ownership.json` fragment for its own artifact. **Read them. Never decide a path's class
 at the call site** — a second opinion formed at the moment of writing is how a boundary erodes, and the
 whole value of the declaration is that there is exactly one answer.
@@ -85,7 +85,7 @@ by hand in `vibeops.config.ts` or by `ownership set` into the managed `vibeops.c
 would **widen** past the highest class any fragment declared for that match, when its class is not in the
 vocabulary, or when it carries no reason — a reclassification is a ledger entry, and a bare class is not
 one. (Which file a tool writes, and what it may write there, is
-[RFC-0004](../../project/rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md); the hand-written
+[RFC-0004](../../../../project/rfc/implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md); the hand-written
 `.ts` outranks the managed file, so a declared entry always wins over a tool-written one on the same
 match.)
 

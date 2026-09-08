@@ -22,6 +22,7 @@
     "type.json",
     "templates",
     "migrations",
+    "policy",
     "authoring.md",
     "ownership.json"
   ],

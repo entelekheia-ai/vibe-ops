@@ -18,7 +18,8 @@
   },
   "files": [
     "dist",
-    "ownership.json"
+    "ownership.json",
+    "policy"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
