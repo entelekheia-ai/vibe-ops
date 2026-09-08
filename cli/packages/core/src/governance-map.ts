@@ -70,6 +70,13 @@ export function effectiveGovernanceBindings(
 export interface ActivatedGovernance {
   /** Absolute path to the package root. */
   readonly root: string;
+  /**
+   * Every unit a multi-unit package ships, in manifest order — Plan-040 Track 2. Present INSTEAD of
+   * `unit` on a package whose manifest declares `units`; `activateGovernance` picks the one the
+   * binding's `#type` names and hands the caller a single-unit view, so nothing downstream learns a
+   * second shape.
+   */
+  readonly units?: readonly ActivatedGovernance["unit"][];
   /** The parsed type.json; facet paths are package-relative, resolved against `root`. */
   readonly unit: {
     readonly type: string;
@@ -98,11 +105,39 @@ export interface ActivatedGovernance {
   };
 }
 
+/**
+ * Keyed by `<package>#<type>`, not by package name — Plan-040 Track 2. A package may ship several units
+ * (`knowledge` ships `log` and `learning`), and the two bind independently: caching by package name
+ * would hand the second binding whatever the first one resolved to, which is the same unit under a
+ * different name.
+ */
 const activationCache = new Map<string, ActivatedGovernance | undefined>();
+
+/**
+ * The unit a package answers with for one type name. A package built on `defineGovernance` stamps a
+ * single `unit`; one shipping several stamps `units`, and the binding's `#type` fragment picks which.
+ * A `units` array with no matching type is not this binding's package, which the caller reads the same
+ * way it reads a package that is not installed.
+ */
+function unitFor(activated: ActivatedGovernance, typeName: string): ActivatedGovernance | undefined {
+  if (activated.units !== undefined) {
+    const unit = activated.units.find((candidate) => candidate.type === typeName);
+    return unit === undefined ? undefined : { root: activated.root, unit };
+  }
+  return activated.unit?.type === typeName ? { root: activated.root, unit: activated.unit } : undefined;
+}
 
 function isActivated(value: unknown): value is ActivatedGovernance {
   if (typeof value !== "object" || value === null) return false;
-  const candidate = value as { root?: unknown; unit?: { type?: unknown } };
+  const candidate = value as { root?: unknown; unit?: { type?: unknown }; units?: unknown };
+  if (typeof candidate.root !== "string") return false;
+  // A multi-unit package carries `units` and no `unit`; every unit in it still names a type.
+  if (Array.isArray(candidate.units)) {
+    return (
+      candidate.units.length > 0 &&
+      candidate.units.every((unit) => typeof (unit as { type?: unknown })?.type === "string")
+    );
+  }
   // A record's template used to be required here; a policy-only package (`base`) declares `facets`
   // and no template at all, so the shape check now asks only for what every activated unit truly has:
   // a root and a type name. A caller after the record facets still treats their absence as an answer,
@@ -122,16 +157,18 @@ export async function activateGovernance(
 ): Promise<ActivatedGovernance | undefined> {
   const binding = effectiveGovernanceBindings(config)[type];
   if (binding === undefined) return undefined;
-  if (activationCache.has(binding.packageName)) return activationCache.get(binding.packageName);
-  let activated: ActivatedGovernance | undefined;
+  const key = `${binding.packageName}#${binding.typeName}`;
+  if (activationCache.has(key)) return activationCache.get(key);
+  let imported: ActivatedGovernance | undefined;
   try {
-    const imported = (await import(resolveFromHost(binding.packageName))) as { default?: unknown };
-    activated = isActivated(imported.default) ? imported.default : undefined;
+    const module = (await import(resolveFromHost(binding.packageName))) as { default?: unknown };
+    imported = isActivated(module.default) ? module.default : undefined;
   } catch {
-    activated = undefined;
+    imported = undefined;
   }
-  activationCache.set(binding.packageName, activated);
-  return activated?.unit.type === binding.typeName ? activated : undefined;
+  const activated = imported === undefined ? undefined : unitFor(imported, binding.typeName);
+  activationCache.set(key, activated);
+  return activated;
 }
 
 /**

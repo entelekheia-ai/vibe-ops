@@ -17,12 +17,21 @@ import {
   planClosureBoxOpen,
   resolveRecord,
   routingPolicy,
+  parseTypeManifest,
 } from "@entelekheia/governance-base";
 import { closePlan, filePlan, PlanCloseError } from "./plan-lifecycle.ts";
 import { planModeGuidance } from "./context-text.ts";
 import { planStatusFindings } from "./status.ts";
 import type { Dispatch } from "@entelekheia/governance-base";
 import type { PlanStatusFinding } from "./status.ts";
+
+/** This package's own root, and the lifecycle its manifest declares — read once at load and handed to
+ *  every `resolveRecord` call below. `resolveRecord` is synchronous and activation is not, so a
+ *  declaration cannot be imported from inside it; the module that already owns the manifest is the one
+ *  that knows. Where this is absent, every field is still derived from the template's own prose. */
+const PACKAGE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const MANIFEST_FILE = path.join(PACKAGE_ROOT, "type.json");
+const LIFECYCLE = parseTypeManifest(readFileSync(MANIFEST_FILE, "utf8"), MANIFEST_FILE)[0]?.lifecycle;
 
 /** The approved plan arrives on stdin when `--from` is absent — the shape a hook hands it over in. */
 async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
@@ -32,7 +41,7 @@ async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
 }
 
 export default defineGovernance({
-    root: path.join(path.dirname(fileURLToPath(import.meta.url)), ".."),
+    root: PACKAGE_ROOT,
     version: "0.0.1",
     summary: "The permanent design record: resolve its layout, check Status against its tracks",
     // The migration notes this module dispatches on belong to the installed norm, not to the repository
@@ -81,7 +90,7 @@ export default defineGovernance({
     if (context.command === "resolve") {
       let resolved;
       try {
-        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents, LIFECYCLE);
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;
@@ -102,7 +111,7 @@ export default defineGovernance({
     if (context.command === "status") {
       let resolved;
       try {
-        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents, LIFECYCLE);
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;
@@ -159,7 +168,7 @@ export default defineGovernance({
     if (context.command === "context") {
       let resolved;
       try {
-        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents, LIFECYCLE);
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;
@@ -177,7 +186,7 @@ export default defineGovernance({
     if (context.command === "file") {
       let resolved;
       try {
-        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents, LIFECYCLE);
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;
@@ -200,7 +209,7 @@ export default defineGovernance({
     if (context.command === "close") {
       let resolved;
       try {
-        resolved = resolveRecord("plan", context.repoRoot, context.config, documents);
+        resolved = resolveRecord("plan", context.repoRoot, context.config, documents, LIFECYCLE);
       } catch (error) {
         if (error instanceof RecordsConfigError) return { code: 2, summary: error.message };
         throw error;

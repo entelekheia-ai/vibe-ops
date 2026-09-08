@@ -28,6 +28,22 @@ export interface TypeUnitSchema {
   readonly required: readonly string[];
 }
 
+/** The status chain a record of this type moves through, and what the chain implies. */
+export interface TypeUnitLifecycle {
+  /** Every status, in order. */
+  readonly chain: readonly string[];
+  /** The status a record is worked at — what a "still open" reader asks for. */
+  readonly active: string;
+  /** Where the chain stops. */
+  readonly terminal: string;
+  /** Headings maintained while the work happens rather than written at the end. */
+  readonly living?: readonly string[];
+  /** Where a record goes once terminal, relative to the type's own directory. */
+  readonly archive?: string;
+  /** From this status on, the record may not be edited. Absent means it always may. */
+  readonly immutableFrom?: string;
+}
+
 export interface TypeUnit {
   readonly type: string;
   /**
@@ -52,6 +68,11 @@ export interface TypeUnit {
   readonly facets?: Readonly<Record<string, string>>;
   /** Absent for a type whose artifacts carry no metadata — see the parser. */
   readonly schema?: TypeUnitSchema;
+  /** The status chain and what it implies — Plan-040 Track 2. Absent while a type's readers still
+   *  derive it from the template's own prose. */
+  readonly lifecycle?: TypeUnitLifecycle;
+  /** A style package's documented artefact list — advisory, RFC-0005 §2.1. */
+  readonly targets?: readonly string[];
   readonly numbered: boolean;
   readonly pad: number;
   readonly depth: number;
@@ -89,6 +110,80 @@ function parseFacets(parsed: Record<string, unknown>, file: string): Readonly<Re
 }
 
 /**
+ * `lifecycle`, the status chain and what it implies — Plan-040 Track 2.
+ *
+ * WHY IT IS DATA HERE RATHER THAN PROSE PARSED FROM A TEMPLATE. Two documents describe every activated
+ * type's lifecycle — `GOVERNANCE.md` and `agents/rules/governance.md` — and both were static files
+ * scaffolded once, so a repository that activated a sixth type had two documents silently describing
+ * five. Track 6 renders them from this field. Until then it is read where the chain is needed and
+ * falls back to what the template says, which is what every reader does today.
+ *
+ * `chain` is the whole sequence in order. `active` is the status a record is worked at and defaults to
+ * the second term; `terminal` is where it stops and defaults to the last. Both are declarable because a
+ * chain with a branch (an RFC's Rejected) has neither at a fixed index.
+ */
+function parseLifecycle(parsed: Record<string, unknown>, file: string, type: string): TypeUnitLifecycle | undefined {
+  const value = parsed.lifecycle;
+  if (value === undefined) return undefined;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new RecordsConfigError(`${file} declares an invalid lifecycle — a type unit carries an object or none`);
+  }
+  const raw = value as Record<string, unknown>;
+
+  const chain = raw.chain;
+  if (!Array.isArray(chain) || chain.length === 0 || chain.some((s) => typeof s !== "string" || s === "")) {
+    throw new RecordsConfigError(`${file} declares lifecycle for ${type} with no chain — the ordered status names are what every other field reads`);
+  }
+  const statuses = chain as readonly string[];
+
+  const declared = (field: "active" | "terminal"): string | undefined => {
+    const status = raw[field];
+    if (status === undefined) return undefined;
+    if (typeof status !== "string" || !statuses.includes(status)) {
+      throw new RecordsConfigError(`${file} declares lifecycle.${field} = ${JSON.stringify(status)}, which is not one of its own chain (${statuses.join(" → ")})`);
+    }
+    return status;
+  };
+
+  const living = raw.living;
+  if (living !== undefined && (!Array.isArray(living) || living.some((s) => typeof s !== "string"))) {
+    throw new RecordsConfigError(`${file} declares an invalid lifecycle.living — the living sections are a list of heading names`);
+  }
+  const archive = raw.archive;
+  if (archive !== undefined && (typeof archive !== "string" || archive === "")) {
+    throw new RecordsConfigError(`${file} declares an invalid lifecycle.archive — the archival directory is a relative path or absent`);
+  }
+  const immutableFrom = declared("terminal") === undefined ? undefined : raw.immutableFrom;
+  if (immutableFrom !== undefined && (typeof immutableFrom !== "string" || !statuses.includes(immutableFrom))) {
+    throw new RecordsConfigError(`${file} declares lifecycle.immutableFrom = ${JSON.stringify(immutableFrom)}, which is not one of its own chain`);
+  }
+
+  return {
+    chain: statuses,
+    active: declared("active") ?? statuses[Math.min(1, statuses.length - 1)]!,
+    terminal: declared("terminal") ?? statuses[statuses.length - 1]!,
+    ...(living === undefined ? {} : { living: living as readonly string[] }),
+    ...(archive === undefined ? {} : { archive: archive as string }),
+    ...(immutableFrom === undefined ? {} : { immutableFrom: immutableFrom as string }),
+  };
+}
+
+/**
+ * `targets`, a style package's documented list of artefacts it ships a fragment for — RFC-0005 §2.1.
+ * ADVISORY BY DECISION: an undeclared target is served with a warning, never refused, because the
+ * artefacts that are not record types (`readme`, `research-private`) outgrow any list a package can
+ * ratify. Validated for shape only, so a typo in the list is still visible.
+ */
+function parseTargets(parsed: Record<string, unknown>, file: string): readonly string[] | undefined {
+  const value = parsed.targets;
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((t) => typeof t !== "string" || t === "")) {
+    throw new RecordsConfigError(`${file} declares an invalid targets — a list of artefact names this package documents a fragment for`);
+  }
+  return value as readonly string[];
+}
+
+/**
  * Parses and validates a `type.json`'s content. Follows the one existing "parse JSON, validate shape,
  * throw a clear error naming the file" precedent in this codebase —
  * `cli/packages/module-harness/src/ownership.ts`'s `readOwnership()` — rather than a schema library:
@@ -102,7 +197,58 @@ export function parseTypeUnit(text: string, file: string): TypeUnit {
   } catch (error) {
     throw new RecordsConfigError(`${file} is not valid JSON: ${(error as Error).message}`);
   }
+  return parseUnitObject(parsed, file);
+}
 
+/**
+ * Every unit a manifest declares — one for the ordinary shape, several when it declares `units`.
+ *
+ * A PACKAGE MAY SHIP SEVERAL UNITS, WHICH IS WHAT "ONE ARTIFACT, ONE PACKAGE" BECOMES (RFC-0005 §2, the
+ * ADR succeeding ADR-0019). The rule it widens is still one artifact, one UNIT — what changes is that a
+ * package may carry more than one of them, because two artifacts can be the same subject read twice:
+ * `knowledge` ships `log` (a trap at a path in this repository) and `learning` (a fact that holds beyond
+ * it), and splitting them into two packages would publish the promotion test twice.
+ *
+ * The two forms are exclusive. A manifest declaring both a top-level `type` and a `units` array is
+ * refused rather than merged: which one activation should answer with would then be a guess, and a guess
+ * that reads as an answer is the failure this parser exists to prevent.
+ */
+export function parseTypeManifest(text: string, file: string): readonly TypeUnit[] {
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(text) as Record<string, unknown>;
+  } catch (error) {
+    throw new RecordsConfigError(`${file} is not valid JSON: ${(error as Error).message}`);
+  }
+
+  const units = parsed.units;
+  if (units === undefined) return [parseUnitObject(parsed, file)];
+
+  if (!Array.isArray(units) || units.length === 0) {
+    throw new RecordsConfigError(`${file} declares an invalid units — a manifest carries a non-empty array of type units`);
+  }
+  if (parsed.type !== undefined) {
+    throw new RecordsConfigError(`${file} declares both type and units — a manifest is one unit or several, never both`);
+  }
+
+  const parsedUnits = units.map((unit, index) => {
+    if (typeof unit !== "object" || unit === null || Array.isArray(unit)) {
+      throw new RecordsConfigError(`${file} declares units[${index}] as something other than a type unit object`);
+    }
+    return parseUnitObject(unit as Record<string, unknown>, file);
+  });
+
+  const seen = new Set<string>();
+  for (const unit of parsedUnits) {
+    if (seen.has(unit.type)) {
+      throw new RecordsConfigError(`${file} declares the type "${unit.type}" twice — each unit in a manifest names a different type`);
+    }
+    seen.add(unit.type);
+  }
+  return parsedUnits;
+}
+
+function parseUnitObject(parsed: Record<string, unknown>, file: string): TypeUnit {
   const type = requireString(parsed, "type", file);
   const facets = parseFacets(parsed, file);
 
@@ -132,8 +278,13 @@ export function parseTypeUnit(text: string, file: string): TypeUnit {
     );
   }
 
+  const lifecycle = parseLifecycle(parsed, file, type);
+  const targets = parseTargets(parsed, file);
+
   return {
     type,
+    ...(lifecycle === undefined ? {} : { lifecycle }),
+    ...(targets === undefined ? {} : { targets }),
     ...(template === undefined ? {} : { template }),
     ...(authoring === undefined ? {} : { authoring }),
     ...(migrations === undefined ? {} : { migrations }),

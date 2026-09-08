@@ -11,6 +11,13 @@
       "Author"
     ]
   },
+  "lifecycle": {
+    "chain": ["Backlog", "In Progress", "Shipped"],
+    "active": "In Progress",
+    "terminal": "Shipped",
+    "living": ["Decision Log", "Outcomes & Retrospective"],
+    "archive": "shipped"
+  },
   "numbered": true,
   "pad": 3,
   "depth": 2,

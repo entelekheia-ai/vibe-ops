@@ -79,7 +79,19 @@ function resolvePlanFields(
   documents: DocumentStore,
   template: string | undefined,
   authority: string | undefined,
+  lifecycle: DeclaredLifecycle | undefined,
 ) {
+  // THE DECLARATION WINS WHERE THERE IS ONE. Reading the chain out of a template's prose was the only
+  // way to know it before a manifest could say so, and it stays the answer for a repository whose
+  // template is its own — but a package that declares its lifecycle has said it in a form that does not
+  // depend on anybody's wording, and two documents Track 6 renders read the same field.
+  if (lifecycle !== undefined) {
+    return {
+      active: lifecycle.active,
+      terminal: lifecycle.terminal,
+      ...(lifecycle.living === undefined ? {} : { living: lifecycle.living }),
+    };
+  }
   const templateDocument = template === undefined ? undefined : documents.get(template);
   let active = templateDocument === undefined ? undefined : planActiveFromTemplate(templateDocument);
   let terminal = templateDocument === undefined ? undefined : planTerminalFromTemplate(templateDocument);
@@ -92,6 +104,14 @@ function resolvePlanFields(
   }
 
   return { active, terminal, living };
+}
+
+/** The half of a declared `lifecycle` the plan fields read — structurally what `TypeUnitLifecycle`
+ *  carries, named here so `resolve.ts` does not import the parser it is a peer of. */
+export interface DeclaredLifecycle {
+  readonly active: string;
+  readonly terminal: string;
+  readonly living?: readonly string[];
 }
 
 /**
@@ -109,6 +129,13 @@ export function resolveRecord(
   repoRoot: string,
   config: VibeOpsConfig | undefined,
   documents: DocumentStore,
+  /**
+   * The type's DECLARED lifecycle, when its serving package ships one (`lifecycle` in `type.json`,
+   * Plan-040 Track 2). Passed by the module that already parsed its own manifest — `resolveRecord` is
+   * synchronous and activation is not, so the declaration arrives from the caller rather than being
+   * imported here. Absent, every field is derived from the template's prose exactly as before.
+   */
+  lifecycle?: DeclaredLifecycle,
 ): ResolvedRecord {
   const recordsConfig: RecordsConfig | undefined = config?.records;
   const { dir } = findDir(repoRoot, type, recordsConfig);
@@ -145,7 +172,7 @@ export function resolveRecord(
   };
 
   if (type === "plan") {
-    return { ...base, plan: resolvePlanFields(documents, template, authority) };
+    return { ...base, plan: resolvePlanFields(documents, template, authority, lifecycle) };
   }
   if (type === "task") {
     return { ...base, task: { ghRemote: githubRemote(repoRoot), ghAuth: githubAuth() } };
