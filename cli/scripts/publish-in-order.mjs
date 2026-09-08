@@ -19,6 +19,11 @@
 //
 //   node cli/scripts/publish-in-order.mjs             publish what is not yet on the registry
 //   node cli/scripts/publish-in-order.mjs --dry-run   print the order and what each would do
+//   node cli/scripts/publish-in-order.mjs --otp=123456   an account with 2FA enforced on publish
+//
+// The OTP is passed to every publish in the run, not re-prompted per package: npm accepts one code for
+// a short window, and a run that asked once per package would outlive the code it started with. From CI
+// there is no OTP at all — trusted publishing authenticates the workflow itself.
 //
 // Idempotent: a package whose current version is already on the registry is skipped, so a run after a
 // partial failure finishes the remainder instead of starting over. Nothing is ever republished, and no
@@ -29,6 +34,7 @@ import { join, resolve, relative } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
 const dryRun = process.argv.includes('--dry-run')
+const otp = process.argv.find((a) => a.startsWith('--otp='))?.slice('--otp='.length)
 const root = resolve(process.argv.find((a, i) => i > 1 && !a.startsWith('--')) ?? '.')
 const read = (f) => JSON.parse(readFileSync(f, 'utf8'))
 
@@ -104,7 +110,8 @@ for (const name of order) {
   console.log(`publish ${name}@${version}`)
   // --access public: required on a scoped package's first publish, harmless after. Provenance is
   // automatic under OIDC from a public repository, so no --provenance flag.
-  execFileSync('npm', ['publish', '--access', 'public'], { cwd: dir, stdio: 'inherit' })
+  const args = ['publish', '--access', 'public', ...(otp === undefined ? [] : [`--otp=${otp}`])]
+  execFileSync('npm', args, { cwd: dir, stdio: 'inherit' })
   published++
 }
 
