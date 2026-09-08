@@ -211,14 +211,18 @@ produce silent agreement — that is the exact failure the gate's own header was
       the real `pre-commit`; with `vibe-ops` off `PATH` both gates refuse with exit 2 naming the recipe,
       rather than passing.
 
-- [ ] **Track 6 — The verb becomes the composition.** `vibe-ops check` is still only the shell runner
-      (`module-check/src/index.ts:283` spawns it; the ops run only under `--self-test`), so Track 5 moved
-      who composes without changing what runs. This track makes the verb compose the ops, which is what
-      every consumer's gate now points at — and it owns the question Track 5 deferred: what replaces a
-      target's own `scripts/checks/` fragments, given that `ops-mirror` and `ops-for-vibe-ops` are
-      meaningless in a repository holding no vibe-ops checkout. Acceptance: `vibe-ops check` in a
-      repository that installs no ops package still says what it did and did not read, rather than
-      reporting a clean sweep over nothing.
+- [x] **Track 6 — The verb becomes the composition.** `check` now runs the ops **beside** the fragments,
+      merging each ops's structured `data` rather than re-parsing its printed lines. The survey found the
+      hole was wider than the track assumed: nothing declared which ops a repository composes at all —
+      activation was npm resolution alone, which is why `mirror` and `exposure`, in no package's
+      dependency list, worked here only through workspace symlinks. So `config.ops` was added on the model
+      ADR-0019 already set for types (`{...DEFAULT_OPS, ...config.ops}`, `false` removes), with the
+      defaults being the three that name nothing outside the repository being checked; `mirror` and
+      `for-vibe-ops` moved into **this repository's own config**, through the same door a consumer adds
+      its own. Three duplicated hand-kept ops lists collapsed onto `effectiveOps`. Both halves run because
+      removing the fragments is Track 7's judgement, not a side effect of this one. Acceptance: 68 checks
+      (17 fragments + 51 gates), one `N checks, M failed` line — the shape Track 5 wired eight gates to
+      grep — and a declared ops that does not resolve is named and fails the run. Four tests hold it.
 
 - [ ] **Track 7 — Delete the shell side.** For every fragment whose three conditions hold, remove the
       fragment; then remove `cli/packages/module-check/sh/` entirely, the `fragment-parity` gate
@@ -400,6 +404,25 @@ Run from the repository root:
   forever, which is what this plan exists to end. The refusal names the install recipe and says there is
   deliberately no fallback, because a gate that passes silently for want of its checker is worse than
   one that refuses.
+  Date / Author: 2026-09-08 / Danilo Borges
+
+- Decision: which ops a repository composes is declared in `config.ops`, defaulting to the three that
+  name nothing outside the repository being checked — and this repository declares its own two there.
+  Rationale: nothing declared it before; an ops ran if its package happened to resolve, so what a
+  repository checked was a property of its `node_modules`. ADR-0019 had already answered the same question
+  for governance types, so ops take that shape (`{...DEFAULT_OPS, ...config.ops}`, `false` removes) rather
+  than a second concept. `mirror` and `for-vibe-ops` name this repository's own paths in every entry, so
+  they are not defaults; putting them in this repository's own config is what keeps the extension door
+  honest, and it is the first thing that says out loud they are part of this gate — both packages are in
+  no other package's dependency list and resolved here only because this is their workspace.
+  Date / Author: 2026-09-08 / Danilo Borges
+
+- Decision: `check` runs the ops **beside** the fragments in Track 6, not instead of them.
+  Rationale: the fragments are retired one at a time under Plan-022's bar, which is Track 7's judgement.
+  A version of this track that swapped one half for the other would have retired seventeen checks without
+  anyone judging a single one — the exact failure this plan exists to prevent, arriving as a refactor.
+  Composing beside is additive, and it was safe to do only because all five ops were measured green here
+  first. It also revealed that the ops had never been in this repository's commit gate at all.
   Date / Author: 2026-09-08 / Danilo Borges
 
 - Decision: the bar is read as a state, measured on demand — there is no waiting period, and Track 7

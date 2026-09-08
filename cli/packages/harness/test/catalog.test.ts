@@ -8,16 +8,22 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { loadConfig } from "@entelekheia/vibe-ops-core";
 import { buildCatalog } from "../src/catalog.ts";
 
 const repoRoot = new URL("../../../..", import.meta.url).pathname.replace(/\/$/, "");
 
-function baseContext() {
+// THE REAL CONFIG, not `{}`. Since Plan-038 track 6 which ops compose is the repository's own answer
+// (`config.ops`), so a catalog built against an empty config reports this repository's `mirror` and
+// `for-vibe-ops` gates as composed nowhere — which is true of the config it was handed and false of the
+// repository the test claims to be checking.
+async function baseContext() {
+  const { config } = await loadConfig(repoRoot);
   return {
     repoRoot,
     flags: {},
     args: [],
-    config: {},
+    config,
     settings: undefined,
     surface: "cli" as const,
     log: () => {},
@@ -26,7 +32,7 @@ function baseContext() {
 }
 
 test("buildCatalog: against this repository's own checkout, every available gate and fragment is composed into something", async () => {
-  const catalog = await buildCatalog(baseContext());
+  const catalog = await buildCatalog(await baseContext());
   assert.deepEqual([...catalog.uncomposed], []);
 });
 
@@ -34,5 +40,5 @@ test("buildCatalog: an ops package that fails to load composes nothing from itse
   // Same repoRoot, but nothing about failure handling depends on it — this asserts the shape survives a
   // module-load failure path indirectly by confirming a normal run never throws even though it internally
   // best-effort loads five other packages.
-  await assert.doesNotReject(buildCatalog(baseContext()));
+  await assert.doesNotReject(buildCatalog(await baseContext()));
 });

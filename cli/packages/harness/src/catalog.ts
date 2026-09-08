@@ -8,12 +8,11 @@
 // recommendation this verb exists to prevent ("build something already written and merely unwired"), so
 // `composed` here is the union of both readings, not `check --list` alone.
 
+import { effectiveOps } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, ModulePlugin } from "@entelekheia/vibe-ops-core";
 import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-const OPS_MODULES = ["agents-md", "governance", "for-vibe-ops", "mirror", "exposure"] as const;
 
 async function loadPlugin(specifier: string): Promise<ModulePlugin | undefined> {
   try {
@@ -41,11 +40,17 @@ async function shellComposed(context: ModuleContext): Promise<ShellComposed> {
   };
 }
 
-/** Every gate id (`entry.gate`, not the label) composed into any of the three shipped ops. */
+/**
+ * Every gate id (`entry.gate`, not the label) composed into any ops THIS REPOSITORY runs.
+ *
+ * Read from `effectiveOps` rather than from a list kept here (Plan-038 track 6). Three hand-kept copies
+ * of "the five ops" existed — two in module-check, this one — and a catalog reading a different set from
+ * the gate it reports on would name a gate as uncomposed while `check` was running it every commit.
+ */
 async function gatesComposed(context: ModuleContext): Promise<ReadonlySet<string>> {
   const ids = new Set<string>();
-  for (const name of OPS_MODULES) {
-    const ops = await loadPlugin(`@entelekheia/vibe-ops-${name}`);
+  for (const specifier of Object.values(effectiveOps(context.config))) {
+    const ops = await loadPlugin(specifier);
     if (ops === undefined) continue; // an ops that fails to load composes nothing from here — fail open, not a guess
     const result = await ops.run({ ...context, command: undefined, flags: { list: true }, log: () => {} });
     const gates = (result.data as { gates?: readonly { gate: string } [] } | undefined)?.gates ?? [];

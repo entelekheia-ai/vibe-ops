@@ -74,6 +74,6 @@ test("in the runner's own repository — where ../vibe-ops is the repository its
   await writeFile(own, "#!/bin/sh\necho source\n");
 
   const result = await runnerProvenance.run(ctx(repoRoot));
-  assert.ok("skipped" in result, JSON.stringify(result));
+  assert.ok(result.skipped !== undefined, JSON.stringify(result));
   assert.match(result.skipped, /own source/);
 });

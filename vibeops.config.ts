@@ -38,6 +38,22 @@ export default {
     license: "@entelekheia/governance-license",
     classification: "@entelekheia/governance-classification",
   },
+
+  // The two ops `vibe-ops check` composes here BEYOND the shipped defaults (Plan-038 track 6). The
+  // defaults are the three that name nothing outside the repository being checked — governance,
+  // agents-md, exposure. These two name this repository's own paths in every entry: mirror compares the
+  // templates this repo ships against the copies it keeps, and for-vibe-ops reads the prose describing
+  // this repository's own machinery. A consumer composing either would be checking claims about a
+  // checkout it does not have.
+  //
+  // So they are declared HERE, through the same door any repository adds its own ops through — which is
+  // what keeps that door honest. It is also the first thing that would have caught them: both packages
+  // are in no other package's dependency list and resolved here only because this is their own
+  // workspace, so nothing but this line says they are part of this repository's gate.
+  ops: {
+    mirror: "@entelekheia/vibe-ops-mirror",
+    "for-vibe-ops": "@entelekheia/vibe-ops-for-vibe-ops",
+  },
   settings: {
     // A shipped template's content is written to resolve in the *target* repository, never this one —
     // a link, or a `[[memory-slug]]`-shaped placeholder, inside plugin/skills/*/templates/ is not this

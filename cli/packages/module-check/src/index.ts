@@ -8,8 +8,8 @@
 // sh/ ships in `files`, so the fragments travel with an install and are resolved relative to this
 // module — never from PATH and never by searching upward for a checkout.
 
-import { defineModule, settingsFor } from "@entelekheia/vibe-ops-core";
-import type { ModuleContext, ModulePlugin, ModuleResult } from "@entelekheia/vibe-ops-core";
+import { defineModule, effectiveOps, settingsFor } from "@entelekheia/vibe-ops-core";
+import type { ModuleContext, ModulePlugin, ModuleResult, OpsFinding, OpsPopulation, OpsSkip } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,25 +20,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // dist/index.js -> ../sh
 const RUNNER = path.join(here, "..", "sh", "check-agents-md.sh");
 
-/**
- * The ops whose self-tests `--self-test` chains, by module name.
- *
- * Named rather than discovered, and resolved through the same `@entelekheia/vibe-ops-<name>` convention
- * the CLI uses, so this stays a list a reader can check against the composition. An ops that carries no
- * fixture still reports what it skipped, which is the point: a self-test covering four of fourteen gates
- * reads exactly like one covering all fourteen unless it says so.
- */
-const OPS_WITH_FIXTURES = ["governance", "for-vibe-ops", "agents-md", "mirror", "exposure"] as const;
-
 /** One ops's self-test, as its own exit code and its own text. An ops that cannot be loaded is a failure,
  *  never a silent pass — an absent suite and a clean one are the same output otherwise. */
 async function runOpsSelfTest(
   id: string,
+  packageName: string,
   context: ModuleContext,
 ): Promise<{ id: string; code: number; output: string }> {
   const lines: string[] = [];
   try {
-    const loaded = (await import(`@entelekheia/vibe-ops-${id}`)) as { default: ModulePlugin };
+    const loaded = (await import(packageName)) as { default: ModulePlugin };
     const result = await loaded.default.run({
       ...context,
       flags: { "self-test": true },
@@ -137,6 +128,99 @@ async function runPortsAgainstFixture(): Promise<{ id: string; code: number; out
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+}
+
+/**
+ * The ops half of the gate (Plan-038 track 3 → 6). `check` used to be a wrapper around the shell runner
+ * and nothing else, so this repository's own commit gate ran seventeen fragments and not one of the
+ * twenty-one gates that had been written to replace them — they were reachable only through their own
+ * nouns and their tests. This function is what makes `vibe-ops check` mean the whole composition.
+ *
+ * BOTH HALVES RUN HERE, AND THAT IS THE POINT UNTIL TRACK 7. Adding the ops beside the fragments only
+ * ever grows what the gate catches; removing the fragments is a separate act, gated on Plan-022's bar
+ * per fragment. A version of this that swapped one half for the other would retire seventeen checks
+ * without anyone judging a single one of them.
+ *
+ * WHICH OPS IS THE REPOSITORY'S ANSWER, not this file's: `effectiveOps` reads the shipped defaults
+ * overlaid by `config.ops`. A declared ops that does not resolve is REPORTED BY NAME rather than skipped
+ * — the same rule `TypesConfig` states for a governance binding that resolves to nothing, and for the
+ * same reason: examining nothing under the name the repository chose is attributable, and quietly
+ * composing less than was declared is not.
+ */
+async function runComposedOps(context: ModuleContext): Promise<readonly OpsRun[]> {
+  const runs: OpsRun[] = [];
+  for (const [id, packageName] of Object.entries(effectiveOps(context.config))) {
+    const lines: string[] = [];
+    let plugin: ModulePlugin;
+    try {
+      plugin = ((await import(packageName)) as { default: ModulePlugin }).default;
+    } catch (error) {
+      const why = error instanceof Error ? error.message : String(error);
+      runs.push({
+        id,
+        code: 2,
+        lines: [`FAIL  [${id}] declared as ${packageName}, which did not resolve — install it, or remove it from config.ops (${why})`],
+        gates: 0,
+        findings: [
+          {
+            level: "fail",
+            check: id,
+            evidence: `declared as ${packageName}, which did not resolve — install it, or remove it from config.ops`,
+          },
+        ],
+        skipped: [],
+      });
+      continue;
+    }
+
+    const result = await plugin.run({
+      ...context,
+      settings: settingsFor(context.config, id),
+      // `--file` and `--fix` are deliberately not forwarded: this verb is the repository sweep, and an
+      // ops scoped to one file is a different signal (RFC-0001) that must not arrive under this id.
+      flags: {
+        ...(context.flags["verbose"] === true ? { verbose: true } : {}),
+        ...(context.flags["audit"] === true ? { audit: true } : {}),
+      },
+      log: (line: string) => lines.push(line),
+      warn: (line: string) => lines.push(`warning: ${line}`),
+    });
+
+    const data = result.data as
+      | { findings?: readonly OpsFinding[]; skipped?: readonly OpsSkip[]; population?: readonly OpsPopulation[] }
+      | undefined;
+    const findings = data?.findings ?? [];
+    const skips = data?.skipped ?? [];
+    // Counted from the structured payload rather than from the summary line: a gate that skipped and a
+    // gate that ran are both composed, and a Set is what keeps one appearing in both from counting twice.
+    const composed = new Set<string>([
+      ...(data?.population ?? []).map((entry) => entry.gate),
+      ...skips.map((entry) => entry.gate),
+    ]);
+
+    runs.push({
+      id,
+      code: result.code,
+      lines,
+      gates: composed.size,
+      findings: findings.map((finding) => ({
+        level: finding.level === "warn" ? "warn" : "fail",
+        check: finding.gate,
+        evidence: finding.file === undefined ? finding.evidence : `${finding.file}: ${finding.evidence}`,
+      })),
+      skipped: skips.map((entry) => ({ check: entry.gate, reason: entry.reason })),
+    });
+  }
+  return runs;
+}
+
+interface OpsRun {
+  readonly id: string;
+  readonly code: number;
+  readonly lines: readonly string[];
+  readonly gates: number;
+  readonly findings: readonly { level: string; check: string; evidence: string }[];
+  readonly skipped: readonly { check: string; reason: string }[];
 }
 
 const SUMMARY_PATTERN = /^(\d+) checks, (\d+) failed$/m;
@@ -305,9 +389,14 @@ export default defineModule(
     // can read. The three nouns already gate their own logging on the same flag; this module had no
     // `--json` to gate on until now.
     if (context.surface === "cli" && context.flags["json"] !== true) {
+      // The runner's own `N checks, M failed` is dropped from every mode: since Plan-038 track 6 it counts
+      // one half of the composition, and a consumer's check.sh greps that exact shape. Two count lines
+      // would both match, and the partial one would be read as the answer. The whole-run line is printed
+      // once, after both halves have reported.
+      const shown = output.split("\n").filter((line) => !/^\d+ checks, \d+ failed$/.test(line));
       const interesting = context.flags["verbose"] === true || context.flags["list"] === true
-        ? output
-        : output.split("\n").filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
+        ? shown.join("\n")
+        : shown.filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
       if (interesting.trim() !== "") context.log(interesting.trimEnd());
     }
 
@@ -344,8 +433,10 @@ export default defineModule(
     // gate to a build artifact. Chaining above it costs the shell side nothing — it still passes alone.
     if (context.flags["self-test"] === true) {
       const suites = [{ id: "check", code, output }];
-      for (const id of OPS_WITH_FIXTURES) {
-        const ops = await runOpsSelfTest(id, context);
+      // The same composition a run uses, not a second list — a self-test that proved fixtures for a
+      // different set of ops than `check` actually runs is the shape of green this plan exists to remove.
+      for (const [id, packageName] of Object.entries(effectiveOps(context.config))) {
+        const ops = await runOpsSelfTest(id, packageName, context);
         suites.push(ops);
         if (context.surface === "cli" && context.flags["json"] !== true) context.log(ops.output);
       }
@@ -377,6 +468,24 @@ export default defineModule(
       else findings.push({ level: kind === "WARN" ? "warn" : "fail", check: id!, evidence: rest! });
     }
 
+    // The other half of the gate. Merged from each ops's structured `data` rather than by re-parsing its
+    // printed lines — the shell half has to be read from stdout because a process boundary leaves nothing
+    // else, and that constraint does not apply here.
+    const opsRuns = await runComposedOps(context);
+    for (const run of opsRuns) {
+      findings.push(...run.findings);
+      skipped.push(...run.skipped);
+    }
+    if (context.surface === "cli" && context.flags["json"] !== true) {
+      for (const run of opsRuns) {
+        const interesting =
+          context.flags["verbose"] === true
+            ? run.lines
+            : run.lines.filter((line) => /^(FAIL|WARN|warning:)/.test(line));
+        if (interesting.length > 0) context.log(interesting.join("\n"));
+      }
+    }
+
     // A declared disablement that names no composed check is a ledger entry pointing at nothing — a
     // renamed or removed fragment leaves one behind, and the config keeps reading as though something
     // were switched off. The run itself is unaffected, which is exactly why it needs saying.
@@ -405,10 +514,28 @@ export default defineModule(
     const staging =
       unseen.length === 0 ? "" : `; ${unseen.length} untracked .md file(s) were not examined — the gate reads tracked files`;
 
+    // ONE `N checks, M failed` LINE OVER BOTH HALVES, AND THE SHAPE IS A CONTRACT. Every consumer's
+    // `scripts/check.sh` and `.githooks/pre-commit` greps exactly `^[0-9]+ checks, [0-9]+ failed` for the
+    // count a reader needs to notice a composition that stopped composing (Plan-038 track 5). Changing
+    // this line to the ops' own `N gates, M failed` wording would blank the gate's only output in eight
+    // repositories while every one of them still exited 0.
+    const shellChecks = match ? Number(match[1]) : 0;
+    const composedGates = opsRuns.reduce((total, run) => total + run.gates, 0);
+    const failedChecks = new Set(findings.filter((finding) => finding.level === "fail").map((finding) => finding.check));
+    const totals = `${String(shellChecks + composedGates)} checks, ${String(failedChecks.size)} failed`;
+    const opsFailed = opsRuns.some((run) => run.code !== 0);
+    // Exit 2 is the runner refusing the target and outranks a finding — it means the reading never
+    // happened, where 1 means it happened and something failed.
+    const merged = code === 2 ? 2 : code !== 0 || opsFailed ? 1 : 0;
+
+    if (context.surface === "cli" && context.flags["json"] !== true && context.flags["verbose"] === true) {
+      context.log(totals);
+    }
+
     return {
-      code: audited ? 0 : code,
-      summary: `${summary}${staging}${audited && code !== 0 ? " (audit: not blocking)" : ""}`,
-      data: { findings, skipped, undeclared, untracked: unseen },
+      code: audited ? 0 : merged,
+      summary: `${totals}${staging}${audited && merged !== 0 ? " (audit: not blocking)" : ""}`,
+      data: { findings, skipped, undeclared, untracked: unseen, ops: opsRuns.map(({ id, code: opsCode, gates }) => ({ id, code: opsCode, gates })) },
     };
   },
 );

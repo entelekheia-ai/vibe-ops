@@ -118,6 +118,16 @@ export interface TypesConfig {
 }
 
 /**
+ * Which ops `vibe-ops check` composes, overlaid on the shipped defaults (`DEFAULT_OPS`, `ops-map.ts`).
+ * The value is the npm package or a path; `false` removes a default, which is the only way to drop one —
+ * a merge cannot express an absence, and a list that replaced the defaults wholesale would make adding
+ * one ops mean restating all of them.
+ */
+export interface OpsConfig {
+  readonly [name: string]: string | false;
+}
+
+/**
  * Which version of each record type was PROMULGATED into this clone — not which version any given
  * artifact was written against, which is what that artifact's own `vibe-ops-template:` line says. The two
  * answer different questions and diverge exactly when something has not been migrated yet, which is the
@@ -193,6 +203,8 @@ export interface OwnershipNarrowing {
 export interface VibeOpsConfig {
   /** Which package governs a type name, where the scan alone cannot say. See `TypesConfig`. */
   readonly types?: TypesConfig;
+  /** Which ops `vibe-ops check` composes here. See `OpsConfig` and `effectiveOps`. */
+  readonly ops?: OpsConfig;
   /** The repository's own layer of the ownership boundary. See `OwnershipNarrowing`. */
   readonly ownership?: readonly OwnershipNarrowing[];
   /** Module ids to treat as enabled without an explicit flag. */
@@ -381,6 +393,10 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     // binding another. Whole-key would make the nearer file's silence about a type an answer.
     types:
       nearer.types === undefined && further.types === undefined ? undefined : { ...further.types, ...nearer.types },
+    // Per key, for the same reason `types` is: a home file composing one ops and a repository composing
+    // another are independent facts. `false` is a value here, not an absence, so it merges like any other
+    // and a nearer file can switch off what a farther one turned on.
+    ops: nearer.ops === undefined && further.ops === undefined ? undefined : { ...further.ops, ...nearer.ops },
     // Concatenated, further first: narrowings are last-match-wins inside the composition, so the nearer
     // file's entry lands later and prevails over a home-directory one for the same match. Each entry
     // already carries its `<layer>:<file>` origin (`tagOwnershipOrigin`, applied before this function
