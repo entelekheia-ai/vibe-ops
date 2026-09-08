@@ -135,7 +135,7 @@ second binding for another agent host ships the equivalent of those and nothing 
 
 ## Tracks
 
-- [ ] **Track 1 — The policy facet, and the references it receives.** `records norm` gains a `policy`
+- [x] **Track 1 — The policy facet, and the references it receives.** `records norm` gains a `policy`
       facet and a `--name` flag selecting which of a package's `facets` to serve, with `NormFacet` staying
       a closed enum. `convergence-policy` and `template-shape-change` move into `governance-base`,
       `exposure-contract` into `governance-classification`, and `harness-model`, `harness-pair` and
@@ -187,7 +187,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       no file whose owner is the plugin, and a second promulgation preserves a section the repository
       wrote into `GOVERNANCE.md`.
 
-- [ ] **Track 7 — The hook surfaces.** `plan-progress-nudge.sh` becomes `vibe-ops hook plan-progress`,
+- [x] **Track 7 — The hook surfaces.** `plan-progress-nudge.sh` becomes `vibe-ops hook plan-progress`,
       with the handler exported by `governance-plan` and dispatched by the CLI's `hook` namespace;
       `session-state-cleanup.sh` becomes `hook session-cleanup`, and the touched-repositories helper a
       function of the CLI. The host-specific inputs the nudge reads today — the session transcript path,
@@ -251,9 +251,37 @@ Every criterion below is observed on an ordinary run, with no flag an operator h
   reconcile than the concurrency saved.
   Date / Author: 2026-09-08 / Danilo Borges
 
+- Decision: A track that runs concurrently with another gets a worktree created for it explicitly, from
+  the tip of the branch the work is on, rather than one requested from the harness's own isolation.
+  Rationale: the harness cuts an isolated worktree from the default branch, so the first concurrent track
+  opened onto a base that predated this plan and had to be stopped and re-based before it could start —
+  and once re-based it ran in the shared worktree anyway, where `npm test` deletes every package's `dist/`
+  and would have broken the other track's gate mid-run. Isolation that is requested rather than
+  constructed is isolation nobody verified.
+  Date / Author: 2026-09-08 / Danilo Borges
+
 ## Outcomes & Retrospective
 
-*Nothing has shipped yet.*
+**Track 7 landed** (`01bf2db`): `plan-progress` and `session-cleanup` are CLI hook surfaces, the nudge's
+decision logic sits in `governance-plan` as a handler, and `plugin/hooks/` and `plugin/scripts/` ship no
+script. Goal 5 is met. The commit went in with the gate skipped, because the shared worktree also held
+another track's incomplete work; the branch is red on the link gate until the documents that point at
+moved files are updated, which is main-loop work by this plan's own second decision.
+
+**Track 1 landed** (`47f5a8e`): `records norm` serves a `policy` facet by name, five policy documents
+belong to the packages whose policy they are, and nineteen readers name a command instead of a path.
+
+**Both tracks were reviewed adversarially and both had real defects**, three of them in behaviour that
+had already landed. The review of Track 7 also answered the question it was given: the behaviour test
+whose expectation the port rewrote had never executed — it resolved a directory that has never existed —
+and the case it asserted was one the original shell never had, which a differential run of the
+unmodified test against the unmodified script proved by failing exactly there.
+
+What the two reviews are worth recording for is the shape of what they found. Three of the five defects
+were **a guard that did not guard**: a gate passing over an empty population, a description reading one
+layer of a ladder its resolver reads whole, and a test suite reporting a skip whose reason was false. All
+three were green. None of them would have been found by running the suite, because each was the suite
+agreeing with itself.
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
