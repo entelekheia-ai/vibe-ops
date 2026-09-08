@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { migrationsDirFor, resolveNormFacet } from "../src/norm-facet.ts";
+import { describeNormType, migrationsDirFor, resolveNormFacet } from "../src/norm-facet.ts";
 
 // The precedence ADR-0019 fixes: the repository's own copy first, then the activated governance
 // package, then a pinned tree in both its layouts. These tests run inside the workspace, so the
@@ -51,6 +51,39 @@ test("a type bound to a package that is not installed falls through to the pinne
   const answer = await resolveNormFacet("policy", "template", repo, config, pinned);
   assert.equal(answer?.source, "pinned");
   assert.ok(answer.exists);
+});
+
+test("a policy facet resolves from the activated package, by name", async () => {
+  const repo = await scratch("norm-policy-");
+  const answer = await resolveNormFacet("base", "policy", repo, undefined, undefined, "convergence");
+  assert.equal(answer?.source, "package");
+  assert.ok(answer.exists, answer.path);
+  assert.ok(answer.path.endsWith(path.join("policy", "convergence.md")), answer.path);
+});
+
+// THE DESCRIPTION MERGES THE LADDER. A repository carrying its own unit for a type used to hide the
+// activated package's facets from `describeNormType` alone, so `records norm --facet policy` refused a
+// name that `resolveNormFacet` — which reads every layer — would have found one layer below.
+test("a repository's own unit does not hide the package's facets from the description", async () => {
+  const repo = await scratch("norm-shadow-");
+  await mkdir(path.join(repo, "types", "base"), { recursive: true });
+  await writeFile(
+    path.join(repo, "types", "base", "type.json"),
+    JSON.stringify({ type: "base", template: "./t.md", authoring: "./a.md", migrations: "./m" }),
+  );
+  const description = await describeNormType("base", repo, undefined, undefined);
+  assert.ok(description !== undefined);
+  assert.ok(description.hasTemplate, "the repository's own unit declares one");
+  assert.deepEqual([...description.facetNames].sort(), ["convergence", "migration"]);
+});
+
+test("a policy-only type declares no record facet at all, not merely no template", async () => {
+  const repo = await scratch("norm-policy-only-");
+  const description = await describeNormType("base", repo, undefined, undefined);
+  assert.ok(description !== undefined);
+  assert.equal(description.hasTemplate, false);
+  assert.equal(description.hasAuthoring, false);
+  assert.equal(description.hasMigrations, false);
 });
 
 test("migrationsDirFor answers only with a directory that exists", async () => {

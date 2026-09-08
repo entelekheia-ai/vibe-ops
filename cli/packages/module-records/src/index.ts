@@ -225,11 +225,16 @@ export default defineModule(
       // Both refusals below need to know what the type ACTUALLY declares, so they name it rather than
       // reporting a bare "does not exist" — the same "visible and attributable" standard the rest of
       // this facet ladder already holds itself to.
-      if (facet === "policy" || facet === "template") {
+      if (facet === "policy" || facet === "template" || facet === "authoring" || facet === "migrations") {
         const description = await describeNormType(type, context.repoRoot, context.config, context.sourceRoot);
         if (description !== undefined) {
-          if (facet === "template" && !description.hasTemplate) {
-            return { code: 2, summary: `${type} is policy-only — it declares no template` };
+          // A policy-only type has no record at all, so all three record facets refuse alike. Answering
+          // only for `template` let the other two fall through to the pinned flat layout and reply with
+          // a plugin path that exists nowhere — a "not present" that reads as a missing file rather than
+          // as a type that was never going to have one.
+          const record = { template: description.hasTemplate, authoring: description.hasAuthoring, migrations: description.hasMigrations };
+          if (facet !== "policy" && !record[facet]) {
+            return { code: 2, summary: `${type} is policy-only — it declares no ${facet}` };
           }
           if (facet === "policy" && !description.facetNames.includes(name!)) {
             return {

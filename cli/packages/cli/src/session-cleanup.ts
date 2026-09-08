@@ -15,7 +15,7 @@
 
 import { unlinkSync } from "node:fs";
 import path from "node:path";
-import { candidateStateDirs } from "./hook-state-dir.ts";
+import { candidateStateDirs, isUsableSessionId } from "./hook-state-dir.ts";
 
 interface SessionEndPayload {
   readonly session_id?: string;
@@ -40,7 +40,9 @@ export async function runSessionCleanupHook(argv: readonly string[]): Promise<nu
     }
 
     const sid = payload.session_id;
-    if (sid === undefined || sid === "") return 0;
+    // A session id that is not a plain name never becomes a path: `path.join` would normalise a `..`
+    // in it and delete outside the state directory. Silence and exit 0, like every other guard here.
+    if (!isUsableSessionId(sid)) return 0;
 
     for (const dir of candidateStateDirs(stateDirArg)) {
       for (const name of [`vibe-ops-plan-mode-${sid}`, `vibe-ops-progress-${sid}`]) {

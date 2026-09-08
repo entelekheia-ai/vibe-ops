@@ -5,6 +5,8 @@
 "@entelekheia/vibe-ops-core": minor
 "@entelekheia/vibe-ops-module-records": minor
 "@entelekheia/vibe-ops-module-check": patch
+"@entelekheia/vibe-ops-gates": minor
+"@entelekheia/vibe-ops-governance": minor
 ---
 
 `records norm` gains a `policy` facet and a `--name` flag selecting which of a type's `facets` to serve (project/plans/040-*.md Track 1). `NormFacet` stays a closed union.
@@ -15,4 +17,6 @@ The type-unit manifest (`type.json`) gains an optional `facets` field, a map of 
 
 `records norm` refuses `--facet policy` without `--name`, `--name` on any facet other than `policy`, `--facet policy --name <x>` where the type declares no such facet (naming what it does declare), and `--facet template` on a policy-only type (naming it as such).
 
-`references-completeness` (`cli/packages/module-check/sh/unported/checks/55-references-completeness.sh`, now `@4`) extends to check every activated package's `type.json` `facets`, each file still required to carry a `vibe-ops-reference: <name>@N` stamp — independent of whether `plugin/references/` exists, so an npm-only install with no plugin surface is still covered. It keeps passing while `plugin/references/` holds its remaining four files (`README.md`, `authoring-style.md`, `instruction-surfaces.md`, `knowledge-lifecycle.md`), which this change does not touch.
+`references-completeness` (`cli/packages/module-check/sh/unported/checks/55-references-completeness.sh`, now `@5`) keeps the population it always had — the four record types' authoring rules and `plugin/references/`. The facets are read by a new gate instead, `facet-completeness`, composed into the `governance` ops: it resolves what the repository ACTIVATES rather than walking a path, so a consumer whose facets live inside installed packages is covered where a fragment reading `cli/packages/` would have examined zero files and passed. Zero examined reports SKIP, never a pass.
+
+The manifest relaxation is keyed on a unit carrying NO record field at all, not on it declaring `facets`: a manifest with both — `governance-classification` is one — keeps every field required.

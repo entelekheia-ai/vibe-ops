@@ -73,6 +73,7 @@ test("--list composes every entry, in order: the derived record schemas, the der
       "config-state-leftover",
       "modules-omits-builtin",
       "disabled-declared",
+      "facet-completeness",
       "runner-provenance",
     ],
   );

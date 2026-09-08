@@ -106,14 +106,19 @@ export function parseTypeUnit(text: string, file: string): TypeUnit {
   const type = requireString(parsed, "type", file);
   const facets = parseFacets(parsed, file);
 
-  // A unit declaring `facets` and nothing else is POLICY-ONLY (RFC-0005 §3: `base` ships no record,
-  // only the policy files that used to live under `plugin/references/`) — its three record facets are
-  // optional. Every unit with no `facets` keeps the original, unconditional requirement: this is the
-  // guard, not a relaxation of what every record type this repository ships today already declares.
-  const policyOnly = facets !== undefined && Object.keys(facets).length > 0;
-  const template = policyOnly && parsed.template === undefined ? undefined : requireString(parsed, "template", file);
-  const authoring = policyOnly && parsed.authoring === undefined ? undefined : requireString(parsed, "authoring", file);
-  const migrations = policyOnly && parsed.migrations === undefined ? undefined : requireString(parsed, "migrations", file);
+  // A unit declaring `facets` and NO record field at all is POLICY-ONLY (RFC-0005 §3: `base` ships no
+  // record, only the policy files that used to live under `plugin/references/`) — its three record
+  // facets are absent together, which is the whole of the relaxation.
+  //
+  // ALL THREE OR NONE, deliberately. Keying this on `facets` being present would relax the requirement
+  // for a manifest that has both, and `governance-classification` is one today: dropping its `authoring`
+  // would then parse in silence, and the completeness fragment checks authoring for the four record
+  // types only, so nothing downstream would notice. A unit that carries a record carries all three.
+  const declaresRecord = parsed.template !== undefined || parsed.authoring !== undefined || parsed.migrations !== undefined;
+  const policyOnly = facets !== undefined && Object.keys(facets).length > 0 && !declaresRecord;
+  const template = policyOnly ? undefined : requireString(parsed, "template", file);
+  const authoring = policyOnly ? undefined : requireString(parsed, "authoring", file);
+  const migrations = policyOnly ? undefined : requireString(parsed, "migrations", file);
 
   // OPTIONAL, because not every governed type has records carrying metadata. A licence and a
   // classification policy are data the tooling owns and hands out; neither has a header table nor

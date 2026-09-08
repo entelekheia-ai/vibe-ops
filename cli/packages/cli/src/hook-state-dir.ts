@@ -8,6 +8,20 @@
 // a generic POSIX convention, not a Claude Code host variable, and the shipped scripts these surfaces
 // replace already fell back to it the same way.
 
+/**
+ * A `session_id` this process is willing to build a path out of.
+ *
+ * WHY THIS EXISTS AT ALL, given the host supplies a UUID: the scripts these surfaces replace were safe
+ * by accident of the kernel. `rm -f "$DIR/vibe-ops-progress-$SID"` with a `..` in `$SID` asks the
+ * filesystem for a path under a directory named `vibe-ops-progress-`, which does not exist, so it
+ * ENOENTs. `path.join` normalises the same string lexically FIRST, so the literal prefix becomes a
+ * component that `..` pops, and the delete or the write lands outside the state directory. Rejecting
+ * the id keeps the port's blast radius where the shell's was.
+ */
+export function isUsableSessionId(sid: string | undefined): sid is string {
+  return sid !== undefined && /^[A-Za-z0-9._-]+$/.test(sid) && sid !== "." && sid !== "..";
+}
+
 /** The directory a fresh piece of state is written to. */
 export function primaryStateDir(stateDirArg: string | undefined): string {
   if (stateDirArg !== undefined && stateDirArg !== "") return stateDirArg;

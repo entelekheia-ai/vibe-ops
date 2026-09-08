@@ -13,17 +13,19 @@
 // whether one of them has a plan worth naming, and updates the outstanding set the same way the shell
 // script's NUDGED variable did.
 //
-// AT MOST ONE MESSAGE, EVER PLAN STILL WALKED. The shell version does not stop scanning once it has
-// picked a message — it keeps updating `STILL_NUDGED` for every repository and every matching plan, so a
-// plan this turn also wrote to a second repository's plan file is still marked settled even though the
-// firing named a different one. Stopping the walk early once `text` is set would silently under-update
-// that bookkeeping and re-arm a plan on the next firing that should have stayed quiet.
+// AT MOST ONE MESSAGE, AND THE WALK CONTINUES — but only one of the two branches keeps recording. After
+// a message is picked, a plan THIS TURN WROTE is still marked settled, which is why the loop must not
+// break: a plan written in a second repository would otherwise be re-armed on the next firing. A plan
+// that is merely a fresh candidate is neither named nor recorded once the message is taken; it stays
+// outstanding and gets its own firing later. The shell behaves identically, by an early `continue` that
+// sits before its `STILL_NUDGED` append (line 193 before line 214 of the script this replaced), and a
+// test asserts the pair rather than the sentence.
 
 import path from "node:path";
 import { statSync, existsSync } from "node:fs";
 import { createDocumentStore, loadConfig } from "@entelekheia/vibe-ops-core";
-import { findHeaderTable, valueOf, resolveRecord, RecordsConfigError } from "@entelekheia/governance-base";
-import { depthFor, listMarkdownFiles } from "@entelekheia/governance-base";
+import { findHeaderTable, valueOf, resolveRecord } from "@entelekheia/governance-base";
+import { listMarkdownFiles } from "@entelekheia/governance-base";
 
 export interface PlanProgressNudge {
   /** The one plan this firing may speak about — absent when nothing new crossed the threshold. */
@@ -49,7 +51,11 @@ function plansAtStatus(
 ): readonly Candidate[] {
   const absDir = path.join(repoRoot, dir);
   const out: Candidate[] = [];
-  for (const relative of listMarkdownFiles(absDir, depthFor("plan"))) {
+  // DEPTH 1, NOT `depthFor("plan")`. The nudge reads the live directory only, which is what the shell
+  // it replaces globbed (`"$REPO/$DIR"/*.md`). The generic depth is 2 and reaches `shipped/`, where an
+  // archived plan whose `Status` row was never demoted would be named as if it were live — a hook
+  // speaking when it should be silent, which is the failure Plan-008 exists to prevent.
+  for (const relative of listMarkdownFiles(absDir, 1)) {
     const document = documents.get(`${dir}/${relative}`);
     if (document.tree === undefined) continue;
     const table = findHeaderTable(document.tree.rootNode);
@@ -87,14 +93,20 @@ export async function planProgressNudge(
 
   for (const repo of repos) {
     const documents = createDocumentStore(repo);
-    const { config } = await loadConfig(repo);
 
+    // ONE UNREADABLE REPOSITORY IS SKIPPED, NEVER FATAL — and `loadConfig` is inside the try for that
+    // reason. A config that fails to import throws something other than `RecordsConfigError` (a
+    // SyntaxError, from that repository's own `vibeops.config.ts`), which propagated to the surface's
+    // outer catch and returned before the state file was written: the offset stayed pinned at its seed,
+    // so the offending write never left the attribution window and the nudge was dead for the rest of
+    // the session. The shell it replaced skipped that repository and went on to the next
+    // (`RESOLVED=$(cd "$REPO" && $RESOLVE_PLAN) || continue`).
     let resolved;
     try {
+      const { config } = await loadConfig(repo);
       resolved = resolveRecord("plan", repo, config, documents);
-    } catch (error) {
-      if (error instanceof RecordsConfigError) continue;
-      throw error;
+    } catch {
+      continue;
     }
 
     const { dir, plan, template, authority } = resolved;

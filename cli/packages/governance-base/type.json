@@ -3,5 +3,7 @@
   "facets": {
     "convergence": "policy/convergence.md",
     "migration": "policy/migration.md"
-  }
+  },
+  "numbered": false,
+  "dirs": []
 }

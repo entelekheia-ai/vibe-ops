@@ -95,14 +95,14 @@ export default {
         // an archived plan, CHANGELOG (what a past release actually shipped) — is a fact about what the
         // tree looked like when it was written, and repairing it would edit a frozen record.
         // Every OTHER record is repaired instead of exempted: the links in RFC-0001 and RFC-0003 were
-        // repointed at the moved files in the same pass, which is why `project/rfc/**` is not listed
-        // here. A living surface — an `AGENTS.md`, a skill, an open RFC or plan — stays a finding.
-        "markdown-link": [
-          "CHANGELOG.md",
-          "project/rfc/implemented/**",
-          "project/rfc/rejected/**",
-          "project/plans/shipped/**",
-        ],
+        // repointed at the moved files in the same pass. A living surface — an `AGENTS.md`, a skill, an
+        // open RFC or plan — stays a finding.
+        //
+        // ONLY THE FILES THAT ACTUALLY CARRY ONE ARE LISTED. The archival record directories were named
+        // here first and suppressed nothing at all, which is worse than redundant: a glob that covers no
+        // finding today silently covers whatever lands in it tomorrow. `CHANGELOG.md` carries two links
+        // to the moved policy files, and `shipped/007` one to a hook script Track 7 retired.
+        "markdown-link": ["CHANGELOG.md", "project/plans/shipped/007-*.md"],
       },
       // Research needs no disablement any more: the per-type entries are derived from the activated
       // governances (Plan-034), and no governance package serves research — the type entered the old

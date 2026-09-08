@@ -46,7 +46,13 @@ export function touchedRepos(transcriptPath: string, offset: number): TouchedRep
 
   let size: number;
   try {
-    size = statSync(transcriptPath).size;
+    // `existsSync` above is satisfied by a DIRECTORY, and the read below would then throw EISDIR. The
+    // outer catch would swallow it and the caller would exit before writing its state, pinning the
+    // offset at its seed for the rest of the session — the same stall a repository with an unreadable
+    // config used to cause. The helper this replaced returned an offset of 0 and carried on.
+    const stat = statSync(transcriptPath);
+    if (!stat.isFile()) return { offset: 0, paths: [], repos: [] };
+    size = stat.size;
   } catch {
     return { offset: 0, paths: [], repos: [] };
   }

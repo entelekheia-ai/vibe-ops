@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync,
 import path from "node:path";
 import { planProgressNudge } from "@entelekheia/governance-plan";
 import { touchedRepos } from "./touched-repos.ts";
-import { primaryStateDir } from "./hook-state-dir.ts";
+import { primaryStateDir, isUsableSessionId } from "./hook-state-dir.ts";
 
 interface StopPayload {
   readonly session_id?: string;
@@ -98,7 +98,10 @@ export async function runPlanProgressHook(argv: readonly string[]): Promise<numb
 
     const sid = payload.session_id;
     const transcript = payload.transcript_path;
-    if (sid === undefined || sid === "" || transcript === undefined || transcript === "") return 0;
+    // `isUsableSessionId` is the path guard, not a format preference: the id is interpolated into a
+    // file name below, and `path.join` resolves a `..` inside it lexically, which would put the write
+    // outside the state directory.
+    if (!isUsableSessionId(sid) || transcript === undefined || transcript === "") return 0;
 
     const statePath = path.join(stateDir, `vibe-ops-progress-${sid}`);
 

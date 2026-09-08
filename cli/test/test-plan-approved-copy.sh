@@ -113,7 +113,7 @@ test."
     fail "Repository row: something was written into the umbrella repo"
   fi
   # The row is routing metadata for this step and an absolute path on this machine. It must not survive
-  # into the filed record — references/exposure-contract.md. Asserted on the row and on the path
+  # into the filed record — `vibe-ops records norm --type classification --facet policy --name exposure`. Asserted on the row and on the path
   # separately: a strip that removed the label but left the value would satisfy only the first.
   if [[ -f "$target" ]] && ! grep -qE '^\|[[:space:]]*Repository[[:space:]]*\|' "$target"; then
     ok "Repository row: dropped from the filed copy"

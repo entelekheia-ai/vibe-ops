@@ -132,31 +132,50 @@ export async function resolveNormFacet(
  */
 export interface NormTypeDescription {
   readonly hasTemplate: boolean;
+  readonly hasAuthoring: boolean;
+  readonly hasMigrations: boolean;
   readonly facetNames: readonly string[];
 }
 
+/**
+ * THE DESCRIPTION MERGES THE LADDER; IT DOES NOT STOP AT THE FIRST LAYER. `resolveNormFacet` collects a
+ * candidate from every layer and answers with the first that exists, so a description that returned at
+ * the first layer declaring a unit would refuse what resolution would have found: a repository carrying
+ * its own unit for a type — a template, no facets — made the activated package's policy unreachable, and
+ * a repository declaring a policy-only unit made the package's template unreachable the same way. Both
+ * refusals were correct about the layer they read and wrong about the type.
+ */
 export async function describeNormType(
   type: string,
   repoRoot: string,
   config: VibeOpsConfig | undefined,
   sourceRoot: string | undefined,
 ): Promise<NormTypeDescription | undefined> {
+  const units = [];
+
   const pluginDir = resolvePluginDir(repoRoot);
   const repoUnit = resolveTypeUnitAt(pluginDir, type);
-  if (repoUnit !== undefined) {
-    return { hasTemplate: repoUnit.unit.template !== undefined, facetNames: Object.keys(repoUnit.unit.facets ?? {}) };
-  }
+  if (repoUnit !== undefined) units.push(repoUnit.unit);
+
   const activated = await activateGovernance(type, config);
-  if (activated !== undefined) {
-    return { hasTemplate: activated.unit.template !== undefined, facetNames: Object.keys(activated.unit.facets ?? {}) };
-  }
+  if (activated !== undefined) units.push(activated.unit);
+
   if (sourceRoot !== undefined) {
     const pinnedUnit = resolveTypeUnitAt(sourceRoot, type);
-    if (pinnedUnit !== undefined) {
-      return { hasTemplate: pinnedUnit.unit.template !== undefined, facetNames: Object.keys(pinnedUnit.unit.facets ?? {}) };
-    }
+    if (pinnedUnit !== undefined) units.push(pinnedUnit.unit);
   }
-  return undefined;
+
+  if (units.length === 0) return undefined;
+
+  const facetNames = new Set<string>();
+  for (const unit of units) for (const name of Object.keys(unit.facets ?? {})) facetNames.add(name);
+
+  return {
+    hasTemplate: units.some((unit) => unit.template !== undefined),
+    hasAuthoring: units.some((unit) => unit.authoring !== undefined),
+    hasMigrations: units.some((unit) => unit.migrations !== undefined),
+    facetNames: [...facetNames],
+  };
 }
 
 /** The note files a migrations directory holds — what `--print` means for a directory facet. */
