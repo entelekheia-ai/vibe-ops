@@ -42,15 +42,11 @@ test("--list composes the entries this ops owns", async () => {
   const data = result.data as { gates: readonly { label: string }[] };
   assert.deepEqual(data.gates.map((gate) => gate.label), [
     "template-heading-drift",
-    "fragment-parity",
-    "fragment-parity-frontmatter",
-    "fragment-parity-skill-frontmatter",
-    "fragment-parity-memory-slug",
-    "fragment-parity-machine-paths",
-    "fragment-parity-template-attribution",
-    "fragment-parity-bridge",
-    "fragment-parity-budget",
-    "fragment-parity-dogfooding-drift",
+    // The nine `fragment-parity-*` entries left with the fragments they compared (Plan-038 track 7),
+    // and the `fragment-parity` gate left with them — it held no repository knowledge, which is what
+    // its own header said would let it leave the day its subject did. `fragment-parity-completeness`
+    // stays while eight fragments do: its left side is now those eight and its right side is the eight
+    // declared exemptions, so it still fails if either list loses a name.
     "fragment-parity-completeness",
     "manifest-version",
     "manifest-description",
@@ -100,47 +96,28 @@ test("the scaffolding copies are IN the population — excluding them is the bug
   assert.ok((drift?.examined ?? 0) > 40, JSON.stringify(data.population));
 });
 
-// Parity is the point of the other four entries, and the assertion is that it RAN, not merely that the
-// composition was green: a parity entry whose runner is unreachable skips, and a skip and a clean
-// comparison read the same way in an exit code.
-test("every fragment-parity entry actually compared, and none reported a regression", async () => {
+// The nine parity comparisons are gone with the fragments they compared (Plan-038 track 7). What they
+// were FOR now lives in `check --self-test`'s `ports` phase, which makes all nine ports fail on the same
+// deliberately-broken fixture the retired fragments used to be measured against.
+//
+// What still has a job here is the completeness entry, and its job got harder rather than easier: with
+// no parity entry left, EVERY remaining fragment is covered by a declared exemption, so the only thing
+// standing between this repository and an uncovered fragment is that one comparison. It must be seen to
+// run against a real population — an entry examining nothing reports the same clean line.
+test("the completeness entry still covers every remaining fragment, and examined something to say so", async () => {
   const { config } = await loadConfig(REPO);
   const { context, logs } = contextFor(REPO, config, { verbose: true });
   const result = await ops.run(context);
   assert.equal(result.code, 0, logs.join("\n"));
-  // All four, by label, each having reported WHICH two things it compared. Asserting a count would pass
-  // on any four lines; asserting the label plus `compared` is what distinguishes a comparison that ran
-  // from an entry that skipped because its runner was unreachable — and a skip and a clean comparison are
-  // the same exit code.
-  for (const label of [
-    "fragment-parity",
-    "fragment-parity-frontmatter",
-    "fragment-parity-skill-frontmatter",
-    "fragment-parity-memory-slug",
-    "fragment-parity-machine-paths",
-    "fragment-parity-template-attribution",
-    "fragment-parity-budget",
-    "fragment-parity-dogfooding-drift",
-    // Back in the loop as of Plan-038 track 7. Track 4 found it silently passing over an empty population
-    // and made it SKIP instead; this track fixed the cause rather than the symptom — `.claude/**` was
-    // stripped by the ops-wide `ignore`, whose stated reason ("the same bytes, reported twice") is about
-    // CONTENT and does not apply to an entry whose subject is the symlinks themselves.
-    "fragment-parity-bridge",
-  ]) {
-    assert.ok(
-      logs.some((line) => line.includes(`[${label}]`) && line.includes("(compared ")),
-      `${label} did not report a comparison:\n${logs.join("\n")}`,
-    );
-  }
-  // The ninth pair examines a real population as of track 7, which is what Plan-022's first condition
-  // asks for. Asserted as a COUNT rather than only as "(compared", because the shape this pair failed at
-  // was a comparison that ran over nothing and reported agreement — and that reads identically to a real
-  // one in every field except this number.
   assert.ok(
-    logs.some((line) => /ok +\[fragment-parity-bridge\] [1-9]\d* examined/.test(line)),
-    logs.join("\n"),
+    logs.some((line) => /ok +\[fragment-parity-completeness\] [1-9]\d* examined/.test(line)),
+    `the completeness entry did not examine anything:\n${logs.join("\n")}`,
   );
-  assert.ok(!logs.some((line) => line.includes("port-regression")), logs.join("\n"));
+  assert.ok(!logs.some((line) => line.includes("fragment-uncovered")), logs.join("\n"));
+  // No parity entry may come back without its fragment: a label matching `fragment-parity-<something>`
+  // other than the completeness entry means one was added while its subject is being deleted.
+  const stray = logs.filter((line) => /\[fragment-parity-(?!completeness)/.test(line));
+  assert.deepEqual(stray, [], stray.join("\n"));
 });
 
 test("every entry that declares a fixture still fires on it", async () => {

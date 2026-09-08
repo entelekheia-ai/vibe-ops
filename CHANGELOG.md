@@ -513,7 +513,7 @@ it, which is what turns a stamp into routing.
   summary and defers. The single riskiest moments are named where they happen: migrating a document written
   somewhere with more context than the destination has, and lifting a line out of a dossier into the issue
   comment that outlives it.
-- **[`scripts/checks/52-machine-paths.sh`](cli/packages/module-check/sh/checks/52-machine-paths.sh)** — fails when tracked
+- **`scripts/checks/52-machine-paths.sh`** (retired in Plan-038) — fails when tracked
   markdown carries a home directory or checkout path. The one leak in the contract above that needs no
   supplied list to detect: the shape is identical on every machine. Unlike the deny-list check it names
   what it found, because the username is already in the tree at that point and hiding it would leave nobody

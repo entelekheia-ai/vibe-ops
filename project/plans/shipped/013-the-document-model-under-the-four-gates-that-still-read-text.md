@@ -185,7 +185,7 @@ inline layer and is already masked.
 ### `fragment-parity` — the `options` gap
 
 `fragment-parity` runs the gate under test with `options: {}` hardcoded
-([fragment-parity/index.ts:90](../../../cli/packages/gates/src/fragment-parity/index.ts#L90)). Comparing anything
+(`fragment-parity/index.ts:90`, retired with its fragments in Plan-038). Comparing anything
 against `check-frontmatter` therefore silently exercises its default `rule` schema, and
 `45-skill-frontmatter.sh` cannot be compared against its own port at all. The gate gains an optional
 `options` in its own options object, forwarded to the gate it loads. This is the smallest change that

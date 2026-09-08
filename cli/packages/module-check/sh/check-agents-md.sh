@@ -449,35 +449,23 @@ self_test() {
     echo "SELF-TEST FAILED: the script passed a repository that is broken in five ways"
     return 1
   fi
-  for expected in budget links bridge frontmatter private-names memory-slugs machine-paths \
-    plugin-root-paths template-attribution manifest-sync hooks-registration dogfooding-drift \
+  # The eight that remain. Nine ids left this list in Plan-038 track 7 with the fragments themselves —
+  # they had met the retirement bar, and their ports now carry the fixture instead: `check --self-test`'s
+  # `ports` phase asserts every one of the nine still FAILS on this very fixture, built through
+  # `--emit-fixture`. THE FIXTURE ITSELF IS UNCHANGED and must stay that way: every defect the retired
+  # fragments used to catch is still in it, because it is now the ports' evidence rather than theirs.
+  for expected in private-names plugin-root-paths manifest-sync hooks-registration \
     references-completeness command-references; do
     if ! printf '%s\n' "$got" | grep -q "FAIL  \[$expected\]"; then
       echo "SELF-TEST FAILED: check '$expected' did not fire on the fixture"
       return 1
     fi
   done
-  # the memory-slug check must fire once — on the real slug — and not on the TOML array-of-tables inside a
-  # fence or the slug quoted as inline code. A check that reports those is one people learn to ignore.
-  if [ "$(printf '%s\n' "$got" | grep -c 'FAIL  \[memory-slugs\]')" -ne 1 ]; then
-    echo "SELF-TEST FAILED: memory-slugs should report exactly one hit; the fenced and inline decoys must not count"
-    return 1
-  fi
-  if printf '%s\n' "$got" | grep -q 'memory-slugs.*\(language\|also_not_a_link\)'; then
-    echo "SELF-TEST FAILED: memory-slugs matched a [[...]] that was quoted as code"
-    return 1
-  fi
-  # machine-paths fires once, on the real home directory — and not on the two elided spellings a
-  # document uses when it is describing this very rule. A guard that flags its own documentation is one
-  # people learn to switch off.
-  if [ "$(printf '%s\n' "$got" | grep -c 'FAIL  \[machine-paths\]')" -ne 1 ]; then
-    echo "SELF-TEST FAILED: machine-paths should report exactly one hit; the elided decoys must not count"
-    return 1
-  fi
-  if printf '%s\n' "$got" | grep -q 'machine-paths.*decoys.md'; then
-    echo "SELF-TEST FAILED: machine-paths matched an elided path (/Users/…/ or /Users/.../)"
-    return 1
-  fi
+  # The decoy assertions for `memory-slugs` and `machine-paths` left with those fragments (track 7). The
+  # decoys they were written about are STILL IN THE FIXTURE, deliberately: the ports that replaced them
+  # inherit the same trap, and `gates/test/classification.test.ts` is where that discrimination is now
+  # asserted. Deleting the decoys along with the assertions would have quietly weakened the fixture the
+  # ports are measured against.
   # plugin-root-paths' climb guard (plan-009) must fire on the unmarked ../ reference and NOT on the
   # one carrying "plugin-root-paths: allow" — the two decoys are what give this assertion its meaning,
   # the same way the memory-slugs and machine-paths decoys above do.
@@ -545,16 +533,16 @@ self_test() {
     return 1
   fi
 
-  # A declared disablement, proven in both directions on the same fixture. The fixture already proved
-  # machine-paths RED above (line ~397: exactly one FAIL); this reruns it declared off and requires
-  # SKIP naming the reason instead — never a silent FAIL-to-nothing and never a bare "ok".
+  # A declared disablement, proven in both directions on the same fixture. The subject is `private-names`
+  # rather than the retired `machine-paths` (track 7) — the assertion is about the DISABLEMENT MECHANISM,
+  # so it needs any check the fixture already proved red above, and this one it did.
   disabled_got=$(AGENTS_MD_MAX_LINES=150 PRIVATE_NAME_LIST="$denylist" TMPDIR="$runtmp" \
-    VIBE_OPS_DISABLED_CHECKS="machine-paths:self-test fixture" "$0" "$tmp" 2>&1)
-  if printf '%s\n' "$disabled_got" | grep -q 'FAIL  \[machine-paths\]'; then
-    echo "SELF-TEST FAILED: machine-paths still failed while declared off via VIBE_OPS_DISABLED_CHECKS"
+    VIBE_OPS_DISABLED_CHECKS="private-names:self-test fixture" "$0" "$tmp" 2>&1)
+  if printf '%s\n' "$disabled_got" | grep -q 'FAIL  \[private-names\]'; then
+    echo "SELF-TEST FAILED: private-names still failed while declared off via VIBE_OPS_DISABLED_CHECKS"
     return 1
   fi
-  if ! printf '%s\n' "$disabled_got" | grep -q 'SKIP  \[machine-paths\] declared off: self-test fixture'; then
+  if ! printf '%s\n' "$disabled_got" | grep -q 'SKIP  \[private-names\] declared off: self-test fixture'; then
     echo "SELF-TEST FAILED: a declared-off check did not report SKIP naming its reason"
     return 1
   fi
