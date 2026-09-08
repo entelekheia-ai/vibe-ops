@@ -33,6 +33,22 @@ jobs:
       - name: License-header template
         run: ./cli/test/test-license-headers.sh
 
+  # Change intent is declared when the change is made, not at release time: a PR that touches a
+  # published package carries a .changeset/*.md saying what it does to that package's contract.
+  # Changesets reads that file and nothing else — never the commit message — so an undeclared change
+  # reaches the registry with an empty changelog entry and a version nobody chose.
+  changeset:
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changeset-release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # status resolves the base branch through history, not the tip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npx changeset status --since origin/main
+
   cli:
     runs-on: ubuntu-latest
     steps:

@@ -6,9 +6,11 @@ straight from this tree. [`cli/`](cli/AGENTS.md) is an npm monorepo whose module
 half, from a terminal or over MCP. The repository root is the npm workspace, so there is exactly one
 `node_modules`.
 
-**Each half has its own `AGENTS.md`, and that is where its detail lives** — skills, hooks, releasing and
-the install cache in `plugin/`; the module contract, the config cascade and the build order in `cli/`.
-This file maps the tree and holds only what belongs to neither half alone. Do not restate them here.
+**Each half has its own `AGENTS.md`, and that is where its detail lives** — skills, hooks, the plugin
+release and the install cache in `plugin/`; the module contract, the config cascade, the build order and
+the npm release in `cli/`. **The two release separately**: the plugin by its version manifest, the
+packages through changesets, and neither number moves the other. This file maps the tree and holds only
+what belongs to neither half alone. Do not restate them here.
 
 ## Layout
 
@@ -55,7 +57,7 @@ here, because that file is also what this plugin tells *other* repos to follow.
 | For | Read |
 |---|---|
 | The plugin: skills, hooks, releasing, frontmatter | [`plugin/AGENTS.md`](plugin/AGENTS.md) |
-| The CLI: modules, config, MCP, build order | [`cli/AGENTS.md`](cli/AGENTS.md) |
+| The CLI: modules, config, MCP, build order, npm release | [`cli/AGENTS.md`](cli/AGENTS.md) |
 | What a skill does and how | that skill's own `SKILL.md` — never restate it |
 | Which artifact answers which question | [`GOVERNANCE.md`](GOVERNANCE.md) |
 | Artifact lifecycles, numbering, immutability | [`.agents/rules/governance.md`](.agents/rules/governance.md) |

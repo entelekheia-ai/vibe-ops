@@ -333,6 +333,27 @@ node cli/packages/cli/dist/bin.js check
   dependencies from this workspace's own `node_modules` rather than a registry. Needed to exercise the
   `hook` surface as a skill actually calls it — `cli/README.md` has the full recipe.
 
+## Releasing
+
+These packages release through **changesets**; `plugin/` releases on its own line and by its own rules
+([`plugin/AGENTS.md`](../plugin/AGENTS.md)). The two share a tree and nothing else — the root
+`CHANGELOG.md` is the plugin's, `plugin/` is not an npm workspace, and `changeset version` never touches
+either.
+
+- **A PR that changes a published package carries a `.changeset/*.md`.** `check.yml`'s `changeset` job
+  fails the PR otherwise. Changesets reads that file and never the commit message, so an undeclared
+  change reaches the registry with an empty changelog entry and a version nobody chose.
+- **`fixed` is empty on purpose, and the empty array is the decision.** A locked version group is the
+  right default for a platform released as one number — and the wrong one here, because a repository
+  activates the `governance-*` types it wants through `vibeops.config` and may bind a type to a package
+  this repo does not ship (RFC-0003). Chaining those versions to the core would mean nobody but the core's
+  owner can release one. Do not "fix" the empty array.
+- **A changeset that is not staged is invisible to the gate.** `changeset status --since` reads git, so a
+  written-but-untracked file reports as *"no changesets were found"* — the same message as having written
+  none. `git add` it before trusting a local run; CI never sees this because everything there is committed.
+- Publish order is not workspace order. `npm publish` validates no dependency, so nothing stops a
+  dependent from going out first — and sitting on the registry un-installable until its dependency lands.
+
 ## Keeping this file current
 
 Triggers: a package is added or renamed; the module contract gains or loses a field; the config cascade
