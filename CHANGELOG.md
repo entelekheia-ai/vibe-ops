@@ -528,7 +528,8 @@ it, which is what turns a stamp into routing.
   line. `skills/setup/templates/harness/checks/_run.sh` also gained a third `resolve_runner()` source — a
   sibling `../vibe-ops` checkout, preferred over `${CLAUDE_PLUGIN_ROOT}` and after a repository's own
   snapshot — so a repository living beside this one in the same workspace needs no copy to refresh.
-- **[`scripts/checks/27-nudge-behaviour.sh`](cli/packages/module-check/sh/unported/checks/27-nudge-behaviour.sh)** — five assertions
+- **`scripts/checks/27-nudge-behaviour.sh`** (retired in Plan-038; the sensor is now
+  `cli/packages/harness/test/nudge-behaviour.test.ts`) — five assertions
   that run the hook above against fixture repositories: one plan per firing, newest first, nothing
   re-named after being written or after a detour through another repository, and a firing log that is
   actually written. Every one of them fails against the version this release replaces.

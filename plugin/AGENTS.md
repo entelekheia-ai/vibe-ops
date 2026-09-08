@@ -58,7 +58,7 @@ The three "don't do this or it breaks" invariants are in
   in a headless `-p` run** (measured 2026-08-06, claude-code@2.1.221 — nothing reached the transcript),
   and each `-p` invocation ends its session, so `SessionEnd` clears per-session state and every resumed
   turn arrives as a *first* event. Exercise session-scoped behaviour in a real session, or against
-  fixtures — [`27-nudge-behaviour.sh`](../cli/packages/module-check/sh/unported/checks/27-nudge-behaviour.sh) is
+  fixtures — [`nudge-behaviour.test.ts`](../cli/packages/harness/test/nudge-behaviour.test.ts) is
   the pattern.
 
 ### Releasing, and why the install goes stale
