@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-module-setup",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "vibe-ops setup — the scaffold as a composition of what each activated governance ships, never a template directory of its own",
   "type": "module",
   "license": "Apache-2.0",
@@ -26,8 +26,8 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/governance-base": "^0.1.0",
-    "@entelekheia/vibe-ops-core": "^0.1.0"
+    "@entelekheia/governance-base": "^0.2.0",
+    "@entelekheia/vibe-ops-core": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-for-vibe-ops",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "What this repository claims about itself, checked against what it is",
   "type": "module",
   "license": "Apache-2.0",
@@ -27,8 +27,8 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.1.0",
-    "@entelekheia/vibe-ops-gates": "^0.1.0"
+    "@entelekheia/vibe-ops-core": "^0.2.0",
+    "@entelekheia/vibe-ops-gates": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

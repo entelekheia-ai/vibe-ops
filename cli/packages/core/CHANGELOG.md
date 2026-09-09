@@ -1,5 +1,102 @@
 # @entelekheia/vibe-ops-core
 
+## 0.2.0
+
+### Minor Changes
+
+- 54a6052: A type unit may declare `scaffold` — `{ dir, files: [{ from, to }], placeholders? }` — naming every file the package writes into a repository and where each one lands (project/plans/040-\*.md Track 6). Each destination is spelled out rather than derived: a file that must arrive as `.gitignore` or `.gitkeep` is stored without its leading dot, or this repository's own tooling would apply it here instead of shipping it, and a file may be named for what it is rather than where it goes (`NOTICE.template` → `NOTICE`). The field was first shipped as a bare `"./scaffold"` string that nothing read and nothing validated; it is now refused when malformed, and a destination that leaves the target repository is refused outright.
+
+  A unit's `lifecycle` may declare `notes`, a markdown fragment the owning package ships. `renderGovernanceRule` and `renderGovernanceDoc` build this repository's two governance documents from the activated types: the chain and everything that follows from it comes from the manifest, and the paragraphs that are genuinely prose come from that fragment, verbatim. `agents/rules/governance.md` renders whole; `GOVERNANCE.md` renders between two markers and every other line of the file is the repository's, permanently — the `shaped` half of the ownership boundary, which is what lets one document be both current with the activated types and a place someone can write.
+
+  `facet-completeness` (now `@2`) reads scaffold entries as well as facets, so a package declaring a file it does not ship is a finding here rather than a failure in someone else's repository. It no longer skips a package that declares a scaffold and no facet — which was every scaffold entry of the package that has the most.
+
+- adb3c7a: A type manifest may declare `units`, an array of full type units, so one package can serve more than one artifact (project/plans/040-\*.md Track 2, [ADR-0020](../project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md)). A binding picks which through the `#type` fragment RFC-0003 already defined, and the activation cache is keyed by `<package>#<type>` rather than by package name — keyed by package alone, a second binding to the same package was handed whatever the first had resolved, which is the same unit under a different name and reports no error. A manifest declaring both a top-level `type` and `units` is refused, as are two units naming the same type and an empty array.
+
+  `defineGovernance` takes `type` to say which unit a module serves; it is required when the manifest declares several and refused when it declares one, both at load rather than at dispatch.
+
+  A unit may declare `lifecycle` — the status `chain` in order, plus `active`, `terminal`, `living`, `archive` and `immutableFrom`, each validated against that chain. Where a type declares one, it is what `resolve` answers with; where it does not, every field is still derived from the template's own prose exactly as before. `governance-plan` declares its own, so `PLAN_ACTIVE`, `PLAN_TERMINAL` and `LIVING` now come from data instead of from parsing a template comment. A unit may also declare `targets`, the advisory artefact list a style package documents.
+
+- c7d4e3c: A new package, `@entelekheia/governance-instructions`, owns the instruction surface — `AGENTS.md`'s
+  `CLAUDE.md` import, the `.agents/` ↔ `.claude/` bridge, and `repo-guardrails.md` (project/plans/040-\*.md
+  Track 5, RFC-0005 §2). It ships no record and no gate — it is policy-only, the same shape
+  `@entelekheia/governance-base` uses, with `numbered: false` and no `template`/`authoring`/`migrations` in
+  its `type.json` — and gates keep resolving from `@entelekheia/vibe-ops-gates` alone (RFC-0001); the
+  `agents-md` ops is unchanged.
+
+  `instruction-surfaces.md` moves from `plugin/references/` into the package as a `policy` facet, keeping its
+  `vibe-ops-reference: instruction-surfaces@1` stamp byte-identical: `vibe-ops records norm --type
+instructions --facet policy --name surfaces --print`. Every skill and gate that read it by path now names
+  that command instead.
+
+  Three files move out of `plugin/skills/setup/templates/` into the package's own `scaffold/` directory,
+  mirroring their destination-relative shape (`scaffold/root/CLAUDE.md`, `scaffold/agents/rules/repo-
+guardrails.md`, `scaffold/agents/skills/gitkeep`) and declared under a new `scaffold` key in `type.json` —
+  inert until Plan-040 Track 6 builds the `setup scaffold` composition that reads it, the same "declare now,
+  wire later" precedent Track 2 set for `lifecycle`. The package's own `ownership.json` fragment classifies
+  `CLAUDE.md` as `norm` and `.agents/rules/repo-guardrails.md` / `.agents/skills/.gitkeep` as `seed` — the
+  guardrails file ships with a `TODO` placeholder for the operator, which is why it is `seed` rather than
+  `norm`. The three matching entries move out of `@entelekheia/vibe-ops-harness`'s own base `ownership.json`
+  fragment, which no longer needs to carry paths a single package now owns; this changes no repository's
+  composed classification for any of the three, because `instructions` joins `DEFAULT_GOVERNANCE_BINDINGS`
+  in the same commit.
+
+  `instructions: "@entelekheia/governance-instructions"` joins `DEFAULT_GOVERNANCE_BINDINGS` in
+  `@entelekheia/vibe-ops-core`, alongside `base` — bound by default, like `base`, because the instruction
+  surface is universal rather than opt-in the way `license`/`classification` are.
+
+- e259e4a: `@entelekheia/governance-log` retires as a package (project/plans/040-\*.md Track 3, [ADR-0020](../project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md)). `@entelekheia/governance-knowledge` takes its place, moved whole — same source history, same `type.json` data — and ships **two units** from one manifest: `log` (`project/log/`, unchanged in every observable way: type name, noun, MCP tool, settings key, ownership fragment's globs, template, migrations) and `learning` (`project/learnings/`, a fact that holds beyond one repository, pure sugar today — `resolve` only).
+
+  `DEFAULT_GOVERNANCE_BINDINGS.log` now points at `@entelekheia/governance-knowledge` (no `#fragment` needed — `log` is the package's default-exported unit, from the `.` export); a repository that declares nothing about `log` sees no change. `learning` is **not** in the default bindings — a repository binds it only when it has learnings of its own to keep.
+
+  Both units share one policy facet, `lifecycle` (`policy/lifecycle.md`, moved from `plugin/references/knowledge-lifecycle.md` with its `vibe-ops-reference: knowledge-lifecycle@1` stamp byte-identical): the promotion test that decides which of the two a fact becomes is one document, and both units can serve it.
+
+  **Finding, not fixed here:** the CLI's bare-noun dispatch (`loadModule` in `cli/packages/cli/src/resolve.ts`) resolves a governance binding's `packageName` only, never its `#type` fragment — so `vibe-ops learning <verb>` with `types.learning` declared currently loads and runs the **same module** as `vibe-ops log <verb>` (the package's `.` export), silently. `activateGovernance` (used by `records norm`, ownership globs and template resolution) is unaffected, because a multi-unit package's `units` array carries every unit's DATA regardless of which entry module happened to load. Only the terminal/MCP verb dispatch for a _second_ noun sharing a package is affected, and only once a repository actually binds one. [ADR-0020](../project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md) flagged this as deferred; this release is what makes it observable.
+
+- 47f5a8e: `records norm` gains a `policy` facet and a `--name` flag selecting which of a type's `facets` to serve (project/plans/040-\*.md Track 1). `NormFacet` stays a closed union.
+
+  Five files that used to live under `plugin/references/` move into the governance package whose policy they are, each keeping its `vibe-ops-reference: <name>@N` stamp: `convergence-policy` and `template-shape-change` into `@entelekheia/governance-base` (served as `vibe-ops records norm --type base --facet policy --name convergence|migration`), `exposure-contract` into `@entelekheia/governance-classification` (`--type classification --facet policy --name exposure`), and `harness-model`/`harness-pair`/`ownership` into `@entelekheia/vibe-ops-harness`, served by a new verb on the `harness` noun rather than through the facet grammar — `vibe-ops harness policy --name model|pair|ownership` — because `harness` is CLI-internal and has no `type.json` of its own.
+
+  The type-unit manifest (`type.json`) gains an optional `facets` field, a map of policy name to a relative path; a unit that declares `facets` and no record of its own is POLICY-ONLY, and its `template`/`authoring`/`migrations` become optional (every existing manifest keeps the original unconditional requirement — this is a guard, not a relaxation of what a record type already declares). `governance-base` itself is now activatable as the type `base`, bound by default alongside `adr`/`rfc`/`plan`/`task`/`log`, purely for its policy facets — it ships no record.
+
+  `records norm` refuses `--facet policy` without `--name`, `--name` on any facet other than `policy`, `--facet policy --name <x>` where the type declares no such facet (naming what it does declare), and `--facet template` on a policy-only type (naming it as such).
+
+  `references-completeness` (`cli/packages/module-check/sh/unported/checks/55-references-completeness.sh`, now `@5`) keeps the population it always had — the four record types' authoring rules and `plugin/references/`. The facets are read by a new gate instead, `facet-completeness`, composed into the `governance` ops: it resolves what the repository ACTIVATES rather than walking a path, so a consumer whose facets live inside installed packages is covered where a fragment reading `cli/packages/` would have examined zero files and passed. Zero examined reports SKIP, never a pass.
+
+  The manifest relaxation is keyed on a unit carrying NO record field at all, not on it declaring `facets`: a manifest with both — `governance-classification` is one — keeps every field required.
+
+- cd42823: `style` is the one type whose `types.<name>` binding is a stack, not a single package — RFC-0005 §2.1,
+  Plan-040 Track 4. `@entelekheia/governance-style` ships the default layer: `general.md` (moved
+  byte-identical from `plugin/references/authoring-style.md`, keeping its `authoring-style@2` stamp) plus a
+  `readme.md` and an `agents-md.md` fragment for the two targets it documents.
+
+  `types.style` takes either spelling from the RFC: a short-form array of layers (`"@pkg"`, `"@pkg/{a,b}"`
+  an include scope, `"@pkg{^a,b}"` an exclude scope) or the long form `{ layers: [...], onCollision }` for a
+  layer that also needs `on: "append"` or a per-key `rules` map. `core`'s `TypesConfig` widens to admit a
+  `StyleBinding` under this one key; `effectiveGovernanceBindings` skips it explicitly rather than trying to
+  parse it as a package name, and the new `activateGovernancePackage` primitive lets a stack layer activate
+  a package directly, by name, with no `types.<name>` binding to look up.
+
+  `@entelekheia/governance-base`'s new `composeStylePolicy` is the whole of the composition: it merges by
+  SECTION (keyed by heading slug, or an explicit `<!-- key: … -->` marker), a repeated key replaces and a new
+  key appends, `on`/`rules` are read from the binding and never the package, and a `<target>.md` overriding
+  its own package's `general.md` is never a collision. `onCollision` (`"error" | "warn" | "off"`, default
+  `"warn"`) never aborts the composer itself — only the CLI turns `"error"` into a non-zero exit.
+
+  `records norm --type style --facet policy [--for <target>] [--explain]` serves it:
+  `--for` names the artefact (absent serves the unscoped layers alone), `--explain` prints each section's
+  origin package and file. `--name` is refused on `style` — its binding is a stack, not one named facet.
+
+  The four authoring skills (`authoring-agents-md`, `authoring-readme`, `new`, `new-migration`) now read the
+  style stack through this verb instead of a path under the plugin's own `references/` directory, each
+  naming the target it writes; every other reader of that path (`new-signal`, `governance-plan`'s own
+  authoring rules, ADR-0004) repoints the same way.
+
+- c3741f0: `vibe-ops setup plan|scaffold <target> [NAME=value …]` — the scaffold as a composition of what the target activates, never a template directory of its own (project/plans/040-\*.md Track 6). Every file comes from a package that declares it in its own `scaffold`, each record template is read from the package that owns the type rather than from a second copy, each type's records directory comes from its `dirs`, and the two governance documents are rendered from the activated types.
+
+  `plan` and `scaffold` are the same traversal, and `plan` writes nothing: a dry run implemented separately is a second implementation, and what it would drift about is what a tool is about to write into somebody's repository.
+
+  Three properties worth naming, each covered by a test. A destination that already exists is kept and reported, not overwritten — this is the FIRST write into a repository, where the honest default is that anything already there was put there by someone; `--force <path>` names an exception. `GOVERNANCE.md` is `shaped`: a second run re-renders the lifecycles and leaves every other line of the file alone. And a placeholder nobody answered is left standing rather than emptied, because `{{PKG_NAME}}` in a written file is visible and greppable while an empty string where a name belongs is a file that looks finished and is not.
+
 ## 0.1.0
 
 ### Minor Changes

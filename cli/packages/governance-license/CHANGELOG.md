@@ -1,5 +1,33 @@
 # @entelekheia/governance-license
 
+## 0.2.0
+
+### Minor Changes
+
+- 54a6052: A type unit may declare `scaffold` — `{ dir, files: [{ from, to }], placeholders? }` — naming every file the package writes into a repository and where each one lands (project/plans/040-\*.md Track 6). Each destination is spelled out rather than derived: a file that must arrive as `.gitignore` or `.gitkeep` is stored without its leading dot, or this repository's own tooling would apply it here instead of shipping it, and a file may be named for what it is rather than where it goes (`NOTICE.template` → `NOTICE`). The field was first shipped as a bare `"./scaffold"` string that nothing read and nothing validated; it is now refused when malformed, and a destination that leaves the target repository is refused outright.
+
+  A unit's `lifecycle` may declare `notes`, a markdown fragment the owning package ships. `renderGovernanceRule` and `renderGovernanceDoc` build this repository's two governance documents from the activated types: the chain and everything that follows from it comes from the manifest, and the paragraphs that are genuinely prose come from that fragment, verbatim. `agents/rules/governance.md` renders whole; `GOVERNANCE.md` renders between two markers and every other line of the file is the repository's, permanently — the `shaped` half of the ownership boundary, which is what lets one document be both current with the activated types and a place someone can write.
+
+  `facet-completeness` (now `@2`) reads scaffold entries as well as facets, so a package declaring a file it does not ship is a finding here rather than a failure in someone else's repository. It no longer skips a package that declares a scaffold and no facet — which was every scaffold entry of the package that has the most.
+
+- e259e4a: `@entelekheia/governance-license` and `@entelekheia/governance-classification` each gain an `ownership.json` fragment (project/plans/040-\*.md Track 3) — both shipped files into a repository with no declaration naming them until now.
+
+  `@entelekheia/governance-license` also takes over what the `license-setup` skill used to ship: `scaffold/` now carries the NOTICE and AUTHORS templates, the header-check script and its two CI workflows, and the two license-rules documents — the skill names a package root instead of a file of its own. `get-license.sh`'s `fetch` and `verify` commands become two new CLI commands, `license get <id>` (`--out <file>`) and `license verify <file>` (`--id <id>`), reading the same registry (`templates/SOURCES.tsv`) and applying the same canonical-text comparison; `license list` is added too, since the skill's own Step 1 depends on it. `pin` (adding a new SPDX id) is deliberately not ported — it stays a maintainer-only, run-from-a-checkout operation, never a consumer-facing verb.
+
+  `vibe-ops-module-check`'s `90-license-texts.sh` fragment no longer shells out to the retired `get-license.sh`; the one comparison it used (this repository's own `LICENSE` against the Apache-2.0 pin) is inlined using the same canonical-text transform, keeping the fragment dependency-free (`CHECK_VERSION` bumped to 2).
+
+### Patch Changes
+
+- Updated dependencies [54a6052]
+- Updated dependencies [adb3c7a]
+- Updated dependencies [c7d4e3c]
+- Updated dependencies [e259e4a]
+- Updated dependencies [47f5a8e]
+- Updated dependencies [cd42823]
+- Updated dependencies [c3741f0]
+  - @entelekheia/governance-base@0.2.0
+  - @entelekheia/vibe-ops-core@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

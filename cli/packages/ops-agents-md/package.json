@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-agents-md",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The instruction surface as a vibe-ops ops: AGENTS.md, CLAUDE.md, and the .agents/ ↔ .claude/ bridge",
   "type": "module",
   "license": "Apache-2.0",
@@ -27,8 +27,8 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.1.0",
-    "@entelekheia/vibe-ops-gates": "^0.1.0"
+    "@entelekheia/vibe-ops-core": "^0.2.0",
+    "@entelekheia/vibe-ops-gates": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

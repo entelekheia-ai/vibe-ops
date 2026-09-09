@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-module-config",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "vibe-ops config — the effective value of a dotted key, its origin, and the one writer the skills need (types.<name>)",
   "type": "module",
   "license": "Apache-2.0",
@@ -26,7 +26,7 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.1.0"
+    "@entelekheia/vibe-ops-core": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

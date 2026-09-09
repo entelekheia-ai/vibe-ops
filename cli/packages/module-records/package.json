@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-module-records",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "vibe-ops records — the generic resolver, for a type the noun modules do not own (adr, rfc)",
   "type": "module",
   "license": "Apache-2.0",
@@ -26,9 +26,9 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/vibe-ops-core": "^0.1.0",
-    "@entelekheia/governance-base": "^0.1.0",
-    "@entelekheia/vibe-ops-harness": "^0.1.0"
+    "@entelekheia/vibe-ops-core": "^0.2.0",
+    "@entelekheia/governance-base": "^0.2.0",
+    "@entelekheia/vibe-ops-harness": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

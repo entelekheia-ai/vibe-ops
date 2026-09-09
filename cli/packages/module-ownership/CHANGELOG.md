@@ -1,5 +1,20 @@
 # @entelekheia/vibe-ops-module-ownership
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [54a6052]
+- Updated dependencies [adb3c7a]
+- Updated dependencies [c7d4e3c]
+- Updated dependencies [e259e4a]
+- Updated dependencies [47f5a8e]
+- Updated dependencies [cd42823]
+- Updated dependencies [93d04ca]
+- Updated dependencies [c3741f0]
+  - @entelekheia/vibe-ops-core@0.2.0
+  - @entelekheia/vibe-ops-harness@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
