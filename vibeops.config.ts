@@ -53,6 +53,17 @@ export default {
   ops: {
     mirror: "@entelekheia/vibe-ops-mirror",
     "for-vibe-ops": "@entelekheia/vibe-ops-for-vibe-ops",
+    // A LOCAL OPS, in this repository and not shipped, through the same `.vibe-ops/ops.json` door
+    // ref-id already uses. Its one entry answers a question no shipped gate asks: which publishable
+    // package NAME has never reached the registry. Trusted publishing authenticates against a package
+    // that exists and cannot create one, so a release carrying a new name publishes everything ahead of
+    // it in dependency order and then 404s — measured 2026-09-09, six packages out and the seventh
+    // stopped, with publication being the one act that does not undo.
+    //
+    // It is here rather than in CI because nothing automated clears it: somebody logs in and publishes
+    // the name once. Reported while the work happens, it is arrangeable; reported by the release run, it
+    // is discovered at the one moment nobody can act.
+    publishing: "./.vibe-ops/ops.json",
   },
   settings: {
     // A shipped template's content is written to resolve in the *target* repository, never this one —
