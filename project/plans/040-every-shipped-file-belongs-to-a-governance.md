@@ -415,6 +415,62 @@ two-class conflict, so it needs a decision rather than a line. Neither blocks Tr
 
 ---
 
+---
+
+## Closure — the goals, answered one by one
+
+Every criterion below was **run at closure**, not recalled. Two of the eight had never been executed
+before this pass, and one of those two failed.
+
+| Goal | Verdict |
+|---|---|
+| 1 — the plugin ships no policy, no template, no script | **Met.** `find plugin -name '*.sh'` is empty and there is no `references/` directory. One `grep` hit survives, in a comment inside `module-check/sh/unported/check-agents-md.sh` describing a fixture; the criterion was written as a grep and the grep is not clean, while the thing it was protecting is. Recorded rather than edited away. |
+| 2 — every file written into a repository is classified | **Met, after a fix at closure.** See below. |
+| 3 — a repository binds a stack of writing styles | **Met.** Two scratch layers both serving `general.md`: three sections composed from both, `--explain` naming each section's origin file, the collision on `voice` warning and exiting 0, and the same stack with `onCollision: "error"` exiting 1 naming both claimants. |
+| 4 — the two governance documents are rendered, not copied | **Met.** A scaffolded repository's documents describe exactly what it activates, and a repository that binds a sixth type afterwards sees it appear on the next promulgation — which needed the work below to be true at all. |
+| 5 — `hooks.json` names `vibe-ops` everywhere and the plugin ships no script | **Met.** 9 of 9 registrations invoke `vibe-ops`; zero `.sh` under `plugin/`. |
+
+### What closure itself found
+
+**Goal 2 was not met until closure.** Criterion 7 had never been run. Executed against a freshly
+scaffolded repository — 28 files, composed boundary, `classOf` per path — one path came back
+unclassified: `tsconfig.base.json`. The build-baseline entry named `tsconfig.json` and
+`tsconfig.build.json` by hand while its per-package sibling already used `tsconfig*.json`, so the
+scaffold wrote a file that promulgation would then have stopped on, naming a path its own scaffold had
+just created. The glob is `tsconfig*.json` now. **A criterion nobody executed is a prediction**, and this
+one was wrong.
+
+**The `facet-completeness` gate reports `53 examined, 53 ignored`, which reads like a guard that does not
+guard.** It is not: planting `notes: "./nowhere-planted.md"` in `governance-adr/type.json` made the run
+fail naming the file and the package, and removing it made the run green again. The `ignored` count is
+the ops's file population, which this gate does not use — it re-derives its own subjects. Recorded
+because the number invites exactly the wrong conclusion, and this plan has been wrong about a
+green-looking guard four times.
+
+### Routing — Step 3
+
+This plan spawned **no task dossier**, which is the case its own closure skill names as the one with no
+other exit. Three things were tested against the promotion test and placed:
+
+1. **A repository's gate resolves `vibe-ops` from `PATH`, so a branch that retires a check still fails
+   against a stale global install.** Names a file someone meets again → `project/log/`, below.
+2. **A document rendered from data can be well-formed and still have lost most of what it said.** Holds
+   beyond this repository, and it is the finding this plan made four times → carried in the
+   retrospective above rather than promoted, because the surface that would receive it is a review
+   practice this repository does not yet have a home for. **Blocked; what unblocks it is a place for
+   review method to live** — named here so the next plan inherits it rather than rediscovering it.
+3. **The setup skill described a copy manifest that no longer existed.** A prescription for how a skill
+   behaves → the edit was made to `plugin/skills/setup/SKILL.md` (`657c952`), which is placement 3 of the
+   promotion test, not a candidate to file.
+
+### Demotion — Step 4
+
+Nothing to delete. The guards this plan added (`facet-completeness@3`, the parser's `terminal`/branch
+refusals, the marker-pair refusal) replaced *silence*, not prose — there was no `AGENTS.md` line or rule
+asserting any of it, which is why each failure was invisible. A guard that makes a sentence redundant is
+the ordinary case; a guard that makes nothing redundant is what you get when the gap was never written
+down.
+
 ## Open questions
 
 None. RFC-0005 closed the five it carried before this plan was cut.

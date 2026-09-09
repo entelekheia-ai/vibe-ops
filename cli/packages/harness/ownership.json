@@ -54,9 +54,9 @@
       "why": "Formatting and exclusion preferences. Identical across repositories so far, which is not authority to overwrite the first one that diverges on purpose."
     },
     {
-      "match": "{package.json,tsconfig.json,tsconfig.build.json,packages/*/package.json,packages/*/tsconfig*.json}",
+      "match": "{package.json,tsconfig*.json,packages/*/package.json,packages/*/tsconfig*.json}",
       "class": "seed",
-      "why": "The build baseline. Scaffolded once; every dependency added afterwards belongs to the repository."
+      "why": "The build baseline. Scaffolded once; every dependency added afterwards belongs to the repository. The root glob is `tsconfig*.json`, matching the per-package one: it named `tsconfig.json` and `tsconfig.build.json` by hand and missed `tsconfig.base.json`, which the scaffold writes — so promulgation into a scaffolded repository would have stopped on a path its own scaffold had just created."
     },
     {
       "match": ".github/workflows/check.yml",
