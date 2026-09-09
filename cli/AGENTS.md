@@ -350,6 +350,14 @@ either.
   activates the `governance-*` types it wants through `vibeops.config` and may bind a type to a package
   this repo does not ship (RFC-0003). Chaining those versions to the core would mean nobody but the core's
   owner can release one. Do not "fix" the empty array.
+- **A changeset may not carry a repository-relative link.** Its text is copied VERBATIM into each
+  package's `CHANGELOG.md`, which sits three levels deeper than `.changeset/` — so `../project/adr/x.md`
+  is correct where it is written and dangles where it lands, in as many files as the changeset touched
+  packages. Ten dead links across six changelogs, and `main` went red on the version-bump merge, which is
+  the one commit nobody reviews. It is also wrong at any depth: a `CHANGELOG.md` is read on npm, where no
+  path into this repository resolves. **Use a full `https://github.com/...` URL**, which resolves from
+  both sides.
+
 - **A changeset that is not staged is invisible to the gate.** `changeset status --since` reads git, so a
   written-but-untracked file reports as *"no changesets were found"* — the same message as having written
   none. `git add` it before trusting a local run; CI never sees this because everything there is committed.

@@ -12,7 +12,7 @@
 
 ### Patch Changes
 
-- e259e4a: The `dogfooding-drift` entry's `log` pair points at `governance-knowledge/templates/log.md` — the template's new home now that `@entelekheia/governance-log` retired as a package (project/plans/040-\*.md Track 3, [ADR-0020](../project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md)).
+- e259e4a: The `dogfooding-drift` entry's `log` pair points at `governance-knowledge/templates/log.md` — the template's new home now that `@entelekheia/governance-log` retired as a package (project/plans/040-\*.md Track 3, [ADR-0020](https://github.com/entelekheia-ai/vibe-ops/blob/main/project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md)).
 - Updated dependencies [54a6052]
 - Updated dependencies [adb3c7a]
 - Updated dependencies [c7d4e3c]
