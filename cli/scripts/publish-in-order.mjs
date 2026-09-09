@@ -86,6 +86,39 @@ function visit(name, trail) {
 }
 for (const name of [...pkgs.keys()].sort()) visit(name, [])
 
+// ── The preflight, and the detection it does NOT carry ──────────────────────────────────────────────
+//
+// A NAME THAT HAS NEVER BEEN PUBLISHED STOPS THE WHOLE RUN, BEFORE ANYTHING IS PUBLISHED. Trusted
+// publishing authenticates against a package that exists and cannot create one, so a run containing a
+// new name publishes every package ahead of it in dependency order and then 404s — and publication is
+// the one act here that does not undo. Measured 2026-09-09: six packages reached npm at 0.2.0 and the
+// seventh stopped the run, leaving `main` declaring versions the registry did not have.
+//
+// THE DETECTOR IS NOT HERE. `.vibe-ops/gates/registry-first-publish/` owns the question, is composed
+// into `vibe-ops check` so it warns while the work is happening, and is imported here so this path
+// refuses on the same reading rather than on a second copy of it. Detection is a gate's; what a finding
+// costs is the caller's (RFC-0001) — and the cost differs, which is the whole point: a commit is warned,
+// a publish is refused.
+import { nameOnRegistry } from '../../.vibe-ops/gates/registry-first-publish/index.ts'
+
+const unpublishable = []
+for (const name of order) {
+  const known = await nameOnRegistry(name)
+  // `undefined` is "could not ask", and it is not permission. A release that cannot reach the registry
+  // has no business deciding that every name on it is fine.
+  if (known === undefined) {
+    console.error(`refusing: the registry did not answer for ${name} — publishing on an unread boundary is how half a workspace ships`)
+    process.exit(1)
+  }
+  if (!known) unpublishable.push(name)
+}
+if (unpublishable.length > 0) {
+  console.error(`refusing to publish: ${unpublishable.length} package name(s) have never been published, and a workflow cannot create one:\n`)
+  for (const name of unpublishable) console.error(`  ${name}`)
+  console.error(`\nPublish each once by hand — \`npm publish --access public\` from its directory — then re-run. Nothing was published.`)
+  process.exit(1)
+}
+
 /** Already on the registry at this exact version? A 404 means the package or the version is new. */
 async function onRegistry(name, version) {
   const res = await fetch(`https://registry.npmjs.org/${name}/${version}`, { method: 'HEAD' })
