@@ -29,7 +29,7 @@ import type {
 import { formatResolved } from "./format.ts";
 import { RecordsConfigError } from "./layout.ts";
 import { resolveRecord } from "./resolve.ts";
-import { parseTypeUnit } from "./type-unit.ts";
+import { parseTypeManifest } from "./type-unit.ts";
 import type { TypeUnit } from "./type-unit.ts";
 
 /** A governance module: a ModulePlugin that also answers where its data is. */
@@ -38,6 +38,9 @@ export interface GovernancePlugin extends ModulePlugin {
   readonly root: string;
   /** The parsed `type.json`, facet paths still package-relative; resolve against `root`. */
   readonly unit: TypeUnit;
+  /** Every unit the manifest declares, present only when it declares more than one — what lets one
+   *  import answer for a type this module is not. */
+  readonly units?: readonly TypeUnit[];
 }
 
 export interface DefineGovernanceOptions {
@@ -48,6 +51,14 @@ export interface DefineGovernanceOptions {
    */
   readonly root: string;
   readonly version: string;
+  /**
+   * Which unit of a multi-unit manifest this module serves — required when the manifest declares
+   * `units`, refused when it declares one unit, because there would be nothing to choose. A package
+   * shipping two units builds two modules from the same manifest (`knowledge` ships `log` and
+   * `learning`), and the module id is still the unit's type, which is what keeps the noun, the MCP tool
+   * name and the settings key stable across a change of serving package.
+   */
+  readonly type?: string;
   /** Overrides the derived one-liner. */
   readonly summary?: string;
   /**
@@ -83,7 +94,26 @@ const STANDARD_COMMANDS: readonly ModuleCommand[] = [
  */
 export function defineGovernance(options: DefineGovernanceOptions): GovernancePlugin {
   const manifestFile = path.join(options.root, "type.json");
-  const unit = parseTypeUnit(readFileSync(manifestFile, "utf8"), manifestFile);
+  const units = parseTypeManifest(readFileSync(manifestFile, "utf8"), manifestFile);
+
+  // WHICH UNIT THIS MODULE IS, when the manifest ships several. Both errors below are thrown at load,
+  // not at dispatch: a package that names a unit its manifest does not have, or omits the name where
+  // there is a choice, is misdeclared, and `defineModule` already makes the argument that a wrong
+  // self-description must fail where it is written rather than in one surface nobody checks.
+  if (units.length > 1 && options.type === undefined) {
+    throw new RecordsConfigError(
+      `${manifestFile} declares ${units.length} units (${units.map((u) => u.type).join(", ")}) — defineGovernance needs \`type\` to say which one this module serves`,
+    );
+  }
+  if (units.length === 1 && options.type !== undefined && options.type !== units[0]!.type) {
+    throw new RecordsConfigError(`${manifestFile} declares the single unit "${units[0]!.type}", not "${options.type}"`);
+  }
+  const unit = options.type === undefined ? units[0]! : units.find((candidate) => candidate.type === options.type);
+  if (unit === undefined) {
+    throw new RecordsConfigError(
+      `${manifestFile} declares no unit "${options.type}" — it has: ${units.map((u) => u.type).join(", ")}`,
+    );
+  }
 
   const base = async (context: ModuleContext): Promise<ModuleResult> => {
     if (context.command === "resolve") {
@@ -120,5 +150,8 @@ export function defineGovernance(options: DefineGovernanceOptions): GovernancePl
     async (context) => (options.run === undefined ? base(context) : options.run(context, base)),
   );
 
-  return { ...plugin, root: options.root, unit };
+  // `units` travels beside the chosen unit so activation can pick a DIFFERENT one from the same import:
+  // a package shipping two of them is imported once, and core's `activateGovernance` reads the array
+  // rather than trusting whichever module happened to be the default export.
+  return { ...plugin, root: options.root, unit, ...(units.length > 1 ? { units } : {}) };
 }

@@ -28,8 +28,10 @@ jobs:
       - name: Instruction files
         run: ./cli/packages/module-check/sh/unported/check-agents-md.sh
 
-      # skills/license-setup ships templates/ensure-license-headers.sh into every repo the skill
-      # touches; this is the first thing that ever actually executes it (issue #12).
+      # governance-license ships scaffold/ensure-license-headers.sh into every repo the license-setup
+      # skill touches; this is the first thing that ever actually executes it (issue #12). The path
+      # moved with the file in Plan-040 Track 3 — and the test had been resolving a path that never
+      # existed since the plugin/cli split, so this step had been red in CI without anybody reading it.
       - name: License-header template
         run: ./cli/test/test-license-headers.sh
 
@@ -53,13 +55,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # The `breadcrumb` gate resolves the commit behind every `git show <sha>:<path>` a closed record
+        # carries, and a shallow clone holds none of them — it reported four shipped plans as pointing at
+        # commits that do not exist. Same reason as the changeset job above, one job over, and it stayed
+        # hidden because typecheck failed before `npm test` ever ran.
+        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - run: npm ci
+      # TYPECHECK NEEDS A BUILD IN FRONT OF IT. The packages resolve each other through their published
+      # `types`, which point into `dist/` — so on a clean `npm ci` there are no declarations at all and
+      # every consumer typechecks against nothing. It is not a false green but a false RED, and a loud
+      # one: 55 errors naming fields that do exist, on a tree whose local typecheck is clean. The step
+      # below already knew the shape of this hazard and stated it; the order defeated the statement.
+      - run: npm run build
       - run: npm run typecheck
       # `npm test` builds first (pretest): the packages typecheck against each other's dist, so a
-      # stale one reports a false green.
+      # stale one reports a false green. That `pretest` cleans before it builds is what makes the build
+      # above cheap to repeat rather than something to skip.
       - run: npm test
 
       # Same rationale as the agents-md job's first step, one layer up: a gate that has silently stopped

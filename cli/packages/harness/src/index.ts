@@ -4,12 +4,14 @@
 // split are separate tracks and are not this module's job.
 
 import { defineModule } from "@entelekheia/vibe-ops-core";
+import { installHarness, HARNESS_OPTIONS } from "./install.ts";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
 import { buildAudit } from "./audit.ts";
 import { formatResolvedHarness, resolveHarness } from "./resolve.ts";
 import { sync } from "./sync.ts";
+import { isPolicyName, POLICY_NAMES, readPolicy, resolvePolicy } from "./policy.ts";
 
 export { behindEntries, formatBehind, shippedVersion, shippedVersions, TYPES } from "./status.ts";
 export type { BehindEntry, VersionedType } from "./status.ts";
@@ -29,6 +31,8 @@ export { boundaryRefusals, currentBranch, normContent, sync } from "./sync.ts";
 export { IGNORE_BLOCK_COMMENT, IGNORE_BLOCK_NAMES, migrateIgnoreBlock } from "./ignore-block.ts";
 export type { IgnoreBlockOutcome } from "./ignore-block.ts";
 export type { RefusedPath, SyncOptions, SyncResult } from "./sync.ts";
+export { isPolicyName, policyPath, POLICY_NAMES, readPolicy, resolvePolicy } from "./policy.ts";
+export type { PolicyAnswer, PolicyName } from "./policy.ts";
 
 export default defineModule(
   {
@@ -49,6 +53,33 @@ export default defineModule(
       { name: "status", summary: "which record types are behind the norm installed at --source" },
       { name: "catalog", summary: "gates/fragments available but not composed into any ops" },
       { name: "audit", summary: "guide and sensor inventory, with the governance overlay" },
+      {
+        // The harness's own policy prose (Plan-040 Track 1) — served here rather than through
+        // `records norm --facet policy`, because `harness` is a CLI-internal module with no `type.json`
+        // and no swappable binding: there is exactly one harness, the one this CLI ships.
+        name: "policy",
+        summary: `the harness's own policy prose (${POLICY_NAMES.join(", ")})`,
+        flags: [
+          { name: "name", type: "string", description: "which policy file", required: true, choices: [...POLICY_NAMES] },
+          { name: "print", type: "boolean", description: "print the file's content" },
+        ],
+      },
+      {
+        name: "install",
+        summary: "write the commit gate into the repository you name, keeping whatever is already there",
+        destructive: true,
+        // It CREATES, so its positional is the path itself and is required — walking up to the enclosing
+        // git toplevel would install a gate into a checkout the caller never named.
+        literalTargetArg: true,
+        flags: [
+          { name: "force", type: "string", description: "overwrite this destination even though it exists; comma-separated" },
+          {
+            name: "include",
+            type: "string",
+            description: `also install these, comma-separated: ${HARNESS_OPTIONS.join(", ")} — off by default, each changes what somebody's clone does`,
+          },
+        ],
+      },
       {
         name: "sync",
         summary: "promulgate the installed norm onto a branch and a tag — never merged, never pushed",
@@ -98,9 +129,11 @@ export default defineModule(
 
       if (context.flags["json"] !== true) {
         for (const one of result.written) context.log(`  norm     ${one}`);
+        for (const one of result.merged) context.log(`  merged   ${one} — the rendered block only; the rest of the file is kept`);
         for (const one of result.seeded) context.log(`  seeded   ${one}`);
         for (const one of result.refused) context.log(`  REFUSED  ${one.path} (${one.was} → ${one.now}) — ${one.why}`);
         for (const one of result.swallowed) context.log(`  SWALLOWED ${one.path} — ${one.rule}`);
+        for (const one of result.documentRefusals) context.warn(one);
         if (result.branch !== undefined) context.log(`branch: ${result.branch}${result.tag === undefined ? "" : `  tag: ${result.tag}`}`);
         if (result.retiredState !== undefined) context.log(`retired  vibeops.config.local.json (${result.retiredState}) — its map now lives in vibeops.config.json on ${result.branch}`);
         if (result.ignoreBlock?.outcome === "rewritten") context.log(`ignore   .gitignore — the clone-local block's comment brought up to date on ${result.branch}`);
@@ -110,6 +143,16 @@ export default defineModule(
       // Refusals and swallowed paths both exit non-zero, for the same reason: each leaves the target in a
       // state the caller did not ask for, and a zero here reads as "promulgated" on the one line anybody
       // actually looks at.
+      // A DOCUMENT THAT COULD NOT RENDER IS THE SAME CLASS OF OUTCOME AS A REFUSED PATH: the target ends
+      // up without something the promulgation was for, and a zero exit reads as "promulgated".
+      if (result.documentRefusals.length > 0 && result.refused.length === 0) {
+        return {
+          code: 3,
+          summary: `${result.documentRefusals.length} governance document(s) could not be rendered for this target — see the warnings above`,
+          data: result,
+        };
+      }
+
       if (result.refused.length > 0) {
         return {
           code: 3,
@@ -136,8 +179,8 @@ export default defineModule(
         code: 0,
         summary:
           result.branch === undefined
-            ? `would write ${result.written.length} and seed ${result.seeded.length}`
-            : `${result.written.length} written, ${result.seeded.length} seeded on ${result.branch}${result.tag === undefined ? "" : ` (${result.tag})`} — not merged, not pushed`,
+            ? `would write ${result.written.length}, merge ${result.merged.length} and seed ${result.seeded.length}`
+            : `${result.written.length} written, ${result.merged.length} merged, ${result.seeded.length} seeded on ${result.branch}${result.tag === undefined ? "" : ` (${result.tag})`} — not merged into your branch, not pushed`,
         data: result,
       };
     }
@@ -209,6 +252,67 @@ export default defineModule(
         code: 0,
         summary: `${audit.guides.length} guide(s), ${audit.sensors.length} sensor(s), ${audit.governance.reduce((n, o) => n + o.count, 0)} governance record(s)`,
         data: audit,
+      };
+    }
+
+    if (context.command === "install") {
+      const commaSet = (flag: string) =>
+        new Set(
+          String(context.flags[flag] ?? "")
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry !== ""),
+        );
+      const force = commaSet("force");
+      const include = commaSet("include");
+      const unknown = [...include].filter((name) => !HARNESS_OPTIONS.includes(name as (typeof HARNESS_OPTIONS)[number]));
+      if (unknown.length > 0) {
+        return { code: 2, summary: `harness install has nothing called ${unknown.join(", ")} to include — valid: ${HARNESS_OPTIONS.join(", ")}` };
+      }
+
+      const result = installHarness(context.repoRoot, { force, include });
+      if (context.surface === "cli" && context.flags["json"] !== true) {
+        for (const file of result.written) context.log(`wrote ${file}`);
+        for (const file of result.kept) context.log(`kept ${file} — already there; --force ${file} to overwrite`);
+        // NAMED, NOT OMITTED. "The gate is installed" and "every commit runs it" are different claims,
+        // and a run that quietly wrote neither the hook nor the workflow reads as the first while being
+        // only the second.
+        for (const entry of result.offered) {
+          context.log(`offered ${entry.to} — not installed; --include ${entry.option} adds it`);
+        }
+        for (const file of result.needsAppend) {
+          context.warn(
+            `${file} exists and does not call the gate — append the gate to it rather than replacing it, or the gate is not installed`,
+          );
+        }
+      }
+      return {
+        code: 0,
+        summary:
+          `${result.written.length} written, ${result.kept.length} kept, ${result.offered.length} offered` +
+          `${result.needsAppend.length > 0 ? ", 1 hook needs the gate appended" : ""}`,
+        data: result,
+      };
+    }
+
+    if (context.command === "policy") {
+      const name = context.flags["name"];
+      if (typeof name !== "string" || !isPolicyName(name)) {
+        return { code: 2, summary: `harness policy needs --name, one of: ${POLICY_NAMES.join(", ")}` };
+      }
+      const answer = resolvePolicy(name);
+      if (context.flags["print"] === true && answer.exists) {
+        const body = readPolicy(name);
+        if (context.surface === "cli") context.log(body);
+        return { code: 0, summary: `harness policy ${name}`, data: { ...answer, body } };
+      }
+      if (context.surface === "cli" && context.flags["json"] !== true) {
+        context.log(`${answer.path}${answer.exists ? "" : "  (does not exist)"}`);
+      }
+      return {
+        code: answer.exists ? 0 : 1,
+        summary: `harness policy ${name}${answer.exists ? "" : ", not present"}`,
+        data: answer,
       };
     }
 

@@ -19,7 +19,7 @@ Four record types, one command. Which one to write is a real question, and the w
 If the user did not say which, ask — do not infer from the topic. A misfiled record is worse than a
 missing one, because the lifecycle attached to it is wrong from the start.
 
-**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It records that
+**This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It records that
 something happened at a point in time. Running it twice correctly produces two records; it has no update
 mode. An existing record is advanced through its own lifecycle, never re-scaffolded.
 
@@ -70,8 +70,9 @@ What the output means:
 - `TPL=<path> (config|search)` — the provenance says whether the repository declared it in
   `vibeops.config.ts` or the search order found it. A declared path that does not exist is an error, not a
   fallback.
-- `TPL=(none)` — **stop and ask.** Never invent a structure. Offer to copy the matching template from
-  `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/project/templates/`.
+- `TPL=(none)` — **stop and ask.** Never invent a structure. Offer to write the repository's scaffold,
+  `vibe-ops setup scaffold <repo>`, which lays each type's template down from the package that owns it —
+  there is no template directory in this plugin to copy from since Plan-040 Track 6.
 - `AUTHORITY=` — the file that overrides this skill on numbering and lifecycle. When it is a path (rather
   than `(default)`), **read it and follow it** over anything here: older repos tie ids to a release train,
   or require follow-ups like an `INDEX.md` row.
@@ -104,12 +105,11 @@ Starting from the exact template content, and **writing every section in English
 conversation's language** — that is a product guarantee of this plugin, not a preference.
 
 - **Write it the way this plugin writes** —
-  [`${CLAUDE_PLUGIN_ROOT}/references/authoring-style.md`](../../references/authoring-style.md) governs
-  every document written into a repository, and a record is one. Two of its sections decide how a plan or
-  an RFC reads: **prescriptive over hedged**, and **Diagrams** — a ```mermaid fence earns its place
-  wherever the thing being described is a flow with branches, which most of a `Design` section is. Records
-  written without ever consulting it come out as prose-only walls; that is the observed failure, not a
-  hypothetical one.
+  `vibe-ops records norm --type style --facet policy --for <type> --print` governs every document written
+  into a repository, and a record is one. Two of its sections decide how a plan or an RFC reads:
+  **prescriptive over hedged**, and **Diagrams** — a ```mermaid fence earns its place wherever the thing
+  being described is a flow with branches, which most of a `Design` section is. Records written without
+  ever consulting it come out as prose-only walls; that is the observed failure, not a hypothetical one.
 - Keep any license comment block at the top unchanged.
 - Delete the template's guidance HTML comments.
 - Delete optional metadata rows (`Depends on`, `Related`, `Tracking issue`) unless they are really
@@ -122,7 +122,7 @@ conversation's language** — that is a product guarantee of this plugin, not a 
   nobody re-reads forty governance records first. So no machine path, no repository named that is not this
   one, no pointer to a private companion; anything outside this repository is stated as the *constraint it
   imposes*, never as a name. What may cross, and which section of each of the four types actually leaks, is
-  in [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md).
+  in the exposure policy: `vibe-ops records norm --type classification --facet policy --name exposure --print`.
   This is the one thing in the skill that a later edit cannot repair.
 
 ### For a plan: settle the delegation split before writing, and write it down

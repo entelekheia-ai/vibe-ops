@@ -16,6 +16,7 @@ export const BUILTIN_MODULES = [
   "harness",
   "config",
   "ownership",
+  "setup",
 ] as const;
 
 export type BuiltinModule = (typeof BUILTIN_MODULES)[number];

@@ -89,7 +89,7 @@ layer only ([RFC-0004](../../../project/rfc/implemented/0004-the-managed-layer-t
 a binding in the hand-written `vibeops.config.ts` is reported and left to the person who wrote it.
 
 **Delegate this whole step to the `vibe-ops:governance-auditor` agent** — the four inputs are in
-[`convergence-policy.md`](../../references/convergence-policy.md), the target state being the current
+`vibe-ops records norm --type base --facet policy --name convergence --print`, the target state being the current
 template versions above. It runs the census read-only and returns one row per artifact behind its
 template, the unknowns kept as `(unknown)`. On `/migrate audit` that gap list is the entire run. Do it
 inline only if the agent is not in the session's listing.
@@ -144,7 +144,7 @@ Step 1 counts records. A document that says what shape a record has is not a rec
 appears in no census, and is invisible to everything above. It is also the half a reader acts on — a
 reference claiming plans carry a section teaches everyone who reads it to write one.
 
-Read [`${CLAUDE_PLUGIN_ROOT}/references/template-shape-change.md`](../../references/template-shape-change.md)
+Read `vibe-ops records norm --type base --facet policy --name migration --print`
 for the rule; it governs this skill and `/new-migration` and is not restated here. What this step does:
 
 ```sh
@@ -152,7 +152,7 @@ vibe-ops governance --verbose   # template-heading-drift reports the population
 ```
 
 **Both readings of that gate go to the `vibe-ops:governance-auditor` agent** — the four inputs are in
-[`convergence-policy.md`](../../references/convergence-policy.md), the target state being the migration
+`vibe-ops records norm --type base --facet policy --name convergence --print`, the target state being the migration
 note's *what a description now says* section. The first reading is the population; the second is the
 completion criterion below, and it is the one that gets skipped, because by then the edits are made and
 the run feels finished. Both are read-only; the rewriting between them is not, and stays here.

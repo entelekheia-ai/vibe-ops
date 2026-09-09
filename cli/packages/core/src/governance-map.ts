@@ -20,13 +20,38 @@ import path from "node:path";
 import { resolveFromHost } from "./host-resolver.ts";
 import type { VibeOpsConfig } from "./config.ts";
 
-/** The shipped bindings — a product statement, not discovery. A new DEFAULT type is an edit here. */
+/**
+ * The shipped bindings — a product statement, not discovery. A new DEFAULT type is an edit here.
+ *
+ * `base` and `instructions` are the two entries here that ship no record — `base` activates
+ * `@entelekheia/governance-base` purely for the policy facets it now carries (`records norm --type base
+ * --facet policy --name …`, Plan-040 Track 1: `convergence-policy`, `template-shape-change`);
+ * `instructions` activates `@entelekheia/governance-instructions` for its `instruction-surfaces` policy
+ * facet and its scaffold files (Plan-040 Track 5). Every governance package already depends on
+ * `governance-base`, and the instruction surface is universal the same way, so binding both by default
+ * costs a consumer nothing it did not already need, unlike `license`/`classification`, which stay opt-in
+ * because a repository may not want either.
+ *
+ * `style` NAMES THE DEFAULT PACKAGE, BUT `effectiveGovernanceBindings` NEVER READS IT HERE. It is listed
+ * for the same reason `base` is — a repository that declares nothing about `style` still gets a default —
+ * but the entry it names is a one-layer stack (`@entelekheia/governance-style` alone, unscoped), and the
+ * stack shape is resolved by `resolveStyleStack` in `governance-base`, not by `parseBinding` below, which
+ * only ever handles a single package name.
+ */
 export const DEFAULT_GOVERNANCE_BINDINGS: Readonly<Record<string, string>> = {
   adr: "@entelekheia/governance-adr",
   rfc: "@entelekheia/governance-rfc",
   plan: "@entelekheia/governance-plan",
+  style: "@entelekheia/governance-style",
   task: "@entelekheia/governance-task",
-  log: "@entelekheia/governance-log",
+  // `governance-log` retired as a PACKAGE, not as a type (ADR-0020): `knowledge` ships `log` and
+  // `learning` as two units of one manifest, and this binding still names the `log` unit by default —
+  // no `#fragment` needed, since `log` is that package's first/default-exported unit. `learning` is
+  // deliberately absent here: a repository binds it only when it has learnings of its own to keep
+  // (RFC-0005 §2), which this workspace does not.
+  log: "@entelekheia/governance-knowledge",
+  base: "@entelekheia/governance-base",
+  instructions: "@entelekheia/governance-instructions",
 };
 
 export interface GovernanceBinding {
@@ -42,12 +67,34 @@ function parseBinding(localName: string, value: string): GovernanceBinding {
   return { packageName: value.slice(0, hash), typeName: value.slice(hash + 1) };
 }
 
-/** The effective map: shipped defaults overlaid per key by `config.types`. */
+/** The effective map: shipped defaults overlaid per key by `config.types`.
+ *
+ * `style` NEVER APPEARS HERE. Its binding is a stack (`StyleBinding`: an array of layers, or
+ * `{ layers, onCollision }`), not one package name, and this map exists for the single-package case
+ * every other type keeps — RFC-0005 §2.1 names it the one exception. `resolveStyleStack` in
+ * `@entelekheia/governance-base` reads `config.types.style` directly instead of through this map. A
+ * non-string value under any OTHER name is a misconfiguration, not a style binding, and is skipped the
+ * same way rather than thrown — `parseBinding` only ever receives a string. */
 export function effectiveGovernanceBindings(
   config: VibeOpsConfig | undefined,
 ): Readonly<Record<string, GovernanceBinding>> {
   const merged: Record<string, GovernanceBinding> = {};
   for (const [name, value] of Object.entries({ ...DEFAULT_GOVERNANCE_BINDINGS, ...config?.types })) {
+    // `style` is the one binding that is a STACK rather than a package name; `resolveStyleStack` in
+    // governance-base reads it, and `parseBinding` below only ever handles a single package name.
+    if (name === "style") continue;
+    // A NON-STRING IS A REFUSAL, NOT A SKIP. Skipping did not fall back to the shipped default — the
+    // spread has already overlaid the bad value, so `continue` REMOVED the type from the map entirely,
+    // and `ops-governance` derives its per-type entries from what activates: a repository that typed
+    // `types.adr` as an array silently stopped checking its ADRs, with every run still green. The type
+    // widened for `style`'s sake, so the check that TypeScript used to make at the index signature has
+    // to be made here instead.
+    if (typeof value !== "string") {
+      throw new TypeError(
+        `types.${name} must be a package name string, got ${Array.isArray(value) ? "an array" : typeof value}. ` +
+          `Only types.style takes a stack of layers.`,
+      );
+    }
     merged[name] = parseBinding(name, value);
   }
   return merged;
@@ -61,12 +108,57 @@ export function effectiveGovernanceBindings(
 export interface ActivatedGovernance {
   /** Absolute path to the package root. */
   readonly root: string;
+  /**
+   * Every unit a multi-unit package ships, in manifest order — Plan-040 Track 2. Present INSTEAD of
+   * `unit` on a package whose manifest declares `units`; `activateGovernance` picks the one the
+   * binding's `#type` names and hands the caller a single-unit view, so nothing downstream learns a
+   * second shape.
+   */
+  readonly units?: readonly ActivatedGovernance["unit"][];
   /** The parsed type.json; facet paths are package-relative, resolved against `root`. */
   readonly unit: {
     readonly type: string;
-    readonly template: string;
-    readonly authoring: string;
-    readonly migrations: string;
+    /**
+     * Absent for a POLICY-ONLY package — one that ships `facets` and no record of its own (`base`,
+     * Plan-040 Track 1). `isActivated` below no longer requires this to be a string; a caller reading
+     * it for a record (`activatedTemplatePaths`) must treat its absence as "this package has none".
+     */
+    readonly template?: string;
+    readonly authoring?: string;
+    readonly migrations?: string;
+    /**
+     * The rendered-document half of the manifest — Plan-040 Track 6. Declared here because the
+     * `facet-completeness` gate reads every path a manifest states, and `notes` is the one whose absence
+     * was invisible: a type declaring a fragment it does not ship lost its whole section from both
+     * governance documents of every consuming repository with every output still green. Core still
+     * verifies only what it reads; these are read.
+     */
+    readonly notes?: string;
+    readonly title?: string;
+    readonly answers?: string;
+    readonly numbered?: boolean;
+    readonly pad?: number;
+    readonly lifecycle?: {
+      readonly chain: readonly string[];
+      readonly active: string;
+      readonly terminal: string;
+      readonly branches?: readonly { readonly from: string; readonly status: string; readonly archive?: string }[];
+      readonly living?: readonly string[];
+      readonly archive?: string;
+      readonly immutableFrom?: string;
+    };
+    /** Named policy files this package serves through `records norm --facet policy --name <key>`. */
+    readonly facets?: Readonly<Record<string, string>>;
+    /** What this package writes into a scaffolded repository — Plan-040 Track 6. Verified structurally
+     *  by the parser that produced it; core reads only what it needs to locate each file. */
+    readonly scaffold?: {
+      readonly dir: string;
+      readonly files: readonly { readonly from: string; readonly to: string; readonly shape?: string }[];
+      readonly placeholders?: readonly string[];
+    };
+    /** A style package's documented artefact list — advisory, RFC-0005 §2.1; read by `composeStylePolicy`
+     *  (`governance-base`) to tell the target vocabulary check what this layer declares. */
+    readonly targets?: readonly string[];
     /**
      * The record schema and layout facts an ops derivation reads (Plan-034). Optional in the interface
      * because core verifies only what it reads — `defineGovernance` stamps the full parsed type.json,
@@ -82,12 +174,70 @@ export interface ActivatedGovernance {
   };
 }
 
+/**
+ * Keyed by `<package>#<type>`, not by package name — Plan-040 Track 2. A package may ship several units
+ * (`knowledge` ships `log` and `learning`), and the two bind independently: caching by package name
+ * would hand the second binding whatever the first one resolved to, which is the same unit under a
+ * different name.
+ */
 const activationCache = new Map<string, ActivatedGovernance | undefined>();
+
+/**
+ * The unit a package answers with for one type name. A package built on `defineGovernance` stamps a
+ * single `unit`; one shipping several stamps `units`, and the binding's `#type` fragment picks which.
+ * A `units` array with no matching type is not this binding's package, which the caller reads the same
+ * way it reads a package that is not installed.
+ */
+function unitFor(activated: ActivatedGovernance, typeName: string): ActivatedGovernance | undefined {
+  if (activated.units !== undefined) {
+    const unit = activated.units.find((candidate) => candidate.type === typeName);
+    return unit === undefined ? undefined : { root: activated.root, unit };
+  }
+  return activated.unit?.type === typeName ? { root: activated.root, unit: activated.unit } : undefined;
+}
 
 function isActivated(value: unknown): value is ActivatedGovernance {
   if (typeof value !== "object" || value === null) return false;
-  const candidate = value as { root?: unknown; unit?: { type?: unknown; template?: unknown } };
-  return typeof candidate.root === "string" && typeof candidate.unit?.template === "string";
+  const candidate = value as { root?: unknown; unit?: { type?: unknown }; units?: unknown };
+  if (typeof candidate.root !== "string") return false;
+  // A multi-unit package carries `units` and no `unit`; every unit in it still names a type.
+  if (Array.isArray(candidate.units)) {
+    return (
+      candidate.units.length > 0 &&
+      candidate.units.every((unit) => typeof (unit as { type?: unknown })?.type === "string")
+    );
+  }
+  // A record's template used to be required here; a policy-only package (`base`) declares `facets`
+  // and no template at all, so the shape check now asks only for what every activated unit truly has:
+  // a root and a type name. A caller after the record facets still treats their absence as an answer,
+  // never a crash — `activatedTemplatePaths` below is the one that reads `template` and guards it.
+  return typeof candidate.root === "string" && typeof candidate.unit?.type === "string";
+}
+
+/**
+ * Imports one package by name and picks the unit named `typeName` out of it — the primitive
+ * `activateGovernance` builds on for a config-bound single package, and what a `style` stack's layer
+ * resolution (`resolveStyleStack`, `governance-base`) calls directly: a layer names its package
+ * literally, never through a `types.<name>` binding, so there is no `GovernanceBinding` to look up.
+ * Cached by the same `<package>#<type>` key either caller would compute, so a style layer and an
+ * ordinary type binding that happen to name the same package share one import.
+ */
+export async function activateGovernancePackage(
+  packageName: string,
+  typeName: string,
+): Promise<ActivatedGovernance | undefined> {
+  const key = `${packageName}#${typeName}`;
+  if (activationCache.has(key)) return activationCache.get(key);
+  let imported: ActivatedGovernance | undefined;
+  try {
+    const module = (await import(resolveFromHost(packageName))) as { default?: unknown };
+    imported = isActivated(module.default) ? module.default : undefined;
+  } catch {
+    imported = undefined;
+  }
+  const activated = imported === undefined ? undefined : unitFor(imported, typeName);
+  activationCache.set(key, activated);
+  return activated;
 }
 
 /**
@@ -102,16 +252,7 @@ export async function activateGovernance(
 ): Promise<ActivatedGovernance | undefined> {
   const binding = effectiveGovernanceBindings(config)[type];
   if (binding === undefined) return undefined;
-  if (activationCache.has(binding.packageName)) return activationCache.get(binding.packageName);
-  let activated: ActivatedGovernance | undefined;
-  try {
-    const imported = (await import(resolveFromHost(binding.packageName))) as { default?: unknown };
-    activated = isActivated(imported.default) ? imported.default : undefined;
-  } catch {
-    activated = undefined;
-  }
-  activationCache.set(binding.packageName, activated);
-  return activated?.unit.type === binding.typeName ? activated : undefined;
+  return activateGovernancePackage(binding.packageName, binding.typeName);
 }
 
 /**
@@ -126,7 +267,9 @@ export async function activatedTemplatePaths(
   const out: Record<string, string> = {};
   for (const name of Object.keys(effectiveGovernanceBindings(config))) {
     const activated = await activateGovernance(name, config);
-    if (activated !== undefined) out[name] = path.resolve(activated.root, activated.unit.template);
+    // A policy-only package (`base`) activates but has no template — nothing to add for it here, the
+    // same "absence is an answer, never a crash" rule the rest of this file follows.
+    if (activated?.unit.template !== undefined) out[name] = path.resolve(activated.root, activated.unit.template);
   }
   return out;
 }

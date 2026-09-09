@@ -28,8 +28,10 @@ const REPO = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 // CLAUDE_PLUGIN_ROOT is what an *installed* plugin presents, which is `plugin/` here — not the
 // repository root, which is the npm workspace.
 const PLUGIN = path.join(REPO, "plugin");
-const HOOK = path.join(PLUGIN, "hooks", "plan-progress-nudge.sh");
-const HELPER = path.join(PLUGIN, "scripts", "session-touched-repos.sh");
+// The nudge is `vibe-ops hook plan-progress` since Plan-040 Track 7; it was two shipped scripts before.
+// This suite drives the CLI's own entrypoint rather than the `vibe-ops` on PATH, so it reads the tree it
+// is checked out in — a linked binary from another checkout would make this measure someone else's port.
+const CLI_BIN = path.join(REPO, "cli", "packages", "cli", "src", "bin.ts");
 
 function onPath(binary: string): boolean {
   return spawnSync("sh", ["-c", `command -v ${binary}`], { stdio: "ignore" }).status === 0;
@@ -39,8 +41,7 @@ function onPath(binary: string): boolean {
  *  makes several assertions fail at once, each describing a silence whose cause is not in its own
  *  message — so it is named here instead. */
 function unreadable(): string | false {
-  if (!existsSync(HOOK)) return "no plugin/hooks/plan-progress-nudge.sh — this tree ships no plan-progress nudge";
-  if (!existsSync(HELPER)) return "the hook's runtime scripts are absent from this tree";
+  if (!existsSync(CLI_BIN)) return "no cli/packages/cli/src/bin.ts — this tree ships no CLI to read the hook through";
   if (!onPath("vibe-ops")) {
     return "vibe-ops is not on PATH — the hook resolves each repository's taxonomy through it (npm link -w @entelekheia/vibe-ops-cli)";
   }
@@ -127,10 +128,12 @@ function fire(fx: string, session: string): string {
     transcript_path: path.join(fx, "transcript.jsonl"),
     stop_hook_active: false,
   });
-  const result = spawnSync("sh", [HOOK], {
+  // The state directory arrives as a flag, the way `hooks.json` passes it — the CLI reads no
+  // `CLAUDE_*` variable of its own (RFC-0005 §5), so setting one here would prove nothing.
+  const result = spawnSync(process.execPath, [CLI_BIN, "hook", "plan-progress", "--state-dir", path.join(fx, "state")], {
     input: payload,
     encoding: "utf8",
-    env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN, CLAUDE_PLUGIN_DATA: path.join(fx, "state") },
+    env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN },
   });
   return result.stdout ?? "";
 }

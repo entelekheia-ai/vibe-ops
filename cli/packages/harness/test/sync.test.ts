@@ -432,8 +432,35 @@ test("normContent promulgates a template only for a type that declares a record 
   const nota = await pkg("nota", true);
   const licenca = await pkg("licenca", false);
 
-  const content = await normContent({ types: { nota, licenca } }, undefined);
+  const { content, refusals } = await normContent({ types: { nota, licenca } }, undefined);
 
   assert.ok(content.has("project/templates/nota.md"), "a record type's template is norm content");
   assert.ok(!content.has("project/templates/licenca.md"), "a type with no record schema promulgates nothing under project/templates");
+  // `types` OVERLAYS the shipped defaults rather than replacing them, so `base` is still bound and both
+  // governance documents render — including a section for the scratch type this test just declared.
+  assert.deepEqual(refusals, []);
+  assert.ok(content.has("GOVERNANCE.md"));
+  assert.ok(content.has(".agents/rules/governance.md"));
+});
+
+// PROMULGATION REFRESHES BOTH GOVERNANCE DOCUMENTS. Until this, `setup scaffold` was the only writer and
+// it refuses every destination that already exists — so a repository that bound a sixth type after being
+// scaffolded kept two documents describing five, permanently.
+test("normContent carries the rule and the map, the map merged against what the target already has", async () => {
+  const { normContent } = await import("../src/index.ts");
+  const repo = await mkdtemp(path.join(tmpdir(), "vibeops-norm-docs-"));
+  await writeFile(
+    path.join(repo, "GOVERNANCE.md"),
+    "# Governance\n\nOURS-TOP\n\n<!-- vibe-ops:lifecycles begin -->\nstale\n<!-- vibe-ops:lifecycles end -->\n\nOURS-BOTTOM\n",
+  );
+
+  const { content, refusals } = await normContent(undefined, undefined, repo);
+
+  assert.deepEqual(refusals, []);
+  assert.ok(content.has(".agents/rules/governance.md"));
+  const doc = content.get("GOVERNANCE.md")!;
+  assert.match(doc, /OURS-TOP/);
+  assert.match(doc, /OURS-BOTTOM/);
+  assert.doesNotMatch(doc, /stale/);
+  assert.match(doc, /\| Artifact \| Question \|/);
 });

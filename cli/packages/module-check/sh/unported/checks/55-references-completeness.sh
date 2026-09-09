@@ -14,15 +14,19 @@
 # policy a given closure applied is unanswerable except by re-reading every record it touched.
 # 3: the per-type rules moved out of $PLUGIN_DIR/references/records/ into the governance packages; their
 # `vibe-ops-reference: records/<t>@N` token keeps its NAME (it is an identifier now, no longer a path).
-CHECK_VERSION=3
+# 4: Plan-040 Track 1 — five of `plugin/references/`'s files moved into the governance package whose
+# policy they are, served through `records norm --facet policy --name <key>` instead of a path. Those
+# files are NOT this check's population, and the attempt to make them so is instructive: read from here
+# they can only be found by walking `$ROOT/cli/packages`, which is this repository's source tree and
+# nobody else's, so a consumer whose facets all live inside installed packages got a green verdict over
+# zero files. The `facet-completeness` GATE reads what the repository ACTIVATES instead, which is the
+# same population in both installs, and reports SKIP rather than pass when it is empty. What stays here
+# is what was here before: the four record types' authoring rules, and `plugin/references/`.
+CHECK_VERSION=6
 
 check_references_completeness() {
   head_
-  local id="references-completeness" problems=0 t f name
-  if [ ! -d "$PLUGIN_DIR/references" ]; then
-    skip "$id" "no references/ directory"
-    return
-  fi
+  local id="references-completeness" problems=0 t f name manifest pkg_dir rel facet_file
   if [ -d "$ROOT/cli/packages/governance-adr" ]; then
     for t in adr rfc plan task; do
       if [ ! -f "$ROOT/cli/packages/governance-$t/authoring.md" ]; then
@@ -35,19 +39,23 @@ check_references_completeness() {
     done
   fi
 
-  # The declaration is matched against the file's OWN name rather than merely being present: a copied
-  # reference that kept its source's token would report a version belonging to another document, which is
-  # the failure mode that looks like an answer.
-  while IFS= read -r f; do
-    name="${f#"$PLUGIN_DIR"/references/}"
-    name="${name%.md}"
-    if ! grep -q "^vibe-ops-reference: ${name}@[0-9][0-9]*$" "$f"; then
-      fail "$id" "${f#"$ROOT"/} declares no \`vibe-ops-reference: ${name}@<integer>\` — a cited policy that cannot say which version it is"
-      problems=$((problems + 1))
-    fi
-  done <<EOF
+  if [ -d "$PLUGIN_DIR/references" ]; then
+    # The declaration is matched against the file's OWN name rather than merely being present: a copied
+    # reference that kept its source's token would report a version belonging to another document, which
+    # is the failure mode that looks like an answer.
+    while IFS= read -r f; do
+      name="${f#"$PLUGIN_DIR"/references/}"
+      name="${name%.md}"
+      if ! grep -q "^vibe-ops-reference: ${name}@[0-9][0-9]*$" "$f"; then
+        fail "$id" "${f#"$ROOT"/} declares no \`vibe-ops-reference: ${name}@<integer>\` — a cited policy that cannot say which version it is"
+        problems=$((problems + 1))
+      fi
+    done <<EOF
 $(find "$PLUGIN_DIR/references" -name '*.md' -type f 2>/dev/null | sort)
 EOF
+  fi
 
-  [ "$problems" -eq 0 ] && pass "$id" "authoring rules present for the four types /new resolves, and every reference declares its version"
+  if [ "$problems" -eq 0 ]; then
+    pass "$id" "authoring rules present for the four types /new resolves; plugin/references/ is retired (Plan-040 Track 6) and this check reads it only where one still exists"
+  fi
 }

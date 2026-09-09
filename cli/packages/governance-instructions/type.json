@@ -1,0 +1,16 @@
+{
+  "type": "instructions",
+  "facets": {
+    "surfaces": "policy/instruction-surfaces.md"
+  },
+  "scaffold": {
+    "dir": "./scaffold",
+    "files": [
+      { "from": "root/CLAUDE.md", "to": "CLAUDE.md" },
+      { "from": "agents/rules/repo-guardrails.md", "to": ".agents/rules/repo-guardrails.md" },
+      { "from": "agents/skills/gitkeep", "to": ".agents/skills/.gitkeep" }
+    ]
+  },
+  "numbered": false,
+  "dirs": []
+}

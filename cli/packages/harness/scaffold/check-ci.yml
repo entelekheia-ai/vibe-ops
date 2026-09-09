@@ -1,0 +1,34 @@
+# This repository's governance gate, run on every push and pull request.
+#
+# It runs `scripts/check.sh` — the same entrypoint `.githooks/pre-commit` runs, and the same one you run
+# by hand. There is deliberately no second copy of the checks here: a snapshot of the validator inside
+# the workflow is a file that goes stale silently, which is the failure this whole apparatus exists to
+# remove. `check.sh` also runs the fragments' own self-test first, so a check that has stopped detecting
+# anything fails loudly instead of reporting a clean tree.
+#
+# The gate is `vibe-ops` on PATH and there is no fallback, so CI installs it before running anything.
+
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The CLI declares `engines: >=22.18` — it needs Node's native type stripping. A bare "22" resolves
+      # to the latest 22.x, which is above that floor; pin lower and the install fails at `npm i -g`.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install the gate
+        run: npm install -g @entelekheia/vibe-ops-cli
+
+      - name: Governance gate
+        run: ./scripts/check.sh

@@ -31,6 +31,7 @@ import { classOf, composedOwnership, entryFor, ownershipPath, readOwnership, wid
 import type { ComposedBoundary, DoubleClaim } from "./ownership.ts";
 import type { Ownership, OwnershipClass } from "./ownership.ts";
 import { activateGovernance, effectiveGovernanceBindings, MANAGED_FILENAME, STATE_FILENAME, writeManagedConfig } from "@entelekheia/vibe-ops-core";
+import { composeGovernanceDocuments, GOVERNANCE_DOC_PATH } from "@entelekheia/governance-base";
 import type { HarnessConfig } from "@entelekheia/vibe-ops-core";
 import { shippedVersionsFromPackages, shippedVersionsFromPinned } from "./status.ts";
 import { migrateIgnoreBlock } from "./ignore-block.ts";
@@ -54,6 +55,13 @@ export interface SyncOptions {
   readonly dryRun: boolean;
 }
 
+/** What promulgation carries, plus what it could not render. A refusal leaves one document out and is
+ *  reported by the caller — never a promulgation quietly missing a governance document. */
+export interface NormContent {
+  readonly content: ReadonlyMap<string, string>;
+  readonly refusals: readonly string[];
+}
+
 export interface RefusedPath {
   readonly path: string;
   readonly was: OwnershipClass;
@@ -65,6 +73,10 @@ export interface SyncResult {
   readonly branch?: string;
   readonly tag?: string;
   readonly written: readonly string[];
+  /** `shaped` paths: the rendered block replaced, every other line of the file kept. Reported apart from
+   *  `written` because "overwritten" and "merged into" are different things to have done to somebody's
+   *  file, and only one of them is what the class promises. */
+  readonly merged: readonly string[];
   readonly seeded: readonly string[];
   /** Paths whose class widened without consent — reported, never written. */
   readonly refused: readonly RefusedPath[];
@@ -91,6 +103,13 @@ export interface SyncResult {
    * template wrote. Absent when unchanged, when there is no `.gitignore`, and on a dry run.
    */
   readonly ignoreBlock?: { readonly outcome: "rewritten" | "left"; readonly reason?: string };
+  /**
+   * A governance document that could not be rendered for this target, with the reason — a `GOVERNANCE.md`
+   * whose markers are damaged, or a `base` package shipping no frame fragment. The promulgation carries
+   * everything else; this is what it could not carry, and it exits non-zero so the gap is not a line
+   * nobody reads under a success summary.
+   */
+  readonly documentRefusals: readonly string[];
 }
 
 /** A `.json` config file as bytes on disk — parsed, never imported, and named when it cannot be parsed. */
@@ -153,10 +172,21 @@ export function currentBranch(repoRoot: string): string {
  * A pinned tree contributes its flat `templates/`; otherwise each activated governance package
  * contributes its own template — the same one-norm decision the caller made for the boundary.
  */
+/**
+ * What promulgation carries, keyed by destination.
+ *
+ * THE TWO GOVERNANCE DOCUMENTS ARE IN HERE, and until Plan-040's remediation they were not. Both are a
+ * function of what a repository ACTIVATES — that is the whole argument for rendering them — and the only
+ * writer was `setup scaffold`, which refuses every destination that already exists. So a repository that
+ * bound a sixth type after being scaffolded kept two documents describing five, for ever, which is
+ * exactly the drift the rendering was built to end. `repoRoot` is read here for one reason: `GOVERNANCE.md`
+ * is `shaped`, so its rendered half is computed AGAINST what the target already has.
+ */
 export async function normContent(
   config: import("@entelekheia/vibe-ops-core").VibeOpsConfig | undefined,
   pinned: string | undefined,
-): Promise<ReadonlyMap<string, string>> {
+  repoRoot?: string,
+): Promise<NormContent> {
   const content = new Map<string, string>();
   if (pinned !== undefined) {
     const templates = path.join(pinned, "templates");
@@ -166,7 +196,9 @@ export async function normContent(
         if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
       }
     }
-    return content;
+    // A PINNED TREE IS ONE NORM, WHOLE. Its documents are whatever it carries, never re-rendered from
+    // this machine's activation — that is the whole point of pinning one.
+    return { content, refusals: [] };
   }
   for (const type of Object.keys(effectiveGovernanceBindings(config))) {
     const activated = await activateGovernance(type, config);
@@ -176,11 +208,24 @@ export async function normContent(
     // policy itself — keeps no records there, and promulgating its template under that name wrote a
     // path no ownership fragment classifies: measured 2026-09-06 by a dry run into this repository,
     // which binds both and was refused for it.
-    if (activated.unit.schema === undefined) continue;
+    if (activated.unit.schema === undefined || activated.unit.template === undefined) continue;
     const from = path.resolve(activated.root, activated.unit.template);
     if (existsSync(from)) content.set(`project/templates/${type}.md`, await readFile(from, "utf8"));
   }
-  return content;
+
+  // The rule and the map, rendered for THIS repository's activation. Composed by `governance-base` so
+  // the scaffold and promulgation cannot answer differently. A refusal — a `GOVERNANCE.md` whose markers
+  // are damaged — leaves that document out of the promulgation rather than writing over it; the caller
+  // reports it, and the other document still travels.
+  const existingDoc = repoRoot === undefined ? undefined : await readIfPresent(path.join(repoRoot, GOVERNANCE_DOC_PATH));
+  const governance = await composeGovernanceDocuments(config, { existingDoc });
+  for (const [to, rendered] of governance.files) content.set(to, rendered);
+
+  return { content, refusals: governance.refusals };
+}
+
+async function readIfPresent(file: string): Promise<string | undefined> {
+  return existsSync(file) ? readFile(file, "utf8") : undefined;
 }
 
 /**
@@ -215,7 +260,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   if (installed === undefined) {
     throw new Error("no ownership declaration in any norm source — promulgation has no boundary to respect and will not run");
   }
-  const content = await normContent(options.config, pinned);
+  const { content, refusals: documentRefusals } = await normContent(options.config, pinned, repoRoot);
 
   const boundary = { agreed: options.agreedBoundary, installed: installed.version };
 
@@ -244,6 +289,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   }
 
   const written: string[] = [];
+  const merged: string[] = [];
   const seeded: string[] = [];
   const unclassified: string[] = [];
 
@@ -271,6 +317,12 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
     if (declared === undefined) unclassified.push(file);
     else if (declared === "repo") refused.push({ path: file, was: "repo", now: "repo", why: entryFor(installed, file)?.why ?? "" });
     else if (declared === "norm") written.push(file);
+    // `shaped` IS WRITTEN WHETHER OR NOT IT EXISTS, and that is the class's whole point. It shared the
+    // `seed` branch, so a `GOVERNANCE.md` already in the target was skipped in silence — the one file
+    // whose contract is "the tool owns named parts, the repository owns the rest, permanently" was the
+    // one file promulgation never updated. The content in the map was already composed AGAINST the
+    // target's copy, so writing it is the merge, not a replacement.
+    else if (declared === "shaped") merged.push(file);
     else if (!existsSync(path.join(repoRoot, file))) seeded.push(file);
   }
 
@@ -282,7 +334,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   }
 
   if (refused.length > 0 || dryRun) {
-    return { written, seeded, refused, swallowed: [], boundary, applied: {} };
+    return { written, merged, seeded, refused, swallowed: [], boundary, applied: {}, documentRefusals };
   }
 
   // ── The ceremony ────────────────────────────────────────────────────────────────────────────────────
@@ -298,7 +350,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
   let unwinding = false;
 
   try {
-    const touched = [...written, ...seeded];
+    const touched = [...written, ...merged, ...seeded];
     for (const file of touched) {
       const destination = path.join(worktree, file);
       await mkdir(path.dirname(destination), { recursive: true });
@@ -364,10 +416,10 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
       .map((file) => ({ path: file, rule: ignoredBy(worktree, file) }));
 
     if (swallowed.length > 0) {
-      return { branch, written, seeded, refused, swallowed, boundary, applied: {}, ignoreBlock };
+      return { branch, written, merged, seeded, refused, swallowed, boundary, applied: {}, ignoreBlock, documentRefusals };
     }
     if (staged.size === 0) {
-      return { branch, written: [], seeded: [], refused, swallowed: [], boundary, applied: {}, ignoreBlock };
+      return { branch, written: [], merged: [], seeded: [], refused, swallowed: [], boundary, applied: {}, ignoreBlock, documentRefusals };
     }
 
     const committed = git(worktree, ["commit", "-q", "-m", `chore(norm): promulgate ownership@${installed.version}`]);
@@ -397,7 +449,7 @@ export async function sync(options: SyncOptions): Promise<SyncResult> {
     // been folded into the committed map above and is retired.
     const retiredState = await retireStateFile(repoRoot);
 
-    return { branch, tag, written, seeded, refused, swallowed: [], boundary, applied, retiredState, ignoreBlock };
+    return { branch, tag, written, merged, seeded, refused, swallowed: [], boundary, applied, retiredState, ignoreBlock, documentRefusals };
   } catch (error) {
     unwinding = true;
     throw error;

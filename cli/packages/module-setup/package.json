@@ -1,0 +1,36 @@
+{
+  "name": "@entelekheia/vibe-ops-module-setup",
+  "version": "0.1.0",
+  "description": "vibe-ops setup — the scaffold as a composition of what each activated governance ships, never a template directory of its own",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/module-setup"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@entelekheia/governance-base": "^0.1.0",
+    "@entelekheia/vibe-ops-core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}

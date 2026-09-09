@@ -19,8 +19,8 @@ async function repo(): Promise<string> {
 
 // One snippet and expected root type per scope this workspace declares. Deliberately not derived
 // generically — a grammar this test does not know how to exercise should fail loudly (see below)
-// rather than be silently skipped, the same "no reading over zero" discipline harness-pair.md states
-// for a gate's `examined`.
+// rather than be silently skipped, the same "no reading over zero" discipline the harness-pair policy
+// states for a gate's `examined` (`vibe-ops harness policy --name pair`).
 const SNIPPETS: Readonly<Record<string, { readonly text: string; readonly rootType: string }>> = {
   "text.markdown": { text: "# Heading\n\nSome *text* with a [link](https://example.com).\n", rootType: "document" },
   "text.markdown_inline": { text: "Some *text* with a [link](https://example.com).", rootType: "inline" },

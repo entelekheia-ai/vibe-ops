@@ -3,6 +3,9 @@
   "template": "./templates/classification.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
+  "facets": {
+    "exposure": "policy/exposure.md"
+  },
   "numbered": false,
   "dirs": ["project"]
 }

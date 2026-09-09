@@ -1,6 +1,6 @@
 {
-  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the four classes is plugin/references/ownership.md.",
-  "version": 2,
+  "note": "The BASE half of the promulgation boundary: what the harness scaffold writes that belongs to no single artifact. Each activated governance package ships its own ownership.json fragment for its artifact's paths; sync composes base + fragments (Plan-033, ADR-0019). Read this file; never re-decide a path's class at the call site. The prose that explains the four classes is served by this package too: `vibe-ops harness policy --name ownership --print` (Plan-040 Track 1).",
+  "version": 3,
   "classes": {
     "norm": "This tooling owns it. Promulgation overwrites it, and a local edit is drift to be reconciled rather than a preference to be preserved.",
     "shaped": "Two owners, permanently (Plan-031, generalised by RFC-0004): the tooling owns the parts a recorded rule names — a record's structure, which migration may restructure per a recorded note; a managed configuration's keys, each written through the module that owns it — and the repository owns everything else. Promulgation never rewrites a shaped file whole.",
@@ -12,11 +12,6 @@
       "match": ".agents/rules/governance.md",
       "class": "norm",
       "why": "The record lifecycles, which this tooling defines. Measured 2026-08-13 as divergent in three of three repositories checked and divergent from the shipped copy — that divergence is unreconciled drift, not per-repository preference, and it is the reason this declaration is being written."
-    },
-    {
-      "match": "CLAUDE.md",
-      "class": "norm",
-      "why": "A mechanical import of AGENTS.md and nothing else. Byte-identical in every repository measured 2026-08-13."
     },
     {
       "match": ".claude/rules/*",
@@ -45,13 +40,8 @@
     },
     {
       "match": "GOVERNANCE.md",
-      "class": "seed",
-      "why": "Measured 2026-08-13 as four distinct files across four repositories. The divergence is legitimate: it is the human-facing description of one repository's governance."
-    },
-    {
-      "match": ".agents/rules/repo-guardrails.md",
-      "class": "seed",
-      "why": "Ships with a placeholder the setup skill explicitly tells the operator to fill in or delete. Measured 2026-08-13 at 1.1K in one repository and 9.4K in another — the shipped file is a prompt, not content."
+      "class": "shaped",
+      "why": "The rendered block between the `vibe-ops:lifecycles` markers is this tooling's and is refreshed on every promulgation; every other line is the repository's, permanently. It was `seed` — written once and never touched again — which measured as four distinct files across four repositories, all of them describing whatever was activated on the day they were scaffolded. The divergence outside the markers is legitimate; inside them it was staleness with nothing to correct it."
     },
     {
       "match": "README.md",
@@ -64,9 +54,9 @@
       "why": "Formatting and exclusion preferences. Identical across repositories so far, which is not authority to overwrite the first one that diverges on purpose."
     },
     {
-      "match": "{package.json,tsconfig.json,tsconfig.build.json,packages/*/package.json,packages/*/tsconfig*.json}",
+      "match": "{package.json,tsconfig*.json,packages/*/package.json,packages/*/tsconfig*.json}",
       "class": "seed",
-      "why": "The build baseline. Scaffolded once; every dependency added afterwards belongs to the repository."
+      "why": "The build baseline. Scaffolded once; every dependency added afterwards belongs to the repository. The root glob is `tsconfig*.json`, matching the per-package one: it named `tsconfig.json` and `tsconfig.build.json` by hand and missed `tsconfig.base.json`, which the scaffold writes — so promulgation into a scaffolded repository would have stopped on a path its own scaffold had just created."
     },
     {
       "match": ".github/workflows/check.yml",
@@ -79,9 +69,9 @@
       "why": "A documentation skeleton whose whole purpose is to be filled in."
     },
     {
-      "match": "{project/*/.gitkeep,.agents/skills/.gitkeep}",
+      "match": "project/*/.gitkeep",
       "class": "seed",
-      "why": "Placeholders that let an empty directory survive. Once the directory has content they are deleted, and re-creating them would be noise."
+      "why": "Placeholders that let an empty record directory survive. Once the directory has content they are deleted, and re-creating them would be noise. `.agents/skills/.gitkeep` moved out to `@entelekheia/governance-instructions`'s own fragment (Plan-040 Track 5): it belongs to a single artefact now, the instruction surface, where this base half is for paths no single package's fragment claims."
     },
     {
       "match": "vibeops.config.{ts,mjs,js}",

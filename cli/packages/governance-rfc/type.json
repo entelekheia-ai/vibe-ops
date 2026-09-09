@@ -1,5 +1,7 @@
 {
   "type": "rfc",
+  "title": "RFC",
+  "answers": "Should we do X, and how?",
   "template": "./templates/rfc.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
@@ -11,6 +13,30 @@
       "Author"
     ]
   },
+  "lifecycle": {
+    "chain": [
+      "Draft",
+      "Review",
+      "Accepted",
+      "Implemented"
+    ],
+    "active": "Draft",
+    "terminal": "Implemented",
+    "branches": [
+      {
+        "from": "Review",
+        "status": "Rejected",
+        "archive": "rejected"
+      },
+      {
+        "from": "Accepted",
+        "status": "Superseded"
+      }
+    ],
+    "archive": "implemented",
+    "immutableFrom": "Implemented"
+  },
+  "notes": "./lifecycle-notes.md",
   "numbered": true,
   "pad": 4,
   "depth": 2,

@@ -16,7 +16,7 @@
 # NOTHING HERE NAMES A MEANING. Not an observation, not a dialect, not a failure category — this
 # script only knows what the tool reported and what its caller says it examined. The mapping from a
 # rule id to what it is evidence of belongs to a translator on the receiving side, versioned there,
-# in a repository that has a reason to know that vocabulary. See references/harness-pair.md.
+# in a repository that has a reason to know that vocabulary. See `vibe-ops harness policy --name pair --print`.
 #
 # WHY THIS RUNS HERE AND NOT AT THE DESTINATION. It captures the two things only the producing side
 # can know. `--examined` is supplied by the caller and never derived: a linter reports diagnostics and

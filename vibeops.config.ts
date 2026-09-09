@@ -27,7 +27,7 @@ export default {
       rfc: "cli/packages/governance-rfc/templates/rfc.md",
       plan: "cli/packages/governance-plan/templates/plan.md",
       task: "cli/packages/governance-task/templates/task.md",
-      log: "cli/packages/governance-log/templates/log.md",
+      log: "cli/packages/governance-knowledge/templates/log.md",
     },
   },
 
@@ -59,7 +59,10 @@ export default {
     // a link, or a `[[memory-slug]]`-shaped placeholder, inside plugin/skills/*/templates/ is not this
     // repository's to judge. Declared once here rather than duplicated inside each gate that would
     // otherwise re-invent it; see the "POPULATION VS BEHAVIOUR" note in cli/packages/core/src/ops.ts.
-    "agents-md": { ignore: { "*": ["**/templates/**"] } },
+    // `**/scaffold/**` joined this blanket in Plan-040 Track 3: `governance-license` ships its scaffold
+    // contribution (NOTICE/AUTHORS templates, the header-check script, its two CI workflows, the two
+    // rules documents) beside `templates/`, not inside it — same reason, same rule, same blanket.
+    "agents-md": { ignore: { "*": ["**/templates/**", "**/scaffold/**"] } },
     governance: {
       // One line, and it is a SAFE DEFAULT: every entry composed here inherits it, including one added
       // by somebody who never read this file. A shipped template's content is written to resolve in the
@@ -68,7 +71,7 @@ export default {
       // copies are the SUBJECT rather than noise lives in the `mirror` ops below, precisely so this line
       // can stay a blanket — see the "POPULATION VS BEHAVIOUR" note in cli/packages/core/src/ops.ts.
       ignore: {
-        "*": ["**/templates/**"],
+        "*": ["**/templates/**", "**/scaffold/**"],
         // A directory's index is not one of its records. `project/log/README.md` is generated from the
         // entries and carries no version of its own, so scoping it in would report a permanent finding
         // nobody can close — the shape of a check people learn to ignore.
@@ -89,6 +92,32 @@ export default {
         // The same policy for the RFC lifecycle's archival halves — frozen on arrival by the
         // governance rule, so a version gap there is a fact about history, not a debt.
         "template-version-rfc": ["project/rfc/implemented/**", "project/rfc/rejected/**"],
+        // Plan-040 Track 1 moved five files out of `plugin/references/` into the governance package
+        // whose policy each is, served through `records norm --facet policy` instead of a path. A link
+        // to the old path inside a record that may no longer be edited — an implemented or rejected RFC,
+        // an archived plan, an accepted ADR (immutable by this repository's own governance rule),
+        // CHANGELOG (what a past release actually shipped) — is a fact about what the tree looked like
+        // when it was written, and repairing it would edit a frozen record.
+        // Every OTHER record is repaired instead of exempted: the links in RFC-0001 and RFC-0003 were
+        // repointed at the moved files in the same pass. A living surface — an `AGENTS.md`, a skill, an
+        // open RFC or plan — stays a finding.
+        //
+        // ONLY THE FILES THAT ACTUALLY CARRY ONE ARE LISTED. The archival record directories were named
+        // here first and suppressed nothing at all, which is worse than redundant: a glob that covers no
+        // finding today silently covers whatever lands in it tomorrow. `CHANGELOG.md` carries two links
+        // to the moved policy files; `shipped/007` one to a hook script Track 7 retired; `shipped/001`
+        // and `shipped/002` each one to `knowledge-lifecycle.md`, now `governance-knowledge`'s own
+        // `policy/lifecycle.md`; and `adr/0007` one to `instruction-surfaces.md`, now
+        // `governance-instructions`'. Every one of those five is a record this repository's own
+        // governance forbids editing — a shipped plan, an accepted ADR, the changelog — which is the
+        // whole test for being listed here.
+        "markdown-link": [
+          "CHANGELOG.md",
+          "project/plans/shipped/001-*.md",
+          "project/plans/shipped/002-*.md",
+          "project/plans/shipped/007-*.md",
+          "project/adr/0007-license-enforcement-writes-no-git-config.md",
+        ],
       },
       // Research needs no disablement any more: the per-type entries are derived from the activated
       // governances (Plan-034), and no governance package serves research — the type entered the old
@@ -112,10 +141,10 @@ export default {
         // that stays safe for everything else.
         "template-heading-drift": ["cli/packages/governance-*/migrations/**"],
         "*": [
-          // A template is the authority on a shape, never a description of one. Both copies — the
-          // canonical one in each governance package, and setup's scaffold copy.
+          // A template is the authority on a shape, never a description of one. There is one copy since
+          // Plan-040 Track 6: the scaffold reads each template from the package that owns the type, so
+          // the second copy this line used to name no longer exists.
           "cli/packages/governance-*/templates/**",
-          "plugin/skills/setup/templates/project/templates/**",
           // A record's own structure. Written against the template of its day and correct as it stands;
           // migrating them is a separate job with its own per-entry decisions.
           "project/adr/**",

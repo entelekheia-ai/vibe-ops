@@ -1,5 +1,6 @@
 {
   "type": "task",
+  "answers": "What is being worked on right now?",
   "template": "./templates/task.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
@@ -12,6 +13,16 @@
       "Issue"
     ]
   },
+  "lifecycle": {
+    "chain": [
+      "Planned",
+      "In Progress",
+      "Done"
+    ],
+    "active": "In Progress",
+    "terminal": "Done"
+  },
+  "notes": "./lifecycle-notes.md",
   "numbered": true,
   "pad": 3,
   "depth": 1,

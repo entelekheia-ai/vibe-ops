@@ -1,0 +1,9 @@
+{
+  "type": "style",
+  "facets": {
+    "policy": "general.md"
+  },
+  "targets": ["readme", "agents-md"],
+  "numbered": false,
+  "dirs": []
+}

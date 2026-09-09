@@ -35,7 +35,10 @@ async function ctx(repoRoot: string, command: string, args: readonly string[] = 
 
 test("ownership get answers for a path the harness's own base declaration covers", async () => {
   const repo = await fixtureRepo();
-  const result = await ownershipModule.run(await ctx(repo, "get", ["CLAUDE.md"]));
+  // AGENTS.md, not CLAUDE.md: the latter moved from the harness base declaration into
+  // @entelekheia/governance-instructions's own fragment (Plan-040 Track 5), so it no longer exercises
+  // what this test names — a path the harness's OWN base declaration, not a governance package's, covers.
+  const result = await ownershipModule.run(await ctx(repo, "get", ["AGENTS.md"]));
   assert.equal(result.code, 0);
   const data = result.data as { class: string; match: string; origin: string };
   assert.equal(data.origin, "harness");

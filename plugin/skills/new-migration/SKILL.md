@@ -83,7 +83,7 @@ Three completeness rules, all hard:
   shape a record has, and every one of those assertions goes false in this commit. Say what the new shape
   means — "the living sections are now X and Y" — never a list of files, which is stale before the note is
   committed. The rule and the reason are in
-  [`${CLAUDE_PLUGIN_ROOT}/references/template-shape-change.md`](../../references/template-shape-change.md);
+  `vibe-ops records norm --type base --facet policy --name migration --print`;
   do not restate them here.
 - **Say WHERE positionally and absolutely, never relative to something that may not be there.** "At
   offset 0, before whatever is currently first" holds for every artifact; "above the licence block" holds
@@ -96,7 +96,9 @@ Three completeness rules, all hard:
 
 **Instructions only.** No history, no narrative of what the change was for, no measurement that motivated
 it. Those belong in the plan or RFC that made the change — a note is read by someone converting a file,
-who needs the steps and nothing else.
+who needs the steps and nothing else. The general rules of phrasing — prescriptive over hedged, direct and
+literal, a map rather than a narrative — are
+`vibe-ops records norm --type style --facet policy --for migration --print`.
 
 ## Step 4 — Test the note against the worst real artifact
 
@@ -127,7 +129,7 @@ Record what the walk found **in the plan or RFC that owns the change**, never in
 
 Three mechanical questions, none of them a judgement. **Delegate the step whole to the
 `vibe-ops:governance-auditor` agent** — the four inputs are in
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md), the
+`vibe-ops records norm --type base --facet policy --name convergence --print`, the
 target state being the note you just wrote and the template it belongs to. Answer them here only if the
 agent is not in the session's listing.
 

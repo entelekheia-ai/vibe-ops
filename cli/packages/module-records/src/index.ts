@@ -36,7 +36,8 @@ import { census, formatCensus } from "./census.ts";
 import { formatHandling, handlingFor } from "./handling.ts";
 import { composedOwnership } from "@entelekheia/vibe-ops-harness";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
-import { listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
+import { describeNormType, listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
+import { composeStylePolicy, formatStyleCollisions, formatStyleExplain } from "@entelekheia/governance-base";
 import type { NormFacet } from "@entelekheia/governance-base";
 import type { ListField } from "./show.ts";
 
@@ -154,7 +155,22 @@ export default defineModule(
             type: "string",
             description: "which facet of the type's unit",
             required: true,
-            choices: ["template", "authoring", "migrations"],
+            choices: ["template", "authoring", "migrations", "policy"],
+          },
+          {
+            name: "name",
+            type: "string",
+            description: "which of the type's facets.* policy files — required for, and only valid with, --facet policy on any type but style",
+          },
+          {
+            name: "for",
+            type: "string",
+            description: "the artefact the style stack is served for — only valid with --type style --facet policy",
+          },
+          {
+            name: "explain",
+            type: "boolean",
+            description: "print each section's origin package and file — only valid with --type style --facet policy",
           },
           { name: "print", type: "boolean", description: "print the facet's content (for migrations: the note paths)" },
         ],
@@ -203,10 +219,93 @@ export default defineModule(
     if (context.command === "norm") {
       const type = context.flags["type"];
       const facet = context.flags["facet"] as NormFacet;
+      const nameFlag = context.flags["name"];
+      const name = typeof nameFlag === "string" && nameFlag !== "" ? nameFlag : undefined;
       if (typeof type !== "string" || type === "") {
         return { code: 2, summary: "norm needs --type <record type>" };
       }
-      const answer = await resolveNormFacet(type, facet, context.repoRoot, context.config, context.sourceRoot);
+      const forFlag = context.flags["for"];
+      const forTarget = typeof forFlag === "string" && forFlag !== "" ? forFlag : undefined;
+      const explain = context.flags["explain"] === true;
+
+      // `style` IS COMPOSED, NEVER A SINGLE FACET (Plan-040 Track 4, RFC-0005 §2.1) — its binding is an
+      // ordered stack, not one package, so `--facet policy` on `--type style` never takes `--name`; it
+      // takes `--for` (the artefact being served, absent for the unscoped layers alone) and `--explain`
+      // (each section's origin). Handled entirely before the generic facet/name gate below, which style
+      // never reaches.
+      if (type === "style" && facet === "policy") {
+        if (name !== undefined) {
+          return { code: 2, summary: "style is served by --for/--explain, not --name — its binding is a stack, not one facet" };
+        }
+        const result = await composeStylePolicy(forTarget, context.config);
+        const collisionLines = result.onCollision === "off" ? [] : formatStyleCollisions(result);
+        if (context.surface === "cli" && context.flags["json"] !== true) {
+          if (explain) for (const line of formatStyleExplain(result)) context.log(line);
+          // A REFUSAL HANDS BACK NO DOCUMENT. It printed the merged text and then said it refused, which
+          // is a refusal a caller routes around — and an agent reading stdout simply uses what it sees.
+          // The diagnosis stays (`sections`, `collisions`, and the lines below); the usable artefact does
+          // not, on the terminal or in `data`.
+          if (result.ok && context.flags["print"] === true) context.log(result.text);
+          for (const line of result.warnings) context.warn(line);
+          // The label follows the severity the repository chose: at `error` these lines are not warnings.
+          for (const line of collisionLines) context.warn(result.onCollision === "error" ? `unresolved: ${line}` : line);
+        }
+        return {
+          code: result.ok ? 0 : 1,
+          summary: result.ok
+            ? `style composed for ${forTarget ?? "(unscoped)"}: ${result.sections.length} section(s), ${result.collisions.length} collision(s)`
+            : `style composed for ${forTarget ?? "(unscoped)"} refused — ${result.collisions.length} unresolved collision(s), onCollision: error`,
+          data: {
+            target: forTarget,
+            ...(result.ok ? { text: result.text } : {}),
+            sections: result.sections,
+            collisions: result.collisions,
+            onCollision: result.onCollision,
+            warnings: result.warnings,
+          },
+        };
+      }
+      if (forFlag !== undefined) {
+        return { code: 2, summary: "norm --for only applies to --type style --facet policy" };
+      }
+      if (explain) {
+        return { code: 2, summary: "norm --explain only applies to --type style --facet policy" };
+      }
+      // `--name` and `--facet policy` come as a pair, in both directions: one without the other is a
+      // request that cannot be answered — either "which facet" (no --name) or "--name means nothing
+      // here" (a facet with one fixed field already).
+      if (facet === "policy" && name === undefined) {
+        return { code: 2, summary: "norm --facet policy needs --name — which of the type's facets to serve" };
+      }
+      if (facet !== "policy" && name !== undefined) {
+        return { code: 2, summary: `norm --name only applies to --facet policy, not --facet ${facet}` };
+      }
+      // Both refusals below need to know what the type ACTUALLY declares, so they name it rather than
+      // reporting a bare "does not exist" — the same "visible and attributable" standard the rest of
+      // this facet ladder already holds itself to.
+      if (facet === "policy" || facet === "template" || facet === "authoring" || facet === "migrations") {
+        const description = await describeNormType(type, context.repoRoot, context.config, context.sourceRoot);
+        if (description !== undefined) {
+          // A policy-only type has no record at all, so all three record facets refuse alike. Answering
+          // only for `template` let the other two fall through to the pinned flat layout and reply with
+          // a plugin path that exists nowhere — a "not present" that reads as a missing file rather than
+          // as a type that was never going to have one.
+          const record = { template: description.hasTemplate, authoring: description.hasAuthoring, migrations: description.hasMigrations };
+          if (facet !== "policy" && !record[facet]) {
+            return { code: 2, summary: `${type} is policy-only — it declares no ${facet}` };
+          }
+          if (facet === "policy" && !description.facetNames.includes(name!)) {
+            return {
+              code: 2,
+              summary:
+                description.facetNames.length === 0
+                  ? `${type} declares no facets — nothing named "${name}" to serve`
+                  : `${type} declares no facet "${name}" — it has: ${description.facetNames.join(", ")}`,
+            };
+          }
+        }
+      }
+      const answer = await resolveNormFacet(type, facet, context.repoRoot, context.config, context.sourceRoot, name);
       if (answer === undefined) {
         return {
           code: 2,

@@ -41,8 +41,8 @@ hand, while every adopted repository still composed the full set. The field was 
 
 ## The exposure contract, and why a plan is the record most exposed to it
 
-Everything in
-[`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../../plugin/references/exposure-contract.md) applies. Three
+Everything the exposure policy states (`vibe-ops records norm --type classification --facet policy --name exposure --print`)
+applies. Three
 things make a plan the worst offender among the four types:
 
 - **It is often written from outside the repository it belongs to** — the case the `Repository` row exists
@@ -56,8 +56,8 @@ things make a plan the worst offender among the four types:
 
 **A plan's `Design` is the section that most often needs a diagram and most often ships without one.** It
 describes a pipeline, a decision procedure, or a boundary something must not cross — all flows with
-branches, which is exactly the test in
-[`${CLAUDE_PLUGIN_ROOT}/references/authoring-style.md`](../../../plugin/references/authoring-style.md#diagrams). Draw it beside the
+branches, which is exactly the test in the style stack's "Diagrams" section
+(`vibe-ops records norm --type style --facet policy --for plan --print`). Draw it beside the
 prose, not instead of it. The template says so in its own `Design` comment; this is the reminder for the
 case where the comment was deleted before it was read.
 

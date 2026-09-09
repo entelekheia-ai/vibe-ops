@@ -1,6 +1,8 @@
 // New gate — not a port. Every AGENTS.md must have a sibling CLAUDE.md containing `@AGENTS.md`, or it
-// never enters context on its own: plugin/references/instruction-surfaces.md measured eleven AGENTS.md
-// files across ten repositories with no sibling and no `@`-import reaching them, two of them roots.
+// never enters context on its own: the instruction-surfaces policy (now @entelekheia/governance-instructions,
+// `vibe-ops records norm --type instructions --facet policy --name surfaces --print`, Plan-040 Track 5)
+// measured eleven AGENTS.md files across ten repositories with no sibling and no `@`-import reaching
+// them, two of them roots.
 //
 // Two distinct failure modes, not one, and the split is by MODE, not by depth:
 //

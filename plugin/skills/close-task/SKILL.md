@@ -22,9 +22,9 @@ document type — it is writing back before distilling.
 **Usage:** `/close-task <id>` — e.g. `/close-task 042`. Locate `project/tasks/<NNN>-<slug>.md`; if `<id>`
 matches nothing there, say so rather than guessing at a plan.
 
-**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one
+**This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It closes one
 unit of work, once. Routing what the work *taught* is governed by
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` — the
 promotion test lives there, not in this file.
 
 
@@ -91,7 +91,7 @@ Routing runs in two passes: **filter, then place.** They answer different questi
 the other.
 
 **Pass 1 — the filter.** Questions 1–3 of the promotion test in
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test).
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` (the promotion test section).
 Any one of them can eliminate the entry:
 
 1. **Recurrence** — would it burn a fresh agent more than once?
@@ -106,8 +106,9 @@ Do not restate the questions' reasoning here or in the repo you are closing work
 rejected candidates. Filing rejects one tier down is exactly what carried `project/learnings/` past its
 budget, and it is why the tier below is the one that rots.
 
-**Pass 2 — place what survived**, by what the fact *is*
-([the routing table](../../references/instruction-surfaces.md#where-each-fact-goes)):
+**Pass 2 — place what survived**, by what the fact *is* (the routing table in
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print`, "Where each fact
+goes"):
 
 1. **Does it hold beyond this repository?** → `project/learnings/`.
 2. **Can you name the file, folder or package where someone meets it again?** → `project/log/`, and that
@@ -164,7 +165,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
    of a document that was never as exposed. The dossier is about to be deleted; the comment is permanent
    and, on a public repository, world-readable the instant it is posted — editing it later leaves an edit
    history. Apply
-   [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md) to
+   `vibe-ops records norm --type classification --facet policy --name exposure --print` to
    every line as you lift it: a repository name that explained a delay inside the dossier becomes the
    constraint it imposed; a path pasted from a terminal becomes a repository-relative one; a routed
    learning is named by *what* it was and where it landed, never by the private note it came from.
@@ -234,7 +235,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 Step 3's filter is the one that decays quietly. An entry promoted that should have been dropped costs a
 line in a file everyone reads; an entry dropped that should have been promoted costs the next session the
 same hours. If a rejection felt wrong, the edit belongs in
-[`knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md), not here — this skill points at the
+the file `vibe-ops records norm --type log --facet policy --name lifecycle --print` serves, not here — this skill points at the
 test rather than restating it, deliberately.
 
 If a closure produced no edits to this skill, say so — a ceremony that ran cleanly is signal too.

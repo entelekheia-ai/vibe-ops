@@ -20,9 +20,9 @@ becomes an artifact of how the work happened instead of what it produced. That b
 
 **This is a target-state skill** — the six sections below are the target, and an absent README is just the
 maximum-gap case of the same job. Read
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) for the
+`vibe-ops records norm --type base --facet policy --name convergence --print` for the
 four verbs before changing an existing README, and
-[`authoring-style.md`](../../references/authoring-style.md) for phrasing and language.
+`vibe-ops records norm --type style --facet policy --for readme --print` for phrasing and language.
 
 The shape below is derived in
 [`project/research/readme-presentation-practices.md`](../../../project/research/readme-presentation-practices.md),

@@ -8,7 +8,7 @@ single artifact — is [`cli/packages/harness/ownership.json`](../../cli/package
 and each activated governance package ships an `ownership.json` fragment for its own artifact (for
 example [`governance-plan`'s](../../cli/packages/governance-plan/ownership.json)). The rule the agent
 follows when extending any of them is
-[`plugin/references/ownership.md`](../../plugin/references/ownership.md).
+[`harness/policy/ownership.md`](../../cli/packages/harness/policy/ownership.md).
 
 ## The vocabulary
 

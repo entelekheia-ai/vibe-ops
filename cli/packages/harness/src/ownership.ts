@@ -167,13 +167,23 @@ export async function composedOwnership(config: VibeOpsConfig | undefined): Prom
     paths.push(...base.paths.map((entry) => ({ ...entry, origin: "harness" })));
   }
   const bindings = effectiveGovernanceBindings(config);
+  // ONE FRAGMENT PER PACKAGE, NOT PER BOUND TYPE. A fragment belongs to a package; this loop walks type
+  // NAMES, and a package shipping several units (ADR-0020) is named by each of them — so binding both
+  // `log` and `learning` pushed `governance-knowledge`'s whole fragment twice. It read as harmless
+  // because a duplicate is identical match plus identical class, which the conflict check below treats
+  // as peers agreeing; what it actually produces is every entry of that package counted twice in the
+  // composed boundary and in everything reported from it.
+  const seenPackages = new Set<string>();
   for (const type of Object.keys(bindings)) {
+    const packageName = bindings[type]!.packageName;
+    if (seenPackages.has(packageName)) continue;
     const activated = await activateGovernance(type, config);
     if (activated === undefined) continue;
     const fragment = await maybeReadOwnership(activated.root);
+    seenPackages.add(packageName);
     if (fragment === undefined) continue;
     version = Math.max(version, fragment.version);
-    paths.push(...fragment.paths.map((entry) => ({ ...entry, origin: bindings[type]!.packageName })));
+    paths.push(...fragment.paths.map((entry) => ({ ...entry, origin: packageName })));
   }
   if (paths.length === 0) return undefined;
 

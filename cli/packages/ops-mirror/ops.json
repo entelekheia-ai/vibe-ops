@@ -13,7 +13,7 @@
         "migrations": "cli/packages/governance-plan/migrations",
         "templates": {
           "adr": "cli/packages/governance-adr/templates/adr.md",
-          "log": "cli/packages/governance-log/templates/log.md",
+          "log": "cli/packages/governance-knowledge/templates/log.md",
           "plan": "cli/packages/governance-plan/templates/plan.md",
           "rfc": "cli/packages/governance-rfc/templates/rfc.md",
           "task": "cli/packages/governance-task/templates/task.md"
@@ -206,71 +206,6 @@
         "files": {
           ".claude-plugin/plugin.json": "{\"version\": \"0.2.0\"}",
           "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n\n## [0.1.0] \u2014 2026-01-01\n"
-        }
-      }
-    },
-    {
-      "gate": "mirror",
-      "label": "dogfooding-drift",
-      "options": {
-        "compare": "text",
-        "ignore": [
-          "copyright"
-        ],
-        "subject": "this repository's copy and the copy it ships",
-        "rule": "dogfooding-drift",
-        "pairs": [
-          [
-            "cli/packages/governance-plan/templates/plan.md",
-            "<plugin>/skills/setup/templates/project/templates/plan.md"
-          ],
-          [
-            "cli/packages/governance-task/templates/task.md",
-            "<plugin>/skills/setup/templates/project/templates/task.md"
-          ],
-          [
-            "cli/packages/governance-adr/templates/adr.md",
-            "<plugin>/skills/setup/templates/project/templates/adr.md"
-          ],
-          [
-            "cli/packages/governance-rfc/templates/rfc.md",
-            "<plugin>/skills/setup/templates/project/templates/rfc.md"
-          ],
-          [
-            "cli/packages/governance-log/templates/log.md",
-            "<plugin>/skills/setup/templates/project/templates/log.md"
-          ],
-          [
-            ".agents/rules/governance.md",
-            "<plugin>/skills/setup/templates/agents/rules/governance.md"
-          ],
-          [
-            "GOVERNANCE.md",
-            "<plugin>/skills/setup/templates/root/GOVERNANCE.md"
-          ]
-        ]
-      },
-      "fixture": {
-        "expect": [
-          "dogfooding-drift"
-        ],
-        "files": {
-          "GOVERNANCE.md": "# G\n\nown\n",
-          "skills/setup/templates/project/GOVERNANCE.md": "# G\n\nshipped, edited\n"
-        },
-        "options": {
-          "compare": "text",
-          "ignore": [
-            "copyright"
-          ],
-          "rule": "dogfooding-drift",
-          "subject": "this repository's copy and the copy it ships",
-          "pairs": [
-            [
-              "GOVERNANCE.md",
-              "skills/setup/templates/project/GOVERNANCE.md"
-            ]
-          ]
         }
       }
     },

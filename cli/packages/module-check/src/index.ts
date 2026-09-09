@@ -47,7 +47,7 @@ async function runOpsSelfTest(
  * The nine rule ids that must still fail on the SAME fixture the shell runner's own `--self-test` breaks
  * — one per fragment retired in track 7, and which ops composes each is `OPS_FOR_PARITY` below.
  *
- * THIS LIST IS NOW THE ONLY THING HOLDING THOSE NINE CHECKS. Their fragments are deleted and the
+ * THIS LIST IS NOW THE ONLY THING HOLDING THOSE EIGHT CHECKS. Their fragments are deleted and the
  * `fragment-parity` gate that compared them is deleted, so nothing else in this repository asserts that
  * the ports which replaced them still detect anything. That is why `build_fixture` keeps every defect the
  * retired fragments used to catch: the fixture stopped being their evidence and became the ports'.
@@ -61,7 +61,6 @@ const PARITY_RULE_IDS = [
   "memory-slug",
   "file-path",
   "template-attribution",
-  "dogfooding-drift",
 ] as const;
 
 /** Which ops composes each id above — read once, so a reader can check the claim against the table in
@@ -76,11 +75,15 @@ const OPS_FOR_PARITY = ["governance", "agents-md", "exposure", "mirror"] as cons
  * `config: {}` is load-bearing, not a placeholder — `loadConfig` searches upward to the operator's
  * home directory, and whether this fixture fails must never depend on whichever machine runs it.
  *
- * This does not assert an exit code or the absence of other findings. Two kinds of extra noise are
- * expected and accepted here rather than suppressed: `dogfooding-drift` reports six pairs (the
- * `governance-*` template pairs) as "named but not there" because the fixture carries only the
- * GOVERNANCE.md pair, and every `fragment-parity-*` entry these same ops also carry reports itself
- * skipped, because the fixture has no `sh/check-agents-md.sh` runner of its own to compare against.
+ * This does not assert an exit code or the absence of other findings. The extra noise expected here is
+ * every `fragment-parity-*` entry these same ops also carry reporting itself skipped, because the
+ * fixture has no `sh/check-agents-md.sh` runner of its own to compare against.
+ *
+ * `dogfooding-drift` LEFT THIS LIST WITH THE PAIR IT COMPARED (Plan-040 Track 6). It was the ninth id
+ * here, and the plugin no longer ships a second copy of anything for it to compare a repository's own
+ * file against — the templates moved into the packages that own them, so the pair it existed to guard
+ * has no second side. A retired check left in this list fails the self-test by never firing, which is
+ * this apparatus working: the list is an assertion that each id still detects, not a registry.
  */
 async function runPortsAgainstFixture(): Promise<{ id: string; code: number; output: string }> {
   const tmp = mkdtempSync(path.join(tmpdir(), "vibeops-check-parity-"));
@@ -427,7 +430,7 @@ export default defineModule(
     }
 
     // No emitter: this module declares no `emits`. "checks-run"/"checks-failed" counted CHECKS, the
-    // taxonomy references/harness-pair.md forbids because it grows with the tooling instead of with
+    // taxonomy the harness-pair policy forbids (`vibe-ops harness policy --name pair`) because it grows with the tooling instead of with
     // the phenomena (RFC-0001, Rationale). agents-md's memory-slug gate is the replacement signal.
 
     // Exit 2 has two unrelated causes and used to print the same six words for both: the runner refusing

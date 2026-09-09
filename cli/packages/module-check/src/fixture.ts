@@ -73,9 +73,6 @@ the elided forms \`/Users/…/thing\` and \`/Users/.../thing\`, which describe t
   "skills/broken-hook/SKILL.md":
     '---\nname: broken-hook\ndescription: fixture\nhooks:\n  NotARealEvent:\n    - matcher: "Write"\n      hooks:\n        - type: command\n          command: vibe-ops\n---\n\nfixture\n',
 
-  // A dogfooded pair that has diverged: a repository's own GOVERNANCE.md against the copy it ships.
-  "GOVERNANCE.md": "# Governance\n\nThe real one.\n",
-  "skills/setup/templates/root/GOVERNANCE.md": "# Governance\n\nA stale copy.\n",
 
   // A references/records/ missing two of the four types `/new` reads.
   "references/records/adr.md": "adr rules\n",

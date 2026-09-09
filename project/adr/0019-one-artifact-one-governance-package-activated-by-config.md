@@ -16,9 +16,10 @@ vibe-ops-template: adr@2
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Superseded by ADR-0020 |
 | Date | 2026-08-22 |
 | Deciders | Danilo Borges |
+| Superseded by | [ADR-0020](0020-one-artifact-one-unit-and-a-package-may-ship-several.md) — the grain moves from the package to the unit; the activation half below stands unchanged |
 
 <!-- Status lifecycle: Proposed → Accepted → (Deprecated | Superseded by ADR-XXXX) -->
 

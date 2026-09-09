@@ -16,8 +16,9 @@ vibe-ops-template: rfc@2
 
 | Field | Value |
 |---|---|
-| Status | Draft |
+| Status | Accepted |
 | Created | 2026-09-06 |
+| Accepted | 2026-09-08 — maintainer sign-off, every open question closed |
 | Author | Danilo Borges |
 | Depends on | [RFC-0003](0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) |
 | Related | [ADR-0013](../adr/0013-the-model-a-shipped-plugin-may-pin.md), [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-033](../plans/shipped/033-one-artifact-one-governance.md), [Plan-032](../plans/shipped/032-the-ownership-verb-and-the-configuration-it-writes.md) |
@@ -31,7 +32,8 @@ belongs to exactly one governance package: versioned, classified by an ownership
 recorded note, served by the CLI. Today that holds for the five record types and fails for the rest of
 the plugin — ten policy references, thirty-two scaffold templates, four shell scripts, eight licence
 files and one pinned agent live only in the plugin tree, reachable only through `${CLAUDE_PLUGIN_ROOT}`. This RFC moves them:
-three governance types are added (`style`, swappable like an output style; `instructions`, the
+three governance types are added (`style`, a composed stack of writing styles scoped per artefact;
+`instructions`, the
 instruction surface; `knowledge`, one package shipping `log` and `learning` as two units), the remaining references join the packages whose
 policy they are, the scaffold becomes a composition of what each activated governance ships, and the
 scripts become `vibe-ops hook` surfaces or verbs. What stays in the plugin is what needs judgement or is
@@ -97,7 +99,7 @@ carries.
 
 | Type | Owns | Replaces |
 |---|---|---|
-| `style` | the authoring style skills apply when they write into a repository (`authoring-style@2` today); **swappable**: a repository binds `types.style` to another package, and the skills read whichever is bound | `plugin/references/authoring-style.md` |
+| `style` | the authoring style skills apply when they write into a repository (`authoring-style@2` today); **composed**: a repository binds `types.style` to an ordered stack of style packages, each optionally scoped to named artefacts, and the skills read what the stack resolves to for the artefact they are writing (§2.1) | `plugin/references/authoring-style.md` |
 | `instructions` | the instruction surface — `AGENTS.md`, its `CLAUDE.md` import, the `.agents/` ↔ `.claude/` bridge, `repo-guardrails.md`; its policy (`instruction-surfaces@1`) and its scaffold files (`root/CLAUDE.md`, `agents/rules/repo-guardrails.md`, `agents/skills/.gitkeep`); the `agents-md` ops stays its sensor, composing gates from `vibe-ops-gates` as today | `plugin/references/instruction-surfaces.md`, three scaffold files |
 | `knowledge` | what a piece of work taught, as two units in one package: `log` (`project/log/`, a trap addressed by path — the type, noun, template, migrations, fragment and `lint`/`index` verbs unchanged) and `learning` (`project/learnings/`, a fact that holds beyond one repository, opt-in); the promotion test (`knowledge-lifecycle@1`) as the package's policy | `governance-log` (the package; the `log` type survives), `plugin/references/knowledge-lifecycle.md` |
 
@@ -105,7 +107,8 @@ carries.
 `template`, `authoring` and `migrations`, and reads absent `dirs` as `project/<type>`; `style` and
 `instructions` keep no records. The manifest makes `template` and `dirs` optional and adds `facets`,
 a map of named policy files the package serves; `records norm --facet template` on a type without one
-refuses, naming the type as policy-only. `schema` absent already derives no entry (the existing
+refuses, naming the type as policy-only. A style package's manifest adds one field of its own, `targets`,
+the documented list of artefacts it ships a fragment for — advisory, per §2.1. `schema` absent already derives no entry (the existing
 precedent, `governance-license`).
 
 **`knowledge` is one package shipping two units, not a renamed `log`.** A package exports one unit
@@ -124,9 +127,66 @@ ship several units", and the acceptance of this RFC carries a successor ADR sayi
 composing them — seven entries over five gates, three of which read the plugin's own surface and stay
 where they are. The package owns what the ops reads about: the surface's policy and its scaffold.
 
-`style` is the only type a repository is expected to replace. Its composition is one package, not a
-layered overlay: a repository that wants a different style binds a different package, which may itself
-import the default's facets. A layered model is an open question below.
+#### 2.1 `style` composes in layers, scoped per artefact
+
+`style` is the only type a repository is expected to replace, and replacement is rarely total: a
+repository wants the default voice for most of what it writes and a different one for a plan, a task or a
+private research note. So the binding is an **ordered stack**, each layer a package named for the voice it
+carries and optionally scoped to the artefacts it applies to. Serving is per artefact — a skill about to
+write a plan asks for the style of a plan.
+
+```ts
+// vibeops.config.ts — short form
+export default {
+  types: {
+    style: [
+      "@entelekheia/governance-style",       // unscoped: every artefact
+      "@danilo/style-conciso/{plan,task}",   // only a plan or a task
+      "@samuel/style-explicativo{^rfc}",     // every artefact except an RFC
+    ],
+  },
+};
+```
+
+```ts
+// full form — when a collision needs a decision
+    style: {
+      layers: [
+        "@entelekheia/governance-style",
+        { use: "@danilo/style-conciso", scope: "{plan,task}" },
+        { use: "@samuel/style-explicativo", scope: "{^rfc}", on: "append" },
+        { use: "@samuel/style-formal", rules: { voice: "append" } },
+      ],
+      onCollision: "warn",                   // "error" | "warn" (default) | "off"
+    },
+```
+
+**A package is a directory of fragments, one file per target.** `general.md` holds what applies to every
+artefact; `<target>.md` holds only that target's delta. Both are ordinary Markdown, and a package of one
+`general.md` is valid — that is the single-file output-style shape this borrows from.
+
+**The merge unit is the section, not the file.** Serving `--for plan` concatenates, in layer order, each
+applicable layer's `general.md` followed by its `plan.md`; a section whose key repeats one already present
+replaces it, and a new key is appended. A section's key is its heading slug by default, or an explicit key
+when two authors name the same rule differently. A published package should carry explicit keys: a
+repository's `rules` entries reference them, and a renamed heading stops matching in silence.
+
+**Resolution is the composer's decision, never the author's.** Only the repository sees two layers at
+once, so `on: "append"` (sum instead of replace) and the per-key `rules` map live in the binding. What the
+package author owns is the key.
+
+**A collision nobody declared is reported, never fatal.** `onCollision` defaults to `warn`; `error` is for
+a repository that wants its stack proven disjoint, `off` for one that stacked deliberately. A collision
+resolved by `on` or `rules` was chosen, and is silent. Two cases sit outside it: a `<target>.md` overriding
+its own package's `general.md` is intentional by construction, and
+`records norm --type style --facet policy --for <target> --explain` prints each section's origin package
+and file, so a surprising style is traced without opening a package.
+
+**The target vocabulary is soft.** A style package may declare `targets` as documentation, and every
+activated type name is always valid; an undeclared target is served with a warning, never refused. `plan`
+and `task` are types, while `readme`, `agents-md`, `research-private` and `research-public` are not, and
+that set grows faster than any package can ratify. A caller passing no `--for` receives the unscoped
+layers alone.
 
 ### 3. Where each remaining reference goes
 
@@ -154,7 +214,10 @@ gate over every activated package's `facets`: each still declares `vibe-ops-refe
 from the activated types, not copied — which needs a manifest field no `type.json` carries today:
 `lifecycle` (the status chain, what is immutable and when, the living sections, the archival directory),
 versioned like the rest, replacing the chain `governance-plan` holds in TypeScript. `GOVERNANCE.md` is
-rendered the same way (recommended; open question). When both render, `35-dogfooding-drift` has no pair
+rendered the same way, and is **`shaped`** rather than `norm`: the tooling owns the rendered lifecycle
+sections and rewrites them on promulgation, the repository owns every other section permanently. That is
+the class that lets one file be both current with the activated types and a place to write. When both
+render, `35-dogfooding-drift` has no pair
 left — its seven pairs are the five record templates plus those two files — and is retired rather than
 kept. The placeholder table is data in each package; the substitution is one function. The `scaffolder`
 agent retires: there is nothing left for a model to copy. ADR-0013 stays as the policy under which a
@@ -164,8 +227,9 @@ plugin may pin a model, its one instance gone.
 |---|---|
 | `harness/check.sh`, `harness/checks/_run.sh`, `harness/githooks/pre-commit`, `github/workflows/check.yml` | `harness` |
 | `pkg/*.json`, `root/editorconfig`, `root/gitignore` | `governance-base` (`seed`) |
-| `root/README.md`, `root/GOVERNANCE.md` | `governance-base` (`seed`; `GOVERNANCE.md` rendered if the open question closes that way) |
-| `docs/**/README.md` | open question: a `docs` type, or `governance-base` as `seed` |
+| `root/README.md` | `governance-base` (`seed`) |
+| `root/GOVERNANCE.md` | `governance-base`, rendered from every activated type's `lifecycle` (`shaped`) |
+| `docs/**/README.md` | `governance-base` (`seed`) |
 
 ### 5. The scripts become hook surfaces
 
@@ -201,8 +265,19 @@ rejected: it makes `authoring-style` unreplaceable, and it puts the exposure con
 convergence policy where a repository binding only `classification` would still receive both. **Keeping
 the scaffold as a plain copy step, moved to the CLI** was rejected: it fixes the pinned agent and leaves
 the ownership gap — a copied file still has no version and no migration note. **A `docs` governance for
-the Diátaxis skeleton** is undecided rather than rejected: four `README.md` stubs may be too little for a
-type, and too much for `seed` in the base.
+the Diátaxis skeleton** was rejected: four `README.md` stubs have no status chain, no migration and no
+record to govern, so they are `seed` in the base; the type is what to write later if a quadrant ever
+becomes a record, and `style` already covers *how* each is written.
+
+**One style package answering alone** was rejected once the replacement case was stated concretely. A
+repository does not want a different style, it wants a different style *for some artefacts* — a concise
+plan and an explanatory public research note, over one shared base. With a single package that costs a
+copy of the base per variation, and the copy is what drifts. The layered stack pays for that with a merge
+rule, and §2.1 keeps the rule to one sentence — the section is the unit, the last layer wins — with the
+judgement (`on`, `rules`, `onCollision`) held by the composer, who is the only party that sees two layers
+at once. **Failing on an undeclared collision** was rejected in the same breath: it turns assembling a
+stack into a round of errors, and a stack that warns is one a repository can run today and tighten to
+`error` when it wants the disjointness proven.
 
 ## Implementation Notes
 
@@ -217,8 +292,11 @@ type, and too much for `seed` in the base.
    `learning`, `knowledge-lifecycle` as policy; `governance-log` retired with a supersession pointer;
    `governance-license` and `governance-classification` gain fragments, `license` gains `get`/`verify`
    and the `license-setup` scaffold files.
-4. `governance-style`: the type, the default package, `types.style` in the default bindings; the four
-   authoring skills read it through the CLI.
+4. `governance-style`: the type, the default package (`general.md` plus a fragment per target it
+   documents), `types.style` in the default bindings, and the composition §2.1 specifies — the stack
+   binding in both forms, the scope grammar (`/{a,b}` and `{^a}`), the section-keyed merge, `--for` and
+   `--explain` on `records norm`, `on`/`rules`/`onCollision` on the binding. The four authoring skills
+   read it through the CLI, each naming the target it is writing.
 5. `governance-instructions`: the type, its scaffold files, `instruction-surfaces` as policy.
 6. `setup scaffold` and `harness install`, `agents/rules/governance.md` and `GOVERNANCE.md` rendered
    from `lifecycle`; the `scaffolder` agent retired; `35-dogfooding-drift` retired with its last pair.
@@ -226,15 +304,12 @@ type, and too much for `seed` in the base.
 
 ## Open Questions
 
-- Whether `style` composes in layers (a repository's package over the default's) or is one package that
-  may import the default's facets.
-- Whether `GOVERNANCE.md` is rendered from the activated types like `agents/rules/governance.md`, or
-  stays a `seed` the repository writes.
-- Whether the Diátaxis `docs/` skeleton is a `docs` governance or `seed` in the base.
-- Whether `GOVERNANCE.md` and `agents/rules/governance.md` both render from `lifecycle` (recommended
-  above), which retires `35-dogfooding-drift`; or only the rule renders and the check keeps one pair.
-- The successor ADR to ADR-0019 for "a package may ship several units": written at acceptance, or with
-  the plan's first track.
+None. The five this RFC carried in Draft were closed on 2026-09-08 and are recorded below.
+
+One thing is deliberately deferred rather than open: a style layer is a package here, so the two-author
+case (`danilo-styles` beside `samuel-styles`) needs each published. [RFC-0006](0006-the-repository-as-a-source-of-vibe-ops-units.md)
+would let a layer be a local directory instead. Nothing in §2.1 depends on it — a layer is a specifier,
+and RFC-0006 adds a source for specifiers — so the two land independently.
 
 ## Decisions Closed
 
@@ -252,6 +327,30 @@ type, and too much for `seed` in the base.
   mechanism, with a successor ADR. Closed at the first adversarial review, 2026-09-06.
 - **The `self` ops is `for-vibe-ops`** — the checks that only make sense in the norm's own repository;
   renamed 2026-09-06 so a consumer does not read it as "check yourself".
+- **`style` is an ordered stack of scoped layers**, not one package: what a repository actually wants is a
+  different voice per artefact over a shared base, and a single package would charge a copy of the base per
+  variation. Maintainer decision, 2026-09-08.
+- **A style package is fragments by target; the merge unit is the section.** `general.md` plus
+  `<target>.md` is how an author organises, and the section (keyed by heading slug, or an explicit key) is
+  how the CLI merges. The two are separate axes on purpose: files make a package readable, sections make a
+  variation cost only its delta. Maintainer decision, 2026-09-08.
+- **The composer resolves collisions, not the package author.** Only the repository sees two layers at
+  once, so `on: "append"` and the per-key `rules` map live in the binding. Maintainer correction,
+  2026-09-08.
+- **An undeclared collision warns by default, and the severity is the repository's** — `error | warn |
+  off`. Nothing about composing a style stack fails a run. Maintainer decision, 2026-09-08.
+- **The target vocabulary is advisory.** A style package documents its `targets`, activated type names are
+  always valid, and an undeclared target is served with a warning — because the artefacts that are not
+  types (`readme`, `research-private`, `research-public`) outgrow any list a package can ratify.
+  Maintainer decision, 2026-09-08.
+- **`GOVERNANCE.md` renders from `lifecycle` and is `shaped`** — the tooling owns the rendered lifecycle
+  sections, the repository owns the rest of the file permanently. This is what lets both governance
+  documents render, which retires `35-dogfooding-drift` with its last pair. Maintainer decision,
+  2026-09-08.
+- **The Diátaxis `docs/` skeleton is `seed` in `governance-base`**, not a `docs` type: four stubs have no
+  status chain and no record to govern. Maintainer decision, 2026-09-08.
+- **The successor ADR to ADR-0019 is written with the plan's first track**, not at acceptance, so it
+  records the mechanism that was built rather than the one intended. Maintainer decision, 2026-09-08.
 
 ## Related
 
@@ -263,3 +362,5 @@ type, and too much for `seed` in the base.
   the config.
 - [Plan-033](../plans/shipped/033-one-artifact-one-governance.md) — the rule this RFC extends past
   records.
+- [RFC-0006](0006-the-repository-as-a-source-of-vibe-ops-units.md) — a local source for units, which is
+  how a style layer exists without being published.

@@ -9,7 +9,7 @@ vibe-ops-template: rfc@2
 | Status | Accepted |
 | Created | 2026-08-10 |
 | Author | Danilo Borges |
-| Related | [`plugin/references/harness-pair.md`](../../plugin/references/harness-pair.md) · [`cli/AGENTS.md`](../../cli/AGENTS.md) · `eita` RFC-0001 (observations from systems eita does not run) |
+| Related | [`harness/policy/pair.md`](../../cli/packages/harness/policy/pair.md) · [`cli/AGENTS.md`](../../cli/AGENTS.md) · `eita` RFC-0001 (observations from systems eita does not run) |
 
 ---
 
@@ -39,7 +39,7 @@ is a denominator nobody chose.
 
 ### The harness contract already asks for this and cannot deliver it
 
-[`harness-pair.md`](../../plugin/references/harness-pair.md) states that the signal id names **the failure
+[`pair.md`](../../cli/packages/harness/policy/pair.md) states that the signal id names **the failure
 mode, never the check** — `machine-path`, not `52-machine-paths` — and that *"several checks catching the
 same failure in different places are **one** signal with a larger population"*. Both are asserted as
 naming discipline, because there is no structure that could hold them. A gate is the failure mode; an ops
@@ -105,7 +105,7 @@ export default defineOps({
 **Emission is decided by the ops, never by the gate**, because the two things only the producing side can
 know both belong to the composition: the **population** (`--examined`) and the **moment**. A gate handed a
 file list cannot know how many files the ops decided were in scope, and
-[`harness-pair.md`](../../plugin/references/harness-pair.md) is explicit that *zero examined is not a
+[`pair.md`](../../cli/packages/harness/policy/pair.md) is explicit that *zero examined is not a
 reading* — a rule the ops can enforce and the gate cannot.
 
 **Implemented as: the emitter is built by the ops, not injected by the dispatch layer.** A plain module
@@ -332,7 +332,7 @@ Q1 and Q2 are resolved by implementation, below. Q3 and Q4 remain open.
 
 ## Related
 
-- [`plugin/references/harness-pair.md`](../../plugin/references/harness-pair.md) — the guide/sensor/reading
+- [`harness/policy/pair.md`](../../cli/packages/harness/policy/pair.md) — the guide/sensor/reading
   contract this RFC gives a structure to; the vocabulary boundary and the reading rules are stated there
   and are not repeated here.
 - [`cli/AGENTS.md`](../../cli/AGENTS.md) — the module contract gates and ops extend, plus `--file`,

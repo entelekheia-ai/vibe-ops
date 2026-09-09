@@ -35,8 +35,8 @@ The three "don't do this or it breaks" invariants are in
 - **Every `AGENTS.md` has a sibling `CLAUDE.md` containing `@AGENTS.md`.** A nested `AGENTS.md` with no
   sibling and no `@`-import **never enters context on its own**, so its content is not merely unread, it
   is silently unread. The alternative is not writing the file: a path-scoped rule under `.agents/rules/`
-  loads exactly when work touches those paths. See
-  [`plugin/references/instruction-surfaces.md`](plugin/references/instruction-surfaces.md).
+  loads exactly when work touches those paths. Read the policy with
+  `vibe-ops records norm --type instructions --facet policy --name surfaces --print`.
 - **The gate is `vibe-ops check`**, and since Plan-038 Track 6 it composes both halves — the shell
   fragments still under `module-check/sh/checks/` and the TypeScript ops declared in `config.ops` — into
   one `N checks, M failed` line, the same composition a consumer's `pre-commit` runs.
@@ -49,8 +49,9 @@ The three "don't do this or it breaks" invariants are in
 
 `.agents/` is canonical, `.claude/` holds relative symlinks back into it — the same bridge the plugin
 ships to other repos. The rules, the commands, the `test -L` check and the Windows fallback are in
-[`plugin/references/instruction-surfaces.md`](plugin/references/instruction-surfaces.md), not repeated
-here, because that file is also what this plugin tells *other* repos to follow.
+the `instructions` governance's own policy — `vibe-ops records norm --type instructions --facet policy
+--name surfaces --print` — not repeated here, because that policy is also what this plugin tells *other*
+repos to follow.
 
 ## Source of truth
 

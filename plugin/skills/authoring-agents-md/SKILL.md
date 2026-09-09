@@ -26,12 +26,12 @@ hallucination — and unlike most documentation, being wrong here is worse than 
 
 **This is a target-state skill.** The target is the file described below; whether one exists already is a
 detail of the same job. Before changing an existing file, apply the four verbs from
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md). Two
-other references carry rules this skill does not repeat:
-[`instruction-surfaces.md`](../../references/instruction-surfaces.md) (which surface gets a fact, the
-`.agents/`↔`.claude/` bridge, nested files) and
-[`authoring-style.md`](../../references/authoring-style.md) (phrasing, budget mechanics, diagrams,
-English-only).
+`vibe-ops records norm --type base --facet policy --name convergence --print`. Two
+other policies carry rules this skill does not repeat:
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print` (which surface gets a
+fact, the `.agents/`↔`.claude/` bridge, nested files) and the style stack, read with
+`vibe-ops records norm --type style --facet policy --for agents-md --print` (phrasing, budget mechanics,
+diagrams, English-only).
 
 **Scale the pass to the edit.** This skill loads whenever an `AGENTS.md` or `CLAUDE.md` is opened, so most
 of the time it arrives for one added line, not a rewrite. Then only three things apply, and the nine steps
@@ -63,7 +63,7 @@ Decide what this file covers, because it decides everything else:
 
 Read the current file and produce a gap list before writing. **Delegate that survey to the
 `vibe-ops:governance-auditor` agent** — the four inputs are in
-[`convergence-policy.md`](../../references/convergence-policy.md), and the target state is this file's
+`vibe-ops records norm --type base --facet policy --name convergence --print`, and the target state is this file's
 Steps 1 and 3–8. It has no writing tool, and the listings stay in its context rather than yours. Run these
 yourself only if the agent is not in the session's listing:
 
@@ -117,9 +117,10 @@ or it goes.
 
 **Aim for 150 lines.** The always-on block passes a relevance gate as a whole, so padding does not merely
 cost tokens — it raises the chance the lines that mattered are discounted with it. Over budget, the fix is
-**relocation, not compression**: see the escape table in
-[`authoring-style.md`](../../references/authoring-style.md#budget), and route each displaced fact with
-[`instruction-surfaces.md`](../../references/instruction-surfaces.md#where-each-fact-goes).
+**relocation, not compression**: see the escape table in the style stack's "Budget" section
+(`vibe-ops records norm --type style --facet policy --for agents-md --print`), and route each displaced
+fact with `vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("Where each
+fact goes").
 
 ## Step 5 — Sections
 
@@ -138,7 +139,8 @@ Pick what fits; do not pad. Each entry is one line pointing at the real source o
 - **Source of truth** — a table mapping *what* → *where*.
 - **Out of scope by default** — for a multi-project workspace: which folders to ignore unless named.
 - **Agent config layout** — only if the repo carries rules or skills; build the bridge per
-  [`instruction-surfaces.md`](../../references/instruction-surfaces.md#the-agents--claude-bridge).
+  `vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("The `.agents/` ↔
+  `.claude/` bridge").
 - **Keeping this file current** — the loop in Step 7. Always include it.
 
 ## Step 6 — Point at derived knowledge instead of restating structure

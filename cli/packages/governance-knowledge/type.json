@@ -1,0 +1,54 @@
+{
+  "units": [
+    {
+      "type": "log",
+      "answers": "How we got here \u2014 context no other record holds",
+      "template": "./templates/log.md",
+      "authoring": "./authoring.md",
+      "migrations": "./migrations",
+      "facets": {
+        "lifecycle": "./policy/lifecycle.md"
+      },
+      "schema": {
+        "carrier": "frontmatter",
+        "required": [
+          "name",
+          "description",
+          "kind",
+          "path",
+          "attempted",
+          "source"
+        ]
+      },
+      "notes": "./lifecycle-notes.md",
+      "numbered": false,
+      "dirs": [
+        "project/log"
+      ]
+    },
+    {
+      "type": "learning",
+      "answers": "What the work taught, kept where it can be reused",
+      "template": "./templates/learning.md",
+      "authoring": "./authoring.md",
+      "migrations": "./migrations-learning",
+      "facets": {
+        "lifecycle": "./policy/lifecycle.md"
+      },
+      "schema": {
+        "carrier": "frontmatter",
+        "required": [
+          "name",
+          "description",
+          "scope",
+          "attempted",
+          "source"
+        ]
+      },
+      "numbered": false,
+      "dirs": [
+        "project/learnings"
+      ]
+    }
+  ]
+}

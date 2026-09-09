@@ -75,6 +75,9 @@
       }
     },
     {
+      "gate": "facet-completeness"
+    },
+    {
       "gate": "runner-provenance",
       "fixture": {
         "expect": [

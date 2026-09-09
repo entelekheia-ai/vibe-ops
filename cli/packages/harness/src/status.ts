@@ -42,7 +42,8 @@ async function pinnedVersion(sourceRoot: string, type: VersionedType): Promise<n
 
 async function packageVersion(type: VersionedType, config: VibeOpsConfig | undefined): Promise<number | undefined> {
   const activated = await activateGovernance(type, config);
-  if (activated === undefined) return undefined;
+  // A policy-only package (`base`) activates with no template — nothing versioned to compare here.
+  if (activated === undefined || activated.unit.template === undefined) return undefined;
   return versionFromTemplate(path.resolve(activated.root, activated.unit.template), type);
 }
 

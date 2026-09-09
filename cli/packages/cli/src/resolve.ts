@@ -58,7 +58,32 @@ export async function loadModule(name: string, config?: VibeOpsConfig): Promise<
     const binding = effectiveGovernanceBindings(config)[name];
     if (binding !== undefined) {
       const bound = await importDefault(binding.packageName);
-      if (bound !== undefined && bound.definition !== undefined && typeof bound.run === "function") return bound;
+      const usable = bound !== undefined && bound.definition !== undefined && typeof bound.run === "function";
+
+      // THE IDENTITY IS CHECKED, NOT ASSUMED — Plan-040 Track 3's finding. A package shipping several
+      // units (ADR-0020) has one `.` export, and it is one unit's module; importing it for a binding
+      // that named a DIFFERENT unit through `#type` returned the wrong noun's module, which then
+      // answered every verb about the wrong artifact and reported nothing. `vibe-ops learning resolve`
+      // printed the log's own directory line, live.
+      //
+      // So a multi-unit package exports one module per unit, under a subpath equal to the unit's type,
+      // and this is where that convention is enforced: the `.` export is used only when it IS the unit
+      // the binding named.
+      if (usable && bound.definition.id === binding.typeName) return bound;
+
+      const perUnit = await importDefault(`${binding.packageName}/${binding.typeName}`);
+      if (perUnit !== undefined && perUnit.definition !== undefined && typeof perUnit.run === "function") return perUnit;
+
+      // A package whose `.` export is a module for another unit and which exports no subpath for this
+      // one is misdeclared. Falling through to the conventions would report "cannot load", naming two
+      // package names that were never the problem, so the failure says what it actually is.
+      if (usable) {
+        throw new Error(
+          `"${name}" is bound to ${binding.packageName}#${binding.typeName}, but that package's default export ` +
+            `is the "${bound.definition.id}" module and it exports no "./${binding.typeName}". A package shipping ` +
+            `several units exports one module per unit, under a subpath named for the unit's type.`,
+        );
+      }
     }
   }
 

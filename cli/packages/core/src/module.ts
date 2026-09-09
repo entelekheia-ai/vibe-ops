@@ -66,6 +66,11 @@ export interface ModuleFlag {
  * `plan close` do not have to share a single flag namespace.
  */
 export interface ModuleCommand {
+  /** That THIS verb's first positional is the directory itself, not the repository containing it, and
+   *  that it is required — see `literalTargetArg` on the definition. Declarable per verb because a noun
+   *  may have one creating verb among readers: `harness install` writes a gate into the path it is
+   *  handed, while `harness status <path>` reports on the repository that path is in. */
+  readonly literalTargetArg?: boolean;
   readonly name: string;
   /** One line. Shown under the noun in `vibe-ops --help` and as this verb's MCP enum description. */
   readonly summary: string;
@@ -110,6 +115,20 @@ export interface ModuleDefinition {
    * (`task close <dossier>…`) must not set it.
    */
   readonly repoFromFirstArg?: boolean;
+  /**
+   * That the first positional is the DIRECTORY ITSELF, not the repository containing it — and that it is
+   * required. Only meaningful beside `repoFromFirstArg`.
+   *
+   * The two are opposite questions and shared one answer until Plan-040 Track 6 measured what that
+   * costs. `check <path>` means "the repository this path is in", so walking up to the git toplevel is
+   * right. `setup scaffold <path>` means "make a repository HERE", and walking up made it write into the
+   * enclosing repository instead: seventeen files into a checkout's root, exit 0, never naming where
+   * they went. A verb that CREATES cannot resolve its target by asking what already contains it.
+   *
+   * Required, for the same reason: with no argument the walk-up silently selects the current repository,
+   * which for a creating verb is the most destructive possible default.
+   */
+  readonly literalTargetArg?: boolean;
   /**
    * That this module reads from the installed norm, not only from the repository it acts on, and needs
    * `context.sourceRoot` resolved. Set by a module comparing the target against what is installed —

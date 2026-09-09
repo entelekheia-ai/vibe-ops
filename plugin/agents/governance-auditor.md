@@ -38,7 +38,7 @@ they answer. Each carries tests against the specific way its measurement used to
 nothing while `2>/dev/null` swallows the error reads exactly like an empty population, and a line count
 derived from a proxy was once 35% off and was then placed against a published budget. What the readings
 *mean*, and the three tests that turn a gap into a recommendation rather than a guess, are in
-[`../references/harness-model.md`](../references/harness-model.md).
+`vibe-ops harness policy --name model --print`.
 
 `vibe-ops harness sync` is **not** on the allowed list and no prompt may put it there: it is the one verb
 in that module that writes.
@@ -56,8 +56,8 @@ The caller gives you:
 2. **The target state** — an absolute path to the `SKILL.md` (and the step range or section headings inside
    it) that declares what "done" looks like, plus any reference files it depends on. Read them; never
    reconstruct a target state from memory.
-3. **The convergence policy** — an absolute path to `references/convergence-policy.md`, which defines the
-   four verbs.
+3. **The convergence policy** — its text, from `vibe-ops records norm --type base --facet policy --name convergence --print`,
+   which defines the four verbs.
 4. **Scope** — audit-only or the survey ahead of a full run, and any narrowing (one file, one folder).
 
 **If the target state or the policy path is missing from your prompt, return that as your only finding.**

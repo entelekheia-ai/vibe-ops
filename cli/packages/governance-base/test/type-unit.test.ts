@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { parseTypeUnit, resolveTypeUnit } from "../src/type-unit.ts";
+import { parseTypeUnit, parseTypeManifest, resolveTypeUnit } from "../src/type-unit.ts";
 import { RecordsConfigError } from "../src/layout.ts";
 
 async function scratchRepo(): Promise<string> {
@@ -47,6 +47,149 @@ test("parseTypeUnit: a required field missing throws RecordsConfigError naming t
 
 test("parseTypeUnit: invalid JSON throws RecordsConfigError", () => {
   assert.throws(() => parseTypeUnit("{ not json", "/x/type.json"), RecordsConfigError);
+});
+
+// ---- a manifest may declare several units (Plan-040 Track 2) --------------------------------------
+
+test("parseTypeManifest: an ordinary manifest is one unit, unchanged", () => {
+  const units = parseTypeManifest(VALID_MANIFEST, "/x/type.json");
+  assert.equal(units.length, 1);
+  assert.equal(units[0]?.type, "policy");
+});
+
+test("parseTypeManifest: a units array yields every unit, in manifest order", () => {
+  const manifest = JSON.stringify({
+    units: [
+      { type: "log", template: "./t/log.md", authoring: "./a.md", migrations: "./m" },
+      { type: "learning", template: "./t/learning.md", authoring: "./a.md", migrations: "./m" },
+    ],
+  });
+  const units = parseTypeManifest(manifest, "/x/type.json");
+  assert.deepEqual(units.map((unit) => unit.type), ["log", "learning"]);
+});
+
+test("parseTypeManifest: declaring both type and units is refused rather than merged", () => {
+  const manifest = JSON.stringify({ type: "log", units: [{ type: "log", template: "./t.md", authoring: "./a.md", migrations: "./m" }] });
+  assert.throws(
+    () => parseTypeManifest(manifest, "/x/type.json"),
+    (error: unknown) => error instanceof RecordsConfigError && /one unit or several, never both/.test((error as Error).message),
+  );
+});
+
+test("parseTypeManifest: two units naming the same type are refused", () => {
+  const unit = { type: "log", template: "./t.md", authoring: "./a.md", migrations: "./m" };
+  assert.throws(
+    () => parseTypeManifest(JSON.stringify({ units: [unit, unit] }), "/x/type.json"),
+    (error: unknown) => error instanceof RecordsConfigError && /declares the type "log" twice/.test((error as Error).message),
+  );
+});
+
+test("parseTypeManifest: an empty units array is refused, never read as one unit", () => {
+  assert.throws(() => parseTypeManifest(JSON.stringify({ units: [] }), "/x/type.json"), RecordsConfigError);
+});
+
+// ---- lifecycle (Plan-040 Track 2) -----------------------------------------------------------------
+
+test("parseTypeUnit: a declared lifecycle defaults active to the second status and terminal to the last", () => {
+  const manifest = JSON.stringify({
+    type: "policy",
+    template: "./t.md",
+    authoring: "./a.md",
+    migrations: "./m",
+    lifecycle: { chain: ["Backlog", "In Progress", "Shipped"], living: ["Decision Log"], archive: "shipped" },
+  });
+  const unit = parseTypeUnit(manifest, "/x/type.json");
+  assert.equal(unit.lifecycle?.active, "In Progress");
+  assert.equal(unit.lifecycle?.terminal, "Shipped");
+  assert.deepEqual(unit.lifecycle?.living, ["Decision Log"]);
+  assert.equal(unit.lifecycle?.archive, "shipped");
+});
+
+test("parseTypeUnit: a lifecycle naming a status outside its own chain is refused", () => {
+  const manifest = JSON.stringify({
+    type: "policy",
+    template: "./t.md",
+    authoring: "./a.md",
+    migrations: "./m",
+    lifecycle: { chain: ["Backlog", "Shipped"], active: "Underway" },
+  });
+  assert.throws(
+    () => parseTypeUnit(manifest, "/x/type.json"),
+    (error: unknown) => error instanceof RecordsConfigError && /not one of its own chain/.test((error as Error).message),
+  );
+});
+
+test("parseTypeUnit: a lifecycle with no chain is refused — every other field reads it", () => {
+  const manifest = JSON.stringify({
+    type: "policy",
+    template: "./t.md",
+    authoring: "./a.md",
+    migrations: "./m",
+    lifecycle: { living: ["Decision Log"] },
+  });
+  assert.throws(() => parseTypeUnit(manifest, "/x/type.json"), RecordsConfigError);
+});
+
+test("parseTypeUnit: targets is a list of names, and a malformed one is refused", () => {
+  const withTargets = JSON.stringify({ type: "style", facets: { authoring: "general.md" }, targets: ["plan", "readme"] });
+  assert.deepEqual(parseTypeUnit(withTargets, "/x/type.json").targets, ["plan", "readme"]);
+  const broken = JSON.stringify({ type: "style", facets: { authoring: "general.md" }, targets: "plan" });
+  assert.throws(() => parseTypeUnit(broken, "/x/type.json"), RecordsConfigError);
+});
+
+// ---- scaffold (Plan-040 Track 6) ------------------------------------------------------------------
+
+const SCAFFOLD_UNIT = {
+  type: "instructions",
+  facets: { surfaces: "policy/surfaces.md" },
+  scaffold: {
+    dir: "./scaffold",
+    files: [
+      { from: "root/CLAUDE.md", to: "CLAUDE.md" },
+      { from: "agents/skills/gitkeep", to: ".agents/skills/.gitkeep" },
+    ],
+    placeholders: ["REPO_NAME"],
+  },
+};
+
+test("parseTypeUnit: a scaffold names every destination, including the one that gains a leading dot", () => {
+  const unit = parseTypeUnit(JSON.stringify(SCAFFOLD_UNIT), "/x/type.json");
+  assert.equal(unit.scaffold?.dir, "./scaffold");
+  assert.deepEqual(unit.scaffold?.files[1], { from: "agents/skills/gitkeep", to: ".agents/skills/.gitkeep" });
+  assert.deepEqual(unit.scaffold?.placeholders, ["REPO_NAME"]);
+});
+
+// THE FIRST SHAPE OF THIS FIELD WAS A BARE STRING NOTHING VALIDATED, so `"scafold"` parsed exactly as
+// well as the real key. Each of these is refused rather than dropped.
+test("parseTypeUnit: a malformed scaffold is refused, not ignored", () => {
+  const cases = [
+    { scaffold: "./scaffold" },
+    { scaffold: { files: [{ from: "a", to: "b" }] } },
+    { scaffold: { dir: "./s" } },
+    { scaffold: { dir: "./s", files: [] } },
+    { scaffold: { dir: "./s", files: [{ from: "a" }] } },
+    { scaffold: { dir: "./s", files: [{ from: "", to: "b" }] } },
+    { scaffold: { dir: "./s", files: [{ from: "a", to: "b" }], placeholders: "REPO" } },
+  ];
+  for (const extra of cases) {
+    assert.throws(
+      () => parseTypeUnit(JSON.stringify({ ...SCAFFOLD_UNIT, ...extra }), "/x/type.json"),
+      RecordsConfigError,
+      JSON.stringify(extra),
+    );
+  }
+});
+
+// A scaffold entry is data a package ships, and the one thing it must never be able to say is "write
+// outside the repository I was pointed at".
+test("parseTypeUnit: a scaffold destination that leaves the target repository is refused", () => {
+  for (const to of ["/etc/passwd", "../outside.md", "a/../../b.md"]) {
+    assert.throws(
+      () => parseTypeUnit(JSON.stringify({ ...SCAFFOLD_UNIT, scaffold: { dir: "./s", files: [{ from: "x", to }] } }), "/x/type.json"),
+      (error: unknown) => error instanceof RecordsConfigError && /leaves the repository/.test((error as Error).message),
+      to,
+    );
+  }
 });
 
 test("resolveTypeUnit: repo declares a unit — it wins, source is repo", async () => {

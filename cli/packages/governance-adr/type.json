@@ -1,5 +1,7 @@
 {
   "type": "adr",
+  "title": "ADR",
+  "answers": "We decided X, because Y",
   "template": "./templates/adr.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
@@ -11,6 +13,26 @@
       "Deciders"
     ]
   },
+  "lifecycle": {
+    "chain": [
+      "Proposed",
+      "Accepted"
+    ],
+    "active": "Proposed",
+    "terminal": "Accepted",
+    "branches": [
+      {
+        "from": "Accepted",
+        "status": "Deprecated"
+      },
+      {
+        "from": "Accepted",
+        "status": "Superseded"
+      }
+    ],
+    "immutableFrom": "Accepted"
+  },
+  "notes": "./lifecycle-notes.md",
   "numbered": true,
   "pad": 4,
   "depth": 1,

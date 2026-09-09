@@ -30,9 +30,9 @@ reached it. **A plan that ships without a task is exactly the case with no other
 **Usage:** `/close-plan <id>` — e.g. `/close-plan 002`. The `plan` tool with `{ command: "resolve" }`
 reports where plans live in this repository; if `<id>` matches nothing there, say so rather than guessing at a task.
 
-**This is an event skill** ([why that matters](../../references/convergence-policy.md)). It closes one
+**This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It closes one
 unit of work, once. Routing what the work *taught* is governed by
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` — the
 promotion test lives there, not in this file.
 
 
@@ -112,7 +112,7 @@ It names the version the plan declares and, when that is not the current one, th
 that shape. Those documents govern; nothing on this page does.
 
 For whatever this step turns out to hold, apply the promotion test in
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test)
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` (the promotion test section)
 — filter first, then place:
 
 1. **Does it hold beyond this repository?** → `project/learnings/`.
@@ -164,7 +164,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 1. **Write the executive summary into the tracking issue**, if there is one, and close it. The issue owns
    status and the summary; the file owns the design and the working record — closing the issue does not
    end the file's life. Apply
-   [`${CLAUDE_PLUGIN_ROOT}/references/exposure-contract.md`](../../references/exposure-contract.md) to
+   `vibe-ops records norm --type classification --facet policy --name exposure --print` to
    every line as you lift it out of the plan.
 
    If the plan's last commits are not merged, say so rather than closing an issue that describes unmerged

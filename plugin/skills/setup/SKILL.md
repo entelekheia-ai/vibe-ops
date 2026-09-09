@@ -1,6 +1,6 @@
 ---
 name: setup
-description: 'Bring a repository to a standard baseline, in one of two modes. "repo" is the born-organized baseline — single-package or npm-workspaces monorepo, English docs: the package/build baseline, a project/ governance skeleton (ADR/RFC/tasks/plans/research/log, governed by a path-scoped rule), the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. "harness" is the guide-and-sensor apparatus — a fragment directory composed into the governance runner, the manual entrypoint, the optional commit gate, the fixture convention, and the artifact path a signal reports through. Sets up or reconciles either; use when creating/bootstrapping a repo or package, when adding mechanical checks to one that only has prose, or when an existing repo has drifted — pass "audit" to report the gaps without writing.'
+description: 'Bring a repository to a standard baseline, in one of two modes. "repo" is the born-organized baseline — single-package or npm-workspaces monorepo, English docs: the package/build baseline, a project/ governance skeleton, one directory per activated record type, governed by a path-scoped rule, the .agents/.claude rules bridge, a license, a docs/ Diátaxis skeleton, and the AGENTS.md config map. "harness" is the guide-and-sensor apparatus — a fragment directory composed into the governance runner, the manual entrypoint, the optional commit gate, the fixture convention, and the artifact path a signal reports through. Sets up or reconciles either; use when creating/bootstrapping a repo or package, when adding mechanical checks to one that only has prose, or when an existing repo has drifted — pass "audit" to report the gaps without writing.'
 argument-hint: "<repo|harness> [<repo-name>] [audit]"
 effort: inherit
 ---
@@ -13,13 +13,13 @@ for too long:
 | Mode | Brings to baseline | Read first |
 |---|---|---|
 | `repo` | the repository — package/build, `project/`, docs, the rules bridge, `AGENTS.md`, a license | Steps 0–7 below |
-| `harness` | what steers the agent and what verifies it — fragments, runner wiring, fixtures, the artifact path | [`harness-pair.md`](../../references/harness-pair.md), then Step H |
+| `harness` | what steers the agent and what verifies it — fragments, runner wiring, fixtures, the artifact path | the harness-pair policy (`vibe-ops harness policy --name pair --print`), then Step H |
 
 **`harness audit` is the assessment, and it is a mode of this skill rather than a skill of its own.**
 Auditing a repository as a harness and installing one into it are the same knowledge asked two ways: what
 the apparatus should be. Splitting them gave two surfaces that both had to know it, and the survey step of
 each was the same four shell commands written twice. It reads
-[`harness-model.md`](../../references/harness-model.md) and writes nothing.
+the harness-model policy (`vibe-ops harness policy --name model --print`) and writes nothing.
 
 **If the user did not say which, ask.** Do not infer from the topic: "set up this repo" means `repo` about
 as often as it means "it has an `AGENTS.md` and nothing checks it", and the two write into different
@@ -30,15 +30,18 @@ and delegates detailed authoring to sibling skills, so that every repo carries t
 and config. It is run just as often on a repo that already exists and has drifted as on an empty
 directory — the baseline is the target either way.
 
-**Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/`. Copy from
-there; never invent structure from memory. Files named `gitignore`/`editorconfig`/`gitkeep` are copied to
-`.gitignore`/`.editorconfig`/`.gitkeep` — and `templates/harness/githooks/` lands as `.githooks/`;
-`{{PLACEHOLDERS}}` are substituted (Step 3).
+**Templates live in the packages that own them**, not in this skill — Plan-040 Track 6. Each activated
+governance declares a `scaffold` in its own `type.json`: the directory its files live in, and for every
+file the destination it lands at. Resolve a package's root the way `license-setup` does
+(`vibe-ops records norm --type <t> --facet template`, then two `dirname`s) and read its declaration; never
+invent structure from memory, and never derive a destination — a file that must arrive as `.gitignore` or
+`.gitkeep` is stored without its dot, and `NOTICE.template` lands as `NOTICE`, both of which the
+declaration states and a convention would get wrong. `{{PLACEHOLDERS}}` are substituted (Step 3).
 
 **This is a target-state skill, in both modes.** The templates *are* the target state, and it is applied
 to repositories that already exist as often as to new ones — an empty directory is simply the maximum-gap
 case. Read
-[`${CLAUDE_PLUGIN_ROOT}/references/convergence-policy.md`](../../references/convergence-policy.md) before
+`vibe-ops records norm --type base --facet policy --name convergence --print` before
 touching anything that is already there; the `adopt` verb is what stops this skill from flattening a
 convention the repo settled on deliberately.
 
@@ -60,7 +63,7 @@ list** against the target state described in Steps 2–5 — each entry marked *
 or *conflicting*, with the verb to apply.
 
 **Delegate the survey to the `vibe-ops:governance-auditor` agent**, passing the four inputs
-[`convergence-policy.md`](../../references/convergence-policy.md) names — the target path, *this file with
+`vibe-ops records norm --type base --facet policy --name convergence --print` names — the target path, *this file with
 Steps 2–5 as the target state*, that policy, and whether this is an `audit` or the survey ahead of a full
 run. It reads the disk with no writing tool, and returns the gap list without spending your context on the
 listings. Run the commands below yourself only if the agent is not in the session's listing:
@@ -107,69 +110,69 @@ Confirm the plan (shape + names + path) before writing.
 
 ## Step 2 — Lay down the tree
 
-Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates`.
+Create the target directory and write each activated governance's scaffold contribution, from the
+declaration described above.
 
 **Consult the ownership boundary before writing over anything that exists** (Plan-031). For every
 destination the Step 0 survey found already present, ask `vibe-ops records handling <path>…` — it
 reports `ownership: <class>` for any path, records or not. A destination whose class is `repo` is
 reported and left untouched, whatever the survey concluded; `seed` is written only when absent, which
 the survey already enforces and the declaration now grounds; `shaped` belongs to migration, so adoption
-may create its skeleton but never rewrites a file that exists there. This check is yours, never the
-scaffolder's — its contract is that nothing is left for it to decide.
+may create its skeleton but never rewrites a file that exists there.
 
-**Steps 2 and 3 are dispatched to the `vibe-ops:scaffolder` agent**, once the plan is confirmed. Hand it
-the target path, the copy list below resolved for the shape chosen in Step 1, the substitution table from
-Step 3, and — per destination — what the Step 0 survey decided about anything already there. Nothing is
-left for it to decide, which is why it is the one surface here pinned to a cheaper model.
+**Writing and substituting are one command**, once the plan is confirmed:
 
-**Its verifier is named, as [ADR-0013](../../../project/adr/0013-the-model-a-shipped-plugin-may-pin.md)
-requires:** the `grep -rn '{{'` in Step 3 returning empty, and the Step 7 checklist, which you run
-yourself and never delegate. A scaffold that went wrong is red within the minute; that is the whole
-licence for the pin, and it lapses if the checklist stops being run.
+```bash
+vibe-ops setup plan <target>                       # what would be written, and from which package
+vibe-ops setup scaffold <target> NAME=value …      # write it
+```
 
-Do it inline if the agent is not in the session's listing.
+`plan` and `scaffold` are the same traversal, so the preview is the run. Every destination that already
+exists is kept and named rather than overwritten — `--force <path>` is the exception, one path at a time
+— and a placeholder nobody answered is left standing in the file rather than emptied, so `grep -rn '{{'`
+still tells you what is unfinished.
 
-**Root (always):**
-- `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`, `TPL/root/CLAUDE.md` → `CLAUDE.md`
-- `TPL/root/editorconfig` → `.editorconfig`, `TPL/root/gitignore` → `.gitignore`
+**The composition is the manifest.** There is no copy list here any more, and there must not be one: every
+file comes from the package that owns it, declared in that package's `type.json`, and a list in this skill
+would be a second copy that goes stale the moment a package changes what it ships. `vibe-ops setup plan`
+prints the real one, per destination, with the package each file came from.
 
-**Package/build baseline:**
-- **Monorepo:** `TPL/pkg/package.workspace.json` → root `package.json`; for each package
-  `packages/<name>/`: `TPL/pkg/package.pkg.json` → `package.json`, `TPL/pkg/tsconfig.base.json` →
-  `tsconfig.json`, `TPL/pkg/tsconfig.build.json` → `tsconfig.build.json`, plus `src/index.ts` and
-  `test/` (empty).
-- **Single-package:** `TPL/pkg/package.pkg.json` → root `package.json`; `TPL/pkg/tsconfig.base.json` →
-  `tsconfig.json`; `TPL/pkg/tsconfig.build.json` → `tsconfig.build.json`; `src/index.ts`; `test/`.
+**Name the shape, or the build baseline is skipped.** A single-package repository and a workspace need
+different content at the same `package.json`, so nothing is written for either unless you say which:
 
-**`project/` governance skeleton:**
-- `TPL/project/templates/{adr,rfc,task,plan}.md` → `project/templates/`
-- `TPL/project/{adr,rfc,tasks,plans,research,log}/.gitkeep` → same paths — empty folders that need a placeholder
-  to survive git; there is **no per-folder `AGENTS.md`** (see the rules bridge below, which replaces them)
-- Create `project/rfc/implemented/.gitkeep` and `project/rfc/rejected/.gitkeep`
+```bash
+vibe-ops setup scaffold <target> --shape package    NAME=value …   # one package at the root
+vibe-ops setup scaffold <target> --shape workspace  NAME=value …   # npm workspaces
+```
 
-**Rules bridge** (replaces per-folder `AGENTS.md`s with one path-scoped rule; mechanics, the `test -L`
+**Substitution happens in the same run.** Pass `NAME=value` positionals — `REPO_NAME`,
+`ONE_LINE_DESCRIPTION`, `PKG_NAME`, `LICENSE_ID` are what the shipped packages declare; each package's
+`scaffold.placeholders` names its own. A placeholder nobody answered is **left standing** in the file and
+reported by name, so `grep -rn '{{' <target>` is the finished-or-not test rather than a promise.
+
+**The rules bridge is written for you.** Every `.agents/rules/*.md` the run writes gains a relative
+symlink at `.claude/rules/<same name>` — the run prints `linked …` for each. The mechanics, the `test -L`
 verification and the Windows fallback are in
-[`${CLAUDE_PLUGIN_ROOT}/references/instruction-surfaces.md`](../../references/instruction-surfaces.md#the-agents--claude-bridge)):
-- `TPL/agents/rules/governance.md` → `.agents/rules/governance.md`; symlink
-  `ln -s ../../.agents/rules/governance.md .claude/rules/governance.md`
-- `TPL/agents/rules/repo-guardrails.md` → `.agents/rules/repo-guardrails.md` (seed file — leave its `TODO`
-  placeholder for the user to fill in or delete, don't invent guardrails); same symlink pattern into
-  `.claude/rules/repo-guardrails.md`
-- `TPL/agents/skills/.gitkeep` → `.agents/skills/.gitkeep` (empty — repo-specific skills land here later)
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print`.
 
-**`docs/` Diátaxis skeleton:** `TPL/docs/**` → `docs/` (index + `reference/ explanation/ how-to/ tutorials/` READMEs).
+### What the verb does NOT write, and is yours
 
-## Step 3 — Substitute placeholders
+- **`LICENSE`** — Step 4. Which licence a repository carries is a choice, and `governance-license` writes
+  the real text once it is made. The seeded `README.md` deliberately does not link the file yet.
+- **`project/rfc/implemented/` and `project/rfc/rejected/`** — created when the first record reaches them.
+- **`src/index.ts` and `test/`** per package — there is nothing true to put in either.
+- **`AGENTS.md`'s content.** A stub is seeded so the repository has the instruction file its own gate
+  requires, and it says in its own first paragraph that it has not been authored. Step 5 is where it is.
 
-Replace across the copied files:
-- `{{REPO_NAME}}` → repo name · `{{PKG_NAME}}` → `<scope>/<name>` (per package) ·
-  `{{PKG_DESCRIPTION}}` / `{{ONE_LINE_DESCRIPTION}}` → the descriptions · `{{LICENSE_ID}}` → the license
-  chosen in Step 4 (default `Apache-2.0`).
-Verify no `{{` remains: `grep -rn '{{' <repo>` should be empty.
+**No agent is dispatched here any more.** Copy-and-substitute was delegated to a pinned model because it
+had no deterministic surface; Plan-040 Track 6 gave it one, and
+[ADR-0013](../../../project/adr/0013-the-model-a-shipped-plugin-may-pin.md) stays as the policy under
+which a plugin *may* pin a model, with its one instance retired. The Step 7 checklist is still yours and
+still not delegated.
 
 ## Step 3a — Bind the governance types
 
-Yours, never the scaffolder's, after Step 3 and before the license. For every binding the Step 0 survey
+Yours, after the tree is written and before the license. For every binding the Step 0 survey
 marked `create`:
 
 ```bash
@@ -244,39 +247,31 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   every `harness.*` key. Do this **before** the CI offer and before hand-off: a promulgation deferred to
   "later" is the one that never happens, because nothing reports its absence.
 
-- **Offer the CI copy — do not install it.** Ask once, and take no for an answer:
+- **Offer CI — do not install it.** Ask once, and take no for an answer:
 
-  > CI cannot reach an installed plugin, so running this check on every push means copying it into the
-  > repository. The copy is a **snapshot**: it will not receive later fixes, and refreshing it is a manual
-  > re-copy. Add it?
+  > Running this gate on every push means adding a workflow that installs the CLI and runs the same
+  > `scripts/check.sh` you run by hand. Add it?
 
   Only if the user accepts:
 
   ```bash
-  mkdir -p scripts .github/workflows
-  cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" scripts/  # plugin-root-paths: allow
-  cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" scripts/  # plugin-root-paths: allow
-  chmod +x scripts/check-agents-md.sh
-  cp "${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/github/workflows/check.yml" .github/workflows/
-  ./scripts/check-agents-md.sh --self-test && ./scripts/check-agents-md.sh
+  (cd "$TARGET" && vibe-ops harness install . --include ci && ./scripts/check.sh)
   ```
 
-  Both must pass before you stage them — a CI job added red is a broken window on day one. Declining is a
-  normal outcome and writes nothing; the skill still works without it, because the skills that change
-  instruction surfaces run the check from the plugin.
+  The check must pass before you stage the workflow — a CI job added red is a broken window on day one.
+  Declining is a normal outcome and writes nothing.
 
-  **This is the one surface still copying fragments, and it is deliberate.** The commit gate moved to
-  `vibe-ops check` (Plan-038 Track 5), but CI cannot follow: the CLI is not published to a registry, and
-  a CI runner has neither a vibe-ops checkout to link from nor an installed plugin to reach. Until it is
-  publishable, a snapshot is the only shape CI can take, and stating that is better than offering a job
-  that cannot start.
+  **Nothing is copied into the repository any more.** The workflow installs
+  `@entelekheia/vibe-ops-cli` from the registry and runs the repository's own entrypoint, so there is no
+  snapshot to go stale and no second copy of any check. That was impossible while the CLI was
+  unpublished, which is what the fragment-copying recipe here existed to work around.
 - Print next steps: review `AGENTS.md`, `npm install && npm run typecheck`, `gh repo create` when ready, and
   "agent tooling is the `vibe-ops` plugin — no per-repo skill copies; closing a task goes through
   `/vibe-ops:close-task`, not a plain delete."
 
 ## Mode `harness` — Step H
 
-Read [`${CLAUDE_PLUGIN_ROOT}/references/harness-pair.md`](../../references/harness-pair.md) first. It is
+Read the harness-pair policy first: `vibe-ops harness policy --name pair --print`. It is
 the contract; this step is the installation.
 
 ### H0 — Survey, with commands rather than composed shell
@@ -292,7 +287,7 @@ vibe-ops harness catalog "$TARGET"   # every gate and fragment this install ship
 ```
 
 Produce the gap list, verb per gap, exactly as Step 0 does — including the delegation to
-`vibe-ops:governance-auditor`, with [`harness-pair.md`](../../references/harness-pair.md) and this step as
+`vibe-ops:governance-auditor`, with the harness-pair policy (`vibe-ops harness policy --name pair --print`) and this step as
 the target state it is given.
 
 **A repository with no remote cannot have CI**, and that is the single most common wrong recommendation
@@ -307,7 +302,7 @@ governance repository, and the sensors it needs are not the sensors a service ne
 ### H0a — If the user asked for `audit`, this is the whole run
 
 Stop before writing anything and report instead. Read
-[`${CLAUDE_PLUGIN_ROOT}/references/harness-model.md`](../../references/harness-model.md) — the two axes,
+`vibe-ops harness policy --name model --print` — the two axes,
 the lifecycle positions, the three tests that turn a gap into a recommendation, and the list of ways this
 audit has produced confident nonsense before.
 
@@ -326,16 +321,30 @@ and template belong to that skill, and reproducing them by hand drops whatever i
 
 ### H1 — The apparatus
 
-`TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/harness`.
+One command writes it, into the path you name:
 
-- `TPL/checks/_run.sh` → `scripts/checks/_run.sh`. Composition plus the integrity assertion, shared by
-  every caller. **This is the load-bearing file**: without it, a bare `vibe-ops check` composes only the
-  built-ins, omits every fragment the repository owns, and still reports success.
-- `TPL/check.sh` → `scripts/check.sh`, `chmod +x`. The manual entrypoint, so the correct invocation has a
-  name shorter than the mistake.
-- `TPL/githooks/pre-commit` → `.githooks/pre-commit`, `chmod +x` — **offer, do not assume**. Then
-  `git config core.hooksPath .githooks`, which is local config that no clone inherits.
-- `scripts/checks/` — create it. It holds this repository's own fragments and starts empty.
+```bash
+vibe-ops harness install <target>                    # the gate: scripts/check.sh, scripts/checks/_run.sh
+vibe-ops harness install <target> --include hook,ci  # and the two that change what a clone does
+```
+
+- `scripts/checks/_run.sh` — composition plus the integrity assertion, shared by every caller. **This is
+  the load-bearing file**: without it, a bare `vibe-ops check` composes only the built-ins, omits every
+  fragment the repository owns, and still reports success.
+- `scripts/check.sh` — the manual entrypoint, so the correct invocation has a name shorter than the
+  mistake. Both arrive executable.
+- `scripts/checks/` holds this repository's own fragments and starts empty.
+
+**The hook and the CI workflow are opt-in, and the verb enforces it.** `--include hook` writes
+`.githooks/pre-commit`; `--include ci` writes `.github/workflows/check.yml`. Neither is written without
+being named, and the run prints `offered …` for each one it did not install. **Ask before including
+either**, and take no for an answer — a commit hook changes what every `git commit` in somebody's clone
+does. After `--include hook`, run `git config core.hooksPath .githooks`, which is local config that no
+clone inherits.
+
+**An existing `pre-commit` is kept, never replaced**, and the run warns when it does not call the gate.
+Append the gate to it rather than overwriting somebody's hook.
+
 
 **The gate is `vibe-ops` on `PATH`, and nothing is copied into `$TARGET`.** `_run.sh` runs
 `vibe-ops check`; there is no snapshot to take, no sibling checkout to resolve, and nothing that goes
@@ -418,9 +427,9 @@ requirement too: it is the one thing that can leave a fully-installed harness un
 
 - [ ] Target has `README.md`, `GOVERNANCE.md`, `AGENTS.md`, `CLAUDE.md`(@AGENTS.md), `LICENSE`, `.gitignore`, `.editorconfig`
 - [ ] Build baseline present; monorepo root `package.json` has `workspaces`, each package has its own `package.json` + tsconfig(.build)
-- [ ] `project/` skeleton present (`adr rfc tasks plans research log templates`, each non-empty via `.gitkeep`
-      if no content yet); `project/templates/{adr,rfc,task,plan}.md` present; **no** per-folder `AGENTS.md`
-      (that's the rule's job)
+- [ ] `project/` skeleton present — one directory per activated type, plus `templates`, each non-empty
+      via `.gitkeep` if no content yet; one `project/templates/<type>.md` per activated type; **no**
+      per-folder `AGENTS.md` (that is the rule's job)
 - [ ] `.agents/rules/{governance,repo-guardrails}.md` exist, each symlinked from `.claude/rules/`; `.agents/skills/` present (empty)
 - [ ] `docs/` Diátaxis skeleton present
 - [ ] No `{{PLACEHOLDER}}` remains (`grep -rn '{{'`)
