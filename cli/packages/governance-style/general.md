@@ -61,7 +61,7 @@ a thing came to be belongs in an ADR or a log, not in the map a newcomer reads f
 
 **Aim for 150 lines** in any always-on document, and treat the number as a correctness measure rather than
 a cost measure. The always-on block passes through a relevance gate *as a whole*
-([evidence](../../project/research/context-file-practices.md)), so padding does not merely cost tokens — it
+([evidence](../../../project/research/context-file-practices.md)), so padding does not merely cost tokens — it
 raises the chance the lines that mattered get discounted with it.
 
 When the file is over budget, the fix is almost never compression. Ask what the content is:

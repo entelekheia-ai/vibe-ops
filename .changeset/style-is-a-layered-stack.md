@@ -29,6 +29,6 @@ its own package's `general.md` is never a collision. `onCollision` (`"error" | "
 origin package and file. `--name` is refused on `style` — its binding is a stack, not one named facet.
 
 The four authoring skills (`authoring-agents-md`, `authoring-readme`, `new`, `new-migration`) now read the
-style stack through this verb instead of a `${CLAUDE_PLUGIN_ROOT}/references/authoring-style.md` path, each
+style stack through this verb instead of a path under the plugin's own `references/` directory, each
 naming the target it writes; every other reader of that path (`new-signal`, `governance-plan`'s own
 authoring rules, ADR-0004) repoints the same way.

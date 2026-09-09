@@ -57,7 +57,7 @@ can eliminate it; the fourth routes what survives.
    one you assume. Re-run a new guard enough times to see it is stable, then break the thing on purpose
    and watch it catch that.
 4. **Blast radius** — where it lands, routed by what the fact *is*. That routing table is
-   [`instruction-surfaces.md`](../../../../plugin/references/instruction-surfaces.md#where-each-fact-goes); do not restate it here.
+   `vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("Where each fact goes"); do not restate it here.
 
 The row that ends double-writing is the last one: a fact true in *any* repository — about a language, a
 tool, or how the maintainer prefers to work — is not repository knowledge, and putting it in the repo means
