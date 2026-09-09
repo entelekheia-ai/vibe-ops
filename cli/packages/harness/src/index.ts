@@ -66,8 +66,11 @@ export default defineModule(
       },
       {
         name: "install",
-        summary: "write the commit gate's four files into this repository, keeping whatever is already there",
+        summary: "write the commit gate's four files into the repository you name, keeping whatever is already there",
         destructive: true,
+        // It CREATES, so its positional is the path itself and is required — walking up to the enclosing
+        // git toplevel would install a gate into a checkout the caller never named.
+        literalTargetArg: true,
         flags: [
           { name: "force", type: "string", description: "overwrite this destination even though it exists; comma-separated" },
         ],

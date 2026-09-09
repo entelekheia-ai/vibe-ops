@@ -148,8 +148,27 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
   // Resolved here and nowhere else: this is the layer that knows the working directory, and the module
   // contract forbids the module from reading it. The argument is consumed, so the module never sees a
   // positional it is not supposed to interpret.
+  // A LITERAL TARGET IS THE PATH, AND IT IS REQUIRED. `check <path>` asks "the repository this path is
+  // in" and walks up to the git toplevel; a verb that CREATES a repository asks for the path itself, and
+  // walking up made `setup scaffold ./packages/new` write into the enclosing checkout's root — seventeen
+  // files, exit 0, never naming where they went. With no argument at all the walk-up selects the current
+  // repository, which for a creating verb is the most destructive default available, so it refuses.
+  // Declarable on the MODULE (every verb creates — `setup`) or on ONE VERB (`harness install` creates
+  // while its six siblings read a repository that already exists). The verb wins, which is the same
+  // precedence flags already follow.
+  const wantsLiteral = commandDef?.literalTargetArg === true || plugin.definition.literalTargetArg === true;
+  if (wantsLiteral && args.length === 0) {
+    return {
+      code: 2,
+      summary: `${verb} needs a target directory — it writes into the path you name, and will not guess one`,
+    };
+  }
   const takesRepoArg = plugin.definition.repoFromFirstArg === true && args.length > 0;
-  const repoRoot = takesRepoArg ? repoRootFrom(path.resolve(cwd, args[0]!)) : repoRootFrom(cwd);
+  const repoRoot = takesRepoArg
+    ? wantsLiteral
+      ? path.resolve(cwd, args[0]!)
+      : repoRootFrom(path.resolve(cwd, args[0]!))
+    : repoRootFrom(cwd);
   const remainingArgs = takesRepoArg ? args.slice(1) : args;
   const { config } = await loadConfig(repoRoot);
 

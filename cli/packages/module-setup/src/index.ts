@@ -41,6 +41,7 @@ export default defineModule(
     // The subject IS a repository, so the first positional is the target and the module never sees it —
     // the same declaration `check` makes, and the reason `setup scaffold ../new-repo NAME=x` works.
     repoFromFirstArg: true,
+    literalTargetArg: true,
     commands: [
       {
         name: "plan",
