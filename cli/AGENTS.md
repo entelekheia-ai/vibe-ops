@@ -358,6 +358,15 @@ either.
   path into this repository resolves. **Use a full `https://github.com/...` URL**, which resolves from
   both sides.
 
+- **An empty changeset satisfies the PR gate and then blocks the next publish, silently.** `changeset
+  add --empty` is what the tool itself recommends when files under a package changed and no release is
+  wanted, and it works: `changeset status` exits 0. But `changesets/action` on `main` branches on whether
+  any changeset FILE exists, not on whether one would bump anything — it logs `All changesets are empty;
+  not creating PR` and exits **without publishing**, with no line saying so. Measured 2026-09-09: `main`
+  declared `0.2.0` while npm still served `0.1.1`, on a release run that was green. So an empty changeset
+  is a PR-scoped device: it may ride into `main` on the commit that needs it, and the very next release
+  requires it to be gone. Delete it in the same PR where possible.
+
 - **A changeset that is not staged is invisible to the gate.** `changeset status --since` reads git, so a
   written-but-untracked file reports as *"no changesets were found"* — the same message as having written
   none. `git add` it before trusting a local run; CI never sees this because everything there is committed.
