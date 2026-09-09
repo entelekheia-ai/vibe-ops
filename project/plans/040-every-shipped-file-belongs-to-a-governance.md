@@ -153,7 +153,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       and a package may ship several. At the end a fixture package shipping two units activates, both
       resolve, and the existing single-unit packages are unaffected.
 
-- [ ] **Track 3 — `governance-knowledge`, and the two packages that owned files without a fragment.**
+- [x] **Track 3 — `governance-knowledge`, and the two packages that owned files without a fragment.**
       `governance-log` becomes `governance-knowledge` with units `log` (moved whole, keeping its type
       name, noun, MCP tool, settings keys and fragment globs) and `learning`, which is not in the default
       bindings. `knowledge-lifecycle` becomes the package's policy facet. `governance-license` and
@@ -164,7 +164,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       package already carries. At the end a repository binding `log` by default sees no change, and
       `plugin/skills/license-setup/` ships no file of its own.
 
-- [ ] **Track 4 — `governance-style` and the layered stack.** The type, the default package
+- [x] **Track 4 — `governance-style` and the layered stack.** The type, the default package
       (`general.md` plus a fragment per target it documents), and `types.style` in the default bindings.
       The composition RFC-0005 §2.1 specifies: both binding forms, the scope grammar, the section-keyed
       merge, `--for` and `--explain` on `records norm`, and `on` / `rules` / `onCollision` read from the
@@ -172,7 +172,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       writing. At the end a two-layer stack serves one merged text, `--explain` names each section's
       origin, and an undeclared collision warns without failing.
 
-- [ ] **Track 5 — `governance-instructions`.** The type, `instruction-surfaces` as its policy facet, and
+- [x] **Track 5 — `governance-instructions`.** The type, `instruction-surfaces` as its policy facet, and
       its scaffold files (`root/CLAUDE.md`, `agents/rules/repo-guardrails.md`, `agents/skills/.gitkeep`).
       It ships no gate: gates are resolved from `vibe-ops-gates` alone and the `agents-md` ops keeps
       composing them as it does today. At the end the instruction surface's policy and scaffold have one
@@ -269,6 +269,27 @@ Every criterion below is observed on an ordinary run, with no flag an operator h
   parser alone would have shown.
   Date / Author: 2026-09-08 / Danilo Borges
 
+- Decision: A file's lead-in does not merge like a rule. The first applying layer's title and intro are
+  the document's; a later layer's are dropped and reported as a collision, and the reserved key cannot be
+  claimed by an explicit marker.
+  Rationale: the RFC never special-cased a lead-in, and treating it as an ordinary section was implemented
+  faithfully and read wrongly — replacing put the top layer's title over a document that is mostly the
+  base's, and appending stacked two `#` titles. The base of a stack names the document; a rule does not.
+  Date / Author: 2026-09-09 / Danilo Borges
+
+- Decision: `license` and `classification` stay opt-in bindings, and `/license-setup` declares the binding
+  itself as its first step rather than the default map gaining an entry.
+  Rationale: activation-as-opt-in is right for a package's records and ownership fragment, and the skill
+  was unusable without it — but running the skill IS the act of opting in, so the declaration belongs to
+  the skill, not to every repository that never wanted a licence workflow.
+  Date / Author: 2026-09-09 / Danilo Borges
+
+- Decision: An ownership fragment composes once per PACKAGE, not once per bound type.
+  Rationale: a fragment belongs to a package, and the composition loop walks type names — so a two-unit
+  package's entries were counted twice, invisibly, because a duplicate is identical match plus identical
+  class and the conflict check reads that as peers agreeing.
+  Date / Author: 2026-09-09 / Danilo Borges
+
 ## Outcomes & Retrospective
 
 **Track 7 landed** (`01bf2db`): `plan-progress` and `session-cleanup` are CLI hook surfaces, the nudge's
@@ -301,6 +322,29 @@ three above. Keyed by package name, a second binding to a package was handed wha
 resolved — a real unit, with a template and facets, answering every question about the wrong artifact
 and reporting nothing. It could not have been noticed from any output, which is why the test states that
 case in words rather than asserting a return value.
+
+**Tracks 3, 4 and 5 landed together**, written concurrently in three worktrees and merged here. Goals 1,
+2 and 3 are met: `plugin/references/` holds only its own README, every package that ships a file into a
+repository names it in a fragment, and a repository can bind a stack of writing styles scoped per
+artefact. Two adversarial reviews then found eight defects, and what they have in common is worth more
+than the list.
+
+**Seven of the eight were invisible from every output the tooling produces.** A typo in `types.adr`
+unbound the type and ADR checking stopped, green. An ownership fragment counted twice read as peers
+agreeing. A refusal printed the document it was refusing. A key repeated inside one file kept the second
+copy and said nothing. That is the same shape as Track 1's and Track 7's defects, and it is now the
+plan's most repeated finding: **this system's failures do not announce themselves — they answer.**
+
+**One correction to the record.** A `SKIP [license-texts]` was read here as a guard Track 3 had broken,
+and the Track 3 brief opened with it. It was the globally installed CLI composing its own bundled
+packages: the in-tree run reports the check passing. The lesson is not about that check — it is that a
+repository whose gate resolves its binary from `PATH` can be red for reasons that are not in its tree,
+and that the commit gate this repository ships to others has exactly that shape.
+
+**Deferred, with the reasons.** `pin` and `digest` went with the shell script while `SOURCES.tsv` still
+instructs a maintainer to run them. `.githooks/pre-commit` is written by the licence skill and claimed by
+the harness base as `norm`, which would overwrite it; adding it to the licence fragment would be a
+two-class conflict, so it needs a decision rather than a line. Neither blocks Track 6.
 
 <!-- ===== END LIVING SECTIONS ===== -->
 
