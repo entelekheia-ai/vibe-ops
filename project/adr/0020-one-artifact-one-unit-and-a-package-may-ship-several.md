@@ -101,7 +101,7 @@ modules coexist under one package is exercised when `governance-knowledge` is bu
 
 - [ADR-0019](0019-one-artifact-one-governance-package-activated-by-config.md) — the decision this
   supersedes; its activation half is reaffirmed unchanged.
-- [RFC-0005](../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) —
+- [RFC-0005](../rfc/implemented/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) —
   where `knowledge` is specified, and why it is one package with two units.
 - [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the `#type` fragment this decision
   puts to work.
