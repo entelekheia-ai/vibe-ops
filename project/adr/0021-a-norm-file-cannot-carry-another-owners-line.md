@@ -19,7 +19,7 @@ vibe-ops-template: adr@2
 | Status | Accepted |
 | Date | 2026-09-09 |
 | Deciders | Danilo Borges |
-| Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [ADR-0007](0007-license-enforcement-writes-no-git-config.md), [Plan-040](../plans/040-every-shipped-file-belongs-to-a-governance.md) |
+| Related | [RFC-0001](../rfc/0001-gates-and-ops-as-the-cli-unit-of-composition.md), [ADR-0007](0007-license-enforcement-writes-no-git-config.md), [Plan-040](../plans/shipped/040-every-shipped-file-belongs-to-a-governance.md) |
 
 ---
 
@@ -93,5 +93,5 @@ must not instruct anyone to write `.githooks/pre-commit`.
 - [ADR-0007](0007-license-enforcement-writes-no-git-config.md) — the earlier decision that this skill does
   not write git config on the user's behalf. Same principle, one layer up: it does not write another
   owner's file either.
-- [Plan-040](../plans/040-every-shipped-file-belongs-to-a-governance.md) — Track 6, where `shaped` was
+- [Plan-040](../plans/shipped/040-every-shipped-file-belongs-to-a-governance.md) — Track 6, where `shaped` was
   built and where this collision became visible.

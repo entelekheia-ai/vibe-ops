@@ -16,11 +16,11 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Shipped |
 | Created | 2026-09-08 |
 | Author | Danilo Borges |
-| Depends on | [RFC-0005](../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) |
-| Related | [ADR-0013](../adr/0013-the-model-a-shipped-plugin-may-pin.md), [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-033](shipped/033-one-artifact-one-governance.md), [RFC-0006](../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md) |
+| Depends on | [RFC-0005](../../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) |
+| Related | [ADR-0013](../../adr/0013-the-model-a-shipped-plugin-may-pin.md), [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-033](./033-one-artifact-one-governance.md), [RFC-0006](../../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md) |
 
 ---
 
@@ -59,7 +59,7 @@ the composed scaffold, the rendered governance documents, the two hook surfaces,
 ### Out of scope
 
 - **A local, unpublished source for a unit.** A style layer is a package specifier here. Letting a layer
-  be a directory inside the consuming repository is [RFC-0006](../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md),
+  be a directory inside the consuming repository is [RFC-0006](../../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md),
   and the two land independently — this plan adds specifiers, that RFC adds a source for them.
 - **A `docs` governance type.** The Diátaxis skeleton stays `seed` in `governance-base`; the type is what
   to write if a quadrant ever becomes a record.
@@ -195,7 +195,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       CLI. At the end `hooks.json` names `vibe-ops` on all nine registrations, no `.sh` remains under
       `plugin/`, and the nudge's existing behaviour test passes against the new surface.
 
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -477,12 +477,12 @@ None. RFC-0005 closed the five it carried before this plan was cut.
 
 ## Related
 
-- [RFC-0005](../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) — the
+- [RFC-0005](../../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) — the
   design this plan implements, including the full `style` specification in §2.1.
-- [RFC-0006](../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md) — a local source for units,
+- [RFC-0006](../../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md) — a local source for units,
   which is how a style layer exists without being published. Independent of this plan.
-- [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — the decision Track
+- [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — the decision Track
   2's ADR succeeds.
-- [ADR-0013](../adr/0013-the-model-a-shipped-plugin-may-pin.md) — the policy whose one instance, the
+- [ADR-0013](../../adr/0013-the-model-a-shipped-plugin-may-pin.md) — the policy whose one instance, the
   `scaffolder` agent, Track 6 retires.
-- [Plan-033](shipped/033-one-artifact-one-governance.md) — the rule this plan extends past records.
+- [Plan-033](./033-one-artifact-one-governance.md) — the rule this plan extends past records.

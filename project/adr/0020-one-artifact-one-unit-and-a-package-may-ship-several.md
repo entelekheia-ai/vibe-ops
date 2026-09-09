@@ -105,5 +105,5 @@ modules coexist under one package is exercised when `governance-knowledge` is bu
   where `knowledge` is specified, and why it is one package with two units.
 - [RFC-0003](../rfc/0003-a-governance-type-as-a-pluggable-unit.md) — the `#type` fragment this decision
   puts to work.
-- [Plan-040](../plans/040-every-shipped-file-belongs-to-a-governance.md) — Track 2 is where the
+- [Plan-040](../plans/shipped/040-every-shipped-file-belongs-to-a-governance.md) — Track 2 is where the
   mechanism landed.
