@@ -87,9 +87,9 @@ test("a destination that already exists is kept, and named, unless it is forced"
   assert.match(await readFile(path.join(repo, "README.md"), "utf8"), /^# probe/);
 });
 
-// GOVERNANCE.md IS `shaped`: the rendered lifecycles are the tooling's, everything else is the
-// repository's, permanently. This is the test that would fail if a re-scaffold ever replaced the file.
-test("a second scaffold re-renders the lifecycles and keeps what the repository wrote around them", async () => {
+// GOVERNANCE.md IS `shaped`: the rendered map is the tooling's, everything else is the repository's,
+// permanently. This is the test that would fail if a re-scaffold ever replaced the file.
+test("a second scaffold re-renders the map and keeps what the repository wrote around it", async () => {
   const repo = await target();
   await run(repo, "scaffold", ["REPO_NAME=probe"]);
 
@@ -100,7 +100,39 @@ test("a second scaffold re-renders the lifecycles and keeps what the repository 
   const after = await readFile(file, "utf8");
   assert.match(after, /## Our own section/);
   assert.match(after, /Keep this\./);
-  assert.match(after, /### Plan/);
+  assert.match(after, /\| \*\*Plan\*\* \| How do we build X\?/);
+});
+
+// THE TWO DOCUMENTS DIVIDE THE SUBJECT rather than duplicating it: the map says which record answers
+// which question, the rule carries the mechanics. They each pointed at the other for what both had.
+test("the map and the rule are not copies of each other", async () => {
+  const repo = await target();
+  await run(repo, "scaffold", ["REPO_NAME=probe"]);
+
+  const map = await readFile(path.join(repo, "GOVERNANCE.md"), "utf8");
+  const rule = await readFile(path.join(repo, ".agents", "rules", "governance.md"), "utf8");
+
+  assert.match(map, /\| Artifact \| Question \| Lives in \| Lifecycle \|/);
+  assert.doesNotMatch(map, /### ADR \(/);
+  assert.match(rule, /### ADR \(`project\/adr\/`\)/);
+  assert.doesNotMatch(rule, /\| Artifact \| Question \|/);
+});
+
+// A DOCUMENT WITH A DELETED MARKER IS NOT WRITTEN OVER — it is refused, named, and the run exits
+// non-zero. Appending to it created a second BEGIN that paired across the repository's own prose.
+test("a damaged GOVERNANCE.md is refused rather than rewritten, and the run says so", async () => {
+  const repo = await target();
+  await run(repo, "scaffold", ["REPO_NAME=probe"]);
+
+  const file = path.join(repo, "GOVERNANCE.md");
+  const damaged = (await readFile(file, "utf8")).replace("<!-- vibe-ops:lifecycles end -->", "MINE-BOTTOM");
+  await writeFile(file, damaged);
+
+  const { result, warnings } = await run(repo, "scaffold", [], { force: "GOVERNANCE.md" });
+  assert.equal(result.code, 1);
+  assert.ok(warnings.some((w) => w.includes("marker")), warnings.join(" | "));
+  assert.equal((result.data as { written: readonly string[] }).written.includes("GOVERNANCE.md"), false);
+  assert.match(await readFile(file, "utf8"), /MINE-BOTTOM/);
 });
 
 test("a directory this repository's types need is created even when every file already exists", async () => {

@@ -7,3 +7,5 @@
 
 A rejected RFC moves to `rejected/` rather than being deleted — it is the record of what was considered
 and why it was not done, which is the question a later reader arrives with.
+
+Illustrative code in an RFC communicates intent; it is not the implementation.

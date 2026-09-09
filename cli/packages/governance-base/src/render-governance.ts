@@ -34,6 +34,7 @@ export interface RenderableType {
   readonly unit: {
     readonly type: string;
     readonly title?: string;
+    readonly answers?: string;
     readonly dirs?: readonly string[];
     readonly numbered?: boolean;
     readonly pad?: number;
@@ -56,16 +57,46 @@ function titleOf(unit: RenderableType["unit"]): string {
   return unit.title ?? unit.type.charAt(0).toUpperCase() + unit.type.slice(1);
 }
 
-/** The `notes` fragment a package ships, or nothing. A declared-but-missing fragment is reported by the
- *  `facet-completeness` gate; here it is simply absent, because a renderer that throws would make one
- *  package's packaging mistake take down every other type's section too. */
-function notesFor(entry: RenderableType): string | undefined {
+/**
+ * The `notes` fragment a package ships, or nothing — and WHICH KIND of nothing.
+ *
+ * The distinction is the finding, not pedantry. A type that declares no `notes` has none; a type that
+ * declares one whose file is missing has a packaging fault, and reading both as "absent" made a
+ * notes-only type — the log, which has prose and no chain — lose its whole section from both governance
+ * documents of every consuming repository, with no output from any gate. `facet-completeness@3` now
+ * reports the missing file; this reports it in the document itself, because the gate runs where the
+ * package is developed and the document is read where it is installed.
+ *
+ * A renderer still never throws: one package's packaging mistake must not take down every other type's
+ * section.
+ */
+function notesFor(entry: RenderableType): { readonly body?: string; readonly problem?: string } {
   const relative = entry.unit.notes;
-  if (relative === undefined) return undefined;
+  if (relative === undefined) return {};
   const file = path.resolve(entry.root, relative);
-  if (!existsSync(file)) return undefined;
+  // CONTAINMENT IS CHECKED HERE BECAUSE HERE IS WHERE THE ROOT IS KNOWN. The parser cannot: a unit a
+  // repository declares under `.agents/` reaches its own templates through `../../`, legitimately. This
+  // reader's root is the package, and the content it returns is inlined verbatim into a document written
+  // into somebody else's repository — `notes: "../../../../etc/hosts"` parsed and was served.
+  if (path.relative(entry.root, file).startsWith("..")) {
+    return { problem: `declares \`notes: ${relative}\`, which leaves the package — nothing was read` };
+  }
+  if (!existsSync(file)) return { problem: `declares \`notes: ${relative}\` and does not ship it, so its prose is missing here` };
   const body = readFileSync(file, "utf8").replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim();
-  return body === "" ? undefined : body;
+  return body === "" ? { problem: `declares \`notes: ${relative}\` and ships it empty` } : { body };
+}
+
+/** The branch line under a chain — `└ from Accepted: Deprecated · Superseded (→ `superseded/`)`. One line
+ *  per origin, so a type branching from two statuses says so rather than collapsing them. */
+function branchLines(lifecycle: NonNullable<TypeUnit["lifecycle"]>): readonly string[] {
+  const branches = lifecycle.branches ?? [];
+  if (branches.length === 0) return [];
+  const byOrigin = new Map<string, string[]>();
+  for (const branch of branches) {
+    const label = branch.archive === undefined ? branch.status : `${branch.status} → ${branch.archive}/`;
+    byOrigin.set(branch.from, [...(byOrigin.get(branch.from) ?? []), label]);
+  }
+  return [...byOrigin].map(([from, labels]) => `└ from ${from}: ${labels.join(" · ")}`);
 }
 
 /**
@@ -83,18 +114,27 @@ export function renderTypeSection(entry: RenderableType): string | undefined {
   // write-once, so it has no status to be at. Requiring a chain here would have made its section vanish
   // from a document that has always carried it — or, worse, invited a status word to be invented for it,
   // which is the one thing this repository's own rule tells every reader not to do.
-  if (lifecycle === undefined && notes === undefined) return undefined;
+  //
+  // A DECLARED-BUT-MISSING FRAGMENT STILL RENDERS ITS HEADING, saying what is missing. Silence there is
+  // the failure mode this whole plan keeps finding: the section simply stopped existing, in every
+  // consuming repository, and every output stayed green.
+  if (lifecycle === undefined && notes.body === undefined && notes.problem === undefined) return undefined;
 
   const where = unit.dirs?.[0];
   const heading = where === undefined ? `### ${titleOf(unit)}` : `### ${titleOf(unit)} (\`${where}/\`)`;
+  const gap = notes.problem === undefined ? undefined : `*This type's package ${notes.problem}.*`;
 
   const lines: string[] = [heading, ""];
   if (lifecycle === undefined) {
-    if (notes !== undefined) lines.push(notes, "");
+    if (notes.body !== undefined) lines.push(notes.body, "");
+    if (gap !== undefined) lines.push(gap, "");
     return lines.join("\n");
   }
-  lines.push("```", lifecycle.chain.join(" → "), "```", "");
+  lines.push("```", [lifecycle.chain.join(" → "), ...branchLines(lifecycle)].join("\n"), "```", "");
 
+  // The chain printed above stops at `terminal`, so this sentence no longer contradicts it. It used to:
+  // `adr` declared `[Proposed, Accepted, Superseded]` with `terminal: "Accepted"`, and the section said
+  // "Accepted is terminal" two lines under a chain visibly continuing past it.
   const facts: string[] = [
     `Worked at **${lifecycle.active}**; **${lifecycle.terminal}** is terminal.`,
   ];
@@ -112,7 +152,8 @@ export function renderTypeSection(entry: RenderableType): string | undefined {
   facts.push(unit.numbered === false ? "Not numbered." : `Numbered, ${unit.pad ?? 3} digits, monotonic and never renumbered.`);
   lines.push(facts.join(" "), "");
 
-  if (notes !== undefined) lines.push(notes, "");
+  if (notes.body !== undefined) lines.push(notes.body, "");
+  if (gap !== undefined) lines.push(gap, "");
 
   return lines.join("\n");
 }
@@ -120,6 +161,31 @@ export function renderTypeSection(entry: RenderableType): string | undefined {
 /** Every activated type that declares a lifecycle, in the order given. */
 function sections(types: readonly RenderableType[]): readonly string[] {
   return types.map(renderTypeSection).filter((section): section is string => section !== undefined);
+}
+
+/**
+ * The map table — which record answers which question, and where it lives.
+ *
+ * IT IS RENDERED FOR THE SAME REASON THE LIFECYCLES ARE. This was a static five-row block in a
+ * scaffolded `GOVERNANCE.md`, so a repository binding a sixth type carried a map confidently describing
+ * five; it was then lost entirely when the template moved into the packages, which is the loss this
+ * restores. A type declaring no `answers` contributes no row rather than an invented one — an empty
+ * table renders as nothing at all.
+ */
+export function renderMapTable(types: readonly RenderableType[]): string | undefined {
+  const rows = types
+    .filter((entry) => entry.unit.answers !== undefined)
+    .map((entry) => {
+      const where = entry.unit.dirs?.[0];
+      // The chain, compactly — the successor to the old table's `Ratified?` column. It is the ONE
+      // lifecycle fact this document keeps: enough for a reader to see whether a type is ratified or
+      // write-once without opening the rule, and short enough that the rule stays the place the
+      // mechanics live rather than a second copy of them.
+      const chain = entry.unit.lifecycle === undefined ? "write-once" : entry.unit.lifecycle.chain.join(" → ");
+      return `| **${titleOf(entry.unit)}** | ${entry.unit.answers!} | ${where === undefined ? "—" : `\`${where}/\``} | ${chain} |`;
+    });
+  if (rows.length === 0) return undefined;
+  return ["| Artifact | Question | Lives in | Lifecycle |", "|---|---|---|---|", ...rows].join("\n");
 }
 
 /**
@@ -145,22 +211,66 @@ export function renderGovernanceRule(types: readonly RenderableType[], preamble:
 }
 
 /**
- * `GOVERNANCE.md` — `shaped`. The rendered lifecycles replace whatever stands between the markers, and
- * every other line of the file survives untouched. A file with no markers yet gets them appended once,
- * which is what makes the first promulgation into an existing repository additive rather than a
- * replacement of a document somebody wrote.
+ * `GOVERNANCE.md` — `shaped`. The rendered block replaces whatever stands between the markers, and every
+ * other line of the file survives untouched. A file with NEITHER marker gets them appended once, which is
+ * what makes the first promulgation into an existing repository additive rather than a replacement of a
+ * document somebody wrote. Any other marker count is a damaged document and is refused.
+ *
+ * The block carries two things: the map table — which record answers which question, where it lives and
+ * what its chain is — and `map`, the type-agnostic prose `governance-base` ships about how the records
+ * relate. The first is a function of what is activated; the second is a paragraph, and the same argument
+ * that keeps `lifecycle.notes` prose keeps this one.
  */
-export function renderGovernanceDoc(types: readonly RenderableType[], existing: string | undefined): string {
-  const block = [GOVERNANCE_BEGIN, "", sections(types).join("\n").trimEnd(), "", GOVERNANCE_END].join("\n");
+export type GovernanceDocResult =
+  | { readonly ok: true; readonly content: string }
+  | { readonly ok: false; readonly refusal: string };
+
+function count(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
+}
+
+export function renderGovernanceDoc(
+  types: readonly RenderableType[],
+  existing: string | undefined,
+  map?: string,
+): GovernanceDocResult {
+  // THE LIFECYCLE SECTIONS ARE DELIBERATELY NOT HERE. Both documents carried them, so `GOVERNANCE.md`
+  // was a strict subset of the rule while each pointed at the other for what it did not have — the rule's
+  // preamble sending readers here "for the what and why", at a document that had none. This is the map:
+  // which record answers which question, where it lives, and its chain in one cell. The mechanics are the
+  // rule's, which is what both pointers now truthfully say.
+  const body = [renderMapTable(types), map?.trim()].filter((part): part is string => part !== undefined && part !== "");
+  const block = [GOVERNANCE_BEGIN, "", body.join("\n\n"), "", GOVERNANCE_END].join("\n");
 
   if (existing === undefined || existing.trim() === "") {
-    return `# Governance\n\nWhich record answers which question, and how each one's life goes.\n\n${block}\n`;
+    return { ok: true, content: `# Governance\n\nHow decisions and work are recorded in this repository.\n\n${block}\n` };
   }
 
+  // EXACTLY ONE WELL-ORDERED PAIR, OR NOTHING TO REPLACE. `indexOf` on each marker independently was the
+  // whole defect: a document that had lost its END — one deleted line — took the append path, and the
+  // orphan BEGIN then paired with the appended one across the repository's own prose, which the NEXT
+  // render silently deleted. So the append path is reachable only from a document carrying neither
+  // marker, and every other count is a damaged document this refuses to write over.
+  const begins = count(existing, GOVERNANCE_BEGIN);
+  const ends = count(existing, GOVERNANCE_END);
+  if (begins === 0 && ends === 0) {
+    return { ok: true, content: `${existing.trimEnd()}\n\n${block}\n` };
+  }
+  if (begins !== 1 || ends !== 1) {
+    return {
+      ok: false,
+      refusal:
+        `GOVERNANCE.md carries ${begins} \`lifecycles begin\` marker(s) and ${ends} \`lifecycles end\` — exactly one of each is` +
+        ` the shape this can render into. Repair the markers by hand; rendering over this would take the prose between them.`,
+    };
+  }
   const begin = existing.indexOf(GOVERNANCE_BEGIN);
   const end = existing.indexOf(GOVERNANCE_END);
-  if (begin === -1 || end === -1 || end < begin) {
-    return `${existing.trimEnd()}\n\n${block}\n`;
+  if (end < begin) {
+    return {
+      ok: false,
+      refusal: "GOVERNANCE.md carries its `lifecycles end` marker before its `lifecycles begin` — repair the order by hand.",
+    };
   }
-  return `${existing.slice(0, begin)}${block}${existing.slice(end + GOVERNANCE_END.length)}`;
+  return { ok: true, content: `${existing.slice(0, begin)}${block}${existing.slice(end + GOVERNANCE_END.length)}` };
 }

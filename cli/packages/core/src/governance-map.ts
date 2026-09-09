@@ -126,13 +126,34 @@ export interface ActivatedGovernance {
     readonly template?: string;
     readonly authoring?: string;
     readonly migrations?: string;
+    /**
+     * The rendered-document half of the manifest — Plan-040 Track 6. Declared here because the
+     * `facet-completeness` gate reads every path a manifest states, and `notes` is the one whose absence
+     * was invisible: a type declaring a fragment it does not ship lost its whole section from both
+     * governance documents of every consuming repository with every output still green. Core still
+     * verifies only what it reads; these are read.
+     */
+    readonly notes?: string;
+    readonly title?: string;
+    readonly answers?: string;
+    readonly numbered?: boolean;
+    readonly pad?: number;
+    readonly lifecycle?: {
+      readonly chain: readonly string[];
+      readonly active: string;
+      readonly terminal: string;
+      readonly branches?: readonly { readonly from: string; readonly status: string; readonly archive?: string }[];
+      readonly living?: readonly string[];
+      readonly archive?: string;
+      readonly immutableFrom?: string;
+    };
     /** Named policy files this package serves through `records norm --facet policy --name <key>`. */
     readonly facets?: Readonly<Record<string, string>>;
     /** What this package writes into a scaffolded repository — Plan-040 Track 6. Verified structurally
      *  by the parser that produced it; core reads only what it needs to locate each file. */
     readonly scaffold?: {
       readonly dir: string;
-      readonly files: readonly { readonly from: string; readonly to: string }[];
+      readonly files: readonly { readonly from: string; readonly to: string; readonly shape?: string }[];
       readonly placeholders?: readonly string[];
     };
     /** A style package's documented artefact list — advisory, RFC-0005 §2.1; read by `composeStylePolicy`

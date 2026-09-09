@@ -30,8 +30,8 @@ const STAMP = /^vibe-ops-reference: [A-Za-z0-9_/-]+@[0-9]+$/m;
 export default defineGate(
   {
     id: "facet-completeness",
-    version: 2,
-    summary: "Every facet and scaffold file an activated governance declares exists, and every facet says which version it is",
+    version: 3,
+    summary: "Every file an activated governance declares exists, stays inside the package, and every facet says which version it is",
   },
   async ({ repoRoot }) => {
     const { config } = await loadConfig(repoRoot);
@@ -49,6 +49,13 @@ export default defineGate(
       for (const [name, relative] of Object.entries(activated.unit.facets ?? {})) {
         examined += 1;
         const file = path.resolve(activated.root, relative);
+        if (path.relative(activated.root, file).startsWith("..")) {
+          findings.push({
+            rule: "facet-completeness",
+            evidence: `${type} declares facets.${name} = ${relative}, which leaves ${activated.root} — the package cannot serve a file it does not ship`,
+          });
+          continue;
+        }
         if (!existsSync(file)) {
           findings.push({
             rule: "facet-completeness",
@@ -65,6 +72,39 @@ export default defineGate(
         }
       }
 
+      // EVERY OTHER PATH THE MANIFEST DECLARES, for the reason `notes` proved. Only `facets` was
+      // checked, so a package could declare `notes: ./lifecycle-notes.md`, ship no such file, and lose
+      // its whole section from both governance documents of every consuming repository with this gate
+      // still reporting a clean run. The three record paths read the same way — a `template` that
+      // resolves to nothing fails at `/vibe-ops:new`, in somebody else's tree.
+      for (const [field, relative] of [
+        ["notes", activated.unit.notes],
+        ["template", activated.unit.template],
+        ["authoring", activated.unit.authoring],
+        ["migrations", activated.unit.migrations],
+      ] as const) {
+        if (relative === undefined) continue;
+        examined += 1;
+        const file = path.resolve(activated.root, relative);
+        // CONTAINMENT, WHERE THE ROOT IS KNOWN. The parser refuses only an absolute path, because a unit
+        // a repository declares under `.agents/` legitimately reaches its own templates through `../../`.
+        // An ACTIVATED package's root is the package, and a path leaving it reads a file the package does
+        // not ship — for `notes` that file is then inlined into a consumer's `GOVERNANCE.md`.
+        if (path.relative(activated.root, file).startsWith("..")) {
+          findings.push({
+            rule: "facet-completeness",
+            evidence: `${type} declares ${field} = ${relative}, which leaves ${activated.root} — the package cannot serve a file it does not ship`,
+          });
+          continue;
+        }
+        if (!existsSync(file)) {
+          findings.push({
+            rule: "facet-completeness",
+            evidence: `${type} declares ${field} = ${relative}, which does not exist in ${activated.root}`,
+          });
+        }
+      }
+
       // The same question asked of the other thing a package declares and ships. A scaffold entry names
       // a file it will write into someone else's repository, so a `from` that resolves to nothing fails
       // at the moment of use, in a tree that is not this one and with nobody here to read the error.
@@ -77,6 +117,17 @@ export default defineGate(
           findings.push({
             rule: "scaffold-completeness",
             evidence: `${type} declares the scaffold file ${entry.from} → ${entry.to}, and ${entry.from} does not exist under ${scaffold.dir}`,
+          });
+        }
+        // A `to` IS A PATH INTO SOMEBODY ELSE'S REPOSITORY. The parser refuses one that leaves it, and
+        // the assertion is repeated here because a manifest is data a third party ships (RFC-0003) and
+        // the parser is not the only way one is read — a package built against an older parser reaches
+        // the writer with no check between.
+        const landing = path.resolve("/target", entry.to);
+        if (path.isAbsolute(entry.to) || path.relative("/target", landing).startsWith("..")) {
+          findings.push({
+            rule: "scaffold-completeness",
+            evidence: `${type} declares the scaffold file ${entry.from} → ${entry.to}, which leaves the repository it would be written into`,
           });
         }
       }

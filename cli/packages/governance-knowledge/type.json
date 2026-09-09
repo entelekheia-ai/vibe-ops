@@ -2,6 +2,7 @@
   "units": [
     {
       "type": "log",
+      "answers": "How we got here \u2014 context no other record holds",
       "template": "./templates/log.md",
       "authoring": "./authoring.md",
       "migrations": "./migrations",
@@ -27,6 +28,7 @@
     },
     {
       "type": "learning",
+      "answers": "What the work taught, kept where it can be reused",
       "template": "./templates/learning.md",
       "authoring": "./authoring.md",
       "migrations": "./migrations-learning",

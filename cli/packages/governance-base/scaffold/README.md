@@ -37,5 +37,10 @@ npm test
 
 ## License
 
-{{LICENSE_ID}} — see [LICENSE](LICENSE). Governance & decisions: [`project/`](project/) (see
+<!-- `LICENSE` is not written by the scaffold: which licence a repository carries is a choice, and
+     `governance-license` writes the real text once you have made it. Link the file here after that,
+     never before — a link to a file nobody wrote is the one thing this repository's own gate fails on
+     the first run. -->
+
+{{LICENSE_ID}}. Governance & decisions: [`project/`](project/) (see
 [`GOVERNANCE.md`](GOVERNANCE.md)). Docs: [`docs/`](docs/). Agent tooling: install the `vibe-ops` plugin.

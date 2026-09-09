@@ -35,8 +35,3 @@ count of living ones.
 **A rule, a reference or a skill MUST describe the present**, leaving what a template no longer has to the
 migration note — the one document whose subject is a change. An absence **MUST** be written as what the
 record does carry rather than as the name of the section that left.
-
-### Research (`project/research/`)
-
-Investigations that feed a decision — spikes, comparisons, gap analyses. Input to an RFC/ADR, not a
-commitment to build and not a record of what was decided (that's `log/` or the ADR itself).

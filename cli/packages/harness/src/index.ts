@@ -4,7 +4,7 @@
 // split are separate tracks and are not this module's job.
 
 import { defineModule } from "@entelekheia/vibe-ops-core";
-import { installHarness } from "./install.ts";
+import { installHarness, HARNESS_OPTIONS } from "./install.ts";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
@@ -66,13 +66,18 @@ export default defineModule(
       },
       {
         name: "install",
-        summary: "write the commit gate's four files into the repository you name, keeping whatever is already there",
+        summary: "write the commit gate into the repository you name, keeping whatever is already there",
         destructive: true,
         // It CREATES, so its positional is the path itself and is required — walking up to the enclosing
         // git toplevel would install a gate into a checkout the caller never named.
         literalTargetArg: true,
         flags: [
           { name: "force", type: "string", description: "overwrite this destination even though it exists; comma-separated" },
+          {
+            name: "include",
+            type: "string",
+            description: `also install these, comma-separated: ${HARNESS_OPTIONS.join(", ")} — off by default, each changes what somebody's clone does`,
+          },
         ],
       },
       {
@@ -239,25 +244,41 @@ export default defineModule(
     }
 
     if (context.command === "install") {
-      const force = new Set(
-        String(context.flags["force"] ?? "")
-          .split(",")
-          .map((entry) => entry.trim())
-          .filter((entry) => entry !== ""),
-      );
-      const result = installHarness(context.repoRoot, { force });
+      const commaSet = (flag: string) =>
+        new Set(
+          String(context.flags[flag] ?? "")
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry !== ""),
+        );
+      const force = commaSet("force");
+      const include = commaSet("include");
+      const unknown = [...include].filter((name) => !HARNESS_OPTIONS.includes(name as (typeof HARNESS_OPTIONS)[number]));
+      if (unknown.length > 0) {
+        return { code: 2, summary: `harness install has nothing called ${unknown.join(", ")} to include — valid: ${HARNESS_OPTIONS.join(", ")}` };
+      }
+
+      const result = installHarness(context.repoRoot, { force, include });
       if (context.surface === "cli" && context.flags["json"] !== true) {
         for (const file of result.written) context.log(`wrote ${file}`);
         for (const file of result.kept) context.log(`kept ${file} — already there; --force ${file} to overwrite`);
+        // NAMED, NOT OMITTED. "The gate is installed" and "every commit runs it" are different claims,
+        // and a run that quietly wrote neither the hook nor the workflow reads as the first while being
+        // only the second.
+        for (const entry of result.offered) {
+          context.log(`offered ${entry.to} — not installed; --include ${entry.option} adds it`);
+        }
         for (const file of result.needsAppend) {
           context.warn(
-            `${file} exists and does not call \`vibe-ops check\` — append the gate to it rather than replacing it, or the gate is not installed`,
+            `${file} exists and does not call the gate — append the gate to it rather than replacing it, or the gate is not installed`,
           );
         }
       }
       return {
         code: 0,
-        summary: `${result.written.length} written, ${result.kept.length} kept${result.needsAppend.length > 0 ? ", 1 hook needs the gate appended" : ""}`,
+        summary:
+          `${result.written.length} written, ${result.kept.length} kept, ${result.offered.length} offered` +
+          `${result.needsAppend.length > 0 ? ", 1 hook needs the gate appended" : ""}`,
         data: result,
       };
     }

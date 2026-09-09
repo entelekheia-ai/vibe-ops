@@ -34,6 +34,13 @@ export interface Composition {
   /** A package a binding names and that did not resolve. Reported, never silently skipped: a scaffold
    *  missing one governance's contribution is not the scaffold anybody asked for. */
   readonly unresolved: readonly string[];
+  /**
+   * A file the composition WOULD have written and will not, with the reason. Distinct from `unresolved`,
+   * which is about a binding: this is about a destination — a `GOVERNANCE.md` whose markers are damaged,
+   * or a frame fragment the base package does not ship. A refusal makes the verb exit non-zero, because
+   * a scaffold that omitted a document nobody was told about is the failure this plan keeps finding.
+   */
+  readonly refusals: readonly string[];
 }
 
 const PLACEHOLDER = /\{\{([A-Z0-9_]+)\}\}/g;
@@ -132,18 +139,43 @@ export async function compose(
     }
   }
 
-  // The two documents that describe the lifecycles of whatever is activated. The preamble is prose
-  // `governance-base` ships; without it the rule would be sections with no frame, so its absence is a
-  // reason not to write the file at all rather than to write half of one.
+  // The two documents that describe whatever is activated. Both are framed by prose `governance-base`
+  // ships: the rule opens with the preamble, `GOVERNANCE.md` closes with the map. Without the preamble
+  // the rule would be sections with no frame, so its absence is a reason not to write the file at all
+  // rather than to write half of one — BUT NOT SILENTLY. Returning a composition quietly missing both
+  // governance documents is the same class of failure as a binding that does not resolve, so it is
+  // reported the same way.
   const base = types.find((t) => t.unit.type === "base");
-  const preambleFile = base === undefined ? undefined : path.resolve(base.root, "scaffold", "governance-preamble.md");
-  if (preambleFile !== undefined && existsSync(preambleFile)) {
-    const rule = renderGovernanceRule(types, readFileSync(preambleFile, "utf8"));
-    files.push({ to: ".agents/rules/governance.md", origin: "rendered", content: rule, placeholders: [] });
+  const fragment = (name: string): string | undefined => {
+    if (base === undefined) return undefined;
+    const file = path.resolve(base.root, "scaffold", name);
+    return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+  };
+  const refusals: string[] = [];
 
-    const doc = renderGovernanceDoc(types, options.existingGovernanceDoc);
-    files.push({ to: "GOVERNANCE.md", origin: "rendered", content: doc, placeholders: [] });
+  if (base === undefined) {
+    refusals.push("no activated governance declares the type `base`, so neither governance document can be framed");
+  } else {
+    const preamble = fragment("governance-preamble.md");
+    if (preamble === undefined) {
+      refusals.push(`${base.packageName} ships no scaffold/governance-preamble.md — the rule's frame, so the rule is not written`);
+    } else {
+      const rule = renderGovernanceRule(types, preamble);
+      files.push({ to: ".agents/rules/governance.md", origin: "rendered", content: rule, placeholders: [] });
+    }
+
+    const map = fragment("governance-map.md");
+    if (map === undefined) {
+      refusals.push(`${base.packageName} ships no scaffold/governance-map.md — the map half of GOVERNANCE.md, so the document is not written`);
+    } else {
+      const doc = renderGovernanceDoc(types, options.existingGovernanceDoc, map);
+      if (doc.ok) {
+        files.push({ to: "GOVERNANCE.md", origin: "rendered", content: doc.content, placeholders: [] });
+      } else {
+        refusals.push(doc.refusal);
+      }
+    }
   }
 
-  return { files, directories, unresolved };
+  return { files, directories, unresolved, refusals };
 }

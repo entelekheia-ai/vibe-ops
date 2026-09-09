@@ -7,20 +7,67 @@
   "scaffold": {
     "dir": "./scaffold",
     "files": [
-      { "from": "README.md", "to": "README.md" },
-      { "from": "gitignore", "to": ".gitignore" },
-      { "from": "editorconfig", "to": ".editorconfig" },
-      { "from": "docs/README.md", "to": "docs/README.md" },
-      { "from": "docs/tutorials/README.md", "to": "docs/tutorials/README.md" },
-      { "from": "docs/how-to/README.md", "to": "docs/how-to/README.md" },
-      { "from": "docs/reference/README.md", "to": "docs/reference/README.md" },
-      { "from": "docs/explanation/README.md", "to": "docs/explanation/README.md" },
-      { "from": "package.pkg.json", "to": "package.json", "shape": "package" },
-      { "from": "package.workspace.json", "to": "package.json", "shape": "workspace" },
-      { "from": "tsconfig.base.json", "to": "tsconfig.base.json" },
-      { "from": "tsconfig.build.json", "to": "tsconfig.build.json" }
+      {
+        "from": "AGENTS.md",
+        "to": "AGENTS.md"
+      },
+      {
+        "from": "README.md",
+        "to": "README.md"
+      },
+      {
+        "from": "gitignore",
+        "to": ".gitignore"
+      },
+      {
+        "from": "editorconfig",
+        "to": ".editorconfig"
+      },
+      {
+        "from": "docs/README.md",
+        "to": "docs/README.md"
+      },
+      {
+        "from": "docs/tutorials/README.md",
+        "to": "docs/tutorials/README.md"
+      },
+      {
+        "from": "docs/how-to/README.md",
+        "to": "docs/how-to/README.md"
+      },
+      {
+        "from": "docs/reference/README.md",
+        "to": "docs/reference/README.md"
+      },
+      {
+        "from": "docs/explanation/README.md",
+        "to": "docs/explanation/README.md"
+      },
+      {
+        "from": "package.pkg.json",
+        "to": "package.json",
+        "shape": "package"
+      },
+      {
+        "from": "package.workspace.json",
+        "to": "package.json",
+        "shape": "workspace"
+      },
+      {
+        "from": "tsconfig.base.json",
+        "to": "tsconfig.base.json"
+      },
+      {
+        "from": "tsconfig.build.json",
+        "to": "tsconfig.build.json"
+      }
     ],
-    "placeholders": ["REPO_NAME", "ONE_LINE_DESCRIPTION", "PKG_NAME", "LICENSE_ID"]
+    "placeholders": [
+      "REPO_NAME",
+      "ONE_LINE_DESCRIPTION",
+      "PKG_NAME",
+      "LICENSE_ID"
+    ]
   },
   "numbered": false,
   "dirs": []

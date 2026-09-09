@@ -64,6 +64,24 @@ export interface TypeUnitScaffold {
   readonly placeholders?: readonly string[];
 }
 
+/**
+ * A status that leaves the spine — an ADR's `Deprecated`, an RFC's `Rejected`.
+ *
+ * IT IS NOT A LINK IN THE CHAIN, and flattening it into one is what this field exists to stop. `adr`
+ * shipped `chain: [Proposed, Accepted, Superseded]` with `terminal: "Accepted"`, so the rendered section
+ * printed a chain continuing two names past its own declared terminal, and `Deprecated` — which the
+ * type's template still offers — had nowhere to be at all. Two of the five shipped types have a branch;
+ * a chain that can only be a line misrepresents both.
+ */
+export interface TypeUnitBranch {
+  /** The chain status a record leaves from. */
+  readonly from: string;
+  /** What it becomes. Deliberately NOT required to be in `chain` — a branch is what the chain is not. */
+  readonly status: string;
+  /** Where such a record goes, relative to the type's own directory. An RFC's `rejected/`. */
+  readonly archive?: string;
+}
+
 /** The status chain a record of this type moves through, and what the chain implies. */
 export interface TypeUnitLifecycle {
   /** Every status, in order. */
@@ -72,6 +90,8 @@ export interface TypeUnitLifecycle {
   readonly active: string;
   /** Where the chain stops. */
   readonly terminal: string;
+  /** Statuses that leave the spine, each naming what it leaves from. */
+  readonly branches?: readonly TypeUnitBranch[];
   /** Headings maintained while the work happens rather than written at the end. */
   readonly living?: readonly string[];
   /** Where a record goes once terminal, relative to the type's own directory. */
@@ -126,6 +146,15 @@ export interface TypeUnit {
    * unrepresentable.
    */
   readonly notes?: string;
+  /**
+   * The one-line question a record of this type answers — "Should we do X, and how?" for an RFC.
+   *
+   * It is the row this type contributes to `GOVERNANCE.md`'s map table, and it is DATA for the same
+   * reason `lifecycle` is: the table was a static five-row block in a scaffolded template, so a
+   * repository that bound a sixth type had a map confidently describing five. A type that declares none
+   * contributes no row rather than an invented one.
+   */
+  readonly answers?: string;
   readonly numbered: boolean;
   readonly pad: number;
   readonly depth: number;
@@ -138,6 +167,36 @@ function requireString(parsed: Record<string, unknown>, field: string, file: str
   const value = parsed[field];
   if (typeof value !== "string" || value === "") {
     throw new RecordsConfigError(`${file} declares no ${field} — a type unit must name it`);
+  }
+  return value;
+}
+
+/**
+ * A path a manifest declares is RELATIVE to that manifest. An absolute one is refused here.
+ *
+ * WHY ONLY ABSOLUTE, AND NOT `..`. `scaffold.files[].to` refuses both, and rightly: a `to` is a
+ * destination inside a target repository, so leaving it is always wrong. Every other path is a SOURCE,
+ * resolved against a root this parser does not know — a package root for an installed governance, the
+ * repository root for a unit a repository declares under `.agents/`, where `../../templates/x.md` is
+ * the ordinary spelling. So containment is checked by each reader, which knows its root
+ * (`notesFor` in the renderer, the `facet-completeness` gate for the rest); what is knowable here is
+ * that a manifest may not name a path on the machine.
+ */
+function requireRelativePath(value: string, field: string, file: string): string {
+  if (path.isAbsolute(value)) {
+    throw new RecordsConfigError(
+      `${file} declares ${field} = ${JSON.stringify(value)}, an absolute path — a manifest names paths relative to itself`,
+    );
+  }
+  return value;
+}
+
+/** A single line, for a field that reaches a rendered heading or table cell. A `title` carrying a newline
+ *  put a second `##` heading into a consumer's `GOVERNANCE.md`, which a heading-drift or budget check
+ *  then read as the repository's own — so the refusal is here, where the data enters. */
+function requireOneLine(value: string, field: string, file: string): string {
+  if (/[\r\n]/.test(value)) {
+    throw new RecordsConfigError(`${file} declares ${field} spanning more than one line — it is rendered inline`);
   }
   return value;
 }
@@ -157,7 +216,7 @@ function parseFacets(parsed: Record<string, unknown>, file: string): Readonly<Re
     if (typeof path_ !== "string" || path_ === "") {
       throw new RecordsConfigError(`${file} declares facets.${name} as something other than a non-empty path string`);
     }
-    facets[name] = path_;
+    facets[name] = requireRelativePath(path_, `facets.${name}`, file);
   }
   return facets;
 }
@@ -198,6 +257,19 @@ function parseLifecycle(parsed: Record<string, unknown>, file: string, type: str
     return status;
   };
 
+  // TERMINAL IS WHERE THE CHAIN STOPS, so it is the chain's last link or the chain is not a chain. The
+  // rendered section prints the whole chain and then says which status is terminal, and `adr` declared
+  // `[Proposed, Accepted, Superseded]` with `terminal: "Accepted"` — a document telling its reader the
+  // record ends two names before its own diagram does. A status past the terminal is a BRANCH; the field
+  // for it is below.
+  const declaredTerminal = declared("terminal");
+  if (declaredTerminal !== undefined && declaredTerminal !== statuses[statuses.length - 1]) {
+    throw new RecordsConfigError(
+      `${file} declares lifecycle.terminal = ${JSON.stringify(declaredTerminal)} with the chain continuing past it` +
+        ` (${statuses.join(" → ")}) — a status a record reaches after the terminal one is a branch, not a link`,
+    );
+  }
+
   const living = raw.living;
   if (living !== undefined && (!Array.isArray(living) || living.some((s) => typeof s !== "string"))) {
     throw new RecordsConfigError(`${file} declares an invalid lifecycle.living — the living sections are a list of heading names`);
@@ -206,15 +278,52 @@ function parseLifecycle(parsed: Record<string, unknown>, file: string, type: str
   if (archive !== undefined && (typeof archive !== "string" || archive === "")) {
     throw new RecordsConfigError(`${file} declares an invalid lifecycle.archive — the archival directory is a relative path or absent`);
   }
-  const immutableFrom = declared("terminal") === undefined ? undefined : raw.immutableFrom;
+  // UNCONDITIONAL. It was guarded by `declared("terminal") !== undefined`, which has nothing to do with
+  // this field: a manifest declaring `immutableFrom` and letting `terminal` default had the field
+  // silently dropped AND skipped this validation, so a status in no chain parsed clean. Latent only
+  // because all four shipped types declare `terminal`.
+  const immutableFrom = raw.immutableFrom;
   if (immutableFrom !== undefined && (typeof immutableFrom !== "string" || !statuses.includes(immutableFrom))) {
     throw new RecordsConfigError(`${file} declares lifecycle.immutableFrom = ${JSON.stringify(immutableFrom)}, which is not one of its own chain`);
   }
+
+  const branches = raw.branches;
+  if (branches !== undefined && !Array.isArray(branches)) {
+    throw new RecordsConfigError(`${file} declares an invalid lifecycle.branches — a list of { from, status, archive? }, or none`);
+  }
+  const parsedBranches = (branches as readonly unknown[] | undefined)?.map((entry, index) => {
+    const candidate = entry as { from?: unknown; status?: unknown; archive?: unknown } | null;
+    if (typeof candidate !== "object" || candidate === null || typeof candidate.status !== "string" || candidate.status === "") {
+      throw new RecordsConfigError(`${file} declares lifecycle.branches[${index}] with no status — the name a record takes when it leaves the chain`);
+    }
+    // `from` MUST be in the chain and `status` MUST NOT: a branch that leaves from nowhere cannot be
+    // rendered against the chain above it, and one whose status is already a link is a chain edit
+    // written in the wrong field.
+    if (typeof candidate.from !== "string" || !statuses.includes(candidate.from)) {
+      throw new RecordsConfigError(
+        `${file} declares lifecycle.branches[${index}].from = ${JSON.stringify(candidate.from)}, which is not one of its own chain (${statuses.join(" → ")})`,
+      );
+    }
+    if (statuses.includes(candidate.status)) {
+      throw new RecordsConfigError(
+        `${file} declares lifecycle.branches[${index}].status = ${JSON.stringify(candidate.status)}, which is already in the chain — a branch is what the chain is not`,
+      );
+    }
+    if (candidate.archive !== undefined && (typeof candidate.archive !== "string" || candidate.archive === "")) {
+      throw new RecordsConfigError(`${file} declares an invalid lifecycle.branches[${index}].archive — a relative directory, or none`);
+    }
+    return {
+      from: candidate.from,
+      status: candidate.status,
+      ...(candidate.archive === undefined ? {} : { archive: candidate.archive as string }),
+    };
+  });
 
   return {
     chain: statuses,
     active: declared("active") ?? statuses[Math.min(1, statuses.length - 1)]!,
     terminal: declared("terminal") ?? statuses[statuses.length - 1]!,
+    ...(parsedBranches === undefined ? {} : { branches: parsedBranches }),
     ...(living === undefined ? {} : { living: living as readonly string[] }),
     ...(archive === undefined ? {} : { archive: archive as string }),
     ...(immutableFrom === undefined ? {} : { immutableFrom: immutableFrom as string }),
@@ -375,9 +484,9 @@ function parseUnitObject(parsed: Record<string, unknown>, file: string): TypeUni
   // types only, so nothing downstream would notice. A unit that carries a record carries all three.
   const declaresRecord = parsed.template !== undefined || parsed.authoring !== undefined || parsed.migrations !== undefined;
   const policyOnly = facets !== undefined && Object.keys(facets).length > 0 && !declaresRecord;
-  const template = policyOnly ? undefined : requireString(parsed, "template", file);
-  const authoring = policyOnly ? undefined : requireString(parsed, "authoring", file);
-  const migrations = policyOnly ? undefined : requireString(parsed, "migrations", file);
+  const template = policyOnly ? undefined : requireRelativePath(requireString(parsed, "template", file), "template", file);
+  const authoring = policyOnly ? undefined : requireRelativePath(requireString(parsed, "authoring", file), "authoring", file);
+  const migrations = policyOnly ? undefined : requireRelativePath(requireString(parsed, "migrations", file), "migrations", file);
 
   // OPTIONAL, because not every governed type has records carrying metadata. A licence and a
   // classification policy are data the tooling owns and hands out; neither has a header table nor
@@ -399,15 +508,24 @@ function parseUnitObject(parsed: Record<string, unknown>, file: string): TypeUni
   if (notes !== undefined && (typeof notes !== "string" || notes === "")) {
     throw new RecordsConfigError(`${file} declares an invalid notes — a path to a markdown fragment, or none`);
   }
+  if (notes !== undefined) requireRelativePath(notes as string, "notes", file);
 
   const title = parsed.title;
   if (title !== undefined && (typeof title !== "string" || title === "")) {
     throw new RecordsConfigError(`${file} declares an invalid title — how the type is written for a reader, or none`);
   }
+  if (title !== undefined) requireOneLine(title as string, "title", file);
+
+  const answers = parsed.answers;
+  if (answers !== undefined && (typeof answers !== "string" || answers === "")) {
+    throw new RecordsConfigError(`${file} declares an invalid answers — the one-line question this type answers, or none`);
+  }
+  if (answers !== undefined) requireOneLine(answers as string, "answers", file);
 
   return {
     type,
     ...(title === undefined ? {} : { title: title as string }),
+    ...(answers === undefined ? {} : { answers: answers as string }),
     ...(lifecycle === undefined ? {} : { lifecycle }),
     ...(targets === undefined ? {} : { targets }),
     ...(scaffold === undefined ? {} : { scaffold }),

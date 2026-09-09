@@ -1,5 +1,6 @@
 {
   "type": "plan",
+  "answers": "How do we build X?",
   "template": "./templates/plan.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
@@ -12,10 +13,17 @@
     ]
   },
   "lifecycle": {
-    "chain": ["Backlog", "In Progress", "Shipped"],
+    "chain": [
+      "Backlog",
+      "In Progress",
+      "Shipped"
+    ],
     "active": "In Progress",
     "terminal": "Shipped",
-    "living": ["Decision Log", "Outcomes & Retrospective"],
+    "living": [
+      "Decision Log",
+      "Outcomes & Retrospective"
+    ],
     "archive": "shipped"
   },
   "notes": "./lifecycle-notes.md",

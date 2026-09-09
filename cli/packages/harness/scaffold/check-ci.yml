@@ -1,6 +1,12 @@
-# A snapshot of the vibe-ops instruction-file validator, copied into this repository because CI cannot
-# reach an installed Claude Code plugin. It does not update itself — scripts/check-agents-md.sh says
-# where it came from and how to refresh it.
+# This repository's governance gate, run on every push and pull request.
+#
+# It runs `scripts/check.sh` — the same entrypoint `.githooks/pre-commit` runs, and the same one you run
+# by hand. There is deliberately no second copy of the checks here: a snapshot of the validator inside
+# the workflow is a file that goes stale silently, which is the failure this whole apparatus exists to
+# remove. `check.sh` also runs the fragments' own self-test first, so a check that has stopped detecting
+# anything fails loudly instead of reporting a clean tree.
+#
+# The gate is `vibe-ops` on PATH and there is no fallback, so CI installs it before running anything.
 
 name: check
 
@@ -10,16 +16,17 @@ on:
   pull_request:
 
 jobs:
-  agents-md:
+  gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # The validator's own acceptance criterion: it must fail on a repository that is broken.
-      # Running this first means a check that has silently stopped detecting anything fails loudly
-      # instead of reporting a clean tree.
-      - name: Validator self-test
-        run: ./scripts/check-agents-md.sh --self-test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-      - name: Instruction files
-        run: ./scripts/check-agents-md.sh
+      - name: Install the gate
+        run: npm install -g @entelekheia/vibe-ops-cli
+
+      - name: Governance gate
+        run: ./scripts/check.sh

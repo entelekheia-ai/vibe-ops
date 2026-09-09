@@ -10,7 +10,7 @@
 // promulgation may overwrite something (`harness sync`); this verb is the FIRST write into a repository,
 // where the honest default is that anything already there was put there by someone.
 
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, lstatSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { defineModule } from "@entelekheia/vibe-ops-core";
 import type { ModuleResult } from "@entelekheia/vibe-ops-core";
@@ -22,6 +22,38 @@ import type { PlannedFile } from "./compose.ts";
  *  where a name belongs is a file that looks finished and is not. */
 function substitute(content: string, values: Readonly<Record<string, string>>): string {
   return content.replace(/\{\{([A-Z0-9_]+)\}\}/g, (whole, name: string) => values[name] ?? whole);
+}
+
+/**
+ * The `.agents/` ↔ `.claude/` bridge, for the rules this run just wrote.
+ *
+ * WITHOUT IT THE RULES DO NOT LOAD. `.agents/` is canonical and Claude Code reads `.claude/`, so a
+ * scaffold that wrote `.agents/rules/governance.md` and stopped produced a repository carrying a rule
+ * nothing reads — the files were all there and the outcome was as if none of them were. The `bridge`
+ * gate does not catch it either: it SKIPS a repository with no `.claude/` at all, so the incomplete
+ * state is the one state nothing reports.
+ *
+ * RELATIVE, so the link survives a clone and a move. Only for a rule this run wrote: a link over
+ * something already there is a decision about somebody else's file, which this verb never makes.
+ */
+function bridge(repoRoot: string, written: readonly string[]): readonly string[] {
+  const linked: string[] = [];
+  for (const file of written) {
+    const match = /^\.agents\/rules\/([^/]+\.md)$/.exec(file);
+    if (match === null) continue;
+    const link = path.join(repoRoot, ".claude", "rules", match[1]!);
+    if (existsSync(link) || lstatSync(link, { throwIfNoEntry: false }) !== undefined) continue;
+    mkdirSync(path.dirname(link), { recursive: true });
+    symlinkSync(path.join("..", "..", ".agents", "rules", match[1]!), link);
+    linked.push(`.claude/rules/${match[1]!}`);
+  }
+  return linked;
+}
+
+/** The summary's tail when something was refused. The count goes in the one line every surface prints,
+ *  because a warning on stderr and a success summary on stdout is how a partial run reads as a whole one. */
+function refusalNote(refusals: readonly string[]): string {
+  return refusals.length === 0 ? "" : `, ${refusals.length} refused`;
 }
 
 function parseValues(args: readonly string[]): Readonly<Record<string, string>> {
@@ -83,15 +115,17 @@ export default defineModule(
         for (const dir of composition.directories) context.log(`${dir}/`);
         for (const file of rendered) context.log(`${file.to}  ← ${file.origin}`);
         for (const missing of composition.unresolved) context.warn(`${missing} does not resolve — its contribution is absent from this plan`);
+        for (const refusal of composition.refusals) context.warn(refusal);
         if (unanswered.length > 0) context.warn(`unanswered placeholders: ${unanswered.join(", ")}`);
       }
       return {
-        code: 0,
-        summary: `${rendered.length} file(s) from ${new Set(rendered.map((f) => f.origin)).size} source(s), ${composition.directories.length} directory(ies)`,
+        code: composition.refusals.length === 0 ? 0 : 1,
+        summary: `${rendered.length} file(s) from ${new Set(rendered.map((f) => f.origin)).size} source(s), ${composition.directories.length} directory(ies)${refusalNote(composition.refusals)}`,
         data: {
           directories: composition.directories,
           files: rendered.map(({ to, origin, placeholders }: PlannedFile) => ({ to, origin, placeholders })),
           unresolved: composition.unresolved,
+          refusals: composition.refusals,
           unanswered,
         },
       };
@@ -104,6 +138,10 @@ export default defineModule(
           .map((s) => s.trim())
           .filter((s) => s !== ""),
       );
+
+      // A FORCED PATH THAT NAMES NOTHING IS A TYPO, and it reads as "I forced it and it was kept anyway".
+      // Computed before the loop so it is reported whether or not that destination happened to exist.
+      const unmatchedForce = [...force].filter((name) => !rendered.some((file) => file.to === name));
 
       const written: string[] = [];
       const skipped: string[] = [];
@@ -125,16 +163,24 @@ export default defineModule(
         written.push(file.to);
       }
 
+      const bridged = bridge(context.repoRoot, written);
+
       if (context.surface === "cli" && context.flags["json"] !== true) {
         for (const file of written) context.log(`wrote ${file}`);
+        for (const link of bridged) context.log(`linked ${link}`);
         for (const file of skipped) context.log(`kept ${file} — already there; --force ${file} to overwrite`);
         for (const missing of composition.unresolved) context.warn(`${missing} does not resolve — its contribution was not written`);
+        for (const refusal of composition.refusals) context.warn(refusal);
+        for (const name of unmatchedForce) context.warn(`--force ${name} names no file this scaffold writes — nothing was overwritten for it`);
         if (unanswered.length > 0) context.warn(`unanswered placeholders left standing: ${unanswered.join(", ")}`);
       }
       return {
-        code: 0,
-        summary: `${written.length} written, ${skipped.length} kept, ${composition.directories.length} directory(ies)`,
-        data: { written, skipped, directories: composition.directories, unresolved: composition.unresolved, unanswered },
+        // A REFUSAL IS A NON-ZERO EXIT even though every other file landed. The run did part of what was
+        // asked and the operator has to know which part; a success code over a document that was not
+        // written is exactly the silence this apparatus exists to remove.
+        code: composition.refusals.length === 0 ? 0 : 1,
+        summary: `${written.length} written, ${skipped.length} kept, ${composition.directories.length} directory(ies)${refusalNote(composition.refusals)}`,
+        data: { written, linked: bridged, skipped, directories: composition.directories, unresolved: composition.unresolved, refusals: composition.refusals, unanswered },
       };
     }
 
