@@ -45,12 +45,24 @@ remembers.
 
 ## Install
 
+**Both halves, and the order does not matter — but neither half works alone.** The plugin's MCP server
+starts as `vibe-ops mcp` and seven of its nine hook registrations invoke `vibe-ops` by name, so a machine
+with only the plugin gets loud failures rather than a quiet degradation.
+
 ```bash
+npm i -g @entelekheia/vibe-ops-cli          # the CLI: `vibe-ops` on PATH, and the gate
+
 claude plugin marketplace add entelekheia-ai/vibe-ops
-claude plugin install vibe-ops@entelekheia
+claude plugin install vibe-ops@entelekheia  # the skills, agents and hooks
 ```
 
-Or try it from a local checkout with `claude --plugin-dir ./vibe-ops`.
+Verify the CLI answered, and from where:
+
+```bash
+readlink -f "$(command -v vibe-ops)" && vibe-ops --version
+```
+
+Or try the plugin from a local checkout with `claude --plugin-dir ./vibe-ops`.
 
 ## What `setup repo` produces
 

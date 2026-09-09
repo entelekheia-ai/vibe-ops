@@ -10,24 +10,34 @@ and the symptom is always the same: something behaving like an older version of 
 
 ## 1. The CLI
 
-From a clone of this repository:
-
 ```bash
-npm install                          # from the repository root — one node_modules for the whole tree
-npm run build                        # core builds first, explicitly; see cli/AGENTS.md for why
-npm link -w @entelekheia/vibe-ops-cli
+npm i -g @entelekheia/vibe-ops-cli
 ```
 
-`npm link` is what puts `vibe-ops` on `PATH` while resolving its unpublished internal dependencies from
-this workspace rather than from a registry.
+One command, twenty-one packages: the CLI declares what it needs and npm installs the closure. They are
+separate packages on purpose — a record type is a package name in `config.types`, so a repository can
+bind `plan` to its own and never resolve `@entelekheia/governance-plan`.
 
 Verify — and verify the *resolution*, not just that a binary answered:
 
 ```bash
 which vibe-ops
+readlink -f "$(command -v vibe-ops)"   # says which install answered: a global one, or a linked tree
 vibe-ops --version
-vibe-ops check .        # should report 17 checks against this repository, 0 failed
+vibe-ops check .        # against a repository with the harness, reports its checks and 0 failed
 ```
+
+**Working on vibe-ops itself is the other install, and only one can be on `PATH`.** From a clone:
+
+```bash
+npm install && npm run build          # core builds first, explicitly; see cli/AGENTS.md for why
+npm link -w @entelekheia/vibe-ops-cli
+```
+
+`npm link` points the binary at the working tree, so a rebuild is live. It replaces the global install
+and is replaced by one — which is why the `readlink` above is part of verifying, not a debugging step:
+the two are indistinguishable from `vibe-ops --version` alone whenever the tree and the registry carry
+the same number.
 
 ## 2. The plugin
 

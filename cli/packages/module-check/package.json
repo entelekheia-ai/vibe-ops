@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-module-check",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
   "description": "The governance gate as a vibe-ops module — budget, links, the rules bridge, licence texts",
   "type": "module",
   "license": "Apache-2.0",

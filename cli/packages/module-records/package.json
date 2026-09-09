@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-module-records",
   "version": "0.1.0",
-  "private": true,
   "description": "vibe-ops records — the generic resolver, for a type the noun modules do not own (adr, rfc)",
   "type": "module",
   "license": "Apache-2.0",

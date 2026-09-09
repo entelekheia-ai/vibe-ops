@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-style",
   "version": "0.1.0",
-  "private": true,
   "description": "The default style layer: how a generated document is written — phrasing, budget, tables, diagrams — plus one fragment per artefact it documents a delta for",
   "type": "module",
   "license": "Apache-2.0",

@@ -185,7 +185,7 @@ installed, so each one's first act is its own cheap exit.
 
 The `command` names `vibe-ops` directly — no `sh`, no wrapper, no `command -v` guard. A machine without
 the CLI on `PATH` gets a loud failure rather than an install that looks like it works
-([`cli/README.md`](../../cli/README.md) has the `npm link` recipe).
+(`npm i -g @entelekheia/vibe-ops-cli`; [`cli/README.md`](../../cli/README.md) has both recipes).
 
 The file's top-level `description` states how many **shipped `.sh` scripts** are registered, and
 `25-hooks-registration.sh` checks that number against the registrations. A `command: "vibe-ops"` entry

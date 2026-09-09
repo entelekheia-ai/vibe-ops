@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-license",
   "version": "0.1.0",
-  "private": true,
   "description": "The licence texts this tooling hands out, their pinned sources, the rules for applying one, and the scaffold license-setup writes into a repository",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-module-config",
   "version": "0.1.0",
-  "private": true,
   "description": "vibe-ops config — the effective value of a dotted key, its origin, and the one writer the skills need (types.<name>)",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-exposure",
   "version": "0.1.0",
-  "private": true,
   "description": "Whether a committed file exposes material above its classification",
   "type": "module",
   "license": "Apache-2.0",

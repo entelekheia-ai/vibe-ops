@@ -329,9 +329,11 @@ node cli/packages/cli/dist/bin.js check
   which is exactly where the self-test fixture caught it.
 - **`sh/` ships in the package's `files`**, so the fragments travel with an install and are resolved
   relative to the module — never from `PATH`, never by searching upward for a checkout.
-- **`npm link -w @entelekheia/vibe-ops-cli` puts `vibe-ops` on PATH**, resolving its unpublished internal
-  dependencies from this workspace's own `node_modules` rather than a registry. Needed to exercise the
-  `hook` surface as a skill actually calls it — `cli/README.md` has the full recipe.
+- **`npm i -g @entelekheia/vibe-ops-cli` puts `vibe-ops` on PATH**, and `npm link -w
+  @entelekheia/vibe-ops-cli` puts this working tree there instead. Only one of the two answers at a time,
+  and `vibe-ops --version` cannot tell them apart while the tree and the registry carry the same number —
+  `readlink -f "$(command -v vibe-ops)"` can. Either is needed to exercise the `hook` surface as a skill
+  actually calls it; `cli/README.md` has both recipes.
 
 ## Releasing
 

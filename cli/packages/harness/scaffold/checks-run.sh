@@ -26,10 +26,15 @@
 # accepted deliberately, because the alternative is keeping a second implementation of every check alive
 # in shell forever.
 #
+# The recipe below is what shrinks that cost. Until `@entelekheia/vibe-ops-cli` 0.1.0 (2026-09-08) the
+# only install was `npm link` from a vibe-ops checkout, so the refusal asked a contributor to clone a
+# second repository before they could commit to this one. It now names one registry install, which needs
+# neither a checkout nor this repository's tooling.
+#
 # The requirement is not new to anyone who has the plugin: the plugin's own MCP server is started as
 # `vibe-ops mcp` from PATH, and its skill-scoped hooks name the same binary. A machine without it
 # already gets a loud failure there, by design; this is the same precondition, now also on the gate.
-CLI_INSTALL_RECIPE="npm link -w @entelekheia/vibe-ops-cli   # from a vibe-ops checkout"
+CLI_INSTALL_RECIPE="npm i -g @entelekheia/vibe-ops-cli"
 
 run_composed_checks() { # $1 = repository root
   local root="$1"

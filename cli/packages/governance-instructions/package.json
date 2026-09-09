@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-instructions",
   "version": "0.1.0",
-  "private": true,
   "description": "The instruction surface: AGENTS.md, its CLAUDE.md import, the .agents/ <-> .claude/ bridge, and repo-guardrails.md",
   "type": "module",
   "license": "Apache-2.0",

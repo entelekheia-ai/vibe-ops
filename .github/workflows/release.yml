@@ -15,8 +15,8 @@
 #
 # Every push to main runs the gates. While `.changeset/*.md` files are pending, changesets/action opens or
 # refreshes the "Version Packages" pull request instead of publishing. Merging that pull request is the
-# release. The eighteen internal packages are `private` and travel inside the CLI's tarball
-# (`bundleDependencies`), so they are versioned here and never published — see cli/AGENTS.md.
+# release. All twenty-one packages publish: they are separate so that a record type or an ops can be
+# swapped for a third party's through `config.types`/`config.ops` — see cli/AGENTS.md.
 #
 # The first version of each package was published from a maintainer's terminal, because a trusted
 # publisher can only be declared on a package that already exists.

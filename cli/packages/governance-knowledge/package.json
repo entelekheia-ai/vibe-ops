@@ -1,7 +1,6 @@
 {
   "name": "@entelekheia/governance-knowledge",
   "version": "0.1.0",
-  "private": true,
   "description": "The knowledge governance: what a piece of work taught, as two units sharing one promotion test — log (project/log/, moved whole from @entelekheia/governance-log, ADR-0020) and learning (project/learnings/, opt-in)",
   "type": "module",
   "license": "Apache-2.0",

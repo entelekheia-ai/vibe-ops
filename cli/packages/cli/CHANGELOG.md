@@ -1,5 +1,32 @@
 # @entelekheia/vibe-ops-cli
 
+## 0.1.1
+
+### Patch Changes
+
+- No package is bundled any more, because a bundled default is not opt-in
+
+  `bundleDependencies` is gone from the CLI, and the eighteen packages that travelled inside its tarball
+  are published in their own right. It was wrong twice over. It broke `npm i -g` outright: a global
+  install cannot hoist, so `@entelekheia/vibe-ops-core` and `@entelekheia/governance-base` had to land in
+  the same `node_modules/@entelekheia/` the bundle already occupied, npm extracted neither, and every
+  command died on `Cannot find package '@entelekheia/vibe-ops-core'`. And it contradicted what
+  `config.types` is for: a record type bound to `@acme/jira-plan` still had `@entelekheia/governance-plan`
+  sitting in the install, present because the CLI carried it rather than because anyone asked for it.
+
+  Nothing about installing changes for someone who wants the defaults — `npm i -g @entelekheia/vibe-ops-cli`
+  still resolves the closure in one command.
+
+- The gate's refusal names the registry install, not a checkout
+
+  `check.sh` refuses with `npm i -g @entelekheia/vibe-ops-cli` first, and offers `npm link -w` second as
+  the path for someone working on this repository. Until the CLI was published there was only the second,
+  so a machine without `vibe-ops` was told to clone a repository before it could commit — advice that was
+  correct for a contributor to vibe-ops and useless to everyone else the gate refuses.
+
+- Updated dependencies
+  - @entelekheia/vibe-ops-module-check@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

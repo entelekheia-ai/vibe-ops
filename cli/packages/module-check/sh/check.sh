@@ -20,7 +20,8 @@ ROOT=$(git -C "$SELF_DIR" rev-parse --show-toplevel)
 
 if ! command -v vibe-ops >/dev/null 2>&1; then
   echo "check.sh: no \`vibe-ops\` on PATH — the gate cannot run." >&2
-  echo "  npm link -w @entelekheia/vibe-ops-cli   # from this checkout" >&2
+  echo "  npm i -g @entelekheia/vibe-ops-cli      # the published CLI" >&2
+  echo "  npm link -w @entelekheia/vibe-ops-cli   # or this checkout's own build, to work on it" >&2
   exit 2
 fi
 
