@@ -28,11 +28,18 @@ import type { VibeOpsConfig } from "./config.ts";
  * Plan-040 Track 1: `convergence-policy`, `template-shape-change`). Every governance package already
  * depends on `governance-base`, so binding it by default costs a consumer nothing it did not already
  * install, unlike `license`/`classification`, which stay opt-in because a repository may not want either.
+ *
+ * `style` NAMES THE DEFAULT PACKAGE, BUT `effectiveGovernanceBindings` NEVER READS IT HERE. It is listed
+ * for the same reason `base` is — a repository that declares nothing about `style` still gets a default —
+ * but the entry it names is a one-layer stack (`@entelekheia/governance-style` alone, unscoped), and the
+ * stack shape is resolved by `resolveStyleStack` in `governance-base`, not by `parseBinding` below, which
+ * only ever handles a single package name.
  */
 export const DEFAULT_GOVERNANCE_BINDINGS: Readonly<Record<string, string>> = {
   adr: "@entelekheia/governance-adr",
   rfc: "@entelekheia/governance-rfc",
   plan: "@entelekheia/governance-plan",
+  style: "@entelekheia/governance-style",
   task: "@entelekheia/governance-task",
   log: "@entelekheia/governance-log",
   base: "@entelekheia/governance-base",
@@ -51,12 +58,21 @@ function parseBinding(localName: string, value: string): GovernanceBinding {
   return { packageName: value.slice(0, hash), typeName: value.slice(hash + 1) };
 }
 
-/** The effective map: shipped defaults overlaid per key by `config.types`. */
+/** The effective map: shipped defaults overlaid per key by `config.types`.
+ *
+ * `style` NEVER APPEARS HERE. Its binding is a stack (`StyleBinding`: an array of layers, or
+ * `{ layers, onCollision }`), not one package name, and this map exists for the single-package case
+ * every other type keeps — RFC-0005 §2.1 names it the one exception. `resolveStyleStack` in
+ * `@entelekheia/governance-base` reads `config.types.style` directly instead of through this map. A
+ * non-string value under any OTHER name is a misconfiguration, not a style binding, and is skipped the
+ * same way rather than thrown — `parseBinding` only ever receives a string. */
 export function effectiveGovernanceBindings(
   config: VibeOpsConfig | undefined,
 ): Readonly<Record<string, GovernanceBinding>> {
   const merged: Record<string, GovernanceBinding> = {};
   for (const [name, value] of Object.entries({ ...DEFAULT_GOVERNANCE_BINDINGS, ...config?.types })) {
+    if (name === "style") continue;
+    if (typeof value !== "string") continue;
     merged[name] = parseBinding(name, value);
   }
   return merged;
@@ -90,6 +106,9 @@ export interface ActivatedGovernance {
     readonly migrations?: string;
     /** Named policy files this package serves through `records norm --facet policy --name <key>`. */
     readonly facets?: Readonly<Record<string, string>>;
+    /** A style package's documented artefact list — advisory, RFC-0005 §2.1; read by `composeStylePolicy`
+     *  (`governance-base`) to tell the target vocabulary check what this layer declares. */
+    readonly targets?: readonly string[];
     /**
      * The record schema and layout facts an ops derivation reads (Plan-034). Optional in the interface
      * because core verifies only what it reads — `defineGovernance` stamps the full parsed type.json,
@@ -146,6 +165,32 @@ function isActivated(value: unknown): value is ActivatedGovernance {
 }
 
 /**
+ * Imports one package by name and picks the unit named `typeName` out of it — the primitive
+ * `activateGovernance` builds on for a config-bound single package, and what a `style` stack's layer
+ * resolution (`resolveStyleStack`, `governance-base`) calls directly: a layer names its package
+ * literally, never through a `types.<name>` binding, so there is no `GovernanceBinding` to look up.
+ * Cached by the same `<package>#<type>` key either caller would compute, so a style layer and an
+ * ordinary type binding that happen to name the same package share one import.
+ */
+export async function activateGovernancePackage(
+  packageName: string,
+  typeName: string,
+): Promise<ActivatedGovernance | undefined> {
+  const key = `${packageName}#${typeName}`;
+  if (activationCache.has(key)) return activationCache.get(key);
+  let imported: ActivatedGovernance | undefined;
+  try {
+    const module = (await import(resolveFromHost(packageName))) as { default?: unknown };
+    imported = isActivated(module.default) ? module.default : undefined;
+  } catch {
+    imported = undefined;
+  }
+  const activated = imported === undefined ? undefined : unitFor(imported, typeName);
+  activationCache.set(key, activated);
+  return activated;
+}
+
+/**
  * The activated governance for one local type name, or `undefined` when its bound package is not
  * installed — an ordinary state (a repository may bind a package it has not installed yet, and the
  * shipped defaults name packages an npm-only consumer may have skipped), never an error here. The
@@ -157,18 +202,7 @@ export async function activateGovernance(
 ): Promise<ActivatedGovernance | undefined> {
   const binding = effectiveGovernanceBindings(config)[type];
   if (binding === undefined) return undefined;
-  const key = `${binding.packageName}#${binding.typeName}`;
-  if (activationCache.has(key)) return activationCache.get(key);
-  let imported: ActivatedGovernance | undefined;
-  try {
-    const module = (await import(resolveFromHost(binding.packageName))) as { default?: unknown };
-    imported = isActivated(module.default) ? module.default : undefined;
-  } catch {
-    imported = undefined;
-  }
-  const activated = imported === undefined ? undefined : unitFor(imported, binding.typeName);
-  activationCache.set(key, activated);
-  return activated;
+  return activateGovernancePackage(binding.packageName, binding.typeName);
 }
 
 /**

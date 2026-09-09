@@ -37,6 +37,7 @@ import { formatHandling, handlingFor } from "./handling.ts";
 import { composedOwnership } from "@entelekheia/vibe-ops-harness";
 import { formatShown, LISTABLE, LIST_DEFAULT, pickFrom, showRecord, summariseShown } from "./show.ts";
 import { describeNormType, listNormMigrationNotes as listMigrationNotes, resolveNormFacet } from "@entelekheia/governance-base";
+import { composeStylePolicy, formatStyleCollisions, formatStyleExplain } from "@entelekheia/governance-base";
 import type { NormFacet } from "@entelekheia/governance-base";
 import type { ListField } from "./show.ts";
 
@@ -159,7 +160,17 @@ export default defineModule(
           {
             name: "name",
             type: "string",
-            description: "which of the type's facets.* policy files — required for, and only valid with, --facet policy",
+            description: "which of the type's facets.* policy files — required for, and only valid with, --facet policy on any type but style",
+          },
+          {
+            name: "for",
+            type: "string",
+            description: "the artefact the style stack is served for — only valid with --type style --facet policy",
+          },
+          {
+            name: "explain",
+            type: "boolean",
+            description: "print each section's origin package and file — only valid with --type style --facet policy",
           },
           { name: "print", type: "boolean", description: "print the facet's content (for migrations: the note paths)" },
         ],
@@ -212,6 +223,48 @@ export default defineModule(
       const name = typeof nameFlag === "string" && nameFlag !== "" ? nameFlag : undefined;
       if (typeof type !== "string" || type === "") {
         return { code: 2, summary: "norm needs --type <record type>" };
+      }
+      const forFlag = context.flags["for"];
+      const forTarget = typeof forFlag === "string" && forFlag !== "" ? forFlag : undefined;
+      const explain = context.flags["explain"] === true;
+
+      // `style` IS COMPOSED, NEVER A SINGLE FACET (Plan-040 Track 4, RFC-0005 §2.1) — its binding is an
+      // ordered stack, not one package, so `--facet policy` on `--type style` never takes `--name`; it
+      // takes `--for` (the artefact being served, absent for the unscoped layers alone) and `--explain`
+      // (each section's origin). Handled entirely before the generic facet/name gate below, which style
+      // never reaches.
+      if (type === "style" && facet === "policy") {
+        if (name !== undefined) {
+          return { code: 2, summary: "style is served by --for/--explain, not --name — its binding is a stack, not one facet" };
+        }
+        const result = await composeStylePolicy(forTarget, context.config);
+        const collisionLines = result.onCollision === "off" ? [] : formatStyleCollisions(result);
+        if (context.surface === "cli" && context.flags["json"] !== true) {
+          if (explain) for (const line of formatStyleExplain(result)) context.log(line);
+          if (context.flags["print"] === true) context.log(result.text);
+          for (const line of result.warnings) context.log(`warning: ${line}`);
+          for (const line of collisionLines) context.log(`warning: ${line}`);
+        }
+        return {
+          code: result.ok ? 0 : 1,
+          summary: result.ok
+            ? `style composed for ${forTarget ?? "(unscoped)"}: ${result.sections.length} section(s), ${result.collisions.length} collision(s)`
+            : `style composed for ${forTarget ?? "(unscoped)"} refused — ${result.collisions.length} unresolved collision(s), onCollision: error`,
+          data: {
+            target: forTarget,
+            text: result.text,
+            sections: result.sections,
+            collisions: result.collisions,
+            onCollision: result.onCollision,
+            warnings: result.warnings,
+          },
+        };
+      }
+      if (forFlag !== undefined) {
+        return { code: 2, summary: "norm --for only applies to --type style --facet policy" };
+      }
+      if (explain) {
+        return { code: 2, summary: "norm --explain only applies to --type style --facet policy" };
       }
       // `--name` and `--facet policy` come as a pair, in both directions: one without the other is a
       // request that cannot be answered — either "which facet" (no --name) or "--name means nothing

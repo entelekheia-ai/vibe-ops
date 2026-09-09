@@ -48,6 +48,8 @@ export { parseTypeUnit, parseTypeManifest, resolveTypeUnit, resolveTypeUnitAt } 
 export type { ResolvedTypeUnit, TypeUnit, TypeUnitCarrier, TypeUnitSchema } from "./type-unit.ts";
 export { describeNormType, listMigrationNotes as listNormMigrationNotes, migrationsDirFor, resolveNormFacet } from "./norm-facet.ts";
 export type { NormAnswer, NormFacet, NormTypeDescription } from "./norm-facet.ts";
+export { composeStylePolicy, formatStyleCollisions, formatStyleExplain, parseStyleStack } from "./style-stack.ts";
+export type { StyleCollision, StyleCompositionResult, StyleOrigin, StyleSectionResult, StyleSeverity } from "./style-stack.ts";
 
 // `base` itself is an activatable, policy-only governance (Plan-040 Track 1, RFC-0005 §3): it ships no
 // record, only the policy files that used to live under `plugin/references/` —

@@ -22,7 +22,7 @@ becomes an artifact of how the work happened instead of what it produced. That b
 maximum-gap case of the same job. Read
 `vibe-ops records norm --type base --facet policy --name convergence --print` for the
 four verbs before changing an existing README, and
-[`authoring-style.md`](../../references/authoring-style.md) for phrasing and language.
+`vibe-ops records norm --type style --facet policy --for readme --print` for phrasing and language.
 
 The shape below is derived in
 [`project/research/readme-presentation-practices.md`](../../../project/research/readme-presentation-practices.md),

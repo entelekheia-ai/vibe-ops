@@ -96,7 +96,9 @@ Three completeness rules, all hard:
 
 **Instructions only.** No history, no narrative of what the change was for, no measurement that motivated
 it. Those belong in the plan or RFC that made the change — a note is read by someone converting a file,
-who needs the steps and nothing else.
+who needs the steps and nothing else. The general rules of phrasing — prescriptive over hedged, direct and
+literal, a map rather than a narrative — are
+`vibe-ops records norm --type style --facet policy --for migration --print`.
 
 ## Step 4 — Test the note against the worst real artifact
 
