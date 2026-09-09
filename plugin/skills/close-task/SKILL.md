@@ -24,7 +24,7 @@ matches nothing there, say so rather than guessing at a plan.
 
 **This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It closes one
 unit of work, once. Routing what the work *taught* is governed by
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` — the
 promotion test lives there, not in this file.
 
 
@@ -91,7 +91,7 @@ Routing runs in two passes: **filter, then place.** They answer different questi
 the other.
 
 **Pass 1 — the filter.** Questions 1–3 of the promotion test in
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test).
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` (the promotion test section).
 Any one of them can eliminate the entry:
 
 1. **Recurrence** — would it burn a fresh agent more than once?
@@ -234,7 +234,7 @@ stopped resolving is invisible in a diff. Skip this only if the work touched no 
 Step 3's filter is the one that decays quietly. An entry promoted that should have been dropped costs a
 line in a file everyone reads; an entry dropped that should have been promoted costs the next session the
 same hours. If a rejection felt wrong, the edit belongs in
-[`knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md), not here — this skill points at the
+the file `vibe-ops records norm --type log --facet policy --name lifecycle --print` serves, not here — this skill points at the
 test rather than restating it, deliberately.
 
 If a closure produced no edits to this skill, say so — a ceremony that ran cleanly is signal too.

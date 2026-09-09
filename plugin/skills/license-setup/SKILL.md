@@ -23,9 +23,11 @@ particular, a repo whose headers follow a coherent existing convention is an `ad
 
 ## Step 1 — Ask
 
-1. **License** — default **Apache-2.0**. Pinned and ready (`get-license.sh list`): Apache-2.0, MIT,
+1. **License** — default **Apache-2.0**. Pinned and ready (`vibe-ops license list`): Apache-2.0, MIT,
    BSD-3-Clause, BSD-2-Clause, ISC, 0BSD, Unlicense, MPL-2.0, GPL-3.0-only, GPL-2.0-only, LGPL-3.0-only,
-   AGPL-3.0-only, CC-BY-4.0, CC-BY-SA-4.0, CC0-1.0. Anything else has to be pinned first (Step 2).
+   AGPL-3.0-only, CC-BY-4.0, CC-BY-SA-4.0, CC0-1.0. Anything else needs a new pinned row in
+   `@entelekheia/governance-license`'s own registry first (Step 2) — that is a change to the vibe-ops
+   workspace, not something this skill does for a consumer.
    Two things follow from the choice and are easy to miss:
    - **Steps 4 and 5 assume a permissive license for *code*.** The license-rules templates and the SPDX
      header stamping are written for that; under a copyleft or a CC license, take Step 4's variant as a
@@ -68,15 +70,15 @@ particular, a repo whose headers follow a coherent existing convention is an `ad
 Fetch it — cache-first, network fallback, verified against a pinned sha256 either way:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/skills/license-setup/get-license.sh" fetch <SPDX-ID> --out LICENSE
+vibe-ops license get <SPDX-ID> --out LICENSE
 ```
 
-`get-license.sh list` shows the pinned ids (the fifteen in Step 1). For anything else, pin it first —
-`get-license.sh pin <SPDX-ID>` fetches from the SPDX license list and records both digests — and have the
-maintainer look at the text before it is committed. Note that a pin made from an *installed* plugin lands
-in the version-pinned clone and disappears on the next update: a pin that has to last belongs in the
-vibe-ops working tree, committed and released. If the fetch fails verification the command writes nothing;
-do not work around it by pasting text.
+`vibe-ops license list` shows the pinned ids (the fifteen in Step 1). Anything else is not a thing this
+skill can do on a consumer's behalf: the registry it reads (`@entelekheia/governance-license`'s
+`templates/SOURCES.tsv`) ships with the package, so a new id has to be pinned in the vibe-ops workspace
+itself — fetched from the SPDX license list, both digests recorded, and the text reviewed by a maintainer
+before it is committed and released — never invented locally by pasting text. If the fetch fails
+verification the command writes nothing; do not work around it by pasting text.
 
 Then the *only* edit that is ever made to that file — and **only where the license provides the blanks**:
 
@@ -94,22 +96,34 @@ goes stale the moment somebody else touches it. Every other line stays byte-iden
 Confirm before moving on — this is the check that would have caught the original bug:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/skills/license-setup/get-license.sh" verify LICENSE --id <SPDX-ID>
+vibe-ops license verify LICENSE --id <SPDX-ID>
 ```
 
 It ignores the copyright holder and any rewrapping and forgives nothing else. A `FAIL` here means the file
 is not the license the repo claims — fix it by re-fetching, never by editing.
+
+Every file this skill copies from here on ships with `@entelekheia/governance-license`, not with this
+skill (Plan-040 Track 3 — the skill names verbs and a package root, never a file of its own). Resolve
+that package root once, from the same package the licence texts themselves come from:
+
+```bash
+GOVERNANCE_LICENSE="$(dirname "$(dirname "$(vibe-ops records norm --type license --facet template)")")"
+```
+
+Every `templates/<file>` reference below is `"$GOVERNANCE_LICENSE/scaffold/<file>"`.
 
 ## Step 2b — Keep it verified (skip only if the repo has no CI)
 
 A LICENSE is written once and never read again, which is why a corrupted one survived for months. If the
 repo has `.github/workflows/` (or you are creating one), make the check permanent:
 
-- Copy `templates/verify-license-text.sh` → `scripts/verify-license-text.sh`, `chmod +x`, substituting
-  `{{LICENSE_ID}}`, `{{LICENSE_URL}}` and `{{YEAR}}` `{{PROJECT_NAME}}`, plus `{{LICENSE_TEXT_SHA256}}` —
-  the **fourth** column of that id's row in `the licence registry `get-license.sh` resolves through `vibe-ops records norm --type license``
-  (`awk -F'\t' '$1=="<SPDX-ID>"{print $4}'`). Never type a digest from memory; read it from the registry.
-- Copy `templates/license-text-ci.yml` → `.github/workflows/license-text.yml`, substituting `{{LICENSE_ID}}`.
+- Copy `$GOVERNANCE_LICENSE/scaffold/verify-license-text.sh` → `scripts/verify-license-text.sh`, `chmod +x`,
+  substituting `{{LICENSE_ID}}`, `{{LICENSE_URL}}` and `{{YEAR}}` `{{PROJECT_NAME}}`, plus
+  `{{LICENSE_TEXT_SHA256}}` — the **fourth** column of that id's row in the registry
+  (`awk -F'\t' '$1=="<SPDX-ID>"{print $4}' "$GOVERNANCE_LICENSE/templates/SOURCES.tsv"`). Never type a
+  digest from memory; read it from the registry.
+- Copy `$GOVERNANCE_LICENSE/scaffold/license-text-ci.yml` → `.github/workflows/license-text.yml`,
+  substituting `{{LICENSE_ID}}`.
 - `bash scripts/verify-license-text.sh` must pass locally before you commit, and
   `grep -n '{{' scripts/verify-license-text.sh .github/workflows/license-text.yml` must come back empty.
 
@@ -119,7 +133,8 @@ This is independent of the header-enforcement level in Step 5 — a repo with `n
 
 If **not** a fork, skip this step entirely — no `NOTICE`/`AUTHORS` files.
 
-If a fork: from `templates/NOTICE.template` and `templates/AUTHORS.template`, substitute
+If a fork: from `$GOVERNANCE_LICENSE/scaffold/NOTICE.template` and
+`$GOVERNANCE_LICENSE/scaffold/AUTHORS.template`, substitute
 `{{PROJECT_NAME}}` `{{YEAR}}` `{{ORIGIN_AUTHOR}}` `{{ORIGIN_PROJECT}}` `{{ORIGIN_URL}}`
 `{{ORIGIN_LICENSE}}` `{{ORIGIN_YEAR}}` `{{AUTHOR_NAME}}` `{{AUTHOR_EMAIL}}` `{{AUTHOR_URL}}` and write
 `NOTICE` + `AUTHORS` at the repo root.
@@ -127,10 +142,10 @@ If a fork: from `templates/NOTICE.template` and `templates/AUTHORS.template`, su
 ## Step 4 — License-rules section for AGENTS.md
 
 Pick the variant by fork status:
-- **Not a fork** → `templates/license-rules-simple.md`.
-- **Fork** → `templates/license-rules-spdx-mandatory.md`, stripping the `<!-- FORK_ONLY:start -->` /
-  `<!-- FORK_ONLY:end -->` marker lines themselves (keep the content between them — it only belongs in the
-  fork case, which is why you're using this variant at all).
+- **Not a fork** → `$GOVERNANCE_LICENSE/scaffold/license-rules-simple.md`.
+- **Fork** → `$GOVERNANCE_LICENSE/scaffold/license-rules-spdx-mandatory.md`, stripping the
+  `<!-- FORK_ONLY:start -->` / `<!-- FORK_ONLY:end -->` marker lines themselves (keep the content between
+  them — it only belongs in the fork case, which is why you're using this variant at all).
 
 Substitute `{{SOURCE_GLOB}}` `{{LICENSE_ID}}` `{{PROJECT_NAME}}` and (fork only) `{{ORIGIN_LICENSE_SHORT}}`
 `{{ORIGIN_PROJECT}}`. Insert the result into `AGENTS.md` as its own `## License rules` section (append if the
@@ -145,7 +160,7 @@ npm-workspaces package. That is what the previous version of this step got wrong
 workspace package still resolves relative to the repo root, so the hook file the package thinks it owns is
 never the one git actually invokes.
 
-From `templates/ensure-license-headers.sh`:
+From `$GOVERNANCE_LICENSE/scaffold/ensure-license-headers.sh`:
 - Substitute `{{SOURCE_GLOB_ARRAY}}` (bash array literal, e.g. `"*.ts" "*.tsx" "*.js" "*.jsx"`),
   `{{LICENSE_ID}}`, `{{EXCLUDE_PATHS_CASES}}` (Step 1 Q6 — one `<glob>)  return 0 ;;  # <reason>` line per
   confirmed path, or a single `# (no exclusions configured)` line if empty), and — fork case only —
@@ -169,13 +184,13 @@ Then, by level:
   ```
   and record that same line in the AGENTS.md license-rules section written in Step 4, so a fresh clone
   finds it without having to ask.
-- **`ci`**: copy `templates/license-headers-ci.yml` → `.github/workflows/license-headers.yml`. Adjust the
+- **`ci`**: copy `$GOVERNANCE_LICENSE/scaffold/license-headers-ci.yml` → `.github/workflows/license-headers.yml`. Adjust the
   `branches:` trigger if the repo has release branches beyond `main`. **Do not create `.githooks/` or touch
   git config at this level** — `ci` means the CI check is the only enforcement.
 
 ## Checklist
 
-- [ ] `LICENSE` present and **`get-license.sh verify LICENSE --id <SPDX-ID>` passes** — the file was
+- [ ] `LICENSE` present and **`vibe-ops license verify LICENSE --id <SPDX-ID>` passes** — the file was
       fetched, never authored, and the only edit is the year/holder in the appendix
 - [ ] If the repo has CI: `scripts/verify-license-text.sh` executable and passing,
       `.github/workflows/license-text.yml` present, no leftover `{{...}}` in either

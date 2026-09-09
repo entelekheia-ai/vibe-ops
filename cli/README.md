@@ -160,7 +160,8 @@ behaves identically under MCP and under a terminal.
 | [`@entelekheia/vibe-ops-governance`](packages/ops-governance/) | The second ops: adr/plan/rfc/task header tables, links, and archival breadcrumbs |
 | [`@entelekheia/vibe-ops-for-vibe-ops`](packages/ops-for-vibe-ops/) | The third ops: the prose describing this repository's own machinery, which `governance` excludes |
 | [`@entelekheia/governance-base`](packages/governance-base/) | The reusable governance components the noun modules share — layout, numbering, lifecycles, closure, the `defineGovernance` sugar |
-| [`@entelekheia/governance-plan`](packages/governance-plan/) · [`-task`](packages/governance-task/) · [`-log`](packages/governance-log/) · [`-adr`](packages/governance-adr/) · [`-rfc`](packages/governance-rfc/) | One artifact, one governance package (ADR-0019): the type's data and its verbs together; adr and rfc are pure sugar |
+| [`@entelekheia/governance-plan`](packages/governance-plan/) · [`-task`](packages/governance-task/) · [`-adr`](packages/governance-adr/) · [`-rfc`](packages/governance-rfc/) | One artifact, one governance package (ADR-0019): the type's data and its verbs together; adr and rfc are pure sugar |
+| [`@entelekheia/governance-knowledge`](packages/governance-knowledge/) | One PACKAGE, two governance UNITS (ADR-0020): `log` (moved whole from the retired `@entelekheia/governance-log`, same type, noun, MCP tool and settings key) and `learning` (opt-in, not bound by default), sharing one manifest and one promotion-test policy facet |
 | [`@entelekheia/vibe-ops-module-records`](packages/module-records/) | The cross-type verbs — census, handling, show, list, and `norm`, the facet the plugin skills read |
 | [`@entelekheia/vibe-ops-harness`](packages/harness/) | CLI-internal (no governance of its own): what a repository's harness is, and promulgating the norm into it |
 

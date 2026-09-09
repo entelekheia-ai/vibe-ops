@@ -32,7 +32,7 @@ reports where plans live in this repository; if `<id>` matches nothing there, sa
 
 **This is an event skill** (why that matters: `vibe-ops records norm --type base --facet policy --name convergence --print`). It closes one
 unit of work, once. Routing what the work *taught* is governed by
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md) — the
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` — the
 promotion test lives there, not in this file.
 
 
@@ -112,7 +112,7 @@ It names the version the plan declares and, when that is not the current one, th
 that shape. Those documents govern; nothing on this page does.
 
 For whatever this step turns out to hold, apply the promotion test in
-[`${CLAUDE_PLUGIN_ROOT}/references/knowledge-lifecycle.md`](../../references/knowledge-lifecycle.md#the-promotion-test)
+`vibe-ops records norm --type log --facet policy --name lifecycle --print` (the promotion test section)
 — filter first, then place:
 
 1. **Does it hold beyond this repository?** → `project/learnings/`.

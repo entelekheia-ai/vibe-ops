@@ -7,6 +7,14 @@
 //
 // `index` is what that skill's Step 5 has an HTML comment waiting for: "when the index generator exists
 // this step becomes 'run it'. Until then the row is written here, and that is the drift surface."
+//
+// THIS FILE IS ONE OF TWO ENTRY MODULES `@entelekheia/governance-knowledge` BUILDS FROM ONE MANIFEST
+// (Plan-040 Track 3, ADR-0020) — this one serves `log` (the `.` export, the default binding, so a
+// repository declaring nothing keeps working with no edit); `./index-learning.ts` serves `learning` (the
+// `./learning` export). Both call `defineGovernance` against the same `type.json`, each naming its own
+// unit through the `type` option, so `log` keeps its type name, its noun, its MCP tool, its settings key
+// and its fragment's globs exactly as ADR-0019 promised — moving into a multi-unit package is not a
+// rename. `governance-log` retires as a *package*; `log` survives as a *type*.
 
 import { fileURLToPath } from "node:url";
 import { createDocumentStore } from "@entelekheia/vibe-ops-core";
@@ -22,6 +30,7 @@ const INDEX = "README.md";
 export default defineGovernance({
     root: path.join(path.dirname(fileURLToPath(import.meta.url)), ".."),
     version: "0.0.1",
+    type: "log",
     summary: "The write-once trap tier: resolve it, regenerate its index, sweep it, lint it",
     commands: [
       { name: "resolve", summary: "where entries live — no number, deliberately" },

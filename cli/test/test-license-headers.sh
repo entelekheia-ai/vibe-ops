@@ -8,15 +8,16 @@
 #
 # https://www.apache.org/licenses/LICENSE-2.0
 #
-# test-license-headers.sh — exercises skills/license-setup/templates/ensure-license-headers.sh
-# end to end.
+# test-license-headers.sh — exercises governance-license's scaffold/ensure-license-headers.sh end to end.
 #
-# That template is copied into every repo /license-setup touches and, until now, had never once been
-# executed by this repo's own CI (issue #12) — a regression in it was undetectable. This renders it
-# with a throwaway substitution set, the way Step 5 of the skill does, and runs the result against a
-# real git repository in a temp directory: both --check mode and the staged-file injection path, for
-# the plain and fork variants, asserting the exclusion gate (vendored/generated paths) holds in both
-# directions and that no file outside the one being fixed is ever touched.
+# That template is copied into every repo /license-setup touches (Plan-040 Track 3 moved it off
+# plugin/skills/license-setup/templates/, which the skill no longer ships anything under) and, until
+# `test-license-headers.sh` first existed, had never once been executed by this repo's own CI (issue
+# #12) — a regression in it was undetectable. This renders it with a throwaway substitution set, the
+# way Step 5 of the skill does, and runs the result against a real git repository in a temp directory:
+# both --check mode and the staged-file injection path, for the plain and fork variants, asserting the
+# exclusion gate (vendored/generated paths) holds in both directions and that no file outside the one
+# being fixed is ever touched.
 #
 # Usage: scripts/test-license-headers.sh
 # Exit codes: 0 all assertions passed · 1 at least one failed · 2 bad setup.
@@ -24,7 +25,7 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-TEMPLATE="$SCRIPT_DIR/../skills/license-setup/templates/ensure-license-headers.sh"
+TEMPLATE="$SCRIPT_DIR/../packages/governance-license/scaffold/ensure-license-headers.sh"
 
 FAILURES=0
 ok() { printf 'ok    %s\n' "$1"; }

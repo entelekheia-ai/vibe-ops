@@ -1,0 +1,36 @@
+{
+  "note": "This governance's fragment of the promulgation boundary — composed with the harness base declaration and every other activated governance's fragment at sync time (Plan-033, ADR-0019). Read, never re-decided at a call site. Plan-040 Track 3: this package shipped files into a repository with no fragment naming them until now, and its `scaffold/` now carries what `plugin/skills/license-setup/templates/` used to (the skill names verbs and this root; it ships no file of its own).",
+  "version": 1,
+  "paths": [
+    {
+      "match": "LICENSE",
+      "class": "seed",
+      "why": "Fetched once, checksum-verified, with named blanks the repository fills in (the year, the copyright holder). A file whose shipped content asks for a substitution cannot also be a file this tooling overwrites."
+    },
+    {
+      "match": "{NOTICE,AUTHORS}",
+      "class": "seed",
+      "why": "Written once from scaffold/NOTICE.template and scaffold/AUTHORS.template, for a fork's dual attribution, with named blanks substituted at write time. Present only when the repository chose the fork case."
+    },
+    {
+      "match": "scripts/verify-license-text.sh",
+      "class": "seed",
+      "why": "Substituted once from scaffold/verify-license-text.sh — the license id, url, year, project name and pinned digest baked in at write time. A repository changing license later re-runs the skill; nothing here regenerates it on its own."
+    },
+    {
+      "match": ".github/workflows/license-text.yml",
+      "class": "seed",
+      "why": "Substituted once from scaffold/license-text-ci.yml with the chosen SPDX id. CI wiring the repository adapts to its own branches and runners."
+    },
+    {
+      "match": "scripts/ensure-license-headers.sh",
+      "class": "seed",
+      "why": "Substituted once from scaffold/ensure-license-headers.sh — the source glob, the license id and the repository's own exclusion list baked in at write time, then maintained by the repository as its code changes."
+    },
+    {
+      "match": ".github/workflows/license-headers.yml",
+      "class": "seed",
+      "why": "Substituted once from scaffold/license-headers-ci.yml. CI wiring the repository adapts to its own branches and runners."
+    }
+  ]
+}

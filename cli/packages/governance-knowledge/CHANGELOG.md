@@ -1,4 +1,7 @@
-# @entelekheia/governance-log
+# @entelekheia/governance-knowledge
+
+<!-- Published as @entelekheia/governance-log through 0.1.0 below; renamed by Plan-040 Track 3
+     (ADR-0020) when `log` moved into this multi-unit package whole, history kept rather than reset. -->
 
 ## 0.1.0
 
