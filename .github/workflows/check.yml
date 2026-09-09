@@ -55,6 +55,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # The `breadcrumb` gate resolves the commit behind every `git show <sha>:<path>` a closed record
+        # carries, and a shallow clone holds none of them — it reported four shipped plans as pointing at
+        # commits that do not exist. Same reason as the changeset job above, one job over, and it stayed
+        # hidden because typecheck failed before `npm test` ever ran.
+        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with:
           node-version: '24'

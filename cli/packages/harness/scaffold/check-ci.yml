@@ -21,6 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The CLI declares `engines: >=22.18` — it needs Node's native type stripping. A bare "22" resolves
+      # to the latest 22.x, which is above that floor; pin lower and the install fails at `npm i -g`.
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
