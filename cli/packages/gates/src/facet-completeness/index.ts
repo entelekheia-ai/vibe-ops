@@ -30,8 +30,8 @@ const STAMP = /^vibe-ops-reference: [A-Za-z0-9_/-]+@[0-9]+$/m;
 export default defineGate(
   {
     id: "facet-completeness",
-    version: 1,
-    summary: "Every facet an activated governance serves exists and declares its vibe-ops-reference version",
+    version: 2,
+    summary: "Every facet and scaffold file an activated governance declares exists, and every facet says which version it is",
   },
   async ({ repoRoot }) => {
     const { config } = await loadConfig(repoRoot);
@@ -41,10 +41,12 @@ export default defineGate(
 
     for (const type of Object.keys(effectiveGovernanceBindings(config))) {
       const activated = await activateGovernance(type, config);
-      const facets = activated?.unit.facets;
-      if (activated === undefined || facets === undefined) continue;
+      if (activated === undefined) continue;
 
-      for (const [name, relative] of Object.entries(facets)) {
+      // The two declarations are independent: `governance-license` ships a scaffold and serves no facet,
+      // `governance-base` serves facets and ships no scaffold. Skipping the package on an absent `facets`
+      // would have made this gate blind to every scaffold entry of the one package that has the most.
+      for (const [name, relative] of Object.entries(activated.unit.facets ?? {})) {
         examined += 1;
         const file = path.resolve(activated.root, relative);
         if (!existsSync(file)) {
@@ -62,13 +64,29 @@ export default defineGate(
           });
         }
       }
+
+      // The same question asked of the other thing a package declares and ships. A scaffold entry names
+      // a file it will write into someone else's repository, so a `from` that resolves to nothing fails
+      // at the moment of use, in a tree that is not this one and with nobody here to read the error.
+      const scaffold = activated.unit.scaffold;
+      if (scaffold === undefined) continue;
+      for (const entry of scaffold.files) {
+        examined += 1;
+        const source = path.resolve(activated.root, scaffold.dir, entry.from);
+        if (!existsSync(source)) {
+          findings.push({
+            rule: "scaffold-completeness",
+            evidence: `${type} declares the scaffold file ${entry.from} → ${entry.to}, and ${entry.from} does not exist under ${scaffold.dir}`,
+          });
+        }
+      }
     }
 
     // ZERO EXAMINED IS NOT A READING. A repository whose activated packages serve no policy gets a
     // SKIP naming that, never a pass — the failure this gate exists to replace was a pass asserting
     // coverage over an empty population.
     return examined === 0
-      ? { findings: [], skipped: "no activated governance declares a policy facet" }
+      ? { findings: [], skipped: "no activated governance declares a policy facet or a scaffold file" }
       : { findings, examined };
   },
 );

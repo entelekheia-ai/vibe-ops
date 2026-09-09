@@ -45,6 +45,8 @@ export { blocks, compareVersions, describe, dispatchRecord, readMigrationNotes }
 export type { Dispatch, DispatchOptions, MigrationNote } from "./dispatch.ts";
 export type { FoundCitation, FoundLink } from "./links.ts";
 export { parseTypeUnit, parseTypeManifest, resolveTypeUnit, resolveTypeUnitAt } from "./type-unit.ts";
+export { renderGovernanceRule, renderGovernanceDoc, renderTypeSection, GOVERNANCE_BEGIN, GOVERNANCE_END } from "./render-governance.ts";
+export type { RenderableType } from "./render-governance.ts";
 export type { ResolvedTypeUnit, TypeUnit, TypeUnitCarrier, TypeUnitSchema } from "./type-unit.ts";
 export { describeNormType, listMigrationNotes as listNormMigrationNotes, migrationsDirFor, resolveNormFacet } from "./norm-facet.ts";
 export type { NormAnswer, NormFacet, NormTypeDescription } from "./norm-facet.ts";

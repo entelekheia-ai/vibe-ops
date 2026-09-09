@@ -28,6 +28,35 @@ export interface TypeUnitSchema {
   readonly required: readonly string[];
 }
 
+/** One file a package writes into a repository, and where it lands there. */
+export interface TypeUnitScaffoldFile {
+  /** Relative to the scaffold directory. */
+  readonly from: string;
+  /** Relative to the target repository's root. */
+  readonly to: string;
+}
+
+/**
+ * What a package contributes to a scaffolded repository — Plan-040 Track 6.
+ *
+ * EVERY DESTINATION IS SPELLED OUT, which is the whole reason this is a list rather than "copy the
+ * directory". Two facts make an implicit mapping wrong. A file that must land as `.gitignore` or
+ * `.gitkeep` is STORED WITHOUT ITS LEADING DOT, because a real dotfile under this repository's own
+ * `scaffold/` would be applied to this repository instead of shipped from it — the guardrail predates
+ * this field and is the reason `agents/skills/gitkeep` exists under that name. And a file may be named
+ * for what it is rather than for where it goes: `NOTICE.template` lands as `NOTICE`. A convention that
+ * derives one from the other has to encode both exceptions; a `to` states it.
+ */
+export interface TypeUnitScaffold {
+  /** The directory the `from` paths are relative to, relative to the manifest. */
+  readonly dir: string;
+  readonly files: readonly TypeUnitScaffoldFile[];
+  /** The `{{NAME}}` placeholders these files carry, for the caller that substitutes them. Advisory the
+   *  same way `targets` is: a file may carry none, and a name listed here that appears in no file is not
+   *  an error — it is a package documenting what it can be asked for. */
+  readonly placeholders?: readonly string[];
+}
+
 /** The status chain a record of this type moves through, and what the chain implies. */
 export interface TypeUnitLifecycle {
   /** Every status, in order. */
@@ -42,6 +71,14 @@ export interface TypeUnitLifecycle {
   readonly archive?: string;
   /** From this status on, the record may not be edited. Absent means it always may. */
   readonly immutableFrom?: string;
+  /**
+   * A markdown fragment, relative to the manifest, holding what is true of this type's lifecycle and
+   * does not derive from the fields above — the closure ceremony, why a section is living, what a gap in
+   * the numbering means. PROSE STAYS PROSE: rendering a governance document from data is what keeps it
+   * current with the activated types, and the half that is genuinely a paragraph would be worse encoded
+   * as fields. The package that owns the type owns the paragraph.
+   */
+  readonly notes?: string;
 }
 
 export interface TypeUnit {
@@ -73,6 +110,8 @@ export interface TypeUnit {
   readonly lifecycle?: TypeUnitLifecycle;
   /** A style package's documented artefact list — advisory, RFC-0005 §2.1. */
   readonly targets?: readonly string[];
+  /** What this package writes into a scaffolded repository — Plan-040 Track 6. */
+  readonly scaffold?: TypeUnitScaffold;
   readonly numbered: boolean;
   readonly pad: number;
   readonly depth: number;
@@ -158,13 +197,75 @@ function parseLifecycle(parsed: Record<string, unknown>, file: string, type: str
     throw new RecordsConfigError(`${file} declares lifecycle.immutableFrom = ${JSON.stringify(immutableFrom)}, which is not one of its own chain`);
   }
 
+  const notes = raw.notes;
+  if (notes !== undefined && (typeof notes !== "string" || notes === "")) {
+    throw new RecordsConfigError(`${file} declares an invalid lifecycle.notes — a path to a markdown fragment, or none`);
+  }
+
   return {
     chain: statuses,
+    ...(notes === undefined ? {} : { notes: notes as string }),
     active: declared("active") ?? statuses[Math.min(1, statuses.length - 1)]!,
     terminal: declared("terminal") ?? statuses[statuses.length - 1]!,
     ...(living === undefined ? {} : { living: living as readonly string[] }),
     ...(archive === undefined ? {} : { archive: archive as string }),
     ...(immutableFrom === undefined ? {} : { immutableFrom: immutableFrom as string }),
+  };
+}
+
+/**
+ * `scaffold`, what a package writes into a repository — Plan-040 Track 6.
+ *
+ * VALIDATED, BECAUSE THE FIRST SHAPE OF THIS FIELD WAS NOT. It shipped as a bare `"./scaffold"` string
+ * that nothing read and nothing checked, so `"scafold"` parsed exactly as well as the real key and would
+ * have stayed invisible until a reader existed. A declaration nobody validates is a declaration nobody
+ * can rely on, which is the same argument this parser already makes for `schema` and `facets`.
+ *
+ * A `to` that is absolute, or that climbs out of the target with `..`, is refused here rather than at the
+ * moment of writing: a scaffold entry is data a package ships, and the one thing it must never be able
+ * to say is "write outside the repository I was pointed at".
+ */
+function parseScaffold(parsed: Record<string, unknown>, file: string): TypeUnitScaffold | undefined {
+  const value = parsed.scaffold;
+  if (value === undefined) return undefined;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new RecordsConfigError(
+      `${file} declares an invalid scaffold — a type unit carries { dir, files: [{ from, to }], placeholders? } or none`,
+    );
+  }
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.dir !== "string" || raw.dir === "") {
+    throw new RecordsConfigError(`${file} declares a scaffold with no dir — the directory its \`from\` paths are relative to`);
+  }
+  if (!Array.isArray(raw.files) || raw.files.length === 0) {
+    throw new RecordsConfigError(`${file} declares a scaffold with no files — a contribution that writes nothing is an absent scaffold, not an empty one`);
+  }
+
+  const files = raw.files.map((entry, index) => {
+    const candidate = entry as { from?: unknown; to?: unknown } | null;
+    if (typeof candidate !== "object" || candidate === null || typeof candidate.from !== "string" || typeof candidate.to !== "string") {
+      throw new RecordsConfigError(`${file} declares scaffold.files[${index}] as something other than { from, to }`);
+    }
+    if (candidate.from === "" || candidate.to === "") {
+      throw new RecordsConfigError(`${file} declares scaffold.files[${index}] with an empty from or to`);
+    }
+    if (path.isAbsolute(candidate.to) || candidate.to.split("/").includes("..")) {
+      throw new RecordsConfigError(
+        `${file} declares scaffold.files[${index}].to = ${JSON.stringify(candidate.to)}, which leaves the repository it would be written into`,
+      );
+    }
+    return { from: candidate.from, to: candidate.to };
+  });
+
+  const placeholders = raw.placeholders;
+  if (placeholders !== undefined && (!Array.isArray(placeholders) || placeholders.some((p) => typeof p !== "string" || p === ""))) {
+    throw new RecordsConfigError(`${file} declares an invalid scaffold.placeholders — a list of {{NAME}} names, or none`);
+  }
+
+  return {
+    dir: raw.dir,
+    files,
+    ...(placeholders === undefined ? {} : { placeholders: placeholders as readonly string[] }),
   };
 }
 
@@ -280,11 +381,13 @@ function parseUnitObject(parsed: Record<string, unknown>, file: string): TypeUni
 
   const lifecycle = parseLifecycle(parsed, file, type);
   const targets = parseTargets(parsed, file);
+  const scaffold = parseScaffold(parsed, file);
 
   return {
     type,
     ...(lifecycle === undefined ? {} : { lifecycle }),
     ...(targets === undefined ? {} : { targets }),
+    ...(scaffold === undefined ? {} : { scaffold }),
     ...(template === undefined ? {} : { template }),
     ...(authoring === undefined ? {} : { authoring }),
     ...(migrations === undefined ? {} : { migrations }),

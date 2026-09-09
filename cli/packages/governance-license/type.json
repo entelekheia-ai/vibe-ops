@@ -3,6 +3,18 @@
   "template": "./templates/Apache-2.0.txt",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
+  "scaffold": {
+    "dir": "./scaffold",
+    "files": [
+      { "from": "NOTICE.template", "to": "NOTICE" },
+      { "from": "AUTHORS.template", "to": "AUTHORS" },
+      { "from": "verify-license-text.sh", "to": "scripts/verify-license-text.sh" },
+      { "from": "ensure-license-headers.sh", "to": "scripts/ensure-license-headers.sh" },
+      { "from": "license-text-ci.yml", "to": ".github/workflows/license-text.yml" },
+      { "from": "license-headers-ci.yml", "to": ".github/workflows/license-headers.yml" }
+    ],
+    "placeholders": ["LICENSE_ID", "COPYRIGHT_HOLDER", "PROJECT_NAME", "YEAR"]
+  },
   "numbered": false,
   "dirs": ["."]
 }

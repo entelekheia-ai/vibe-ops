@@ -137,6 +137,61 @@ test("parseTypeUnit: targets is a list of names, and a malformed one is refused"
   assert.throws(() => parseTypeUnit(broken, "/x/type.json"), RecordsConfigError);
 });
 
+// ---- scaffold (Plan-040 Track 6) ------------------------------------------------------------------
+
+const SCAFFOLD_UNIT = {
+  type: "instructions",
+  facets: { surfaces: "policy/surfaces.md" },
+  scaffold: {
+    dir: "./scaffold",
+    files: [
+      { from: "root/CLAUDE.md", to: "CLAUDE.md" },
+      { from: "agents/skills/gitkeep", to: ".agents/skills/.gitkeep" },
+    ],
+    placeholders: ["REPO_NAME"],
+  },
+};
+
+test("parseTypeUnit: a scaffold names every destination, including the one that gains a leading dot", () => {
+  const unit = parseTypeUnit(JSON.stringify(SCAFFOLD_UNIT), "/x/type.json");
+  assert.equal(unit.scaffold?.dir, "./scaffold");
+  assert.deepEqual(unit.scaffold?.files[1], { from: "agents/skills/gitkeep", to: ".agents/skills/.gitkeep" });
+  assert.deepEqual(unit.scaffold?.placeholders, ["REPO_NAME"]);
+});
+
+// THE FIRST SHAPE OF THIS FIELD WAS A BARE STRING NOTHING VALIDATED, so `"scafold"` parsed exactly as
+// well as the real key. Each of these is refused rather than dropped.
+test("parseTypeUnit: a malformed scaffold is refused, not ignored", () => {
+  const cases = [
+    { scaffold: "./scaffold" },
+    { scaffold: { files: [{ from: "a", to: "b" }] } },
+    { scaffold: { dir: "./s" } },
+    { scaffold: { dir: "./s", files: [] } },
+    { scaffold: { dir: "./s", files: [{ from: "a" }] } },
+    { scaffold: { dir: "./s", files: [{ from: "", to: "b" }] } },
+    { scaffold: { dir: "./s", files: [{ from: "a", to: "b" }], placeholders: "REPO" } },
+  ];
+  for (const extra of cases) {
+    assert.throws(
+      () => parseTypeUnit(JSON.stringify({ ...SCAFFOLD_UNIT, ...extra }), "/x/type.json"),
+      RecordsConfigError,
+      JSON.stringify(extra),
+    );
+  }
+});
+
+// A scaffold entry is data a package ships, and the one thing it must never be able to say is "write
+// outside the repository I was pointed at".
+test("parseTypeUnit: a scaffold destination that leaves the target repository is refused", () => {
+  for (const to of ["/etc/passwd", "../outside.md", "a/../../b.md"]) {
+    assert.throws(
+      () => parseTypeUnit(JSON.stringify({ ...SCAFFOLD_UNIT, scaffold: { dir: "./s", files: [{ from: "x", to }] } }), "/x/type.json"),
+      (error: unknown) => error instanceof RecordsConfigError && /leaves the repository/.test((error as Error).message),
+      to,
+    );
+  }
+});
+
 test("resolveTypeUnit: repo declares a unit — it wins, source is repo", async () => {
   const repo = await scratchRepo();
   await withUnit(repo, "adr", VALID_MANIFEST, true);

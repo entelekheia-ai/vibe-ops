@@ -128,6 +128,13 @@ export interface ActivatedGovernance {
     readonly migrations?: string;
     /** Named policy files this package serves through `records norm --facet policy --name <key>`. */
     readonly facets?: Readonly<Record<string, string>>;
+    /** What this package writes into a scaffolded repository — Plan-040 Track 6. Verified structurally
+     *  by the parser that produced it; core reads only what it needs to locate each file. */
+    readonly scaffold?: {
+      readonly dir: string;
+      readonly files: readonly { readonly from: string; readonly to: string }[];
+      readonly placeholders?: readonly string[];
+    };
     /** A style package's documented artefact list — advisory, RFC-0005 §2.1; read by `composeStylePolicy`
      *  (`governance-base`) to tell the target vocabulary check what this layer declares. */
     readonly targets?: readonly string[];
