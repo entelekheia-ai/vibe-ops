@@ -1,5 +1,6 @@
 {
   "type": "rfc",
+  "title": "RFC",
   "template": "./templates/rfc.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
@@ -11,6 +12,14 @@
       "Author"
     ]
   },
+  "lifecycle": {
+    "chain": ["Draft", "Review", "Accepted", "Implemented"],
+    "active": "Draft",
+    "terminal": "Implemented",
+    "archive": "implemented",
+    "immutableFrom": "Implemented"
+  },
+  "notes": "./lifecycle-notes.md",
   "numbered": true,
   "pad": 4,
   "depth": 2,

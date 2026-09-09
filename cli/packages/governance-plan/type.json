@@ -18,6 +18,7 @@
     "living": ["Decision Log", "Outcomes & Retrospective"],
     "archive": "shipped"
   },
+  "notes": "./lifecycle-notes.md",
   "numbered": true,
   "pad": 3,
   "depth": 2,

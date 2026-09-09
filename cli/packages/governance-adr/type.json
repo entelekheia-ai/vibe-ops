@@ -1,5 +1,6 @@
 {
   "type": "adr",
+  "title": "ADR",
   "template": "./templates/adr.md",
   "authoring": "./authoring.md",
   "migrations": "./migrations",
@@ -11,6 +12,13 @@
       "Deciders"
     ]
   },
+  "lifecycle": {
+    "chain": ["Proposed", "Accepted", "Superseded"],
+    "active": "Proposed",
+    "terminal": "Accepted",
+    "immutableFrom": "Accepted"
+  },
+  "notes": "./lifecycle-notes.md",
   "numbered": true,
   "pad": 4,
   "depth": 1,

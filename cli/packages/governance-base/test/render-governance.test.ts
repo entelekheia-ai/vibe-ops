@@ -26,6 +26,7 @@ const PLAN = unitWith({
 
 const ADR = unitWith({
   type: "adr",
+  title: "ADR",
   template: "./t.md",
   authoring: "./a.md",
   migrations: "./m",
@@ -79,7 +80,8 @@ test("a package's own prose is included verbatim, and its frontmatter is not", a
         template: "./t.md",
         authoring: "./a.md",
         migrations: "./m",
-        lifecycle: { chain: ["Backlog", "In Progress", "Shipped"], notes: "./notes.md" },
+        notes: "./notes.md",
+        lifecycle: { chain: ["Backlog", "In Progress", "Shipped"] },
       }),
       path.join(root, "type.json"),
     ),
@@ -95,7 +97,8 @@ test("a declared notes fragment that does not exist costs its own paragraph, nev
     template: "./t.md",
     authoring: "./a.md",
     migrations: "./m",
-    lifecycle: { chain: ["Backlog", "Shipped"], notes: "./nowhere.md" },
+    notes: "./nowhere.md",
+    lifecycle: { chain: ["Backlog", "Shipped"] },
   });
   const rendered = renderGovernanceRule([missing, ADR], "P.");
   assert.match(rendered, /### Plan/);

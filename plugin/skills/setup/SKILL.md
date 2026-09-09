@@ -30,10 +30,13 @@ and delegates detailed authoring to sibling skills, so that every repo carries t
 and config. It is run just as often on a repo that already exists and has drifted as on an empty
 directory — the baseline is the target either way.
 
-**Templates live in the plugin** at `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/`. Copy from
-there; never invent structure from memory. Files named `gitignore`/`editorconfig`/`gitkeep` are copied to
-`.gitignore`/`.editorconfig`/`.gitkeep` — and `templates/harness/githooks/` lands as `.githooks/`;
-`{{PLACEHOLDERS}}` are substituted (Step 3).
+**Templates live in the packages that own them**, not in this skill — Plan-040 Track 6. Each activated
+governance declares a `scaffold` in its own `type.json`: the directory its files live in, and for every
+file the destination it lands at. Resolve a package's root the way `license-setup` does
+(`vibe-ops records norm --type <t> --facet template`, then two `dirname`s) and read its declaration; never
+invent structure from memory, and never derive a destination — a file that must arrive as `.gitignore` or
+`.gitkeep` is stored without its dot, and `NOTICE.template` lands as `NOTICE`, both of which the
+declaration states and a convention would get wrong. `{{PLACEHOLDERS}}` are substituted (Step 3).
 
 **This is a target-state skill, in both modes.** The templates *are* the target state, and it is applied
 to repositories that already exist as often as to new ones — an empty directory is simply the maximum-gap
@@ -107,7 +110,8 @@ Confirm the plan (shape + names + path) before writing.
 
 ## Step 2 — Lay down the tree
 
-Create the target directory and copy templates. `TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates`.
+Create the target directory and write each activated governance's scaffold contribution, from the
+declaration described above.
 
 **Consult the ownership boundary before writing over anything that exists** (Plan-031). For every
 destination the Step 0 survey found already present, ask `vibe-ops records handling <path>…` — it
@@ -265,7 +269,7 @@ Offer to create the first ADR (e.g. the stack/shape decision) via **`new-adr`**,
   cp "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/check-agents-md.sh" scripts/  # plugin-root-paths: allow
   cp -R "${CLAUDE_PLUGIN_ROOT}/../cli/packages/module-check/sh/checks" scripts/  # plugin-root-paths: allow
   chmod +x scripts/check-agents-md.sh
-  cp "${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/github/workflows/check.yml" .github/workflows/
+  cp "$HARNESS/scaffold/check-ci.yml" .github/workflows/check.yml
   ./scripts/check-agents-md.sh --self-test && ./scripts/check-agents-md.sh
   ```
 
@@ -334,7 +338,8 @@ and template belong to that skill, and reproducing them by hand drops whatever i
 
 ### H1 — The apparatus
 
-`TPL=${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/harness`.
+`HARNESS` is the `@entelekheia/vibe-ops-harness` package root, whose `scaffold/` holds `check.sh`,
+`checks-run.sh`, `pre-commit` and `check-ci.yml`.
 
 - `TPL/checks/_run.sh` → `scripts/checks/_run.sh`. Composition plus the integrity assertion, shared by
   every caller. **This is the load-bearing file**: without it, a bare `vibe-ops check` composes only the

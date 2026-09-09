@@ -34,15 +34,18 @@ export interface RenderableType {
 export const GOVERNANCE_BEGIN = "<!-- vibe-ops:lifecycles begin -->";
 export const GOVERNANCE_END = "<!-- vibe-ops:lifecycles end -->";
 
-function titleCase(type: string): string {
-  return type.length <= 3 ? type.toUpperCase() : type.charAt(0).toUpperCase() + type.slice(1);
+/** How a type is written in a heading. A package may declare `title` — `adr` presents itself as `ADR`,
+ *  `log` as `Log` — because whether a type name is an acronym or a word is a fact about that type, not a
+ *  rule a renderer can infer: a length test made the log `LOG`. Title-case is the default. */
+function titleOf(unit: TypeUnit): string {
+  return unit.title ?? unit.type.charAt(0).toUpperCase() + unit.type.slice(1);
 }
 
 /** The `notes` fragment a package ships, or nothing. A declared-but-missing fragment is reported by the
  *  `facet-completeness` gate; here it is simply absent, because a renderer that throws would make one
  *  package's packaging mistake take down every other type's section too. */
 function notesFor(entry: RenderableType): string | undefined {
-  const relative = entry.unit.lifecycle?.notes;
+  const relative = entry.unit.notes;
   if (relative === undefined) return undefined;
   const file = path.resolve(entry.root, relative);
   if (!existsSync(file)) return undefined;
@@ -59,12 +62,23 @@ function notesFor(entry: RenderableType): string | undefined {
 export function renderTypeSection(entry: RenderableType): string | undefined {
   const { unit } = entry;
   const lifecycle = unit.lifecycle;
-  if (lifecycle === undefined) return undefined;
+  const notes = notesFor(entry);
+
+  // A TYPE MAY HAVE PROSE AND NO CHAIN, and the log is the reason this is not an oversight: it is
+  // write-once, so it has no status to be at. Requiring a chain here would have made its section vanish
+  // from a document that has always carried it — or, worse, invited a status word to be invented for it,
+  // which is the one thing this repository's own rule tells every reader not to do.
+  if (lifecycle === undefined && notes === undefined) return undefined;
 
   const where = unit.dirs[0];
-  const heading = where === undefined ? `### ${titleCase(unit.type)}` : `### ${titleCase(unit.type)} (\`${where}/\`)`;
+  const heading = where === undefined ? `### ${titleOf(unit)}` : `### ${titleOf(unit)} (\`${where}/\`)`;
 
-  const lines: string[] = [heading, "", "```", lifecycle.chain.join(" → "), "```", ""];
+  const lines: string[] = [heading, ""];
+  if (lifecycle === undefined) {
+    if (notes !== undefined) lines.push(notes, "");
+    return lines.join("\n");
+  }
+  lines.push("```", lifecycle.chain.join(" → "), "```", "");
 
   const facts: string[] = [
     `Worked at **${lifecycle.active}**; **${lifecycle.terminal}** is terminal.`,
@@ -83,7 +97,6 @@ export function renderTypeSection(entry: RenderableType): string | undefined {
   facts.push(unit.numbered ? `Numbered, ${unit.pad} digits, monotonic and never renumbered.` : "Not numbered.");
   lines.push(facts.join(" "), "");
 
-  const notes = notesFor(entry);
   if (notes !== undefined) lines.push(notes, "");
 
   return lines.join("\n");
@@ -102,7 +115,9 @@ function sections(types: readonly RenderableType[]): readonly string[] {
  */
 export function renderGovernanceRule(types: readonly RenderableType[], preamble: string): string {
   const rendered = sections(types);
-  const names = types.filter((t) => t.unit.lifecycle !== undefined).map((t) => t.unit.type);
+  // Named from what actually rendered, not from what declares a lifecycle: a type may have prose and no
+  // chain, and a description that omits it describes a document it is part of.
+  const names = types.filter((t) => renderTypeSection(t) !== undefined).map((t) => t.unit.type);
   const frontmatter = [
     "---",
     `description: Lifecycles for this repository's governance records (${names.join(" / ")}) — when each is immutable, permanent, or ephemeral, and where it lives.`,

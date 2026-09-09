@@ -71,18 +71,13 @@ export interface TypeUnitLifecycle {
   readonly archive?: string;
   /** From this status on, the record may not be edited. Absent means it always may. */
   readonly immutableFrom?: string;
-  /**
-   * A markdown fragment, relative to the manifest, holding what is true of this type's lifecycle and
-   * does not derive from the fields above — the closure ceremony, why a section is living, what a gap in
-   * the numbering means. PROSE STAYS PROSE: rendering a governance document from data is what keeps it
-   * current with the activated types, and the half that is genuinely a paragraph would be worse encoded
-   * as fields. The package that owns the type owns the paragraph.
-   */
-  readonly notes?: string;
 }
 
 export interface TypeUnit {
   readonly type: string;
+  /** How the type is written where a human reads it — `ADR` for `adr`, `Log` for `log`. Whether a type
+   *  name is an acronym is a fact about the type, not something a renderer can infer. */
+  readonly title?: string;
   /**
    * Relative to the manifest file. Absent only for a POLICY-ONLY unit — one that declares `facets`
    * and no record of its own (`base`, RFC-0005 §3: `governance-base` ships no record, only the policy
@@ -112,6 +107,18 @@ export interface TypeUnit {
   readonly targets?: readonly string[];
   /** What this package writes into a scaffolded repository — Plan-040 Track 6. */
   readonly scaffold?: TypeUnitScaffold;
+  /**
+   * A markdown fragment, relative to the manifest, holding what is true of this type and does not derive
+   * from any field above — the closure ceremony, why a section is living, why a gap in the numbering is
+   * expected. PROSE STAYS PROSE: rendering a governance document from data is what keeps it current with
+   * the activated types, and the half that is genuinely a paragraph would be worse as fields. The package
+   * that owns the type owns the paragraph.
+   *
+   * It sits beside `lifecycle` rather than inside it because a type may have prose and NO chain — the log
+   * is write-once, so it has no status to be at, and nesting this would have made its section
+   * unrepresentable.
+   */
+  readonly notes?: string;
   readonly numbered: boolean;
   readonly pad: number;
   readonly depth: number;
@@ -197,14 +204,8 @@ function parseLifecycle(parsed: Record<string, unknown>, file: string, type: str
     throw new RecordsConfigError(`${file} declares lifecycle.immutableFrom = ${JSON.stringify(immutableFrom)}, which is not one of its own chain`);
   }
 
-  const notes = raw.notes;
-  if (notes !== undefined && (typeof notes !== "string" || notes === "")) {
-    throw new RecordsConfigError(`${file} declares an invalid lifecycle.notes — a path to a markdown fragment, or none`);
-  }
-
   return {
     chain: statuses,
-    ...(notes === undefined ? {} : { notes: notes as string }),
     active: declared("active") ?? statuses[Math.min(1, statuses.length - 1)]!,
     terminal: declared("terminal") ?? statuses[statuses.length - 1]!,
     ...(living === undefined ? {} : { living: living as readonly string[] }),
@@ -383,11 +384,23 @@ function parseUnitObject(parsed: Record<string, unknown>, file: string): TypeUni
   const targets = parseTargets(parsed, file);
   const scaffold = parseScaffold(parsed, file);
 
+  const notes = parsed.notes;
+  if (notes !== undefined && (typeof notes !== "string" || notes === "")) {
+    throw new RecordsConfigError(`${file} declares an invalid notes — a path to a markdown fragment, or none`);
+  }
+
+  const title = parsed.title;
+  if (title !== undefined && (typeof title !== "string" || title === "")) {
+    throw new RecordsConfigError(`${file} declares an invalid title — how the type is written for a reader, or none`);
+  }
+
   return {
     type,
+    ...(title === undefined ? {} : { title: title as string }),
     ...(lifecycle === undefined ? {} : { lifecycle }),
     ...(targets === undefined ? {} : { targets }),
     ...(scaffold === undefined ? {} : { scaffold }),
+    ...(notes === undefined ? {} : { notes: notes as string }),
     ...(template === undefined ? {} : { template }),
     ...(authoring === undefined ? {} : { authoring }),
     ...(migrations === undefined ? {} : { migrations }),

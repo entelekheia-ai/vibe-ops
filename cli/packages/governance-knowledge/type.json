@@ -19,6 +19,7 @@
           "source"
         ]
       },
+      "notes": "./lifecycle-notes.md",
       "numbered": false,
       "dirs": [
         "project/log"
