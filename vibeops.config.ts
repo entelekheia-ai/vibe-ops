@@ -92,8 +92,9 @@ export default {
         // Plan-040 Track 1 moved five files out of `plugin/references/` into the governance package
         // whose policy each is, served through `records norm --facet policy` instead of a path. A link
         // to the old path inside a record that may no longer be edited — an implemented or rejected RFC,
-        // an archived plan, CHANGELOG (what a past release actually shipped) — is a fact about what the
-        // tree looked like when it was written, and repairing it would edit a frozen record.
+        // an archived plan, an accepted ADR (immutable by this repository's own governance rule),
+        // CHANGELOG (what a past release actually shipped) — is a fact about what the tree looked like
+        // when it was written, and repairing it would edit a frozen record.
         // Every OTHER record is repaired instead of exempted: the links in RFC-0001 and RFC-0003 were
         // repointed at the moved files in the same pass. A living surface — an `AGENTS.md`, a skill, an
         // open RFC or plan — stays a finding.
@@ -101,8 +102,14 @@ export default {
         // ONLY THE FILES THAT ACTUALLY CARRY ONE ARE LISTED. The archival record directories were named
         // here first and suppressed nothing at all, which is worse than redundant: a glob that covers no
         // finding today silently covers whatever lands in it tomorrow. `CHANGELOG.md` carries two links
-        // to the moved policy files, and `shipped/007` one to a hook script Track 7 retired.
-        "markdown-link": ["CHANGELOG.md", "project/plans/shipped/007-*.md"],
+        // to the moved policy files, `shipped/007` one to a hook script Track 7 retired, and
+        // `adr/0007` one to `instruction-surfaces.md`, moved into `@entelekheia/governance-instructions`
+        // by Plan-040 Track 5.
+        "markdown-link": [
+          "CHANGELOG.md",
+          "project/plans/shipped/007-*.md",
+          "project/adr/0007-license-enforcement-writes-no-git-config.md",
+        ],
       },
       // Research needs no disablement any more: the per-type entries are derived from the activated
       // governances (Plan-034), and no governance package serves research — the type entered the old

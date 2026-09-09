@@ -106,8 +106,9 @@ Do not restate the questions' reasoning here or in the repo you are closing work
 rejected candidates. Filing rejects one tier down is exactly what carried `project/learnings/` past its
 budget, and it is why the tier below is the one that rots.
 
-**Pass 2 — place what survived**, by what the fact *is*
-([the routing table](../../references/instruction-surfaces.md#where-each-fact-goes)):
+**Pass 2 — place what survived**, by what the fact *is* (the routing table in
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print`, "Where each fact
+goes"):
 
 1. **Does it hold beyond this repository?** → `project/learnings/`.
 2. **Can you name the file, folder or package where someone meets it again?** → `project/log/`, and that

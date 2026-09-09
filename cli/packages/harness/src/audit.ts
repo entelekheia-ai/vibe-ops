@@ -70,10 +70,14 @@ export interface Audit {
 function guides(repoRoot: string): readonly GuideEntry[] {
   const entries: GuideEntry[] = [];
   for (const file of trackedFiles(repoRoot)) {
-    // A shipped copy under a templates/ directory is written to resolve in a TARGET repository, never
-    // this one — the same safe default `governance`/`for-vibe-ops` apply via their own `ignore` config, applied
-    // here directly because this reading has no ops config to consult.
-    if (file.includes("templates/")) continue;
+    // A shipped copy under a templates/ or scaffold/ directory is written to resolve in a TARGET
+    // repository, never this one — the same safe default `governance`/`for-vibe-ops` apply via their own
+    // `ignore` config, applied here directly because this reading has no ops config to consult.
+    // `scaffold/` joined `templates/` at Plan-040 Track 5: a governance package's own scaffold
+    // contribution (`cli/packages/governance-instructions/scaffold/root/CLAUDE.md`) is the same kind of
+    // shipped copy as the setup skill's `templates/`, and without this it silently became a counted
+    // "always-on" guide of this repository's own — a file nobody here ever loads.
+    if (file.includes("templates/") || file.includes("scaffold/")) continue;
     const isInstructionFile = INSTRUCTION_BASENAMES.has(path.basename(file));
     const isRule = /(^|\/)\.agents\/rules\/[^/]+\.md$/.test(file);
     if (!isInstructionFile && !isRule) continue;

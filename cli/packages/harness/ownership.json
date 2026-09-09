@@ -14,11 +14,6 @@
       "why": "The record lifecycles, which this tooling defines. Measured 2026-08-13 as divergent in three of three repositories checked and divergent from the shipped copy — that divergence is unreconciled drift, not per-repository preference, and it is the reason this declaration is being written."
     },
     {
-      "match": "CLAUDE.md",
-      "class": "norm",
-      "why": "A mechanical import of AGENTS.md and nothing else. Byte-identical in every repository measured 2026-08-13."
-    },
-    {
       "match": ".claude/rules/*",
       "class": "norm",
       "why": "Symlinks into .agents/rules/. Pure mechanism with no content of its own; a repository editing one has broken the bridge rather than expressed a preference."
@@ -49,11 +44,6 @@
       "why": "Measured 2026-08-13 as four distinct files across four repositories. The divergence is legitimate: it is the human-facing description of one repository's governance."
     },
     {
-      "match": ".agents/rules/repo-guardrails.md",
-      "class": "seed",
-      "why": "Ships with a placeholder the setup skill explicitly tells the operator to fill in or delete. Measured 2026-08-13 at 1.1K in one repository and 9.4K in another — the shipped file is a prompt, not content."
-    },
-    {
       "match": "README.md",
       "class": "seed",
       "why": "Presentation, owned by the repository from its first edit."
@@ -79,9 +69,9 @@
       "why": "A documentation skeleton whose whole purpose is to be filled in."
     },
     {
-      "match": "{project/*/.gitkeep,.agents/skills/.gitkeep}",
+      "match": "project/*/.gitkeep",
       "class": "seed",
-      "why": "Placeholders that let an empty directory survive. Once the directory has content they are deleted, and re-creating them would be noise."
+      "why": "Placeholders that let an empty record directory survive. Once the directory has content they are deleted, and re-creating them would be noise. `.agents/skills/.gitkeep` moved out to `@entelekheia/governance-instructions`'s own fragment (Plan-040 Track 5): it belongs to a single artefact now, the instruction surface, where this base half is for paths no single package's fragment claims."
     },
     {
       "match": "vibeops.config.{ts,mjs,js}",

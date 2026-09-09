@@ -27,9 +27,9 @@ hallucination — and unlike most documentation, being wrong here is worse than 
 **This is a target-state skill.** The target is the file described below; whether one exists already is a
 detail of the same job. Before changing an existing file, apply the four verbs from
 `vibe-ops records norm --type base --facet policy --name convergence --print`. Two
-other references carry rules this skill does not repeat:
-[`instruction-surfaces.md`](../../references/instruction-surfaces.md) (which surface gets a fact, the
-`.agents/`↔`.claude/` bridge, nested files) and
+other policies carry rules this skill does not repeat:
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print` (which surface gets a
+fact, the `.agents/`↔`.claude/` bridge, nested files) and
 [`authoring-style.md`](../../references/authoring-style.md) (phrasing, budget mechanics, diagrams,
 English-only).
 
@@ -119,7 +119,8 @@ or it goes.
 cost tokens — it raises the chance the lines that mattered are discounted with it. Over budget, the fix is
 **relocation, not compression**: see the escape table in
 [`authoring-style.md`](../../references/authoring-style.md#budget), and route each displaced fact with
-[`instruction-surfaces.md`](../../references/instruction-surfaces.md#where-each-fact-goes).
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("Where each fact
+goes").
 
 ## Step 5 — Sections
 
@@ -138,7 +139,8 @@ Pick what fits; do not pad. Each entry is one line pointing at the real source o
 - **Source of truth** — a table mapping *what* → *where*.
 - **Out of scope by default** — for a multi-project workspace: which folders to ignore unless named.
 - **Agent config layout** — only if the repo carries rules or skills; build the bridge per
-  [`instruction-surfaces.md`](../../references/instruction-surfaces.md#the-agents--claude-bridge).
+  `vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("The `.agents/` ↔
+  `.claude/` bridge").
 - **Keeping this file current** — the loop in Step 7. Always include it.
 
 ## Step 6 — Point at derived knowledge instead of restating structure

@@ -519,7 +519,9 @@ test("Track 5 (Plan-032) over MCP: ownership get/list/set answer through the str
 
   const got = await call(c, "ownership", { repo, command: "get", args: ["CLAUDE.md"] });
   assert.equal(got.exitCode, 0, got.text);
-  assert.equal((got.data as { origin: string }).origin, "harness");
+  // CLAUDE.md moved from the harness base declaration into @entelekheia/governance-instructions's own
+  // fragment (Plan-040 Track 5) — the package that ships the scaffold copy now owns the classification.
+  assert.equal((got.data as { origin: string }).origin, "@entelekheia/governance-instructions");
 
   const listed = await call(c, "ownership", { repo, command: "list" });
   assert.equal(listed.exitCode, 0, listed.text);

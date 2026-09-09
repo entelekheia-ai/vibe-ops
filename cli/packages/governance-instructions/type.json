@@ -1,0 +1,9 @@
+{
+  "type": "instructions",
+  "facets": {
+    "surfaces": "policy/instruction-surfaces.md"
+  },
+  "scaffold": "./scaffold",
+  "numbered": false,
+  "dirs": []
+}

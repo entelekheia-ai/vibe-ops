@@ -4,7 +4,7 @@ vibe-ops-reference: instruction-surfaces@1
 
 # Instruction surfaces — which file gets a fact, and how it reaches the agent
 
-Decision record: [ADR-0003](../../project/adr/0003-instruction-file-architecture.md).
+Decision record: [ADR-0003](../../../../project/adr/0003-instruction-file-architecture.md).
 
 A repository has several places to put an instruction and they are **not** interchangeable. This file is
 the routing rule and the mechanics behind it.

@@ -23,11 +23,14 @@ import type { VibeOpsConfig } from "./config.ts";
 /**
  * The shipped bindings — a product statement, not discovery. A new DEFAULT type is an edit here.
  *
- * `base` is the one entry here that ships no record — it activates `@entelekheia/governance-base`
- * purely for the policy facets it now carries (`records norm --type base --facet policy --name …`,
- * Plan-040 Track 1: `convergence-policy`, `template-shape-change`). Every governance package already
- * depends on `governance-base`, so binding it by default costs a consumer nothing it did not already
- * install, unlike `license`/`classification`, which stay opt-in because a repository may not want either.
+ * `base` and `instructions` are the two entries here that ship no record — `base` activates
+ * `@entelekheia/governance-base` purely for the policy facets it now carries (`records norm --type base
+ * --facet policy --name …`, Plan-040 Track 1: `convergence-policy`, `template-shape-change`); `instructions`
+ * activates `@entelekheia/governance-instructions` for its `instruction-surfaces` policy facet and its
+ * scaffold files (Plan-040 Track 5). Every governance package already depends on `governance-base`, and
+ * the instruction surface is universal the same way, so binding both by default costs a consumer nothing
+ * it did not already need, unlike `license`/`classification`, which stay opt-in because a repository may
+ * not want either.
  */
 export const DEFAULT_GOVERNANCE_BINDINGS: Readonly<Record<string, string>> = {
   adr: "@entelekheia/governance-adr",
@@ -36,6 +39,7 @@ export const DEFAULT_GOVERNANCE_BINDINGS: Readonly<Record<string, string>> = {
   task: "@entelekheia/governance-task",
   log: "@entelekheia/governance-log",
   base: "@entelekheia/governance-base",
+  instructions: "@entelekheia/governance-instructions",
 };
 
 export interface GovernanceBinding {

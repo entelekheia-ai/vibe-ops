@@ -104,6 +104,17 @@ test("guides: a shipped template copy under templates/ is excluded, the same saf
   );
 });
 
+test("guides: a governance package's own scaffold/ copy is excluded the same way (Plan-040 Track 5)", async () => {
+  const repoRoot = await gitRepo();
+  await commit(repoRoot, "cli/packages/governance-instructions/scaffold/root/CLAUDE.md", "@AGENTS.md\n");
+  await commit(repoRoot, "CLAUDE.md", "@AGENTS.md\n");
+  const audit = await buildAudit(baseContext(repoRoot));
+  assert.deepEqual(
+    audit.guides.map((g) => g.path),
+    ["CLAUDE.md"],
+  );
+});
+
 test("buildAudit: governance overlay counts records and how many are behind the current template, per type", async () => {
   const repoRoot = await gitRepo();
   await commit(

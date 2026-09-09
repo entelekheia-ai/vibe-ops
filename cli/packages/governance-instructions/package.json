@@ -1,0 +1,42 @@
+{
+  "name": "@entelekheia/governance-instructions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The instruction surface: AGENTS.md, its CLAUDE.md import, the .agents/ <-> .claude/ bridge, and repo-guardrails.md",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/governance-instructions"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed — the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
+  "files": [
+    "dist",
+    "type.json",
+    "policy",
+    "scaffold",
+    "ownership.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@entelekheia/governance-base": "^0.1.0",
+    "@entelekheia/vibe-ops-core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}

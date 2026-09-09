@@ -130,8 +130,11 @@ licence for the pin, and it lapses if the checklist stops being run.
 Do it inline if the agent is not in the session's listing.
 
 **Root (always):**
-- `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`, `TPL/root/CLAUDE.md` → `CLAUDE.md`
+- `TPL/root/README.md` → `README.md`, `TPL/root/GOVERNANCE.md` → `GOVERNANCE.md`
 - `TPL/root/editorconfig` → `.editorconfig`, `TPL/root/gitignore` → `.gitignore`
+- `CLAUDE.md` moved out of `TPL` into `@entelekheia/governance-instructions`'s own `scaffold/root/CLAUDE.md`
+  (Plan-040 Track 5) — it is the package's scaffold contribution now, not a plugin template; copy it from
+  there until `setup scaffold` (Track 6) writes it as part of the composition.
 
 **Package/build baseline:**
 - **Monorepo:** `TPL/pkg/package.workspace.json` → root `package.json`; for each package
@@ -149,13 +152,18 @@ Do it inline if the agent is not in the session's listing.
 
 **Rules bridge** (replaces per-folder `AGENTS.md`s with one path-scoped rule; mechanics, the `test -L`
 verification and the Windows fallback are in
-[`${CLAUDE_PLUGIN_ROOT}/references/instruction-surfaces.md`](../../references/instruction-surfaces.md#the-agents--claude-bridge)):
+`vibe-ops records norm --type instructions --facet policy --name surfaces --print` (see "The `.agents/` ↔
+`.claude/` bridge")):
 - `TPL/agents/rules/governance.md` → `.agents/rules/governance.md`; symlink
   `ln -s ../../.agents/rules/governance.md .claude/rules/governance.md`
-- `TPL/agents/rules/repo-guardrails.md` → `.agents/rules/repo-guardrails.md` (seed file — leave its `TODO`
-  placeholder for the user to fill in or delete, don't invent guardrails); same symlink pattern into
-  `.claude/rules/repo-guardrails.md`
-- `TPL/agents/skills/.gitkeep` → `.agents/skills/.gitkeep` (empty — repo-specific skills land here later)
+- `repo-guardrails.md` and `agents/skills/.gitkeep` moved out of `TPL` into
+  `@entelekheia/governance-instructions`'s own `scaffold/` (Plan-040 Track 5) — copy them from there until
+  `setup scaffold` (Track 6) writes them as part of the composition:
+  - `scaffold/agents/rules/repo-guardrails.md` → `.agents/rules/repo-guardrails.md` (seed file — leave its
+    `TODO` placeholder for the user to fill in or delete, don't invent guardrails); same symlink pattern
+    into `.claude/rules/repo-guardrails.md`
+  - `scaffold/agents/skills/gitkeep` → `.agents/skills/.gitkeep` (empty — repo-specific skills land here
+    later)
 
 **`docs/` Diátaxis skeleton:** `TPL/docs/**` → `docs/` (index + `reference/ explanation/ how-to/ tutorials/` READMEs).
 
