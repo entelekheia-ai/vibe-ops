@@ -118,18 +118,25 @@ destination the Step 0 survey found already present, ask `vibe-ops records handl
 reports `ownership: <class>` for any path, records or not. A destination whose class is `repo` is
 reported and left untouched, whatever the survey concluded; `seed` is written only when absent, which
 the survey already enforces and the declaration now grounds; `shaped` belongs to migration, so adoption
-may create its skeleton but never rewrites a file that exists there. This check is yours, never the
-scaffolder's — its contract is that nothing is left for it to decide.
+may create its skeleton but never rewrites a file that exists there.
 
-**Steps 2 and 3 are dispatched to the `vibe-ops:scaffolder` agent**, once the plan is confirmed. Hand it
-the target path, the copy list below resolved for the shape chosen in Step 1, the substitution table from
-Step 3, and — per destination — what the Step 0 survey decided about anything already there. Nothing is
-left for it to decide, which is why it is the one surface here pinned to a cheaper model.
+**Steps 2 and 3 are one command**, once the plan is confirmed:
 
-**Its verifier is named, as [ADR-0013](../../../project/adr/0013-the-model-a-shipped-plugin-may-pin.md)
-requires:** the `grep -rn '{{'` in Step 3 returning empty, and the Step 7 checklist, which you run
-yourself and never delegate. A scaffold that went wrong is red within the minute; that is the whole
-licence for the pin, and it lapses if the checklist stops being run.
+```bash
+vibe-ops setup plan <target>                       # what would be written, and from which package
+vibe-ops setup scaffold <target> NAME=value …      # write it
+```
+
+`plan` and `scaffold` are the same traversal, so the preview is the run. Every destination that already
+exists is kept and named rather than overwritten — `--force <path>` is the exception, one path at a time
+— and a placeholder nobody answered is left standing in the file rather than emptied, so `grep -rn '{{'`
+still tells you what is unfinished.
+
+**No agent is dispatched here any more.** Copy-and-substitute was delegated to a pinned model because it
+had no deterministic surface; Plan-040 Track 6 gave it one, and
+[ADR-0013](../../../project/adr/0013-the-model-a-shipped-plugin-may-pin.md) stays as the policy under
+which a plugin *may* pin a model, with its one instance retired. The Step 7 checklist is still yours and
+still not delegated.
 
 Do it inline if the agent is not in the session's listing.
 
@@ -181,7 +188,7 @@ Verify no `{{` remains: `grep -rn '{{' <repo>` should be empty.
 
 ## Step 3a — Bind the governance types
 
-Yours, never the scaffolder's, after Step 3 and before the license. For every binding the Step 0 survey
+Yours, after Step 3 and before the license. For every binding the Step 0 survey
 marked `create`:
 
 ```bash

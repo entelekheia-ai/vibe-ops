@@ -52,7 +52,10 @@ test("--list composes the entries this ops owns", async () => {
     "manifest-description",
     "manifest-keywords",
     "manifest-changelog-version",
-    "dogfooding-drift",
+    // `dogfooding-drift` retired with its last pair (Plan-040 Track 6). It compared the templates this
+    // repository ships against the copies its own scaffold kept; the scaffold now reads each template
+    // from the package that owns it, and the two governance documents are rendered rather than copied,
+    // so there is no second copy left to drift from — which is what its own header said would retire it.
     "license-text",
     "hooks-registration",
     "authoring-completeness",

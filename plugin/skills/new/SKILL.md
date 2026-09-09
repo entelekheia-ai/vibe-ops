@@ -70,8 +70,9 @@ What the output means:
 - `TPL=<path> (config|search)` — the provenance says whether the repository declared it in
   `vibeops.config.ts` or the search order found it. A declared path that does not exist is an error, not a
   fallback.
-- `TPL=(none)` — **stop and ask.** Never invent a structure. Offer to copy the matching template from
-  `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/project/templates/`.
+- `TPL=(none)` — **stop and ask.** Never invent a structure. Offer to write the repository's scaffold,
+  `vibe-ops setup scaffold <repo>`, which lays each type's template down from the package that owns it —
+  there is no template directory in this plugin to copy from since Plan-040 Track 6.
 - `AUTHORITY=` — the file that overrides this skill on numbering and lifecycle. When it is a path (rather
   than `(default)`), **read it and follow it** over anything here: older repos tie ids to a release train,
   or require follow-ups like an `INDEX.md` row.

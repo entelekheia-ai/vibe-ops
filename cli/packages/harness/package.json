@@ -2,7 +2,7 @@
   "name": "@entelekheia/vibe-ops-harness",
   "version": "0.1.0",
   "private": true,
-  "description": "The CLI-internal harness module (no governance of its own): repo shape, promulgation, the applied-version comparison — and the BASE half of the ownership boundary",
+  "description": "The CLI-internal harness module (no governance of its own): repo shape, promulgation, the applied-version comparison \u2014 and the BASE half of the ownership boundary",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
@@ -19,7 +19,8 @@
   "files": [
     "dist",
     "ownership.json",
-    "policy"
+    "policy",
+    "scaffold"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

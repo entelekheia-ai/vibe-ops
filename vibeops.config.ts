@@ -141,10 +141,10 @@ export default {
         // that stays safe for everything else.
         "template-heading-drift": ["cli/packages/governance-*/migrations/**"],
         "*": [
-          // A template is the authority on a shape, never a description of one. Both copies — the
-          // canonical one in each governance package, and setup's scaffold copy.
+          // A template is the authority on a shape, never a description of one. There is one copy since
+          // Plan-040 Track 6: the scaffold reads each template from the package that owns the type, so
+          // the second copy this line used to name no longer exists.
           "cli/packages/governance-*/templates/**",
-          "plugin/skills/setup/templates/project/templates/**",
           // A record's own structure. Written against the template of its day and correct as it stands;
           // migrating them is a separate job with its own per-entry decisions.
           "project/adr/**",

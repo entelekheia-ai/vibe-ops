@@ -36,7 +36,7 @@ you are editing the file they govern, not only when invoked.
 | | |
 |---|---|
 | `skills/` | The commands above. A `templates/` folder beside a `SKILL.md` holds files the skill copies at runtime. |
-| `agents/` | Subagents the skills dispatch to. `governance-auditor` runs the survey every target-state skill opens with, so an `audit` cannot write; `migration-rehearser` walks a migration note against the artifact it handles worst, and changes nothing; `scaffolder` lays down a repository skeleton from decisions already made. |
+| `agents/` | Subagents the skills dispatch to. `governance-auditor` runs the survey every target-state skill opens with, so an `audit` cannot write; `migration-rehearser` walks a migration note against the artifact it handles worst, and changes nothing. The skeleton a repository starts from is written by `vibe-ops setup scaffold`, not by an agent. |
 | `templates/` | The versioned governance templates (`plan`, `task`, `adr`, `rfc`) that `/new` and `/migrate` read. |
 | `hooks/` | The only always-on surface — six guards, each silent unless its exact condition holds. |
 | `references/` | Shared policy the skills point at instead of restating. |

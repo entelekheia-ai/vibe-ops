@@ -22,7 +22,7 @@
 # zero files. The `facet-completeness` GATE reads what the repository ACTIVATES instead, which is the
 # same population in both installs, and reports SKIP rather than pass when it is empty. What stays here
 # is what was here before: the four record types' authoring rules, and `plugin/references/`.
-CHECK_VERSION=5
+CHECK_VERSION=6
 
 check_references_completeness() {
   head_
@@ -56,6 +56,6 @@ EOF
   fi
 
   if [ "$problems" -eq 0 ]; then
-    pass "$id" "authoring rules present for the four types /new resolves, and every plugin/references/ file declares its version"
+    pass "$id" "authoring rules present for the four types /new resolves; plugin/references/ is retired (Plan-040 Track 6) and this check reads it only where one still exists"
   fi
 }

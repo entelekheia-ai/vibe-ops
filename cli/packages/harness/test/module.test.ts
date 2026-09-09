@@ -26,20 +26,22 @@ function baseContext(overrides: Partial<Parameters<typeof harness.run>[0]> = {})
   };
 }
 
-test("harness declares its verbs and needsSource, and only the one that writes is destructive", () => {
+test("harness declares its verbs and needsSource, and the two that write are destructive", () => {
   assert.deepEqual(
     harness.definition.commands?.map((c) => c.name),
     // `resolve` waited on Plan-027 Track 1 rather than being written alongside the other four: adding a
     // fifth resolver while four had already diverged would have added the defect that plan removes.
     // `policy` joined in Plan-040 Track 1 — the harness's own policy prose (model, pair, ownership),
     // moved out of `plugin/references/` since `harness` is CLI-internal and has no `records norm` ladder.
-    ["resolve", "shape", "status", "catalog", "audit", "policy", "sync"],
+    // `install` joined in Plan-040 Track 6 — the commit gate's four files, written by their own verb
+    // because the harness is not a governance and its apparatus is not somebody's scaffold contribution.
+    ["resolve", "shape", "status", "catalog", "audit", "policy", "install", "sync"],
   );
   assert.equal(harness.definition.needsSource, true);
   assert.deepEqual(
     harness.definition.commands?.filter((c) => c.destructive === true).map((c) => c.name),
-    ["sync"],
-    "six verbs read and one writes; a reading verb that asked for confirmation would teach people to skip it",
+    ["install", "sync"],
+    "six verbs read and two write; a reading verb that asked for confirmation would teach people to skip it",
   );
 });
 

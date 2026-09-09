@@ -4,6 +4,7 @@
 // split are separate tracks and are not this module's job.
 
 import { defineModule } from "@entelekheia/vibe-ops-core";
+import { installHarness } from "./install.ts";
 import { repoShape } from "./shape.ts";
 import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
@@ -61,6 +62,14 @@ export default defineModule(
         flags: [
           { name: "name", type: "string", description: "which policy file", required: true, choices: [...POLICY_NAMES] },
           { name: "print", type: "boolean", description: "print the file's content" },
+        ],
+      },
+      {
+        name: "install",
+        summary: "write the commit gate's four files into this repository, keeping whatever is already there",
+        destructive: true,
+        flags: [
+          { name: "force", type: "string", description: "overwrite this destination even though it exists; comma-separated" },
         ],
       },
       {
@@ -223,6 +232,30 @@ export default defineModule(
         code: 0,
         summary: `${audit.guides.length} guide(s), ${audit.sensors.length} sensor(s), ${audit.governance.reduce((n, o) => n + o.count, 0)} governance record(s)`,
         data: audit,
+      };
+    }
+
+    if (context.command === "install") {
+      const force = new Set(
+        String(context.flags["force"] ?? "")
+          .split(",")
+          .map((entry) => entry.trim())
+          .filter((entry) => entry !== ""),
+      );
+      const result = installHarness(context.repoRoot, { force });
+      if (context.surface === "cli" && context.flags["json"] !== true) {
+        for (const file of result.written) context.log(`wrote ${file}`);
+        for (const file of result.kept) context.log(`kept ${file} — already there; --force ${file} to overwrite`);
+        for (const file of result.needsAppend) {
+          context.warn(
+            `${file} exists and does not call \`vibe-ops check\` — append the gate to it rather than replacing it, or the gate is not installed`,
+          );
+        }
+      }
+      return {
+        code: 0,
+        summary: `${result.written.length} written, ${result.kept.length} kept${result.needsAppend.length > 0 ? ", 1 hook needs the gate appended" : ""}`,
+        data: result,
       };
     }
 
