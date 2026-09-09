@@ -178,7 +178,7 @@ second binding for another agent host ships the equivalent of those and nothing 
       composing them as it does today. At the end the instruction surface's policy and scaffold have one
       owner, and the ops still reports the same checks.
 
-- [ ] **Track 6 — The scaffold as a composition, and three retirements.** `setup scaffold` writes each
+- [x] **Track 6 — The scaffold as a composition, and three retirements.** `setup scaffold` writes each
       activated governance's `scaffold/` contribution with its declared placeholders, and the harness's
       files through `harness install`; `project/<type>/.gitkeep` comes from each type's `dirs`.
       `agents/rules/governance.md` and `GOVERNANCE.md` are rendered from `lifecycle`, the second as
@@ -290,7 +290,72 @@ Every criterion below is observed on an ordinary run, with no flag an operator h
   class and the conflict check reads that as peers agreeing.
   Date / Author: 2026-09-09 / Danilo Borges
 
+- Decision: `GOVERNANCE.md` carries the MAP and the rule carries the MECHANICS; neither restates the
+  other.
+  Rationale: both documents rendered the same five `###` sections, so the human-facing one was a strict
+  subset of the rule while each pointed at the other for what it did not have — the rule's preamble sent
+  readers to `GOVERNANCE.md` "for the what and why", at a document that had none. The map's per-type row
+  is data now (`answers` plus the chain in one cell), so it stays current with what a repository
+  activates, which is what the old static table could not do.
+  Date / Author: 2026-09-09 / Danilo Borges
+
+- Decision: A status that leaves the chain is a `branch`, never another link in it.
+  Rationale: `adr` declared `[Proposed, Accepted, Superseded]` with `terminal: "Accepted"` and printed a
+  diagram running two names past the sentence under it, while `Deprecated` — which its own template
+  offers — had nowhere to be. Two of the five shipped types have a branch. `terminal` must now be the
+  chain's last link, so the contradiction is refused at parse time rather than rendered.
+  Date / Author: 2026-09-09 / Danilo Borges
+
+- Decision: `research` leaves the preamble, the skill and the checklist rather than gaining a package.
+  Rationale: no package ships that type, so the scaffold never created its directory and the rule
+  described a folder that did not exist — the exact "a file with no owner has no version, no migration
+  and no reader" debt this plan removes. Binding a `research` package is how a repository that wants one
+  gets it, which is RFC-0005's whole design; inventing a template and authoring rules to keep the word
+  would have been fabrication.
+  Date / Author: 2026-09-09 / Danilo Borges
+
+- Decision: The commit hook and the CI workflow are opt-in on `harness install`, off by default.
+  Rationale: the setup skill has said "offer, do not assume" about both since before the verb existed,
+  and the reason is not style — a commit hook changes what every `git commit` in somebody's clone does,
+  and a CI workflow is a snapshot. The verb installed both with no prompt, no flag and no way to decline.
+  Date / Author: 2026-09-09 / Danilo Borges
+
+- Decision: `GOVERNANCE.md` is `shaped` in the ownership declaration, and promulgation writes it.
+  Rationale: the plan said `shaped` throughout and the renderer was built for it, but the fragment still
+  said `seed` and sync had no `shaped` branch at all — so the one file whose contract is "the tool owns
+  named parts, the repository owns the rest" was the one file promulgation never updated. seed → shaped
+  is a widening, which asks a repository holding a receipt for consent; that is the mechanism working,
+  not a cost to route around.
+  Date / Author: 2026-09-09 / Danilo Borges
+
 ## Outcomes & Retrospective
+
+**Track 6 landed, and then a three-way adversarial review of it found seven blockers** — `93d04ca`,
+`3b86d2f`, then `727c811`, `657c952` and `4ed9640` closing them. Goal 4 is met: a freshly scaffolded
+repository has no file whose owner is the plugin, and it passes its own gate — 37 checks, 0 failed,
+probed into a real git repository rather than argued.
+
+**Six of the seven were invisible from every output, and that is now this plan's fourth round saying so.**
+A deleted END marker took the append path and created a second BEGIN that paired across the repository's
+own prose, which the *next* render deleted — silently, exit 0. A package declaring a `notes` fragment it
+did not ship lost its whole section from both governance documents of every consuming repository, with
+the gate green. `harness install` read `# TODO: some day run vibe-ops check here` as an installed gate,
+kept the hook, warned about nothing and reported success over a repository with no gate. The one finding
+that announced itself was the CI workflow, and only because it would have gone red on somebody else's
+first push.
+
+**The largest was not a code defect at all.** Thirty-four of thirty-four statements from the old
+`GOVERNANCE.md` were gone — the artifact table, the flow, where a learning goes, issue pairing, the
+decision record — lost in an editorial carve that moved the lifecycles into data and dropped everything
+the lifecycles were not. Nothing could have caught it: every test passed, the gate was green, and the
+document that replaced it was well-formed. It was found by one reviewer diffing the old file against the
+new one sentence by sentence, which is the instrument this kind of loss needs and no gate is.
+
+**Two things the review found were in the fragments, not the code**, and both were real: `GOVERNANCE.md`
+was declared `seed` while every document about it said `shaped`, and `governance-knowledge` declared
+`authoring` for both its units and shipped no such file. The second was surfaced by turning the gate on —
+`facet-completeness@3` reads every path a manifest declares, and its first run failed on this repository.
+A gate that finds a real gap on its first run is the gate working; the fix was to write the missing rules.
 
 **Track 7 landed** (`01bf2db`): `plan-progress` and `session-cleanup` are CLI hook surfaces, the nudge's
 decision logic sits in `governance-plan` as a handler, and `plugin/hooks/` and `plugin/scripts/` ship no
