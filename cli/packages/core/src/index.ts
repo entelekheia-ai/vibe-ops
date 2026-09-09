@@ -12,12 +12,22 @@ export type {
   OwnershipNarrowing,
   RecordsConfig,
   RecordType,
+  StyleLayer,
+  StyleLayerObject,
+  StyleBinding,
+  StyleStackConfig,
   TypesConfig,
   VibeOpsConfig,
   WriteManagedConfigOptions,
   WriteManagedConfigResult,
 } from "./config.ts";
-export { activateGovernance, activatedTemplatePaths, DEFAULT_GOVERNANCE_BINDINGS, effectiveGovernanceBindings } from "./governance-map.ts";
+export {
+  activateGovernance,
+  activateGovernancePackage,
+  activatedTemplatePaths,
+  DEFAULT_GOVERNANCE_BINDINGS,
+  effectiveGovernanceBindings,
+} from "./governance-map.ts";
 export type { ActivatedGovernance, GovernanceBinding } from "./governance-map.ts";
 export { DEFAULT_OPS, effectiveOps, opsSpecifier, loadOpsPlugin } from "./ops-map.ts";
 export { createEmitter, UndeclaredObservationError } from "./emit.ts";

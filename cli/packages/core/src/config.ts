@@ -101,6 +101,42 @@ export interface RecordsConfig {
 }
 
 /**
+ * One layer of a `style` stack (RFC-0005 §2.1) — a package plus an optional scope, `on` and `rules`.
+ * The SHORT spelling is a bare string, either a plain package name (unscoped, applies everywhere) or one
+ * carrying its scope inline: `"@danilo/style-conciso/{plan,task}"` (a leading `/` before the brace, an
+ * INCLUDE list) or `"@samuel/style-explicativo{^rfc}"` (the brace right after the package name, `^`
+ * marking an EXCLUDE list). The LONG spelling is this object, needed only when a layer also carries
+ * `on` or `rules` — resolution the composer decides, never the package.
+ */
+export interface StyleLayerObject {
+  /** The package carrying this layer's `general.md` (+ its per-target fragments). */
+  readonly use: string;
+  /** `"{a,b}"` (include) or `"{^a,b}"` (exclude); absent applies to every target. */
+  readonly scope?: string;
+  /** Sum instead of replace for every section this layer contributes — default `"replace"`. */
+  readonly on?: "append" | "replace";
+  /** Per-section-key override of `on`, keyed by the section's own key. */
+  readonly rules?: Readonly<Record<string, "append" | "replace">>;
+}
+
+/** A layer, either spelling. */
+export type StyleLayer = string | StyleLayerObject;
+
+/** The full form: `{ layers: [...], onCollision }`. The short form (`style: [...]`) is exactly this with
+ *  the default `onCollision`. */
+export interface StyleStackConfig {
+  readonly layers: readonly StyleLayer[];
+  /** Severity for a collision neither `on` nor `rules` resolved. Default `"warn"`. Composing never
+   *  aborts a run on its own account — `"error"` still reports rather than throws, and the CALLER
+   *  (the CLI) turns that into a non-zero exit. */
+  readonly onCollision?: "error" | "warn" | "off";
+}
+
+/** `style`'s binding is a stack, not a single package — the one exception RFC-0005 §2.1 carves into an
+ *  otherwise uniform `TypesConfig`. */
+export type StyleBinding = readonly StyleLayer[] | StyleStackConfig;
+
+/**
  * Which installed package governs a type name, declared ONLY where the scan alone is ambiguous — the
  * same doctrine as `records.dirs`, which an ordinary repository never writes either.
  *
@@ -109,12 +145,13 @@ export interface RecordsConfig {
  * either being detectably wrong, which is the governance failure the binding exists to prevent. One
  * short name admits one owner, and changing owner is a line somebody edits in review.
  *
- * The value is the governing package's name. A binding that resolves to nothing is USED ANYWAY: the
- * caller examines zero files against the name the repository chose, which is visible and attributable,
- * where quietly falling back to another claimant is neither.
+ * The value is the governing package's name for every type except `style`, whose value is a
+ * `StyleBinding` (an ordered stack) instead of one package name — RFC-0005 §2.1. A binding that resolves
+ * to nothing is USED ANYWAY: the caller examines zero files against the name the repository chose, which
+ * is visible and attributable, where quietly falling back to another claimant is neither.
  */
 export interface TypesConfig {
-  readonly [localName: string]: string;
+  readonly [localName: string]: string | StyleBinding;
 }
 
 /**

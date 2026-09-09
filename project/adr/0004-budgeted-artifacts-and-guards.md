@@ -94,6 +94,7 @@ file will drift upward until the next budget failure catches it.
   enforced?") is the guard-over-prose rule stated from the other side.
 - [ADR-0003](0003-instruction-file-architecture.md) — the relevance gate and the equal-priority finding
   that make a budget necessary.
-- [`references/authoring-style.md`](../../plugin/references/authoring-style.md) — the budget and the escape table
-  as the skills apply them.
+- The style stack's "Budget" section (`vibe-ops records norm --type style --facet policy --print`,
+  RFC-0005 §2.1) — the budget and the escape table as the skills apply them; it moved out of
+  `plugin/references/` and into `@entelekheia/governance-style` in Plan-040 Track 4.
 - [Plan-001](../plans/shipped/001-knowledge-lifecycle-retrofit.md), T8 — the validator that enforces this.

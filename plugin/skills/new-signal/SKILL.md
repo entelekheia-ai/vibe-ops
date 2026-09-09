@@ -178,8 +178,8 @@ Three questions, in order. A no to the first two ends the run, and that is a leg
 Where it goes is the repository's business, not this skill's: an always-on rule under `.agents/rules/`, a
 section of an existing instruction file, or a reference the file points at. The routing table in
 `vibe-ops records norm --type instructions --facet policy --name surfaces --print` (see
-"Where each fact goes") decides; [`authoring-style.md`](../../references/authoring-style.md) decides how
-it reads.
+"Where each fact goes") decides where; `vibe-ops records norm --type style --facet policy --print`
+decides how it reads.
 
 Two things this guide must carry that ordinary prose does not:
 

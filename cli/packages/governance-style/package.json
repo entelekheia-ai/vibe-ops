@@ -1,0 +1,42 @@
+{
+  "name": "@entelekheia/governance-style",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The default style layer: how a generated document is written — phrasing, budget, tables, diagrams — plus one fragment per artefact it documents a delta for",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
+    "directory": "cli/packages/governance-style"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "_comment_files": "general.md and the target fragments ship BESIDE dist/ and are read directly from the package root by composeStylePolicy (@entelekheia/governance-base) — never through defineGovernance's facets indirection, which type.json's own facets.policy entry only documents for a plain single-facet read.",
+  "files": [
+    "dist",
+    "type.json",
+    "general.md",
+    "readme.md",
+    "agents-md.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@entelekheia/governance-base": "^0.1.0",
+    "@entelekheia/vibe-ops-core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}

@@ -29,9 +29,9 @@ detail of the same job. Before changing an existing file, apply the four verbs f
 `vibe-ops records norm --type base --facet policy --name convergence --print`. Two
 other policies carry rules this skill does not repeat:
 `vibe-ops records norm --type instructions --facet policy --name surfaces --print` (which surface gets a
-fact, the `.agents/`↔`.claude/` bridge, nested files) and
-[`authoring-style.md`](../../references/authoring-style.md) (phrasing, budget mechanics, diagrams,
-English-only).
+fact, the `.agents/`↔`.claude/` bridge, nested files) and the style stack, read with
+`vibe-ops records norm --type style --facet policy --for agents-md --print` (phrasing, budget mechanics,
+diagrams, English-only).
 
 **Scale the pass to the edit.** This skill loads whenever an `AGENTS.md` or `CLAUDE.md` is opened, so most
 of the time it arrives for one added line, not a rewrite. Then only three things apply, and the nine steps
@@ -117,10 +117,10 @@ or it goes.
 
 **Aim for 150 lines.** The always-on block passes a relevance gate as a whole, so padding does not merely
 cost tokens — it raises the chance the lines that mattered are discounted with it. Over budget, the fix is
-**relocation, not compression**: see the escape table in
-[`authoring-style.md`](../../references/authoring-style.md#budget), and route each displaced fact with
-`vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("Where each fact
-goes").
+**relocation, not compression**: see the escape table in the style stack's "Budget" section
+(`vibe-ops records norm --type style --facet policy --for agents-md --print`), and route each displaced
+fact with `vibe-ops records norm --type instructions --facet policy --name surfaces --print` ("Where each
+fact goes").
 
 ## Step 5 — Sections
 
