@@ -13,7 +13,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { activateGovernance, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
 import type { VibeOpsConfig } from "@entelekheia/vibe-ops-core";
-import { renderGovernanceRule, renderGovernanceDoc } from "@entelekheia/governance-base";
+import { composeGovernanceDocuments } from "@entelekheia/governance-base";
 import type { RenderableType } from "@entelekheia/governance-base";
 
 /** One file the scaffold would write, and where its content came from. */
@@ -139,43 +139,14 @@ export async function compose(
     }
   }
 
-  // The two documents that describe whatever is activated. Both are framed by prose `governance-base`
-  // ships: the rule opens with the preamble, `GOVERNANCE.md` closes with the map. Without the preamble
-  // the rule would be sections with no frame, so its absence is a reason not to write the file at all
-  // rather than to write half of one — BUT NOT SILENTLY. Returning a composition quietly missing both
-  // governance documents is the same class of failure as a binding that does not resolve, so it is
-  // reported the same way.
-  const base = types.find((t) => t.unit.type === "base");
-  const fragment = (name: string): string | undefined => {
-    if (base === undefined) return undefined;
-    const file = path.resolve(base.root, "scaffold", name);
-    return existsSync(file) ? readFileSync(file, "utf8") : undefined;
-  };
-  const refusals: string[] = [];
-
-  if (base === undefined) {
-    refusals.push("no activated governance declares the type `base`, so neither governance document can be framed");
-  } else {
-    const preamble = fragment("governance-preamble.md");
-    if (preamble === undefined) {
-      refusals.push(`${base.packageName} ships no scaffold/governance-preamble.md — the rule's frame, so the rule is not written`);
-    } else {
-      const rule = renderGovernanceRule(types, preamble);
-      files.push({ to: ".agents/rules/governance.md", origin: "rendered", content: rule, placeholders: [] });
-    }
-
-    const map = fragment("governance-map.md");
-    if (map === undefined) {
-      refusals.push(`${base.packageName} ships no scaffold/governance-map.md — the map half of GOVERNANCE.md, so the document is not written`);
-    } else {
-      const doc = renderGovernanceDoc(types, options.existingGovernanceDoc, map);
-      if (doc.ok) {
-        files.push({ to: "GOVERNANCE.md", origin: "rendered", content: doc.content, placeholders: [] });
-      } else {
-        refusals.push(doc.refusal);
-      }
-    }
+  // The two documents that describe whatever is activated — composed by `governance-base`, because
+  // `harness sync` needs the same answer on every promulgation and a second copy here would be a second
+  // thing to keep in step about files this tooling writes into other people's repositories. A refusal is
+  // reported, never a composition quietly missing a governance document.
+  const governance = await composeGovernanceDocuments(config, { types, existingDoc: options.existingGovernanceDoc });
+  for (const [to, content] of governance.files) {
+    files.push({ to, origin: "rendered", content, placeholders: [] });
   }
 
-  return { files, directories, unresolved, refusals };
+  return { files, directories, unresolved, refusals: governance.refusals };
 }

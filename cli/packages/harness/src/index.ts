@@ -129,9 +129,11 @@ export default defineModule(
 
       if (context.flags["json"] !== true) {
         for (const one of result.written) context.log(`  norm     ${one}`);
+        for (const one of result.merged) context.log(`  merged   ${one} — the rendered block only; the rest of the file is kept`);
         for (const one of result.seeded) context.log(`  seeded   ${one}`);
         for (const one of result.refused) context.log(`  REFUSED  ${one.path} (${one.was} → ${one.now}) — ${one.why}`);
         for (const one of result.swallowed) context.log(`  SWALLOWED ${one.path} — ${one.rule}`);
+        for (const one of result.documentRefusals) context.warn(one);
         if (result.branch !== undefined) context.log(`branch: ${result.branch}${result.tag === undefined ? "" : `  tag: ${result.tag}`}`);
         if (result.retiredState !== undefined) context.log(`retired  vibeops.config.local.json (${result.retiredState}) — its map now lives in vibeops.config.json on ${result.branch}`);
         if (result.ignoreBlock?.outcome === "rewritten") context.log(`ignore   .gitignore — the clone-local block's comment brought up to date on ${result.branch}`);
@@ -141,6 +143,16 @@ export default defineModule(
       // Refusals and swallowed paths both exit non-zero, for the same reason: each leaves the target in a
       // state the caller did not ask for, and a zero here reads as "promulgated" on the one line anybody
       // actually looks at.
+      // A DOCUMENT THAT COULD NOT RENDER IS THE SAME CLASS OF OUTCOME AS A REFUSED PATH: the target ends
+      // up without something the promulgation was for, and a zero exit reads as "promulgated".
+      if (result.documentRefusals.length > 0 && result.refused.length === 0) {
+        return {
+          code: 3,
+          summary: `${result.documentRefusals.length} governance document(s) could not be rendered for this target — see the warnings above`,
+          data: result,
+        };
+      }
+
       if (result.refused.length > 0) {
         return {
           code: 3,
@@ -167,8 +179,8 @@ export default defineModule(
         code: 0,
         summary:
           result.branch === undefined
-            ? `would write ${result.written.length} and seed ${result.seeded.length}`
-            : `${result.written.length} written, ${result.seeded.length} seeded on ${result.branch}${result.tag === undefined ? "" : ` (${result.tag})`} — not merged, not pushed`,
+            ? `would write ${result.written.length}, merge ${result.merged.length} and seed ${result.seeded.length}`
+            : `${result.written.length} written, ${result.merged.length} merged, ${result.seeded.length} seeded on ${result.branch}${result.tag === undefined ? "" : ` (${result.tag})`} — not merged into your branch, not pushed`,
         data: result,
       };
     }
