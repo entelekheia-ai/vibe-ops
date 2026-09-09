@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/governance-plan",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The plan governance: its type declaration, template, authoring rules and migration notes — one artifact, one package (ADR-0019)",
   "type": "module",
   "license": "Apache-2.0",
@@ -32,8 +32,8 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/governance-base": "^0.1.0",
-    "@entelekheia/vibe-ops-core": "^0.1.0"
+    "@entelekheia/governance-base": "^0.2.0",
+    "@entelekheia/vibe-ops-core": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

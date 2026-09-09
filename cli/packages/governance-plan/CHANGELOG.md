@@ -1,5 +1,29 @@
 # @entelekheia/governance-plan
 
+## 0.2.0
+
+### Minor Changes
+
+- adb3c7a: A type manifest may declare `units`, an array of full type units, so one package can serve more than one artifact (project/plans/040-\*.md Track 2, [ADR-0020](../project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md)). A binding picks which through the `#type` fragment RFC-0003 already defined, and the activation cache is keyed by `<package>#<type>` rather than by package name — keyed by package alone, a second binding to the same package was handed whatever the first had resolved, which is the same unit under a different name and reports no error. A manifest declaring both a top-level `type` and `units` is refused, as are two units naming the same type and an empty array.
+
+  `defineGovernance` takes `type` to say which unit a module serves; it is required when the manifest declares several and refused when it declares one, both at load rather than at dispatch.
+
+  A unit may declare `lifecycle` — the status `chain` in order, plus `active`, `terminal`, `living`, `archive` and `immutableFrom`, each validated against that chain. Where a type declares one, it is what `resolve` answers with; where it does not, every field is still derived from the template's own prose exactly as before. `governance-plan` declares its own, so `PLAN_ACTIVE`, `PLAN_TERMINAL` and `LIVING` now come from data instead of from parsing a template comment. A unit may also declare `targets`, the advisory artefact list a style package documents.
+
+- 01bf2db: Two more `plugin/hooks/*.sh` scripts become CLI hook surfaces (project/plans/040-\*.md Track 7): `vibe-ops hook plan-progress` replaces `plan-progress-nudge.sh`, and `vibe-ops hook session-cleanup` replaces `session-state-cleanup.sh`. The nudge's decision logic — which plan, if any, this turn should be asked about — is now `planProgressNudge`, exported by `@entelekheia/governance-plan`; the transcript-reading helper that used to be `plugin/scripts/session-touched-repos.sh` is now a CLI-internal function (`touchedRepos`). Both new surfaces take `--state-dir`, supplied by `hooks.json`'s own `${CLAUDE_PLUGIN_DATA}` expansion, instead of reading that (or any other host) environment variable themselves. Behaviour is the scripts' behaviour in every case a test covers, and differs in four measured ways, all of them narrowing what the hook says: the status row is read through the same header-table reader every other plan verb uses rather than by grepping any matching line, so a plan whose `Shipped` header disagrees with a stray row in its body is no longer named; the plan-was-written test is an exact path match rather than a substring, so writing `001-plan.md.bak` no longer silences the plan itself; the scan reads the live plans directory only, never an archival subdirectory; and the once-per-day log's timestamp now carries milliseconds.
+
+### Patch Changes
+
+- Updated dependencies [54a6052]
+- Updated dependencies [adb3c7a]
+- Updated dependencies [c7d4e3c]
+- Updated dependencies [e259e4a]
+- Updated dependencies [47f5a8e]
+- Updated dependencies [cd42823]
+- Updated dependencies [c3741f0]
+  - @entelekheia/governance-base@0.2.0
+  - @entelekheia/vibe-ops-core@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

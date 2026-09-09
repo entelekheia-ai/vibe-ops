@@ -1,5 +1,28 @@
 # @entelekheia/vibe-ops-mirror
 
+## 0.2.0
+
+### Minor Changes
+
+- 93d04ca: `vibe-ops harness install <target>` writes the commit gate's four files — `scripts/check.sh`, `scripts/checks/_run.sh`, `.githooks/pre-commit` and the CI workflow — from the harness package itself. They arrive by their own verb rather than through `setup scaffold` because the harness is not a governance: it has no type, no records and no binding, and its files are the apparatus a repository runs the governances through.
+
+  A destination that already exists is kept and named. The one case that gets more than that is a `pre-commit` that does not call the gate: it is kept AND reported, because silently keeping it would leave the gate uninstalled while the run said nothing — and replacing it would delete somebody's hook.
+
+  `dogfooding-drift` retires with its last pair (`@entelekheia/vibe-ops-mirror`). It compared the five record templates and the two governance documents this repository ships against the copies its own scaffold kept; the scaffold now reads each template from the package that owns the type, and both documents are rendered, so there is no second copy left to drift from. `55-references-completeness.sh` (`@6`) reads `plugin/references/` only where one still exists — this plugin's is gone.
+
+### Patch Changes
+
+- e259e4a: The `dogfooding-drift` entry's `log` pair points at `governance-knowledge/templates/log.md` — the template's new home now that `@entelekheia/governance-log` retired as a package (project/plans/040-\*.md Track 3, [ADR-0020](../project/adr/0020-one-artifact-one-unit-and-a-package-may-ship-several.md)).
+- Updated dependencies [54a6052]
+- Updated dependencies [adb3c7a]
+- Updated dependencies [c7d4e3c]
+- Updated dependencies [e259e4a]
+- Updated dependencies [47f5a8e]
+- Updated dependencies [cd42823]
+- Updated dependencies [c3741f0]
+  - @entelekheia/vibe-ops-core@0.2.0
+  - @entelekheia/vibe-ops-gates@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
