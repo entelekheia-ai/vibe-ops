@@ -110,3 +110,22 @@ test("a directory this repository's types need is created even when every file a
   const { result } = await run(repo, "scaffold", []);
   assert.ok((result.data as { directories: readonly string[] }).directories.includes("project/adr"));
 });
+
+// THE SHAPE DECIDES BETWEEN TWO FILES AT ONE DESTINATION. A single-package repository and a workspace
+// need different `package.json` content, so the choice cannot be read off the destination — which is why
+// RFC-0005 §4 gives the verb a shape at all. Without one, neither is written: a scaffold that guessed
+// would produce a manifest for a repository shape nobody chose.
+test("a shape-bound file is written only for its shape, and not at all without one", async () => {
+  const asPackage = await target();
+  await run(asPackage, "scaffold", ["REPO_NAME=p"], { shape: "package" });
+  assert.match(await readFile(path.join(asPackage, "package.json"), "utf8"), /"name"/);
+
+  const asWorkspace = await target();
+  await run(asWorkspace, "scaffold", ["REPO_NAME=w"], { shape: "workspace" });
+  assert.match(await readFile(path.join(asWorkspace, "package.json"), "utf8"), /workspaces/);
+
+  const shapeless = await target();
+  const { result } = await run(shapeless, "scaffold", ["REPO_NAME=n"]);
+  assert.equal((result.data as { written: readonly string[] }).written.includes("package.json"), false);
+  assert.equal(existsSync(path.join(shapeless, "package.json")), false);
+});

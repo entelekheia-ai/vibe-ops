@@ -34,6 +34,13 @@ export interface TypeUnitScaffoldFile {
   readonly from: string;
   /** Relative to the target repository's root. */
   readonly to: string;
+  /**
+   * Which repository shape this file belongs to — RFC-0005 §4's `setup scaffold <shape> <target>`.
+   * Absent means every shape, which is what most files are. A `package.json` is the counter-example and
+   * the reason this exists: a single-package repository and an npm-workspaces monorepo need DIFFERENT
+   * files at the SAME destination, so the choice cannot be made by the destination.
+   */
+  readonly shape?: string;
 }
 
 /**
@@ -255,7 +262,11 @@ function parseScaffold(parsed: Record<string, unknown>, file: string): TypeUnitS
         `${file} declares scaffold.files[${index}].to = ${JSON.stringify(candidate.to)}, which leaves the repository it would be written into`,
       );
     }
-    return { from: candidate.from, to: candidate.to };
+    const shape = (candidate as { shape?: unknown }).shape;
+    if (shape !== undefined && (typeof shape !== "string" || shape === "")) {
+      throw new RecordsConfigError(`${file} declares scaffold.files[${index}].shape as something other than a shape name`);
+    }
+    return { from: candidate.from, to: candidate.to, ...(shape === undefined ? {} : { shape: shape as string }) };
   });
 
   const placeholders = raw.placeholders;

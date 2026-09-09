@@ -55,7 +55,15 @@ export default defineModule(
         ],
       },
     ],
-    flags: [{ name: "json", type: "boolean", description: "print the structured object instead of KEY=value lines" }],
+    flags: [
+      { name: "json", type: "boolean", description: "print the structured object instead of KEY=value lines" },
+      {
+        name: "shape",
+        type: "string",
+        description: "which repository shape to write files for — a shape-bound file is skipped for every other shape",
+        choices: ["package", "workspace"],
+      },
+    ],
   },
   async (context): Promise<ModuleResult> => {
     const existingDoc = (() => {
@@ -63,7 +71,8 @@ export default defineModule(
       return existsSync(file) ? readFileSync(file, "utf8") : undefined;
     })();
 
-    const composition = await compose(context.config, { existingGovernanceDoc: existingDoc });
+    const shape = typeof context.flags["shape"] === "string" ? (context.flags["shape"] as string) : undefined;
+    const composition = await compose(context.config, { existingGovernanceDoc: existingDoc, shape });
     const values = parseValues(context.args);
     const rendered = composition.files.map((file) => ({ ...file, content: substitute(file.content, values) }));
     const unanswered = [...new Set(rendered.flatMap((f) => [...f.content.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((m) => m[1]!)))];

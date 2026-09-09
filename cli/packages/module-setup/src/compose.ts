@@ -53,7 +53,10 @@ type ActivatedType = RenderableType & {
   readonly packageName: string;
   readonly unit: RenderableType["unit"] & {
     readonly template?: string;
-    readonly scaffold?: { readonly dir: string; readonly files: readonly { readonly from: string; readonly to: string }[] };
+    readonly scaffold?: {
+      readonly dir: string;
+      readonly files: readonly { readonly from: string; readonly to: string; readonly shape?: string }[];
+    };
   };
 };
 
@@ -83,7 +86,7 @@ async function activated(config: VibeOpsConfig | undefined): Promise<{
  */
 export async function compose(
   config: VibeOpsConfig | undefined,
-  options: { readonly existingGovernanceDoc?: string } = {},
+  options: { readonly existingGovernanceDoc?: string; readonly shape?: string } = {},
 ): Promise<Composition> {
   const { types, unresolved } = await activated(config);
   const files: PlannedFile[] = [];
@@ -98,6 +101,10 @@ export async function compose(
       const scaffold = entry.unit.scaffold;
       if (scaffold !== undefined) {
         for (const file of scaffold.files) {
+          // A SHAPE-BOUND FILE IS WRITTEN ONLY FOR ITS SHAPE. `package.json` is why: a single-package
+          // repository and a workspace need different content at the same destination, so the choice
+          // cannot be read off the destination. A file with no shape belongs to every shape.
+          if (file.shape !== undefined && file.shape !== options.shape) continue;
           const source = path.resolve(entry.root, scaffold.dir, file.from);
           if (!existsSync(source)) continue; // reported by the facet-completeness gate, not invented here
           const content = readFileSync(source, "utf8");
