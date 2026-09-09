@@ -184,17 +184,15 @@ From `$GOVERNANCE_LICENSE/scaffold/ensure-license-headers.sh`:
 
 Then, by level:
 
-- **`script`**: write `.githooks/pre-commit` at the repo root, calling the script by its root-relative path
-  with no args. **Do not run `git config` and do not add an npm `prepare` script** — writing repo-scoped
-  git config on the user's behalf is a side effect nobody asked for, and in a monorepo it silently
-  reconfigures hooks for every workspace package, not just the one being set up (see
-  [ADR-0007](../../../project/adr/0007-license-enforcement-writes-no-git-config.md)). Instead, print the
-  one-line opt-in for the user to run themselves:
-  ```
-  git config core.hooksPath .githooks
-  ```
-  and record that same line in the AGENTS.md license-rules section written in Step 4, so a fresh clone
-  finds it without having to ask.
+- **`script`**: **not available — never write `.githooks/pre-commit`**
+  ([ADR-0021](../../../project/adr/0021-a-norm-file-cannot-carry-another-owners-line.md)). That path has
+  one owner, the harness, at class `norm`: promulgation overwrites it, so a licence hook written there
+  disappears at the next `harness sync` with nothing reporting the loss. Adding a second claimant would
+  turn that silent overwrite into a refusal in every repository that enables licence enforcement, so
+  neither half of the obvious repair works. A per-commit licence-header check belongs to the gate as a
+  composed check — which is where every other per-commit check already is — and until that gate exists,
+  offer `ci` and say why, rather than writing a hook that will vanish. The same reasoning ADR-0007
+  applied to git config applies here one layer up: this skill does not write another owner's file.
 - **`ci`**: copy `$GOVERNANCE_LICENSE/scaffold/license-headers-ci.yml` → `.github/workflows/license-headers.yml`. Adjust the
   `branches:` trigger if the repo has release branches beyond `main`. **Do not create `.githooks/` or touch
   git config at this level** — `ci` means the CI check is the only enforcement.
@@ -207,10 +205,8 @@ Then, by level:
       `.github/workflows/license-text.yml` present, no leftover `{{...}}` in either
 - [ ] `NOTICE` + `AUTHORS` present **only** if fork/dual-attribution; absent otherwise
 - [ ] `AGENTS.md` has one `## License rules` section, the variant matching fork status, no leftover `{{...}}`
-- [ ] If enforcement ≥ script: `scripts/ensure-license-headers.sh` executable, no leftover `{{...}}`
-- [ ] If enforcement = script: `.githooks/pre-commit` present at the repo root; the opt-in `git config`
-      line was printed to the user and recorded in AGENTS.md — **not** run by the skill, no `prepare`
-      npm script added, `core.hooksPath` left untouched
-- [ ] If enforcement = ci: `.github/workflows/license-headers.yml` present and points at the script; no
-      `.githooks/` directory was created
+- [ ] If enforcement is ci: `scripts/ensure-license-headers.sh` executable, no leftover `{{...}}`
+- [ ] **No `.githooks/` directory was created and no `pre-commit` was written.** That path has one owner,
+      the harness, and a licence hook written there disappears at the next promulgation (ADR-0021)
+- [ ] If enforcement = ci: `.github/workflows/license-headers.yml` present and points at the script
 - [ ] No `<!-- FORK_ONLY -->` marker comments left in any written file
