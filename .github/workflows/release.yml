@@ -48,10 +48,16 @@ jobs:
 
       - run: npm ci
 
-      # The gate. A published version cannot be recalled, so it runs before anything is published and
-      # `npm test` builds first through pretest — the packages typecheck against each other's dist.
+      # The gate. A published version cannot be recalled, so it runs before anything is published.
+      #
+      # THE BUILD IS FIRST, AND THE STEP'S NAME ALREADY SAID SO. It ran `typecheck` then `test`, and the
+      # comment reasoned that `npm test` builds through `pretest` — true, and one step too late: the
+      # packages resolve each other through their `types`, which point into `dist/`, so on a clean
+      # `npm ci` typecheck has no declarations to read and fails naming symbols that exist. A false RED,
+      # loud enough to read as a defect in whatever landed last. Same inversion as check.yml carried.
       - name: gates — build, typecheck, tests
         run: |
+          npm run build
           npm run typecheck
           npm test
 
