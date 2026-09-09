@@ -59,9 +59,16 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci
+      # TYPECHECK NEEDS A BUILD IN FRONT OF IT. The packages resolve each other through their published
+      # `types`, which point into `dist/` — so on a clean `npm ci` there are no declarations at all and
+      # every consumer typechecks against nothing. It is not a false green but a false RED, and a loud
+      # one: 55 errors naming fields that do exist, on a tree whose local typecheck is clean. The step
+      # below already knew the shape of this hazard and stated it; the order defeated the statement.
+      - run: npm run build
       - run: npm run typecheck
       # `npm test` builds first (pretest): the packages typecheck against each other's dist, so a
-      # stale one reports a false green.
+      # stale one reports a false green. That `pretest` cleans before it builds is what makes the build
+      # above cheap to repeat rather than something to skip.
       - run: npm test
 
       # Same rationale as the agents-md job's first step, one layer up: a gate that has silently stopped
