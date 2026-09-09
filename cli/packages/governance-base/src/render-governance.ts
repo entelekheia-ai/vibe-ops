@@ -22,9 +22,24 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { TypeUnit } from "./type-unit.ts";
 
-/** One activated type, with the root its `notes` fragment resolves against. */
+/**
+ * One activated type, with the root its `notes` fragment resolves against.
+ *
+ * The unit is described STRUCTURALLY rather than as a `TypeUnit`, because the thing callers actually
+ * hold is core's activated view — which carries what core reads and not the parser's full shape. Naming
+ * the fields this renderer needs is both the honest contract and what lets an activation reach it
+ * without a cast that would hide a field going missing.
+ */
 export interface RenderableType {
-  readonly unit: TypeUnit;
+  readonly unit: {
+    readonly type: string;
+    readonly title?: string;
+    readonly dirs?: readonly string[];
+    readonly numbered?: boolean;
+    readonly pad?: number;
+    readonly notes?: string;
+    readonly lifecycle?: TypeUnit["lifecycle"];
+  };
   /** Absolute path to the package root. */
   readonly root: string;
 }
@@ -37,7 +52,7 @@ export const GOVERNANCE_END = "<!-- vibe-ops:lifecycles end -->";
 /** How a type is written in a heading. A package may declare `title` — `adr` presents itself as `ADR`,
  *  `log` as `Log` — because whether a type name is an acronym or a word is a fact about that type, not a
  *  rule a renderer can infer: a length test made the log `LOG`. Title-case is the default. */
-function titleOf(unit: TypeUnit): string {
+function titleOf(unit: RenderableType["unit"]): string {
   return unit.title ?? unit.type.charAt(0).toUpperCase() + unit.type.slice(1);
 }
 
@@ -70,7 +85,7 @@ export function renderTypeSection(entry: RenderableType): string | undefined {
   // which is the one thing this repository's own rule tells every reader not to do.
   if (lifecycle === undefined && notes === undefined) return undefined;
 
-  const where = unit.dirs[0];
+  const where = unit.dirs?.[0];
   const heading = where === undefined ? `### ${titleOf(unit)}` : `### ${titleOf(unit)} (\`${where}/\`)`;
 
   const lines: string[] = [heading, ""];
@@ -94,7 +109,7 @@ export function renderTypeSection(entry: RenderableType): string | undefined {
       `Living sections — maintained while the work happens, never reconstructed at the end: ${lifecycle.living.map((s) => `**${s}**`).join(", ")}.`,
     );
   }
-  facts.push(unit.numbered ? `Numbered, ${unit.pad} digits, monotonic and never renumbered.` : "Not numbered.");
+  facts.push(unit.numbered === false ? "Not numbered." : `Numbered, ${unit.pad ?? 3} digits, monotonic and never renumbered.`);
   lines.push(facts.join(" "), "");
 
   if (notes !== undefined) lines.push(notes, "");

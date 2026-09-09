@@ -54,6 +54,7 @@
     "@entelekheia/vibe-ops-module-config": "^0.1.0",
     "@entelekheia/vibe-ops-module-ownership": "^0.1.0",
     "@entelekheia/vibe-ops-module-records": "^0.1.0",
+    "@entelekheia/vibe-ops-module-setup": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.25.0"
   },
@@ -81,6 +82,7 @@
     "@entelekheia/vibe-ops-module-check",
     "@entelekheia/vibe-ops-module-config",
     "@entelekheia/vibe-ops-module-ownership",
-    "@entelekheia/vibe-ops-module-records"
+    "@entelekheia/vibe-ops-module-records",
+    "@entelekheia/vibe-ops-module-setup"
   ]
 }
