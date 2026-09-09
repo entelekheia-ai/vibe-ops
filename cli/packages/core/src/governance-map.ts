@@ -37,7 +37,12 @@ export const DEFAULT_GOVERNANCE_BINDINGS: Readonly<Record<string, string>> = {
   rfc: "@entelekheia/governance-rfc",
   plan: "@entelekheia/governance-plan",
   task: "@entelekheia/governance-task",
-  log: "@entelekheia/governance-log",
+  // `governance-log` retired as a PACKAGE, not as a type (ADR-0020): `knowledge` ships `log` and
+  // `learning` as two units of one manifest, and this binding still names the `log` unit by default —
+  // no `#fragment` needed, since `log` is that package's first/default-exported unit. `learning` is
+  // deliberately absent here: a repository binds it only when it has learnings of its own to keep
+  // (RFC-0005 §2), which this workspace does not.
+  log: "@entelekheia/governance-knowledge",
   base: "@entelekheia/governance-base",
   instructions: "@entelekheia/governance-instructions",
 };

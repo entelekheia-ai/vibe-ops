@@ -4,8 +4,8 @@ vibe-ops-reference: knowledge-lifecycle@1
 
 # Knowledge lifecycle — where a learning goes when the work is done
 
-Decision record: [ADR-0002](../../project/adr/0002-knowledge-lifecycle.md). Placement targets:
-[ADR-0003](../../project/adr/0003-instruction-file-architecture.md).
+Decision record: [ADR-0002](../../../../project/adr/0002-knowledge-lifecycle.md). Placement targets:
+[ADR-0003](../../../../project/adr/0003-instruction-file-architecture.md).
 
 A repository records its *decisions* well — ADRs are immutable, RFCs have stage gates, task dossiers close
 through a write-back. What tends to have no home is the **empirical learning**: the non-obvious fact
@@ -57,7 +57,7 @@ can eliminate it; the fourth routes what survives.
    one you assume. Re-run a new guard enough times to see it is stable, then break the thing on purpose
    and watch it catch that.
 4. **Blast radius** — where it lands, routed by what the fact *is*. That routing table is
-   [`instruction-surfaces.md`](instruction-surfaces.md#where-each-fact-goes); do not restate it here.
+   [`instruction-surfaces.md`](../../../../plugin/references/instruction-surfaces.md#where-each-fact-goes); do not restate it here.
 
 The row that ends double-writing is the last one: a fact true in *any* repository — about a language, a
 tool, or how the maintainer prefers to work — is not repository knowledge, and putting it in the repo means

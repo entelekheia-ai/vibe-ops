@@ -13,7 +13,7 @@
         "migrations": "cli/packages/governance-plan/migrations",
         "templates": {
           "adr": "cli/packages/governance-adr/templates/adr.md",
-          "log": "cli/packages/governance-log/templates/log.md",
+          "log": "cli/packages/governance-knowledge/templates/log.md",
           "plan": "cli/packages/governance-plan/templates/plan.md",
           "rfc": "cli/packages/governance-rfc/templates/rfc.md",
           "task": "cli/packages/governance-task/templates/task.md"
@@ -237,7 +237,7 @@
             "<plugin>/skills/setup/templates/project/templates/rfc.md"
           ],
           [
-            "cli/packages/governance-log/templates/log.md",
+            "cli/packages/governance-knowledge/templates/log.md",
             "<plugin>/skills/setup/templates/project/templates/log.md"
           ],
           [

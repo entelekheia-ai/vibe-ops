@@ -1,19 +1,23 @@
 {
-  "name": "@entelekheia/governance-log",
+  "name": "@entelekheia/governance-knowledge",
   "version": "0.1.0",
   "private": true,
-  "description": "The log governance: its type declaration, template, authoring rules and migration notes — one artifact, one package (ADR-0019)",
+  "description": "The knowledge governance: what a piece of work taught, as two units sharing one promotion test — log (project/log/, moved whole from @entelekheia/governance-log, ADR-0020) and learning (project/learnings/, opt-in)",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/entelekheia-ai/vibe-ops.git",
-    "directory": "cli/packages/governance-log"
+    "directory": "cli/packages/governance-knowledge"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./learning": {
+      "types": "./dist/index-learning.d.ts",
+      "default": "./dist/index-learning.js"
     }
   },
   "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed — the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
@@ -22,6 +26,8 @@
     "type.json",
     "templates",
     "migrations",
+    "migrations-learning",
+    "policy",
     "authoring.md",
     "ownership.json"
   ],

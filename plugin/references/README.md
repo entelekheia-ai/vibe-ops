@@ -13,14 +13,14 @@ only `skills/` and `agents/`, so nothing here is ever invoked directly. It is co
 its own steps say to, or hands to a subagent as an absolute path.
 
 **Six policy files that used to live here moved into the governance packages whose policy they are**
-(Plan-040 Tracks 1 and 5) and are read through the CLI instead of a path — this directory keeps only the
+(Plan-040 Tracks 1, 3 and 5) and are read through the CLI instead of a path — this directory keeps only the
 three that have no such package. The table below carries both kinds; a "Read through" cell names a
 command, a relative link names a file still in this directory.
 
 | File | Answers | Read through | Pointed at by |
 |---|---|---|---|
 | `convergence-policy@2` | Is this skill target-state or event, and how does it reconcile a repo that already exists? | `vibe-ops records norm --type base --facet policy --name convergence --print` | every target-state skill; `new` and `close` declare themselves events; the `governance-auditor` agent, for the verbs it assigns |
-| [`knowledge-lifecycle.md`](knowledge-lifecycle.md) | Where does a learning go once the work is done? | this file | `close`, `authoring-agents-md` |
+| `knowledge-lifecycle@1` | Where does a learning go once the work is done? | `vibe-ops records norm --type log --facet policy --name lifecycle --print` | `close`, `authoring-agents-md` |
 | `instruction-surfaces@1` | Which file gets a given fact, and how does it reach the agent? | `vibe-ops records norm --type instructions --facet policy --name surfaces --print` | `authoring-agents-md`, `setup`, and question 4 of the promotion test |
 | [`authoring-style.md`](authoring-style.md) | How is a generated document written — phrasing, budget, tables, diagrams? | this file | every skill that writes prose into a target repo |
 | `exposure-contract@1` | What may this record carry into a repository that will be cloned alone and may go public? | `vibe-ops records norm --type classification --facet policy --name exposure --print` | `new` and `close` directly; `authoring-style.md` for everything else that writes prose |

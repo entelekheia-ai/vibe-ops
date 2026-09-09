@@ -1,0 +1,51 @@
+{
+  "units": [
+    {
+      "type": "log",
+      "template": "./templates/log.md",
+      "authoring": "./authoring.md",
+      "migrations": "./migrations",
+      "facets": {
+        "lifecycle": "./policy/lifecycle.md"
+      },
+      "schema": {
+        "carrier": "frontmatter",
+        "required": [
+          "name",
+          "description",
+          "kind",
+          "path",
+          "attempted",
+          "source"
+        ]
+      },
+      "numbered": false,
+      "dirs": [
+        "project/log"
+      ]
+    },
+    {
+      "type": "learning",
+      "template": "./templates/learning.md",
+      "authoring": "./authoring.md",
+      "migrations": "./migrations-learning",
+      "facets": {
+        "lifecycle": "./policy/lifecycle.md"
+      },
+      "schema": {
+        "carrier": "frontmatter",
+        "required": [
+          "name",
+          "description",
+          "scope",
+          "attempted",
+          "source"
+        ]
+      },
+      "numbered": false,
+      "dirs": [
+        "project/learnings"
+      ]
+    }
+  ]
+}
