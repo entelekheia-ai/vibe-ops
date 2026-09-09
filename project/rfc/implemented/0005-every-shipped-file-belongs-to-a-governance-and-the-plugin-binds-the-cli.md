@@ -16,12 +16,12 @@ vibe-ops-template: rfc@2
 
 | Field | Value |
 |---|---|
-| Status | Accepted |
+| Status | Implemented |
 | Created | 2026-09-06 |
 | Accepted | 2026-09-08 — maintainer sign-off, every open question closed |
 | Author | Danilo Borges |
-| Depends on | [RFC-0003](0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) |
-| Related | [ADR-0013](../adr/0013-the-model-a-shipped-plugin-may-pin.md), [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-033](../plans/shipped/033-one-artifact-one-governance.md), [Plan-032](../plans/shipped/032-the-ownership-verb-and-the-configuration-it-writes.md) |
+| Depends on | [RFC-0003](../0003-a-governance-type-as-a-pluggable-unit.md), [RFC-0004](0004-the-managed-layer-the-configuration-a-tool-writes.md) |
+| Related | [ADR-0013](../../adr/0013-the-model-a-shipped-plugin-may-pin.md), [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-033](../../plans/shipped/033-one-artifact-one-governance.md), [Plan-032](../../plans/shipped/032-the-ownership-verb-and-the-configuration-it-writes.md) |
 
 ---
 
@@ -307,7 +307,7 @@ stack into a round of errors, and a stack that warns is one a repository can run
 None. The five this RFC carried in Draft were closed on 2026-09-08 and are recorded below.
 
 One thing is deliberately deferred rather than open: a style layer is a package here, so the two-author
-case (`danilo-styles` beside `samuel-styles`) needs each published. [RFC-0006](0006-the-repository-as-a-source-of-vibe-ops-units.md)
+case (`danilo-styles` beside `samuel-styles`) needs each published. [RFC-0006](../0006-the-repository-as-a-source-of-vibe-ops-units.md)
 would let a layer be a local directory instead. Nothing in §2.1 depends on it — a layer is a specifier,
 and RFC-0006 adds a source for specifiers — so the two land independently.
 
@@ -354,13 +354,13 @@ and RFC-0006 adds a source for specifiers — so the two land independently.
 
 ## Related
 
-- [RFC-0003](0003-a-governance-type-as-a-pluggable-unit.md) — a governance type as a pluggable unit.
-- [RFC-0004](implemented/0004-the-managed-layer-the-configuration-a-tool-writes.md) — the managed
+- [RFC-0003](../0003-a-governance-type-as-a-pluggable-unit.md) — a governance type as a pluggable unit.
+- [RFC-0004](0004-the-managed-layer-the-configuration-a-tool-writes.md) — the managed
   layer `setup scaffold` writes `types` into.
-- [ADR-0013](../adr/0013-the-model-a-shipped-plugin-may-pin.md) — the pin this RFC retires.
-- [ADR-0019](../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — activation is
+- [ADR-0013](../../adr/0013-the-model-a-shipped-plugin-may-pin.md) — the pin this RFC retires.
+- [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md) — activation is
   the config.
-- [Plan-033](../plans/shipped/033-one-artifact-one-governance.md) — the rule this RFC extends past
+- [Plan-033](../../plans/shipped/033-one-artifact-one-governance.md) — the rule this RFC extends past
   records.
-- [RFC-0006](0006-the-repository-as-a-source-of-vibe-ops-units.md) — a local source for units, which is
+- [RFC-0006](../0006-the-repository-as-a-source-of-vibe-ops-units.md) — a local source for units, which is
   how a style layer exists without being published.

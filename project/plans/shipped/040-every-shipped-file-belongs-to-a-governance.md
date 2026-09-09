@@ -19,7 +19,7 @@ vibe-ops-template: plan@3
 | Status | Shipped |
 | Created | 2026-09-08 |
 | Author | Danilo Borges |
-| Depends on | [RFC-0005](../../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) |
+| Depends on | [RFC-0005](../../rfc/implemented/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) |
 | Related | [ADR-0013](../../adr/0013-the-model-a-shipped-plugin-may-pin.md), [ADR-0019](../../adr/0019-one-artifact-one-governance-package-activated-by-config.md), [Plan-033](./033-one-artifact-one-governance.md), [RFC-0006](../../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md) |
 
 ---
@@ -477,7 +477,7 @@ None. RFC-0005 closed the five it carried before this plan was cut.
 
 ## Related
 
-- [RFC-0005](../../rfc/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) — the
+- [RFC-0005](../../rfc/implemented/0005-every-shipped-file-belongs-to-a-governance-and-the-plugin-binds-the-cli.md) — the
   design this plan implements, including the full `style` specification in §2.1.
 - [RFC-0006](../../rfc/0006-the-repository-as-a-source-of-vibe-ops-units.md) — a local source for units,
   which is how a style layer exists without being published. Independent of this plan.
