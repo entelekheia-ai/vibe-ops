@@ -105,18 +105,28 @@ const unpublishable = []
 for (const name of order) {
   const known = await nameOnRegistry(name)
   // `undefined` is "could not ask", and it is not permission. A release that cannot reach the registry
-  // has no business deciding that every name on it is fine.
+  // has no business deciding that every name on it is fine — but a DRY RUN is allowed to say so and
+  // carry on, because reporting is the whole of what it does.
   if (known === undefined) {
-    console.error(`refusing: the registry did not answer for ${name} — publishing on an unread boundary is how half a workspace ships`)
-    process.exit(1)
+    if (!dryRun) {
+      console.error(`refusing: the registry did not answer for ${name} — publishing on an unread boundary is how half a workspace ships`)
+      process.exit(1)
+    }
+    console.log(`?     ${name} — the registry did not answer`)
+    continue
   }
   if (!known) unpublishable.push(name)
 }
 if (unpublishable.length > 0) {
-  console.error(`refusing to publish: ${unpublishable.length} package name(s) have never been published, and a workflow cannot create one:\n`)
+  const verb = dryRun ? 'would refuse to publish' : 'refusing to publish'
+  console.error(`${verb}: ${unpublishable.length} package name(s) have never been published, and a workflow cannot create one:\n`)
   for (const name of unpublishable) console.error(`  ${name}`)
-  console.error(`\nPublish each once by hand — \`npm publish --access public\` from its directory — then re-run. Nothing was published.`)
-  process.exit(1)
+  console.error(`\nPublish each once by hand — \`npm publish --access public\` from its directory — then re-run.${dryRun ? '' : ' Nothing was published.'}`)
+  // A DRY RUN REPORTS AND DOES NOT REFUSE. It exists to answer "what would this run do", and a refusal
+  // that pre-empts the listing answers a question nobody asked — including, here, the question of which
+  // packages the refusal is about, which the listing below is the only place to read.
+  if (!dryRun) process.exit(1)
+  console.error('')
 }
 
 /** Already on the registry at this exact version? A 404 means the package or the version is new. */
