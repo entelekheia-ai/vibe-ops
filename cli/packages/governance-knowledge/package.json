@@ -1,7 +1,7 @@
 {
   "name": "@entelekheia/governance-knowledge",
   "version": "0.2.0",
-  "description": "The knowledge governance: what a piece of work taught, as two units sharing one promotion test — log (project/log/, moved whole from @entelekheia/governance-log, ADR-0020) and learning (project/learnings/, opt-in)",
+  "description": "The knowledge governance: what a piece of work taught, as two units sharing one promotion test \u2014 log (project/log/, moved whole from @entelekheia/governance-log, ADR-0020) and learning (project/learnings/, opt-in)",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
@@ -19,7 +19,7 @@
       "default": "./dist/index-learning.js"
     }
   },
-  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed — the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
+  "_comment_files": "The data ships BESIDE dist/ and is resolved from the package root defineGovernance is handed \u2014 the same import.meta.url shape @entelekheia/vibe-ops-core uses for queries/. A directory added without a line here is present in a checkout and absent from every install.",
   "files": [
     "dist",
     "type.json",
@@ -28,7 +28,8 @@
     "migrations-learning",
     "policy",
     "authoring.md",
-    "ownership.json"
+    "ownership.json",
+    "lifecycle-notes.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
