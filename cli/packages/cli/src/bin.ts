@@ -185,7 +185,13 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
   // land in the middle of the payload and break `jq`, so it goes to stderr, where a human still reads it
   // and a pipe never sees it. Printing it on stdout is what a test caught the moment summary stopped
   // being optional.
-  if (parsed.values.json === true) {
+  // `--print` gets the same treatment for the same reason. Its output is a DOCUMENT — a policy text a
+  // caller redirects into a file or hands to a subagent — and the framing characters plus the summary
+  // landed inside it, so `records norm … --print > POLICY.md` produced a file ending in `│` and a line
+  // about section counts. `--json` was special-cased here the day summary became mandatory; `--print`
+  // is the same shape of output and was missed because until Plan-040 nothing served a whole document
+  // through it.
+  if (parsed.values.json === true || parsed.values.print === true) {
     process.stderr.write(`${result.summary}\n`);
   } else if (result.code === 0) {
     p.log.success(result.summary);

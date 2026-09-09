@@ -107,10 +107,21 @@ skill (Plan-040 Track 3 — the skill names verbs and a package root, never a fi
 that package root once, from the same package the licence texts themselves come from:
 
 ```bash
+vibe-ops config set types.license @entelekheia/governance-license   # once, if `license list` refused
 GOVERNANCE_LICENSE="$(dirname "$(dirname "$(vibe-ops records norm --type license --facet template)")")"
+[ -d "$GOVERNANCE_LICENSE/scaffold" ] || { echo "governance-license is not activated here"; exit 1; }
 ```
 
 Every `templates/<file>` reference below is `"$GOVERNANCE_LICENSE/scaffold/<file>"`.
+
+**Both lines are load-bearing, and the second is the one that is easy to drop.** `license` is not a
+default binding — the repository declares it, and running this skill *is* that declaration, which is why
+the `config set` comes first rather than being an error you hit at Step 2. And `$(…)` discards an exit
+code: on a repository where the type is not bound, `records norm` prints a path that does not exist and
+exits non-zero, `dirname` twice turns it into the target repository's own root, and every `cp` below then
+reads a file that is not there. An agent that fills those gaps from memory is precisely what
+[ADR-0008](../../../project/adr/0008-license-text-is-fetched-and-verified.md) exists to prevent, so the
+guard fails loudly instead.
 
 ## Step 2b — Keep it verified (skip only if the repo has no CI)
 

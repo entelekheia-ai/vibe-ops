@@ -80,8 +80,21 @@ export function effectiveGovernanceBindings(
 ): Readonly<Record<string, GovernanceBinding>> {
   const merged: Record<string, GovernanceBinding> = {};
   for (const [name, value] of Object.entries({ ...DEFAULT_GOVERNANCE_BINDINGS, ...config?.types })) {
+    // `style` is the one binding that is a STACK rather than a package name; `resolveStyleStack` in
+    // governance-base reads it, and `parseBinding` below only ever handles a single package name.
     if (name === "style") continue;
-    if (typeof value !== "string") continue;
+    // A NON-STRING IS A REFUSAL, NOT A SKIP. Skipping did not fall back to the shipped default — the
+    // spread has already overlaid the bad value, so `continue` REMOVED the type from the map entirely,
+    // and `ops-governance` derives its per-type entries from what activates: a repository that typed
+    // `types.adr` as an array silently stopped checking its ADRs, with every run still green. The type
+    // widened for `style`'s sake, so the check that TypeScript used to make at the index signature has
+    // to be made here instead.
+    if (typeof value !== "string") {
+      throw new TypeError(
+        `types.${name} must be a package name string, got ${Array.isArray(value) ? "an array" : typeof value}. ` +
+          `Only types.style takes a stack of layers.`,
+      );
+    }
     merged[name] = parseBinding(name, value);
   }
   return merged;

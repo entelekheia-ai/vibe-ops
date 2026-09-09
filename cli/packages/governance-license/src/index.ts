@@ -44,7 +44,17 @@ export default defineGovernance({
           if (context.surface === "cli") context.log(`wrote ${out} (${id}, verified${fromCache ? ", cached" : ""})`);
           return { code: 0, summary: `wrote ${out} (${id}, verified)`, data: { id, path: out, fromCache } };
         }
-        if (context.surface === "cli") context.log(text);
+        // `> LICENSE` PRODUCES A FILE THAT IS NOT THE LICENCE, so the redirect is refused rather than
+        // served. Everything this CLI prints on a terminal carries a summary footer, and a licence text
+        // is the one output where a trailing decoration is not cosmetic: the file no longer matches its
+        // own pinned digest, at exit 0, and the shell verb this replaced printed the pristine text.
+        // `--out` writes byte-exact and is what the skill already documents.
+        if (context.surface === "cli") {
+          return {
+            code: 2,
+            summary: `license get writes a file, not a stream — vibe-ops license get ${id} --out LICENSE (a redirect would capture this CLI's own summary lines into the licence)`,
+          };
+        }
         return { code: 0, summary: `${id}, verified${fromCache ? " (cached)" : ""}`, data: { id, text, fromCache } };
       } catch (error) {
         return { code: (error as Error).message.includes("no pinned source") ? 2 : 3, summary: (error as Error).message };

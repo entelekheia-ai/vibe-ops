@@ -118,6 +118,19 @@ export default defineModule(
       if (!isWritableHere(key)) {
         return { code: 2, summary: notWritableMessage(key) };
       }
+      // `types.style` IS WRITABLE, BUT NOT AS A STRING. Its value is an ordered stack of layers
+      // (RFC-0005 §2.1), and this verb writes one string — which produced a managed layer that every
+      // style read then refused, breaking all four authoring skills through the tooling's own binding
+      // verb. Refusing by name is what this module already does for a key it does not own; the shape it
+      // cannot write is named, so the operator knows where to write it instead.
+      if (key === "types.style") {
+        return {
+          code: 2,
+          summary:
+            "types.style is a stack of layers, not a package name — write it in vibeops.config.ts: " +
+            'style: ["@scope/style-base", "@scope/style-terse/{plan,task}"], or the long form with onCollision',
+        };
+      }
       const { code, lines } = await setBinding(context.repoRoot, key, value);
       if (context.flags.json !== true) for (const line of lines) context.log(line);
       return { code, summary: lines[0]!, data: { key, value, lines } };

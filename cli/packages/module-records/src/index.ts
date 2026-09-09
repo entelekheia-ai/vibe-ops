@@ -241,9 +241,14 @@ export default defineModule(
         const collisionLines = result.onCollision === "off" ? [] : formatStyleCollisions(result);
         if (context.surface === "cli" && context.flags["json"] !== true) {
           if (explain) for (const line of formatStyleExplain(result)) context.log(line);
-          if (context.flags["print"] === true) context.log(result.text);
-          for (const line of result.warnings) context.log(`warning: ${line}`);
-          for (const line of collisionLines) context.log(`warning: ${line}`);
+          // A REFUSAL HANDS BACK NO DOCUMENT. It printed the merged text and then said it refused, which
+          // is a refusal a caller routes around — and an agent reading stdout simply uses what it sees.
+          // The diagnosis stays (`sections`, `collisions`, and the lines below); the usable artefact does
+          // not, on the terminal or in `data`.
+          if (result.ok && context.flags["print"] === true) context.log(result.text);
+          for (const line of result.warnings) context.warn(line);
+          // The label follows the severity the repository chose: at `error` these lines are not warnings.
+          for (const line of collisionLines) context.warn(result.onCollision === "error" ? `unresolved: ${line}` : line);
         }
         return {
           code: result.ok ? 0 : 1,
@@ -252,7 +257,7 @@ export default defineModule(
             : `style composed for ${forTarget ?? "(unscoped)"} refused — ${result.collisions.length} unresolved collision(s), onCollision: error`,
           data: {
             target: forTarget,
-            text: result.text,
+            ...(result.ok ? { text: result.text } : {}),
             sections: result.sections,
             collisions: result.collisions,
             onCollision: result.onCollision,

@@ -1,5 +1,5 @@
 {
-  "note": "This governance's fragment of the promulgation boundary — composed with the harness base declaration and every other activated governance's fragment at sync time (Plan-033, ADR-0019). Read, never re-decided at a call site. This package ships no record, so there is no template/authoring/migrations entry here — only the three scaffold files it writes (Plan-040 Track 5).",
+  "note": "This governance's fragment of the promulgation boundary — composed with the harness base declaration and every other activated governance's fragment at sync time (Plan-033, ADR-0019). Read, never re-decided at a call site. This package ships no record, so there is no template/authoring/migrations entry here — only the three scaffold files it writes (Plan-040 Track 5). THESE THREE PATHS WERE UNCONDITIONAL BEFORE, in the harness base fragment, and are now conditional on `instructions` being bound — which it is by default. A repository that deliberately unbinds it has no claimant for them, and the consequence is a REFUSAL rather than an unguarded write: `harness sync` collects an unclaimed path into `unclassified` and throws, because absence of an entry is not permission. That is the same repository saying it does not want this governance, so nothing ships these files to it either; the pairing is deliberate, not an oversight.",
   "version": 1,
   "paths": [
     {

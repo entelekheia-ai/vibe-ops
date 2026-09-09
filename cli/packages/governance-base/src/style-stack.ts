@@ -81,6 +81,9 @@ const GENERAL_FILE = "general.md";
  *  invention rather than a transcription of the spec. */
 const KEY_COMMENT_RE = /^<!--\s*key:\s*([A-Za-z0-9_-]+)\s*-->\s*$/;
 const HEADING_RE = /^##\s+(.+?)\s*$/;
+/** The reserved key a file's lead-in occupies. Not writable by a marker — see `parseSections`. */
+const PREFACE_KEY = "_preface";
+
 const FRONTMATTER_RE = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 
 function slugify(heading: string): string {
@@ -101,10 +104,12 @@ interface RawSection {
  * Splits one file's content into sections, the merge unit RFC-0005 §2.1 names. A `##` heading opens a
  * new section, keyed by its slug unless the very next line is an explicit-key comment; everything before
  * the first `##` (a `#` title, an intro paragraph) is its own section under the reserved key `"_preface"`
- * — CHOSEN HERE: the RFC never special-cases a file's lead-in, so this file treats it as an ordinary
- * section rather than inventing a second merge rule. A later layer's preface REPLACES an earlier one
- * under the same default-replace rule as any other key; a repository that wants every layer's intro kept
- * sets `on: "append"` the same way it would for any other section.
+ * — CHOSEN HERE: the RFC never special-cases a file's lead-in, so it is sectioned like anything else
+ * rather than needing a second parser. It does NOT merge like anything else: the first applying layer's
+ * lead-in is the document's, and a later one is dropped and reported. See the merge loop for why.
+ *
+ * The key is reserved. A section that claims it with an explicit `<!-- key: _preface -->` marker is
+ * refused, because a rule taking the document's title slot is not something a stack can express.
  *
  * A leading YAML frontmatter block (`vibe-ops-reference: …`) is stripped before sectioning — that stamp
  * is the FILE's own version marker, never content to compose into the served text.
@@ -117,7 +122,7 @@ function parseSections(content: string): RawSection[] {
   let preface: string[] = [];
 
   const flushPreface = () => {
-    if (preface.some((l) => l.trim() !== "")) sections.push({ key: "_preface", body: preface.join("\n").trim() });
+    if (preface.some((l) => l.trim() !== "")) sections.push({ key: PREFACE_KEY, body: preface.join("\n").trim() });
   };
   const flushCurrent = () => {
     if (current !== undefined) sections.push({ key: current.key, body: current.lines.join("\n").trim() });
@@ -135,7 +140,9 @@ function parseSections(content: string): RawSection[] {
       let lookahead = i + 1;
       while (lookahead < lines.length && lines[lookahead]!.trim() === "") lookahead++;
       const keyMatch = lookahead < lines.length ? KEY_COMMENT_RE.exec(lines[lookahead]!.trim()) : null;
-      if (keyMatch) {
+      // A marker naming the reserved lead-in key is ignored, so a rule cannot take the document's title
+      // slot and make the first layer's title vanish for a reason no reader could guess.
+      if (keyMatch && keyMatch[1] !== PREFACE_KEY) {
         key = keyMatch[1]!;
         i = lookahead; // consume everything up to and including the marker — never printed
       }
@@ -276,9 +283,26 @@ export async function composeStylePolicy(
           sections.set(raw_.key, { body: raw_.body, origins: [origin] });
           continue;
         }
+
+        // THE DOCUMENT'S LEAD-IN IS THE FIRST LAYER'S, AND A LATER ONE IS DROPPED RATHER THAN SWAPPED IN.
+        // The default replace rule is right for a RULE — the last layer's wording of "Voice" is the one
+        // that applies — and wrong for a title: replacing put the top layer's `# Concise style` heading
+        // over a document that is mostly the base layer's content, and appending stacked two `#` titles.
+        // Neither is what a reader predicts. The base of a stack names the document; every later lead-in
+        // is reported as a collision so the drop is visible, never silent.
+        if (raw_.key === PREFACE_KEY) {
+          collisions.push({ key: raw_.key, previous: existing.origins[existing.origins.length - 1]!, incoming: origin });
+          continue;
+        }
         // A `<target>.md` overriding its OWN package's `general.md` is intentional by construction and
-        // never a collision — RFC-0005 §2.1. Detected by every existing origin naming this same layer.
-        const sameLayer = existing.origins.every((o) => o.use === layer.use);
+        // never a collision — RFC-0005 §2.1.
+        //
+        // SAME LAYER **AND A DIFFERENT FILE**. Testing the layer alone also exempted a key repeated
+        // INSIDE one file, so a package whose `general.md` carried `## Voice` twice kept only the second
+        // and reported nothing: silent content loss inside a single authored file, which is the exact
+        // thing the collision machinery exists to prevent. Two headings in one file is a mistake, not an
+        // override — nobody writes a file intending its own earlier section to disappear.
+        const sameLayer = existing.origins.every((o) => o.use === layer.use && o.file !== file.name);
         const resolved = sameLayer || layer.onDeclared || raw_.key in layer.rules;
         if (mode === "append") {
           sections.set(raw_.key, { body: `${existing.body}\n\n${raw_.body}`, origins: [...existing.origins, origin] });

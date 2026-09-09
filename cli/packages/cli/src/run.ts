@@ -195,7 +195,12 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     sourceRoot,
     emit,
     log: sink,
-    warn: (message) => sink(`warning: ${message}`),
+    // A WARNING IS DIAGNOSTICS, AND DIAGNOSTICS GO TO STDERR. It shared the output sink until a verb
+    // arrived whose output is a DOCUMENT — `records norm … --print` serves a policy meant to be piped
+    // into a file, and a warning line landing in the middle of it silently poisons every document
+    // written from a style stack. Stderr also keeps a warning safe under the MCP surface, where anything
+    // on stdout corrupts the transport.
+    warn: (message) => process.stderr.write(`warning: ${message}\n`),
   };
 
   return plugin.run(context);
