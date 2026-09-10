@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/governance-knowledge",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "The knowledge governance: what a piece of work taught, as two units sharing one promotion test — log (project/log/, moved whole from @entelekheia/governance-log, ADR-0020) and learning (project/learnings/, opt-in)",
   "type": "module",
   "license": "Apache-2.0",
@@ -39,7 +39,7 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/governance-base": "^0.2.1",
+    "@entelekheia/governance-base": "^0.3.0",
     "@entelekheia/vibe-ops-core": "^0.2.0"
   },
   "devDependencies": {

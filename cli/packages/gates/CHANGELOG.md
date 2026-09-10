@@ -1,5 +1,12 @@
 # @entelekheia/vibe-ops-gates
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [b542c32]
+  - @entelekheia/governance-base@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

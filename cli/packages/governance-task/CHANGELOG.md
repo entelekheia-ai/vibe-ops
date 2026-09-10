@@ -1,5 +1,12 @@
 # @entelekheia/governance-task
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [b542c32]
+  - @entelekheia/governance-base@0.3.0
+
 ## 0.1.2
 
 ### Patch Changes
