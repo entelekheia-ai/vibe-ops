@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-harness",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The CLI-internal harness module (no governance of its own): repo shape, promulgation, the applied-version comparison — and the BASE half of the ownership boundary",
   "type": "module",
   "license": "Apache-2.0",
@@ -31,10 +31,10 @@
   "dependencies": {
     "@entelekheia/vibe-ops-agents-md": "^0.1.1",
     "@entelekheia/vibe-ops-core": "^0.2.0",
-    "@entelekheia/vibe-ops-gates": "^0.2.0",
+    "@entelekheia/vibe-ops-gates": "^0.2.1",
     "@entelekheia/vibe-ops-governance": "^0.2.0",
     "@entelekheia/vibe-ops-module-check": "^0.1.2",
-    "@entelekheia/governance-base": "^0.2.0",
+    "@entelekheia/governance-base": "^0.3.0",
     "@entelekheia/vibe-ops-for-vibe-ops": "^0.1.1"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/vibe-ops-gates",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Detectors for the agents-md ops, ported from cli/packages/module-check/sh/checks/ — TypeScript, one folder per gate",
   "type": "module",
   "license": "Apache-2.0",
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@entelekheia/vibe-ops-core": "^0.2.0",
-    "@entelekheia/governance-base": "^0.2.0"
+    "@entelekheia/governance-base": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

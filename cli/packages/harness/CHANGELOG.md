@@ -1,5 +1,13 @@
 # @entelekheia/vibe-ops-harness
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [b542c32]
+  - @entelekheia/governance-base@0.3.0
+  - @entelekheia/vibe-ops-gates@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

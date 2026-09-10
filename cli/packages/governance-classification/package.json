@@ -1,6 +1,6 @@
 {
   "name": "@entelekheia/governance-classification",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The information-classification policy: the four levels and what each permits in a committed file",
   "type": "module",
   "license": "Apache-2.0",
@@ -33,7 +33,7 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "@entelekheia/governance-base": "^0.2.0",
+    "@entelekheia/governance-base": "^0.3.0",
     "@entelekheia/vibe-ops-core": "^0.2.0"
   },
   "devDependencies": {
