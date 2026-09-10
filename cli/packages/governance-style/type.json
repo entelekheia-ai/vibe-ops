@@ -1,7 +1,7 @@
 {
   "type": "style",
   "facets": {
-    "policy": "general.md"
+    "policy": "style/general.md"
   },
   "targets": ["readme", "agents-md"],
   "numbered": false,

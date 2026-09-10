@@ -15,13 +15,11 @@
       "default": "./dist/index.js"
     }
   },
-  "_comment_files": "general.md and the target fragments ship BESIDE dist/ and are read directly from the package root by composeStylePolicy (@entelekheia/governance-base) — never through defineGovernance's facets indirection, which type.json's own facets.policy entry only documents for a plain single-facet read.",
+  "_comment_files": "style/ carries general.md and the target fragments, read directly from that directory by composeStylePolicy (@entelekheia/governance-base) — never through defineGovernance's facets indirection, which type.json's own facets.policy entry only documents for a plain single-facet read. The directory is what lets this package hold a README.md of its own: at the root, readme.md occupied that name on any case-insensitive filesystem (issue #31).",
   "files": [
     "dist",
     "type.json",
-    "general.md",
-    "readme.md",
-    "agents-md.md"
+    "style"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

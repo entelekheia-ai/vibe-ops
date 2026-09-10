@@ -2,8 +2,8 @@
 // layers rather than one package, because a repository wants the default voice for most of what it
 // writes and a different one for a plan, a task or a private research note. This file is the whole of
 // what "composing" means: parsing both binding spellings, the scope grammar, activating each layer's
-// package, and merging what each layer's `general.md` + `<target>.md` contribute — by SECTION, not by
-// file, because a variation should cost only its delta.
+// package, and merging what each layer's `style/general.md` + `style/<target>.md` contribute — by
+// SECTION, not by file, because a variation should cost only its delta.
 //
 // RESOLUTION IS THE COMPOSER'S, NEVER THE PACKAGE'S (RFC-0005 §2.1, closed 2026-09-08). `on: "append"`
 // and the per-key `rules` map live in the BINDING and are read here; a style package itself owns only
@@ -16,7 +16,7 @@
 // this module only reports, the same split every gate/ops pair in this codebase already draws between
 // detection and consequence.
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { activateGovernancePackage, effectiveGovernanceBindings } from "@entelekheia/vibe-ops-core";
 import type { StyleBinding, StyleLayer, StyleLayerObject, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
@@ -70,10 +70,38 @@ export interface StyleCompositionResult {
 
 const DEFAULT_STYLE_LAYERS: readonly StyleLayer[] = ["@entelekheia/governance-style"];
 
-/** `general.md` + `<target>.md` are read from the package ROOT — the flat layout RFC-0005 §2.1 describes
- *  ("a package is a directory of fragments, one file per target"). No `facets` indirection: unlike the
- *  other three norm facets, a style package's content is always these fixed filenames. */
+/** `general.md` + `<target>.md` are read from `<package>/style/`, NOT from the package root. RFC-0005
+ *  §2.1 said "a directory of fragments, one file per target" and the first implementation read that
+ *  directory as the package root — which made `<target>.md` collide with the package's own metadata, and
+ *  for one target made it impossible: on a case-insensitive filesystem (APFS, NTFS) `readme.md` OCCUPIES
+ *  `README.md`, so a package targeting `readme` could not have a README of its own (issue #31). Naming a
+ *  subdirectory fixes the one target that could not coexist and separates shipped content from package
+ *  metadata for every other. No `facets` indirection: unlike the other three norm facets, a style
+ *  package's content is always these fixed filenames, now under a fixed directory. */
+const FRAGMENT_DIR = "style";
 const GENERAL_FILE = "general.md";
+
+/** The layer's fragment directory, listed once. `undefined` means it is missing or unreadable — the
+ *  caller turns that into a warning, because a layer that ships no `style/` is the one failure mode the
+ *  move to a subdirectory creates, and it is otherwise indistinguishable from a layer with nothing to say.
+ *  Listing beats a per-file `existsSync` for the reason issue #31 was filed: `existsSync` answers on the
+ *  filesystem's case-folding, so it returns true for `README.md` when only `readme.md` exists, which is
+ *  how a package's own README got served as its `readme` fragment. */
+function listFragments(dir: string): readonly string[] | undefined {
+  try {
+    return readdirSync(dir);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Case-EXACT, against a listing: the names compared are the bytes the filesystem actually stored, so
+ *  `README.md` and `readme.md` stay distinct even on a volume that folds their case. A `readdirSync`
+ *  entry is always a direct child's basename, so a `name` carrying a path separator matches nothing. */
+function readFragment(dir: string, entries: readonly string[], name: string): string | undefined {
+  if (!entries.includes(name)) return undefined;
+  return readFileSync(path.join(dir, name), "utf8");
+}
 
 /** A section's explicit-key marker: an HTML comment on the line right after its heading, stripped from
  *  the merged output. CHOSEN HERE, not specified by RFC-0005 — the RFC says a section may declare an
@@ -267,11 +295,25 @@ export async function composeStylePolicy(
     for (const declared of activated.unit.targets ?? []) declaredTargets.add(declared);
 
     const files: { readonly name: string; readonly content: string }[] = [];
-    const generalPath = path.join(activated.root, GENERAL_FILE);
-    if (existsSync(generalPath)) files.push({ name: GENERAL_FILE, content: readFileSync(generalPath, "utf8") });
-    if (target !== undefined) {
-      const targetPath = path.join(activated.root, `${target}.md`);
-      if (existsSync(targetPath)) files.push({ name: `${target}.md`, content: readFileSync(targetPath, "utf8") });
+    const fragmentDir = path.join(activated.root, FRAGMENT_DIR);
+    // A LAYER WITH NO `style/` IS REPORTED, NEVER SERVED FROM THE ROOT. The break is clean by decision
+    // (ADR-0022) — reading the old layout would mean reading a `readme.md` that may be a README — but a
+    // layer that silently contributes nothing looks identical to a layer that had nothing to say for this
+    // target, and an unmigrated package is exactly the case someone needs to be told about. Advisory, like
+    // every other entry here: it never affects `ok`.
+    const entries = listFragments(fragmentDir);
+    if (entries === undefined) {
+      warnings.push(
+        `style layer "${layer.use}" ships no readable ${FRAGMENT_DIR}/ directory — fragments left at the package root are not read (ADR-0022)`,
+      );
+    } else {
+      const general = readFragment(fragmentDir, entries, GENERAL_FILE);
+      if (general !== undefined) files.push({ name: GENERAL_FILE, content: general });
+      if (target !== undefined) {
+        const targetFile = `${target}.md`;
+        const fragment = readFragment(fragmentDir, entries, targetFile);
+        if (fragment !== undefined) files.push({ name: targetFile, content: fragment });
+      }
     }
 
     for (const file of files) {
