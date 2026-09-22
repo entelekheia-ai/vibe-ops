@@ -6,7 +6,7 @@
 #
 # https://www.apache.org/licenses/LICENSE-2.0
 #
-# Publishes this repository's three public packages to npm through trusted publishing (OIDC): no token
+# Publishes this repository's public packages to npm through trusted publishing (OIDC): no token
 # is stored anywhere. npm accepts this workflow's identity because it is declared on npmjs.com under each
 # package's Trusted Publishers — owner `entelekheia-ai`, repository `vibe-ops`, workflow `release.yml`.
 #
@@ -15,8 +15,10 @@
 #
 # Every push to main runs the gates. While `.changeset/*.md` files are pending, changesets/action opens or
 # refreshes the "Version Packages" pull request instead of publishing. Merging that pull request is the
-# release. All twenty-one packages publish: they are separate so that a record type or an ops can be
-# swapped for a third party's through `config.types`/`config.ops` — see cli/AGENTS.md.
+# release. Every public package under cli/packages/ publishes, and the list is read from the workspace
+# rather than written here: a count in a comment goes stale the first time a package is added, and
+# nothing checks it. They are separate so that a record type or an ops can be swapped for a third
+# party's through `config.types`/`config.ops` — see cli/AGENTS.md.
 #
 # The first version of each package was published from a maintainer's terminal, because a trusted
 # publisher can only be declared on a package that already exists.
