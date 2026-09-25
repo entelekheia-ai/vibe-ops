@@ -28,6 +28,7 @@ import { pathToFileURL } from "node:url";
 import { homedir } from "node:os";
 import { access, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import type { TargetsPolicy } from "./targets.ts";
 
 /**
  * Candidate filenames for one directory, nearest-wins order — every local variant before every declared
@@ -254,6 +255,11 @@ export interface VibeOpsConfig {
   readonly artifactDir?: string;
   /** See `RecordsConfig`. Absent means every record type resolves by search, as it always has. */
   readonly records?: RecordsConfig;
+  /**
+   * How a gate treats a reference into a path this repository ignores — see `TargetsPolicy`. One ops's
+   * `settings.<ops>.targets` wins over this for that ops. Absent means `{ ignored: "report" }`.
+   */
+  readonly targets?: TargetsPolicy;
 }
 
 /** The three named layers a config file can belong to (RFC-0004 §1), nearest-wins in this order. */
@@ -425,6 +431,12 @@ function merge(nearer: VibeOpsConfig, further: VibeOpsConfig): VibeOpsConfig {
     artifactDir: nearer.artifactDir ?? further.artifactDir,
     settings: { ...further.settings, ...nearer.settings },
     records,
+    // Per key, for the same reason `types` is: a home file deciding one policy and a repository another
+    // are independent facts, and a key the nearer file is silent about is not an answer.
+    targets:
+      nearer.targets === undefined && further.targets === undefined
+        ? undefined
+        : { ...further.targets, ...nearer.targets },
     // Per key, like `records.dirs` rather than whole like `harness.applied`: two bindings naming two
     // different types are independent facts, so a home file binding one must not be discarded by a repo
     // binding another. Whole-key would make the nearer file's silence about a type an answer.

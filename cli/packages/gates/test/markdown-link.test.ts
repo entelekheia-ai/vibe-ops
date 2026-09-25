@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createDocumentStore } from "@entelekheia/vibe-ops-core";
-import type { GateRunContext } from "@entelekheia/vibe-ops-core";
+import { createDocumentStore, createTargetResolver } from "@entelekheia/vibe-ops-core";
+import type { GateFinding, GateRunContext, TargetsPolicy } from "@entelekheia/vibe-ops-core";
 import markdownLink from "../src/markdown-link/index.ts";
 
 async function repo(): Promise<string> {
@@ -103,4 +104,79 @@ test("a file the model could not parse is not examined, and produces no crash", 
   const outcome = await markdownLink.run(ctx(repoRoot, ["f.unknown"]));
   assert.deepEqual(outcome.findings, []);
   assert.equal(outcome.examined, 0);
+});
+
+// vibe-ops#41 — the verdict reads the repository, not the disk. A real repository is needed from here on:
+// in a bare temporary directory the classifier falls back to the disk, which is the defect itself.
+
+function git(cwd: string, ...args: string[]): void {
+  const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8" });
+  assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
+}
+
+/** A root tracking only `docs/`, linking into an ignored sibling and at an untracked draft. */
+async function allowlistRepo(): Promise<string> {
+  const root = await realpath(await repo());
+  git(root, "init", "-q");
+  git(root, "config", "user.email", "t@example.com");
+  git(root, "config", "user.name", "t");
+  await writeFile(path.join(root, ".gitignore"), "/*\n!/.gitignore\n!/docs/\n");
+  await mkdir(path.join(root, "docs"), { recursive: true });
+  await mkdir(path.join(root, "sibling"), { recursive: true });
+  await writeFile(path.join(root, "sibling", "README.md"), "s\n");
+  await writeFile(
+    path.join(root, "docs", "a.md"),
+    "[ok](b.md)\n[sib](../sibling/README.md)\n[gone](../sibling/gone.md)\n[draft](draft.md)\n",
+  );
+  await writeFile(path.join(root, "docs", "b.md"), "b\n");
+  git(root, "add", ".");
+  git(root, "commit", "-qm", "init");
+  await writeFile(path.join(root, "docs", "draft.md"), "untracked\n");
+  return root;
+}
+
+function repoCtx(repoRoot: string, files: readonly string[], policy?: TargetsPolicy): GateRunContext {
+  return { ...ctx(repoRoot, files), targets: createTargetResolver(repoRoot, policy) };
+}
+
+const byLine = (findings: readonly GateFinding[]) =>
+  findings.map((f) => ({ line: f.line, rule: f.rule, level: f.level ?? "fail" }));
+
+test("report: an ignored target and an untracked one each fail under a rule of their own", async () => {
+  const root = await allowlistRepo();
+  const outcome = await markdownLink.run(repoCtx(root, ["docs/a.md"]));
+  assert.deepEqual(byLine(outcome.findings), [
+    { line: 2, rule: "links-ignored", level: "fail" },
+    { line: 3, rule: "links-ignored", level: "fail" },
+    { line: 4, rule: "links-untracked", level: "fail" },
+  ]);
+});
+
+test("the same commit gets the same verdict from a linked working tree", async () => {
+  const root = await allowlistRepo();
+  const worktree = path.join(await realpath(await repo()), "wt");
+  git(root, "worktree", "add", "-q", "--detach", worktree);
+  const main = await markdownLink.run(repoCtx(root, ["docs/a.md"]));
+  const linked = await markdownLink.run(repoCtx(worktree, ["docs/a.md"]));
+  // The draft is untracked in the main checkout and absent from the worktree — the only line that may differ.
+  const withoutDraft = (fs: readonly GateFinding[]) => byLine(fs).filter((f) => f.line !== 4);
+  assert.deepEqual(withoutDraft(linked.findings), withoutDraft(main.findings));
+});
+
+test("follow: an ignored target that exists in the main working tree holds; one that does not is a plain miss", async () => {
+  const root = await allowlistRepo();
+  const worktree = path.join(await realpath(await repo()), "wt");
+  git(root, "worktree", "add", "-q", "--detach", worktree);
+  const outcome = await markdownLink.run(repoCtx(worktree, ["docs/a.md"], { ignored: "follow" }));
+  const gone = outcome.findings.find((f) => f.line === 3);
+  assert.equal(gone?.rule, "links");
+  assert.match(gone!.evidence, /followed into the main working tree: .*sibling\/gone\.md/);
+  assert.equal(outcome.findings.some((f) => f.line === 2), false);
+});
+
+test("an ignored document linking into an ignored path warns rather than fails — a clone carries neither", async () => {
+  const root = await allowlistRepo();
+  await writeFile(path.join(root, "sibling", "notes.md"), "[r](README.md)\n");
+  const outcome = await markdownLink.run(repoCtx(root, ["sibling/notes.md"]));
+  assert.deepEqual(byLine(outcome.findings), [{ line: 1, rule: "links-ignored", level: "warn" }]);
 });
