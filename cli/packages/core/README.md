@@ -49,6 +49,21 @@ id is not knowable before it loads must carry a `label`.
 `defineOps` reads `ignore` and `disabled` from the ops's own `settings` slice and applies them itself, so
 a gate must never filter its own files by a repository-specific rule.
 
+## Where a reference points
+
+A gate that resolves a path written in a document — a link, a breadcrumb, a named file — asks
+`GateRunContext.targets`, never `existsSync`. The disk answers for one working tree; the classifier
+answers for the repository, so a linked `git worktree`, CI and the main checkout agree.
+
+```ts
+const targets = context.targets ?? createTargetResolver(repoRoot);  // optional: hand-built contexts omit it
+const { state, followed } = targets.classify("docs/guide.md");      // tracked | untracked | ignored | absent
+```
+
+`followed` is set only for an `ignored` target under the repository's `targets: { ignored: "follow" }`,
+and says whether it exists in the main working tree. Outside a git repository the classifier falls back
+to the disk, so a fixture built in a bare temporary directory behaves as it always did.
+
 ## The document model
 
 `GateRunContext.documents` is a lazy, per-run store: three gates over the same file parse it once, and a

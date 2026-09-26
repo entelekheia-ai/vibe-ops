@@ -127,6 +127,21 @@ settings: {
 A run also reports `ignored` beside `examined` — a population that shrank in silence would be
 indistinguishable from a clean run, and only one of the two is a reading.
 
+### `targets` — a link into a path the repository ignores
+
+A link is judged against the repository — the index and its ignore rules — never against whatever
+happens to be on disk, so every checkout of one commit gets one verdict. A target the repository ignores
+fails as `links-ignored` by default, and one that exists only untracked fails as `links-untracked`. A
+repository that links into ignored paths on purpose — a workspace root tracking only its own governance
+beside sibling repositories — says so once:
+
+```ts
+export default {
+  targets: { ignored: "follow" },   // resolve it on disk, in the MAIN working tree — from a git worktree too
+  settings: { governance: { targets: { ignored: "report" } } },  // one ops may override it
+} satisfies VibeOpsConfig;
+```
+
 ## Writing a module
 
 A module is a package that default-exports `defineModule`. There is **no registry to add it to**: a bare
