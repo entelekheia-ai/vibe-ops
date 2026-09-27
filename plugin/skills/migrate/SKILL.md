@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: Bring governance artifacts written against an older template up to the current one — finds the `vibe-ops-template` stamp each one declares, applies the recorded migration for each version jump, and reports what needs a human decision instead of guessing. Use when a repo's plans, tasks, ADRs or RFCs predate a template change, after updating vibe-ops, when a plan still carries sections the current template dropped, or "/migrate [path]".
+description: Bring governance artifacts written against an older template up to the current one — finds the `vibe-ops-template` stamp each one declares, applies the recorded migration for each version jump, and reports what needs a human decision instead of guessing. Use when a repo's plans, tasks, ADRs or RFCs predate a template change, when a repo still produces new records at an old version, after updating vibe-ops, when a plan still carries sections the current template dropped, or "/migrate [path]".
 argument-hint: "[path | audit]"
 effort: high
 ---
@@ -81,6 +81,21 @@ vibe-ops records norm --type <type> --facet template --print
 
 Report the counts before touching anything.
 
+**Read the generator too — the census does not cover it.** `vibe-ops records census` lists records, and
+`project/templates/<type>.md` is not one: it is what the next record is stamped from. A repository whose
+template is behind has a backlog that grows while you migrate it, and one whose template declares nothing
+suppresses the record-level check for that whole population, so the counts above read clean.
+
+```sh
+vibe-ops harness status
+```
+
+It answers for the version promulgated into the repository and, where nothing was promulgated, for the
+template on disk — saying which of the two it read, because the repairs differ. Measured 2026-09-26 across
+a nine-repository workspace: three repositories were producing records at a superseded version while both
+the census and the `template-version` gate reported them clean, the gate correctly, since its ruler is that
+same local template. Until this reading is taken, the drift is invisible from inside the repository.
+
 **Detect the bindings too.** `vibe-ops config list --show-origin` lists every `types.<name>` and the file
 behind it. Two rows belong in the report: a name bound to a package that is no longer installed (its noun
 and its records directory have stopped resolving — say which), and a name whose package moved the type to
@@ -112,6 +127,17 @@ If a jump has no note, **stop and say so**. A missing note means the template ch
 recording what that costs an existing artifact, and inventing the migration here would make it up.
 
 ## Step 3 — Apply, one artifact at a time
+
+**The generator goes first, and it is the one ordering constraint in this step.** A
+`project/templates/<type>.md` carries a stamp like any other artifact and migrates through the same notes,
+but it is also what produces artifacts — so a record migrated while it is behind is re-created behind the
+next time someone reaches for it, and the run's own result decays. Replace the template, then migrate the
+records under it; a template whose jump has no note stops that type here, exactly as Step 2 says.
+
+**A template declaring nothing is declared before anything under it moves.** Nothing under it can be
+compared until it does, so its population is silent rather than clean, and migrating a record against a
+ruler that does not exist is a guess. Declare the version the template's content actually is — never the
+oldest known one because it is oldest.
 
 **Consult the ownership class before touching a file** — `records handling` reports it per record as
 `ownership: <class>`. Proceed on `shaped` (the class this skill exists for: the tooling owns the
