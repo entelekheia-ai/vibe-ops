@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { behindEntries, formatBehind } from "../src/harness-status.ts";
+import { behindEntries, formatBehind, reportableUndeclared } from "../src/harness-status.ts";
 
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "bin.js");
 
@@ -111,10 +111,31 @@ test("no --plugin, an unreadable plugin directory, and a malformed payload all f
 });
 
 test("behindEntries ignores a type the repository never had promulgated, and one the plugin does not ship", () => {
-  assert.deepEqual(behindEntries({ plan: 1 }, { plan: 3 }), [{ type: "plan", applied: 1, shipped: 3 }]);
+  assert.deepEqual(behindEntries({ plan: 1 }, { plan: 3 }), [{ type: "plan", applied: 1, shipped: 3, source: "promulgated" }]);
   assert.deepEqual(behindEntries({ plan: 3 }, { plan: 3, task: 9 }), [], "a type absent from applied is not news");
   assert.deepEqual(behindEntries({ task: 1 }, { plan: 3 }), [], "a type the plugin does not ship cannot be behind");
   assert.deepEqual(behindEntries(undefined, { plan: 3 }), [], "no map at all is silence, not zero");
+});
+
+test("the template on disk answers only where the receipt does not, and never overrides it", () => {
+  assert.deepEqual(
+    behindEntries(undefined, { plan: 3 }, { plan: 1 }),
+    [{ type: "plan", applied: 1, shipped: 3, source: "template" }],
+    "no receipt and a stale template IS the repository being behind — the state that used to read as clean",
+  );
+  assert.deepEqual(
+    behindEntries({ plan: 2 }, { plan: 3 }, { plan: 3 }),
+    [{ type: "plan", applied: 2, shipped: 3, source: "promulgated" }],
+    "a template newer than the receipt is a promulgation in flight; the receipt is what someone agreed to",
+  );
+  assert.deepEqual(behindEntries(undefined, { plan: 3 }, {}), [], "no reading for the type is still silence");
+  assert.deepEqual(behindEntries(undefined, {}, { plan: 1 }), [], "a type the norm does not ship cannot be behind");
+});
+
+test("an undeclared template is reported only for a type the norm ships", () => {
+  const entries = [{ type: "plan" as const, token: "plan@0.1" }, { type: "task" as const }];
+  assert.deepEqual(reportableUndeclared(entries, { plan: 3 }), [{ type: "plan", token: "plan@0.1" }]);
+  assert.deepEqual(reportableUndeclared([{ type: "task" as const }], { plan: 3 }), [], "a template this repository invented is not news");
 });
 
 test("a repository AHEAD of the installed plugin is not reported", () => {
@@ -127,8 +148,8 @@ test("a repository AHEAD of the installed plugin is not reported", () => {
 
 test("the message names every behind type and repairs nothing", () => {
   const text = formatBehind([
-    { type: "plan", applied: 1, shipped: 3 },
-    { type: "task", applied: 2, shipped: 3 },
+    { type: "plan", applied: 1, shipped: 3, source: "promulgated" },
+    { type: "task", applied: 2, shipped: 3, source: "promulgated" },
   ]);
   assert.match(text, /plan@1/);
   assert.match(text, /task@2/);

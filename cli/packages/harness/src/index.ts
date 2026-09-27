@@ -6,15 +6,15 @@
 import { defineModule } from "@entelekheia/vibe-ops-core";
 import { installHarness, HARNESS_OPTIONS } from "./install.ts";
 import { repoShape } from "./shape.ts";
-import { behindEntries, formatBehind, shippedVersions } from "./status.ts";
+import { behindEntries, formatBehind, localVersions, reportableUndeclared, shippedVersions } from "./status.ts";
 import { buildCatalog } from "./catalog.ts";
 import { buildAudit } from "./audit.ts";
 import { formatResolvedHarness, resolveHarness } from "./resolve.ts";
 import { sync } from "./sync.ts";
 import { isPolicyName, POLICY_NAMES, readPolicy, resolvePolicy } from "./policy.ts";
 
-export { behindEntries, formatBehind, shippedVersion, shippedVersions, TYPES } from "./status.ts";
-export type { BehindEntry, VersionedType } from "./status.ts";
+export { behindEntries, formatBehind, localVersions, reportableUndeclared, shippedVersion, shippedVersions, TYPES } from "./status.ts";
+export type { BehindEntry, LocalVersions, VersionedType } from "./status.ts";
 export { churnByTopLevel, hasRemote, hooksPath, repoShape, workflowFiles } from "./shape.ts";
 export type { ChurnEntry, RepoShape } from "./shape.ts";
 export { buildCatalog } from "./catalog.ts";
@@ -201,24 +201,34 @@ export default defineModule(
     }
 
     if (context.command === "status") {
-      if (context.config.harness?.applied === undefined) {
-        return {
-          code: 0,
-          summary: "this repository has never been promulgated to — nothing to compare (a promulgation branch not yet merged does not count)",
-          data: { behind: [] },
-        };
-      }
       // The activated governance packages answer first; a pinned tree covers a repository holding to an
       // older norm. Both absent is still an answer: nothing ships, so nothing is behind.
       const shipped = await shippedVersions(context.config, context.sourceRoot);
-      const behind = behindEntries(context.config.harness.applied, shipped);
-      if (context.flags["json"] !== true) {
-        context.log(behind.length === 0 ? "up to date with the installed norm" : formatBehind(behind));
+      // The generator, read off disk. A repository with no promulgation receipt still has templates, and
+      // those templates are what its next record is stamped from — so they are read whether a receipt
+      // exists or not, and `localVersions` carries the measurement that forced this.
+      const local = await localVersions(context.repoRoot, context.config);
+      const undeclared = reportableUndeclared(local.undeclared, shipped);
+      const behind = behindEntries(context.config.harness?.applied, shipped, local.declared);
+      if (behind.length === 0 && undeclared.length === 0 && context.config.harness?.applied === undefined && Object.keys(local.declared).length === 0) {
+        return {
+          code: 0,
+          summary: "this repository has never been promulgated to and holds no templates — nothing to compare",
+          data: { behind: [], undeclared: [] },
+        };
       }
+      const clean = behind.length === 0 && undeclared.length === 0;
+      if (context.flags["json"] !== true) {
+        context.log(clean ? "up to date with the installed norm" : formatBehind(behind, undeclared));
+      }
+      const parts = [
+        behind.length === 0 ? undefined : `${behind.length} record type(s) behind the installed norm`,
+        undeclared.length === 0 ? undefined : `${undeclared.length} template(s) with no comparable version`,
+      ].filter((part): part is string => part !== undefined);
       return {
         code: 0,
-        summary: behind.length === 0 ? "up to date with the installed norm" : `${behind.length} record type(s) behind the installed norm`,
-        data: { behind },
+        summary: clean ? "up to date with the installed norm" : parts.join("; "),
+        data: { behind, undeclared },
       };
     }
 
