@@ -66,7 +66,7 @@ test("status: sourceRoot present but this clone was never promulgated to — sil
   const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
   const result = await harness.run(baseContext({ repoRoot, command: "status", sourceRoot }));
   assert.equal(result.code, 0);
-  assert.match(result.summary, /never been promulgated/);
+  assert.match(result.summary, /never been promulgated to and holds no templates/);
 });
 
 test("audit dispatches to buildAudit and reports the shape", async () => {
@@ -95,5 +95,85 @@ test("status: a type behind the installed norm is reported", async () => {
     baseContext({ repoRoot, command: "status", sourceRoot, config: { harness: { applied: { plan: 2 } } } }),
   );
   assert.equal(result.code, 0);
-  assert.deepEqual((result.data as { behind: readonly unknown[] }).behind, [{ type: "plan", applied: 2, shipped: 3 }]);
+  assert.deepEqual((result.data as { behind: readonly unknown[] }).behind, [
+    { type: "plan", applied: 2, shipped: 3, source: "promulgated" },
+  ]);
+});
+
+// The generator. These four cover the state `harness status` used to answer `behind: []` for: a repository
+// holding templates that nobody promulgated, which is every repository whose baseline was scaffolded or
+// copied rather than promulgated to. Measured 2026-09-26: three repositories in this workspace were in it.
+test("status: a stale template with no promulgation receipt is reported against the norm", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  await mkdir(path.join(sourceRoot, "types"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "types", "index.json"), JSON.stringify({ plan: { version: 3 } }));
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "project", "templates", "plan.md"), "---\nvibe-ops-template: plan@1\n---\n");
+  const result = await harness.run(baseContext({ repoRoot, command: "status", sourceRoot }));
+  assert.equal(result.code, 0);
+  assert.deepEqual((result.data as { behind: readonly unknown[] }).behind, [
+    { type: "plan", applied: 1, shipped: 3, source: "template" },
+  ]);
+  assert.match(result.summary, /1 record type\(s\) behind/);
+});
+
+test("status: a template that declares no version is reported as undeclared, not as a version", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  await mkdir(path.join(sourceRoot, "types"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "types", "index.json"), JSON.stringify({ plan: { version: 3 } }));
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "project", "templates", "plan.md"), "# Plan\n\nno stamp here\n");
+  const result = await harness.run(baseContext({ repoRoot, command: "status", sourceRoot }));
+  assert.equal(result.code, 0);
+  const data = result.data as { behind: readonly unknown[]; undeclared: readonly string[] };
+  assert.deepEqual(data.behind, [], "an unstamped template is never resolved to a version");
+  assert.deepEqual(data.undeclared, [{ type: "plan", token: undefined }]);
+});
+
+// A type with NO template file is what keeps this reading quiet in an unrelated repository — not the
+// shipped-type filter, which in any environment where the governance packages activate covers all five.
+// That filter is unit-tested in cli/test/harness-status.test.ts, where `shipped` is supplied directly.
+test("status: a current template beside an unstamped one reports only the unstamped one", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  await mkdir(path.join(sourceRoot, "types"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "types", "index.json"), JSON.stringify({ plan: { version: 3 } }));
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "project", "templates", "plan.md"), "---\nvibe-ops-template: plan@3\n---\n");
+  await writeFile(path.join(repoRoot, "project", "templates", "task.md"), "# Task\n\nno stamp\n");
+  const result = await harness.run(baseContext({ repoRoot, command: "status", sourceRoot }));
+  assert.equal(result.code, 0);
+  const data = result.data as { behind: readonly unknown[]; undeclared: readonly string[] };
+  assert.deepEqual(data.behind, [], "the current template is not behind");
+  assert.deepEqual(data.undeclared, [{ type: "task", token: undefined }]);
+});
+
+test("status: a template on the pre-integer spelling is reported as declaring it, never as declaring nothing", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  await mkdir(path.join(sourceRoot, "types"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "types", "index.json"), JSON.stringify({ plan: { version: 3 } }));
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "project", "templates", "plan.md"), "---\nvibe-ops-template: plan@0.1\n---\n");
+  const result = await harness.run(baseContext({ repoRoot, command: "status", sourceRoot }));
+  const data = result.data as { behind: readonly unknown[]; undeclared: readonly { type: string; token?: string }[] };
+  assert.deepEqual(data.behind, [], "0.1 has no successor this reader can compute, so it is not a jump");
+  assert.deepEqual(data.undeclared, [{ type: "plan", token: "plan@0.1" }]);
+});
+
+test("status: the promulgation receipt wins over the template on disk", async () => {
+  const repoRoot = await gitRepo();
+  const sourceRoot = await mkdtemp(path.join(tmpdir(), "vibeops-harness-source-"));
+  await mkdir(path.join(sourceRoot, "types"), { recursive: true });
+  await writeFile(path.join(sourceRoot, "types", "index.json"), JSON.stringify({ plan: { version: 3 } }));
+  await mkdir(path.join(repoRoot, "project", "templates"), { recursive: true });
+  await writeFile(path.join(repoRoot, "project", "templates", "plan.md"), "---\nvibe-ops-template: plan@3\n---\n");
+  const result = await harness.run(
+    baseContext({ repoRoot, command: "status", sourceRoot, config: { harness: { applied: { plan: 2 } } } }),
+  );
+  assert.deepEqual((result.data as { behind: readonly { source?: string }[] }).behind, [
+    { type: "plan", applied: 2, shipped: 3, source: "promulgated" },
+  ]);
 });

@@ -1,6 +1,9 @@
-// vibe-ops harness-status — the SessionStart surface. Compares the version of each record type
-// PROMULGATED into this repository (`harness.applied` in the committed vibeops.config.json) against the version the
-// installed norm ships, and says something only when they differ.
+// vibe-ops harness-status — the SessionStart surface. Compares the version of each record type this
+// repository is on — the one PROMULGATED into it (`harness.applied` in the committed vibeops.config.json),
+// else the one its own template on disk declares — against the version the installed norm ships, and says
+// something only when they differ. Both readings, because a repository whose templates were installed any
+// other way has no receipt, and the receipt-only comparison reported such a repository as clean while its
+// generator was three versions back.
 //
 // SILENCE IS THE POINT, NOT A FALLBACK. This runs at the start of every session in every repository the
 // operator opens, and the overwhelming majority of those have nothing pending. A hook that speaks anyway
@@ -27,10 +30,10 @@
 // and this hook read the same comparison rather than two copies drifting apart.
 
 import { loadConfig } from "@entelekheia/vibe-ops-core";
-import { behindEntries, formatBehind, shippedVersions } from "@entelekheia/vibe-ops-harness";
+import { behindEntries, formatBehind, localVersions, reportableUndeclared, shippedVersions } from "@entelekheia/vibe-ops-harness";
 import { repoRootFrom, resolveSourceRoot } from "./run.ts";
 
-export { behindEntries, formatBehind } from "@entelekheia/vibe-ops-harness";
+export { behindEntries, formatBehind, reportableUndeclared } from "@entelekheia/vibe-ops-harness";
 
 interface SessionStartPayload {
   readonly cwd?: string;
@@ -56,19 +59,23 @@ export async function runHarnessStatusHook(argv: readonly string[]): Promise<num
 
     const repoRoot = repoRootFrom(payload.cwd ?? process.cwd());
     const { config } = await loadConfig(repoRoot);
-    if (config.harness?.applied === undefined) return 0;
 
     const sourceRoot = resolveSourceRoot(config, pluginArg);
 
     const shipped = await shippedVersions(config, sourceRoot);
-    const behind = behindEntries(config.harness.applied, shipped);
-    if (behind.length === 0) return 0;
+    // Both readings, because a repository with no promulgation receipt still has templates and they are
+    // what its next record is stamped from. The receipt-only bail that used to stand here reported nothing
+    // for a repository whose generator was three versions back — see `localVersions`.
+    const local = await localVersions(repoRoot, config);
+    const undeclared = reportableUndeclared(local.undeclared, shipped);
+    const behind = behindEntries(config.harness?.applied, shipped, local.declared);
+    if (behind.length === 0 && undeclared.length === 0) return 0;
 
     process.stdout.write(
       `${JSON.stringify({
         hookSpecificOutput: {
           hookEventName: "SessionStart",
-          additionalContext: formatBehind(behind),
+          additionalContext: formatBehind(behind, undeclared),
         },
       })}\n`,
     );
