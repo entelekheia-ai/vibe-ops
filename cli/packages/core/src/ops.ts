@@ -54,6 +54,8 @@ import { activatedTemplatePaths } from "./governance-map.ts";
 import { deriveOpsEntries } from "./ops-derive.ts";
 import type { OpsDeriveRule } from "./ops-derive.ts";
 import { createDocumentStore } from "./document.ts";
+import { createTargetResolver } from "./targets.ts";
+import type { TargetsPolicy } from "./targets.ts";
 import { defineModule } from "./module.ts";
 import { loadGate } from "./gate.ts";
 import type { GateFinding, GatePlugin } from "./gate.ts";
@@ -138,6 +140,8 @@ export interface GovernedSettings {
    * default underneath all three.
    */
   readonly level?: Readonly<Record<string, "fail" | "warn">>;
+  /** This ops's own `targets` policy, winning over the top-level one for this ops only. See `TargetsPolicy`. */
+  readonly targets?: TargetsPolicy;
 }
 
 /** One repair, as the caller receives it — which entry made it, and what it did. */
@@ -471,6 +475,9 @@ async function run(definition: OpsDefinition, context: ModuleContext): Promise<M
   const cli = context.surface === "cli" && context.flags["json"] !== true;
   const fixSpec = fixSpecFrom(context.flags["fix"], resolved, definition.id);
   const governed = context.settings as GovernedSettings | undefined;
+  // One classifier per run, like the document store: the index is read once however many gates resolve
+  // a target. The ops's own policy wins per key over the repository-wide one.
+  const targets = createTargetResolver(context.repoRoot, { ...context.config.targets, ...governed?.targets });
   // Every finding, structured. The MCP client shows `structuredContent` and drops the text lines, so
   // a report that lives only in context.log arrives there as a count with nothing behind it.
   const findings: OpsFinding[] = [];
@@ -507,6 +514,7 @@ async function run(definition: OpsDefinition, context: ModuleContext): Promise<M
       // target's layout, which is the ops's half of the split, never the detector's.
       options: expandOptionTokens(entry.options ?? {}, context.repoRoot, pluginDir, context.config.records, normTemplates),
       documents,
+      targets,
     };
     let outcome = await gate.run(gateContext);
 

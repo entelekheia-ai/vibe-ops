@@ -13,6 +13,7 @@ import path from "node:path";
 import { resolveFromHost } from "./host-resolver.ts";
 import { pathToFileURL } from "node:url";
 import type { DocumentStore } from "./document.ts";
+import type { TargetResolver } from "./targets.ts";
 
 /** One thing the gate saw. Never a verdict about the repository — see `level`. */
 export interface GateFinding {
@@ -52,6 +53,13 @@ export interface GateRunContext {
    * `document.layers` via `walkLayersWithHostPositions` rather than opening the file a second time.
    */
   readonly documents: DocumentStore;
+  /**
+   * Where a reference points, as the repository sees it — one classifier per run, carrying the
+   * repository's `targets` policy. Optional so that a context built by hand (every gate test, every
+   * third-party gate) keeps compiling: a gate reads `context.targets ?? createTargetResolver(repoRoot)`,
+   * which is the default policy. See `targets.ts` for why no gate may answer this with `existsSync`.
+   */
+  readonly targets?: TargetResolver;
 }
 
 /** One repair a gate's `fix` made. `action` is a one-line description, in the words a reader needs. */
