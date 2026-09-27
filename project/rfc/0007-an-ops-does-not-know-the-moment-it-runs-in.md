@@ -54,6 +54,11 @@ resolve against it, rather than each caller re-deciding by convention or each ga
 - Which moments exist, and who names them? Today's callers are a `pre-commit` hook, the `PostToolUse`
   per-write hook, `close-plan` / `close-task`, the release workflow, and a person at a terminal — but
   only some of those are distinguishable to the process being invoked.
+  A candidate from a consumer outside this repository: a **verification** moment — the step at which an
+  orchestrator has checked a delegated result and records its judgement. It has no hook event either; the
+  consuming skills pull its guidance by name, as the policy facets of a governance type (`delegation`,
+  facets `record` and `verification`), which is the pull shape the closure question below also points at.
+  Offered for the list of moments, not as the answer to who names them.
 - Does the moment reach the ops as configuration, as an invocation flag, or as something the hook
   surface already carries on its payload?
 - Does it govern only `level`, or also `ignore` and `disabled` — and if all three, is `settings.<ops>`
