@@ -52,7 +52,7 @@ with only the plugin gets loud failures rather than a quiet degradation.
 ```bash
 npm i -g @entelekheia/vibe-ops-cli          # the CLI: `vibe-ops` on PATH, and the gate
 
-claude plugin marketplace add entelekheia-ai/vibe-ops
+claude plugin marketplace add entelekheia-ai/public-plugin
 claude plugin install vibe-ops@entelekheia  # the skills, agents and hooks
 ```
 

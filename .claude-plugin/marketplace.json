@@ -1,11 +1,11 @@
 {
-  "name": "entelekheia",
+  "name": "vibe-ops-dev",
   "owner": {
     "name": "Danilo Borges",
     "email": "contato@daniloborg.es"
   },
   "metadata": {
-    "description": "Personal Claude Code plugins by Danilo Borges",
+    "description": "Development catalog for vibe-ops, resolved from this checkout. The public catalog is entelekheia-ai/public-plugin.",
     "version": "0.1.0"
   },
   "plugins": [
