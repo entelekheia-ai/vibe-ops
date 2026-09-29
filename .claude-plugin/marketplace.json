@@ -5,7 +5,7 @@
     "email": "contato@daniloborg.es"
   },
   "metadata": {
-    "description": "Development catalog for vibe-ops, resolved from this checkout. The public catalog is entelekheia-ai/public-plugin.",
+    "description": "Development catalog for vibe-ops, resolved from this checkout. The public catalog is entelekheia-ai/skills.",
     "version": "0.1.0"
   },
   "plugins": [
