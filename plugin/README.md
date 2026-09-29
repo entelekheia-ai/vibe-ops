@@ -6,11 +6,11 @@ project's front page, with the argument for why any of this exists, is [`../READ
 ## Install
 
 ```bash
-claude plugin marketplace add entelekheia-ai/public-plugin
+claude plugin marketplace add entelekheia-ai/skills
 claude plugin install vibe-ops@entelekheia
 ```
 
-The public catalog is [`entelekheia-ai/public-plugin`](https://github.com/entelekheia-ai/public-plugin),
+The public catalog is [`entelekheia-ai/skills`](https://github.com/entelekheia-ai/skills),
 whose `marketplace.json` lists this directory as a `git-subdir` source. To develop against this checkout
 instead, add its own marketplace — `claude plugin marketplace add <path-to-this-clone>` names the
 `vibe-ops-dev` catalog `marketplace.json` at the repository root declares with `source: "./plugin"` — and
