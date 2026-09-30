@@ -40,18 +40,17 @@ test("flush, rich: each verdict word takes its colour and the [id] is bold; the 
   const c = capture({ rich: true });
   c.out.flush(lines.map(outLine));
   const written = c.stdout();
-  // Each verdict is checked on its own: a painter that styles only `ok` fails the other three. The glyph
-  // and the word are painted as one, as the block paints its own counts.
-  assert.ok(written.includes(paint("green", "✔ ok")), `ok is not green with its glyph: ${JSON.stringify(written)}`);
-  assert.ok(written.includes(paint("red", "✖ FAIL")), `FAIL is not red with its glyph: ${JSON.stringify(written)}`);
-  assert.ok(written.includes(paint("yellow", "⚠ WARN")), `WARN is not yellow with its glyph: ${JSON.stringify(written)}`);
-  assert.ok(written.includes(paint("dim", "⊘ SKIP")), `SKIP is not dim with its glyph: ${JSON.stringify(written)}`);
+  // Each verdict is checked on its own: a painter that styles only `ok` fails the other three. No glyph:
+  // render-plain.test.ts pins a `--ui --verbose` line as starting with its verdict word.
+  assert.ok(written.includes(paint("green", "ok")), `ok is not green: ${JSON.stringify(written)}`);
+  assert.ok(written.includes(paint("red", "FAIL")), `FAIL is not red: ${JSON.stringify(written)}`);
+  assert.ok(written.includes(paint("yellow", "WARN")), `WARN is not yellow: ${JSON.stringify(written)}`);
+  assert.ok(written.includes(paint("dim", "SKIP")), `SKIP is not dim: ${JSON.stringify(written)}`);
   for (const id of ["[first-publish]", "[budget]", "[template-version-behind]", "[bridge]"]) {
     assert.ok(written.includes(paint("bold", id)), `${id} is not bold: ${JSON.stringify(written)}`);
   }
-  // Styling adds colour and the glyph in front, nothing else: stripped, the rest is what the runner wrote.
-  const glyphs = ["✔", "✖", "⚠", "⊘"];
-  assert.equal(stripSgr(written), lines.map((line, index) => `${glyphs[index]!} ${line}\n`).join(""));
+  // Styling adds colour and nothing else to a verdict line: stripped, the bytes are what the runner wrote.
+  assert.equal(stripSgr(written), lines.map((line) => `${line}\n`).join(""));
 });
 
 test("flush, rich: the composition preamble — header name bold, Composed capitalised, id@N bold", () => {
@@ -85,15 +84,15 @@ test("flush, rich: a held entry carrying several lines is styled line by line", 
   const c = capture({ rich: true });
   c.out.flush([outLine("ok    [a] one\nFAIL  [b] two\n  detail under b")]);
   const written = c.stdout();
-  assert.ok(written.includes(paint("green", "✔ ok")) && written.includes(paint("red", "✖ FAIL")), JSON.stringify(written));
+  assert.ok(written.includes(paint("green", "ok")) && written.includes(paint("red", "FAIL")), JSON.stringify(written));
   assert.ok(written.includes(paint("bold", "[a]")) && written.includes(paint("bold", "[b]")), JSON.stringify(written));
-  assert.equal(stripSgr(written), "✔ ok    [a] one\n✖ FAIL  [b] two\n  detail under b\n");
+  assert.equal(stripSgr(written), "ok    [a] one\nFAIL  [b] two\n  detail under b\n");
 });
 
-test("flush, rich with colour off: no escape byte, Composed still capitalised, the glyph still drawn", () => {
+test("flush, rich with colour off: no escape byte, and Composed still capitalised", () => {
   const c = capture({ rich: true, colour: false });
   c.out.flush([outLine("composed 2 checks:"), outLine("FAIL  [budget] no AGENTS.md")]);
-  assert.equal(c.stdout(), "Composed 2 checks:\n✖ FAIL  [budget] no AGENTS.md\n");
+  assert.equal(c.stdout(), "Composed 2 checks:\nFAIL  [budget] no AGENTS.md\n");
 });
 
 test("flush: every held line goes to its own stream, in the order it was held", () => {
