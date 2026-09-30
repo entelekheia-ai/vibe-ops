@@ -301,6 +301,15 @@ mode were lost on a throw, on SIGINT, and whenever they were not findings, and `
 into one entry per half. Each was a BLOCKER or SHOULD-FIX found by an independent review and fixed on
 the branch; the rulings that narrowed the holding decision twice are in Track 3's dossier.
 
+**2026-09-30 — Track 5, and the branch-wide review.** The maintainer ran Tracks 1–4 at a terminal and
+asked for a sign of life while a run works, for `--verbose` to follow the rich/plain decision, and for a
+title naming what was analysed; Track 5 delivered all three in the track-lead pipeline, over two contract
+commits, with the machine-read output compared per case against the contract (45 invocations, no
+difference). A final review over the whole branch found every success criterion holding and no
+unannounced byte changed in plain, `--json` or `--print` output, and one defect only the combination of
+tracks produced: a Ctrl-C during a synchronous child was lost in a rich run. It is fixed with a test that
+fails without the fix. The full suite passes, 812 of 812, with `VIBE_OPS_DENYLIST` unset.
+
 ---
 
 ## Open questions
