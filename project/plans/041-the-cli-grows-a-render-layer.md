@@ -103,7 +103,7 @@ form modules must be migrated onto, which is why goal 4 costs no module edits. A
 a module that returns something else falls through to the summary line and is not broken by the
 addition.
 
-`cli/packages/cli/src/report-view.ts` draws the block from a `ReportData` and is reached from nowhere
+`cli/packages/cli/src/report-view.ts` draws the block from a `Report` and is reached from nowhere
 else. Keeping it separate from `render.ts` is what lets the block be reworked visually without touching
 the surface that decides plain-versus-rich — the two change for different reasons and at different rates.
 
@@ -129,13 +129,13 @@ for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
       that both producers satisfy and a test proves the nouns' payloads do not, so the guard cannot
       silently widen. Task: tasks/012-the-report-contract.md
 
-- [ ] **Track 2 — The render layer, and the framing leaves the pipe.** `cli/packages/cli/src/render.ts`
+- [x] **Track 2 — The render layer, and the framing leaves the pipe.** `cli/packages/cli/src/render.ts`
       is written and the nine `@clack/prompts` call sites in `cli/packages/cli/src/bin.ts` move onto it,
       leaving `p.confirm` and its cancellation as the only clack usage. `--ui` and `--no-ui` are
       introduced as CLI-level flags, extracted from the argument list before the module's own strict
       parse and listed in `--help` under a section of their own. At the end, `vibe-ops check` piped into
       anything contains no escape bytes and no framing characters, and the orphaned `│` that a run with
-      no `p.intro` emits today is gone.
+      no `p.intro` emits today is gone. Task: tasks/013-the-render-layer.md
 
 - [ ] **Track 3 — The report block.** `cli/packages/cli/src/report-view.ts` draws counts by state
       followed by each finding with its location, and `out.result()` routes to it. At the end, a run at
