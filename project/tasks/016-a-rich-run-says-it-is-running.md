@@ -38,8 +38,11 @@ this dossier, and one new `.changeset/*.md` for `@entelekheia/vibe-ops-cli`.
 **Frozen, and not this track's to change:** everything a machine reads. A pipe, `--no-ui`, `CI`,
 `NO_COLOR` without `--ui`, `--json` and `--print` produce byte-for-byte what they produce at the contract
 commit, and the `N checks, M failed` line prints once on stdout in the default run, `--verbose` and
-`--audit`. `cli/packages/cli/test/render-plain.test.ts` already asserts most of this; it stays green
-untouched, and anything this track adds to it is additive.
+`--audit`. `cli/packages/cli/test/render-plain.test.ts` already asserts most of this; its assertions over
+machine-read output stay untouched and green, and anything this track adds to it is additive. **Amended
+at the second contract:** an assertion there that pins *rich* output — the `check --ui --verbose` test's
+`/^FAIL {2}\[budget\]/m` — may change to the styled line the design asks for (`✖ FAIL  [budget]`), since
+rich output is what this track exists to change.
 
 **The caller's design notes — a starting point, not a spec.** Verify each against the code:
 
@@ -100,6 +103,15 @@ untouched, and anything this track adds to it is additive.
   `cli/packages/cli/src/run.ts` writes straight to stderr during the run — a warning would have been
   printed onto the same terminal line, and the erase would then have cleared the warning instead.
   Evidence: `warn: (message) => process.stderr.write(...)` in `run.ts`; the status line has no newline.
+- Ruling (main session, at the second contract): the lead's three questions are answered as the macro's
+  owner. Q1 — the verdict glyph (`✔ ok`, `✖ FAIL`, `⚠ WARN`, `⊘ SKIP`) is restored, and the one rich-output
+  assertion in `render-plain.test.ts` that pins the unstyled line changes with it; the "untouched" rule was
+  meant for machine-read output and was written wider than that. Q2 — the changeset states what the erase
+  covers: anything written through `process.stdout` / `process.stderr`, such as `console` or a Node warning;
+  a child with inherited stdio or a raw `fs.writeSync` is outside it, and no built-in module does either.
+  Q3 — the anchor takes the common dir's parent only when the common dir's basename is `.git` or
+  `<parent>/.git` exists, and otherwise `basename(repoRootFrom(target))` — cost if wrong: Q1 costs one
+  follow-up cycle; Q3 one test and a condition.
 - Ruling: In rich mode a module's warnings are held with its lines, keep their order among them, and
   are still written to stderr when flushed — the status line then owns stderr while the module runs, and
   the deferred minor about warnings jumping ahead of held lines goes away with it — cost if wrong: a
