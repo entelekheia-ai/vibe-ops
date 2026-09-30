@@ -102,6 +102,15 @@ test("anchorOf falls back to the toplevel's name when git does not understand --
   }
 });
 
+test("anchorOf names a bare repository kept inside another repository's working tree by its own name", async () => {
+  // `super/vendor.git` is bare and `super/.git` exists beside it: the parent rule is for hidden git dirs
+  // only, so a `name.git` repository keeps its own name.
+  const outer = await repoWithCommit();
+  const bare = path.join(outer, "vendor.git");
+  git("init", "-q", "--bare", bare);
+  assert.equal(anchorOf(bare), "vendor");
+});
+
 test("anchorOf names a folder outside any repository by its own name", async () => {
   const folder = path.join(await mkdtemp(path.join(tmpdir(), "vibeops-anchor-none-")), "loose-folder");
   await mkdir(folder);
