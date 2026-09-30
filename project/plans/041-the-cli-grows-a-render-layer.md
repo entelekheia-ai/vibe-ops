@@ -258,7 +258,19 @@ invocation reports, not what a specially configured one reports.
 
 ## Outcomes & Retrospective
 
-*Not yet started.*
+**2026-09-30 — all four tracks landed on the plan's branch, unmerged.** Goals 1, 3, 4 and 5 are met as
+the success criteria phrase them: a piped `check` carries no framing and no escape byte, the totals line
+prints once in the default run, `--verbose` and `--audit`, `--ui`/`--no-ui` work anywhere before `--`,
+and `bin.ts` keeps `@clack/prompts` for the confirmation alone. Goal 2 is met at a real pseudo-terminal
+for `check` and for an ops. The full suite passes (772 of 772) with `VIBE_OPS_DENYLIST` unset; with it
+set, two tests outside this plan fail for the reason recorded in Track 4's dossier.
+
+What the design did not foresee cost three rounds of review. The success criteria measured only the
+default run, and the consumer gates run `--verbose`, where the two tracks together printed the totals
+twice. And the report block met output it had not been designed against: module lines held back in rich
+mode were lost on a throw, on SIGINT, and whenever they were not findings, and `check` joins its lines
+into one entry per half. Each was a BLOCKER or SHOULD-FIX found by an independent review and fixed on
+the branch; the rulings that narrowed the holding decision twice are in Track 3's dossier.
 
 ---
 
