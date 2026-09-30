@@ -87,7 +87,7 @@ test("check --ui draws the report block in place of the module's own finding lin
 
 test("check --ui --verbose keeps the module's own lines above the block", async () => {
   const out = stripAnsi(run(await emptyRepo(), ["check", "--ui", "--verbose"]).out);
-  assert.match(out, /^FAIL {2}\[budget\]/m);
+  assert.match(out, /^✖ FAIL {2}\[budget\]/m);
   assert.match(out, COUNTS);
 });
 

@@ -57,6 +57,29 @@ test("anchorOf names a repository kept in the .bare layout by its folder, from t
   assert.equal(anchorOf(path.join(project, "main")), "project");
 });
 
+test("anchorOf does not name the folder holding a hidden git dir that is not a repository's own", async () => {
+  // `git init --separate-git-dir store/.sep-git work`: the common dir is `store/.sep-git`, but `store` is
+  // only where the metadata lives — no `store/.git` — so the anchor is the working tree's own name.
+  const root = await mkdtemp(path.join(tmpdir(), "vibeops-anchor-sepdir-"));
+  const work = path.join(root, "gitfile-repo");
+  await mkdir(path.join(root, "store"));
+  git("init", "-q", "--separate-git-dir", path.join(root, "store", ".sep-git"), work);
+  assert.equal(anchorOf(work), "gitfile-repo");
+});
+
+test("anchorOf does not name a .bare directory's parent when the parent carries no .git", async () => {
+  // A `.bare` clone on its own, no gitfile beside it: the parent is not the repository's folder, so a
+  // linked working tree of it is named by its own toplevel.
+  const source = await repoWithCommit();
+  const root = await mkdtemp(path.join(tmpdir(), "vibeops-anchor-lonebare-"));
+  const holder = path.join(root, "holder");
+  await mkdir(holder);
+  git("clone", "-q", "--bare", source, path.join(holder, ".bare"));
+  const tree = path.join(root, "lone-tree");
+  git("-C", path.join(holder, ".bare"), "worktree", "add", "-q", tree);
+  assert.equal(anchorOf(tree), "lone-tree");
+});
+
 test("anchorOf falls back to the toplevel's name when git does not understand --path-format", async () => {
   // Emulates git before 2.31: the unknown `--path-format=absolute` is echoed back and the common dir is
   // printed relative. `--show-toplevel` is understood, as it has been for much longer.

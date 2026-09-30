@@ -162,11 +162,18 @@ test("at a terminal, a process warning during the run erases the status line fir
 test("check --ui --verbose styles the runner's lines and keeps their text", async () => {
   const { stdout } = run(await emptyRepo(), ["check", "--ui", "--verbose"]);
   assert.ok(stdout.includes("\x1b[1m[budget]\x1b[22m"), `[budget] is not bold: ${JSON.stringify(stdout.slice(0, 400))}`);
-  assert.ok(stdout.includes("\x1b[31mFAIL\x1b[39m"), "FAIL is not red");
+  assert.ok(stdout.includes("\x1b[31m✖ FAIL\x1b[39m"), "FAIL is not red with its glyph");
   const text = stripSgr(stdout);
   assert.match(text, /^Composed \d+ checks:$/m);
-  assert.match(text, /^FAIL {2}\[budget\] no AGENTS\.md/m);
-  assert.match(text, /^SKIP {2}\[bridge\]/m);
+  assert.match(text, /^✖ FAIL {2}\[budget\] no AGENTS\.md/m);
+  assert.match(text, /^⊘ SKIP {2}\[bridge\]/m);
+});
+
+test("check --ui, without --verbose, prints no finding line beside the block, styled or not", async () => {
+  // render-plain.test.ts anchors this at `^FAIL`; a styled line starts with its glyph, so the claim is
+  // repeated here unanchored.
+  const text = stripSgr(run(await emptyRepo(), ["check", "--ui"]).stdout);
+  assert.equal(/FAIL {2}\[budget\]/.test(text), false, JSON.stringify(text.slice(0, 600)));
 });
 
 test("check --verbose into a pipe prints the runner's lines exactly as written", async () => {
