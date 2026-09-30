@@ -252,6 +252,25 @@ interface OpsRun {
   readonly skipped: readonly { check: string; reason: string }[];
 }
 
+// The default passthrough: failing and warning lines, and the indented continuation of one. The
+// `composed N checks:` preamble, its indented per-fragment listing and `composed deny-list: …` belong to
+// `--verbose`; an indented line is kept only while it follows a FAIL, WARN or SELF-TEST line.
+function passthrough(lines: readonly string[]): string[] {
+  const kept: string[] = [];
+  let following = false;
+  for (const line of lines) {
+    if (/^(FAIL|WARN|SELF-TEST)/.test(line)) {
+      kept.push(line);
+      following = true;
+    } else if (/^\s{2}/.test(line) && following) {
+      kept.push(line);
+    } else {
+      following = false;
+    }
+  }
+  return kept;
+}
+
 const SUMMARY_PATTERN = /^(\d+) checks, (\d+) failed$/m;
 // The runner's own line shapes: `FAIL  [id] evidence`, `SKIP  [id] reason`, and, under --list,
 // two columns of id and source. Parsed rather than passed through as a blob, because the MCP client
@@ -425,7 +444,10 @@ export default defineModule(
       const shown = output.split("\n").filter((line) => !/^\d+ checks, \d+ failed$/.test(line));
       const interesting = context.flags["verbose"] === true || context.flags["list"] === true
         ? shown.join("\n")
-        : shown.filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
+        : context.flags["self-test"] === true
+          // The one mode whose text is the answer: its report is unchanged, preamble included.
+          ? shown.filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n")
+          : passthrough(shown).join("\n");
       if (interesting.trim() !== "") context.log(interesting.trimEnd());
     }
 

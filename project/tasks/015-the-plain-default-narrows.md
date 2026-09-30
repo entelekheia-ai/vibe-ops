@@ -1,0 +1,122 @@
+---
+vibe-ops-template: task@3
+---
+
+<!--
+ Copyright (c) 2026 Danilo Borges (https://github.com/daniloborges)
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ https://www.apache.org/licenses/LICENSE-2.0
+-->
+
+# Task: The plain default narrows
+
+| Field | Value |
+|---|---|
+| Status | Done |
+| Created | 2026-09-30 |
+| Author | Danilo Borges |
+| Issue | pending |
+| Plan | plans/041-the-cli-grows-a-render-layer.md — Track 4 |
+
+---
+
+## Context
+
+Plan-041 Track 4, quoted: *"The passthrough filter in `cli/packages/module-check/src/index.ts` stops
+repeating the composition preamble and its indented source lines, which move behind `--verbose`. At the
+end, a repository with no findings reports one line, and `--verbose` reports everything it reports
+today."*
+
+Today the filter at `cli/packages/module-check/src/index.ts:428` passes any runner line matching
+`/^(FAIL|WARN|SELF-TEST|composed|\s{2})/`. The runner prints `composed N checks:` and one indented line
+per composed fragment (`cli/packages/module-check/sh/unported/check-agents-md.sh:200` and `:205`), then
+`composed deny-list: …` (`:322`). All of it reaches every default run. The module contract already
+forbids it: *"no 'composed N' preamble"* (`cli/AGENTS.md`, the module contract). `SKIP` is not in the
+filter and stays out — the plan's Decision Log of 2026-09-30 settles that.
+
+**Files owned:** `cli/packages/module-check/src/index.ts` (the passthrough filter only) and one new test
+file under `cli/packages/module-check/test/`. **Other tracks running at the same time** own
+`cli/packages/cli/**` (Track 2: `bin.ts`, `render.ts`, a CLI test) — do not touch it. The totals line
+`N checks, M failed` is a contract with consumer repositories and must not change by a byte.
+
+**Gate**, from the worktree root:
+
+```sh
+npm run typecheck -w @entelekheia/vibe-ops-module-check
+node --test cli/packages/module-check/test/*.test.ts
+npm run build -w @entelekheia/vibe-ops-module-check
+node cli/packages/cli/dist/bin.js check 2>&1 | grep -c '^composed'                             # 0
+node cli/packages/cli/dist/bin.js check --verbose 2>&1 | grep -c '^composed'                   # ≥ 1
+node cli/packages/cli/dist/bin.js check --self-test; echo $?                                    # as before
+```
+
+**Never run the root `npm run build` in this track.** Track 2 edits `cli/packages/cli/src/` in the same
+worktree at the same time, and the root build compiles it; the one-package build above leaves the CLI's
+already-built `dist/` alone, which is all the commands above need.
+
+## Work items
+
+| # | Priority | Item | Effort |
+|---|---|---|---|
+| 1 | P0 | Drop the preamble and its source listing from the default passthrough | S |
+| 2 | P0 | Keep any indented line that belongs to a FAIL or WARN | S |
+| 3 | P0 | A test for both | S |
+
+### 1. The preamble leaves the default — P0
+
+**What:** A run without `--verbose`/`--list` no longer repeats `composed N checks:`, the per-fragment
+source lines under it, or `composed deny-list: …`.
+**Why:** Twelve lines to say nothing failed, paid by every agent reading the gate.
+**Change:** The filter at `index.ts:428`.
+
+### 2. Evidence that is indented stays — P0
+
+**What:** Establish, before removing `\s{2}`, whether any fragment prints an indented continuation line
+under a `FAIL` or `WARN`. If one does, keep indented lines that follow a `FAIL`/`WARN` line and drop only
+those that follow `composed`. If none does, say so with the command that shows it.
+**Why:** `\s{2}` may be the only thing carrying part of a finding's evidence; removing it blind would
+make a failing run quieter than the failure.
+**Change:** Read `cli/packages/module-check/sh/unported/checks/*.sh` and run `check --self-test`, whose
+fixture is broken on purpose, and read what its FAIL lines carry.
+
+### 3. The test — P0
+
+**What:** A non-verbose run's logged lines contain no line starting with `composed` and no source-listing
+line; a `--verbose` run's contain `composed`; a FAIL or WARN still reaches the log when one exists. Model
+it on `cli/packages/module-check/test/composition.test.ts` (it builds a `ModuleContext` and calls
+`check.run`). Prefer a fixture over this repository where the assertion depends on what is found.
+**Why:** The success criterion is a count of output lines, and nothing else pins it.
+
+## Implementation order
+
+- [x] P0 — item 2 answered first, with its evidence here under Surprises
+- [x] P0 — item 1
+- [x] P0 — item 3, green; then break it on purpose once (restore `composed` in the filter) and see it fail
+- [x] P0 — the gate above, every line
+
+`--self-test` output is unchanged by this track: it is the one mode whose text is the answer. If the
+filter change alters what `--self-test` prints, keep that mode's output as it is today.
+
+## Surprises & Discoveries
+
+- Observation (item 2): no fragment prints indented evidence under a FAIL or WARN. Every finding is one line.
+  Evidence: `fail()` in `check-agents-md.sh:60` is `printf 'FAIL  [%s] %s\n'`; `grep -rn` of `sh/unported/checks/*.sh` finds
+  no indented printf/echo; `check --self-test` and `check --verbose` FAIL/WARN lines are each followed by another
+  FAIL/WARN/ok line, never an indented one. The only indented lines are the `report_composition` listing
+  (`:205`) and the second line of `SELF-TEST PASSED:` (`:~560`), which `\s{2}` was also carrying.
+- Ruling: the default filter keeps an indented line only while it follows a FAIL/WARN/SELF-TEST line, and
+  `--self-test` keeps the old filter byte for byte (its output still holds `composed` lines) — the dossier says that
+  mode's text is unchanged — if wrong, `--self-test` loses its preamble, a cosmetic change.
+
+- Deferred minor: `cli/packages/module-check/test/passthrough.test.ts` runs the whole gate over this
+  repository three times, about 8–30 s a test and roughly 53 s for the module's suite — the assertions
+  hold over any population, so a small fixture would serve them at a fraction of the cost.
+
+## Closure
+
+- [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually
+      runs; a dossier that looks otherwise finished but has this box open is not done.

@@ -142,10 +142,10 @@ for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
       an interactive terminal shows the block, the same run piped shows the summary line, and `--json`
       shows neither.
 
-- [ ] **Track 4 — The plain default narrows.** The passthrough filter in
+- [x] **Track 4 — The plain default narrows.** The passthrough filter in
       `cli/packages/module-check/src/index.ts` stops repeating the composition preamble and its indented
       source lines, which move behind `--verbose`. At the end, a repository with no findings reports one
-      line, and `--verbose` reports everything it reports today.
+      line, and `--verbose` reports everything it reports today. Task: tasks/015-the-plain-default-narrows.md
 
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
