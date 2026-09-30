@@ -6,10 +6,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { isReport, readReport } from "../src/report.ts";
+import type { ReportFinding, ReportSkip } from "../src/report.ts";
 import type { OpsFinding, OpsPopulation, OpsRepair, OpsSkip } from "../src/ops.ts";
 
-// Typed against the producer's own exports, so a change to what `runOps` returns breaks this file at
-// typecheck rather than leaving it asserting a shape nothing produces any more.
+// Typed against the producer's own exports. `satisfies` catches a renamed or newly required field; the two
+// mappings below catch the rest — a `level` that grows a third value, or a `gate` made optional, still
+// accepts these literals, and only an assignment into the report's own types refuses them.
 const opsData = {
   findings: [
     { gate: "memory-slugs", rule: "slug", file: "docs/guide.md", line: 14, evidence: "names a memory slug", level: "fail" },
@@ -29,6 +31,22 @@ const checkData = {
   untracked: [],
   ops: [{ id: "governance", code: 0, gates: 12 }],
 };
+
+const findingFromOps = (finding: OpsFinding): ReportFinding => ({
+  id: finding.gate,
+  level: finding.level,
+  evidence: finding.evidence,
+  ...(finding.file === undefined ? {} : { file: finding.file }),
+  ...(finding.line === undefined ? {} : { line: finding.line }),
+});
+const skipFromOps = (skip: OpsSkip): ReportSkip => ({ id: skip.gate, reason: skip.reason });
+
+test("readReport's normalisation of an ops payload is the one the producer's types imply", () => {
+  assert.deepEqual(readReport(opsData), {
+    findings: opsData.findings.map(findingFromOps),
+    skipped: opsData.skipped.map(skipFromOps),
+  });
+});
 
 test("readReport accepts what runOps returns, and normalises gate to id", () => {
   const report = readReport(opsData);
@@ -63,6 +81,10 @@ test("the nouns' payloads are not reports", () => {
   assert.equal(isReport({ type: "adr", dir: "project/adr", next: "0023" }), false);
   assert.equal(isReport(undefined), false);
   assert.equal(isReport([]), false);
+});
+
+test("an empty id is not an id", () => {
+  assert.equal(isReport({ findings: [{ check: "", level: "fail", evidence: "e" }], skipped: [] }), false);
 });
 
 test("one malformed entry rejects the whole payload rather than dropping the entry", () => {

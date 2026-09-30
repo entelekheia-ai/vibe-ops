@@ -82,6 +82,22 @@ against the core's own `OpsFinding`/`OpsSkip`/`OpsRepair`/`OpsPopulation`.
   already holds 008–011, the same collision that cost Plan-041 its first number — cost if wrong: a
   renumber at merge, if that branch is abandoned.
 
+- Observation: The review of this track (range `f63f349~1..f63f349`) raised five findings, every one
+  reproduced before it was acted on. The two SHOULD-FIX: `satisfies` catches a renamed or newly required
+  `OpsFinding` field and misses a widened `level` or an optional `gate`; and nothing tied `check`'s own
+  payload to the guard. Both are fixed in the follow-up commit — two mappings into `ReportFinding` /
+  `ReportSkip`, and a `check` test asserting `isReport(result.data)` — and the eight mutation probes now
+  all fail, in the test or the typecheck, where five passed green before.
+  Evidence: the reviewer's `mutate.sh`, rerun after the fix; `cli/packages/module-check/test/composition.test.ts`.
+- Observation: The review agent, briefed read-only, wrote a tracked file: `vibe-ops log index --json`
+  writes by default, and it rewrote `project/log/README.md` while probing whether a noun passes the guard.
+  Reverted before anything was committed. A verb whose query form writes is a trap for any reader that
+  explores by running the nouns.
+  Evidence: `git diff --stat -- project/log/README.md` showed 3 insertions; `git checkout` restored it.
+- Deferred minor: `project/log/README.md` at the base does not index a tracked entry
+  (`the-gate-on-path-is-not-the-gate-in-this-tree.md`); `vibe-ops log index --dry-run` shows it. Predates
+  this plan and blocks nothing.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually

@@ -9,7 +9,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
+import { isReport, loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext } from "@entelekheia/vibe-ops-core";
 import check from "../src/index.ts";
 
@@ -38,6 +38,15 @@ test("the summary keeps the `N checks, M failed` shape every consumer's gate gre
   const { context } = await contextFor();
   const result = await check.run(context);
   assert.match(result.summary, /^\d+ checks, \d+ failed/, result.summary);
+});
+
+// The terminal draws its report block for whatever passes `isReport`, and nothing else ties this module's
+// `data` to that shape: its type is local and its `level` is a plain string. Renaming a key here would
+// drop every `check` to the summary line with the whole suite still green.
+test("a run's data is a report the terminal can draw", async () => {
+  const { context } = await contextFor();
+  const result = await check.run(context);
+  assert.ok(isReport(result.data), JSON.stringify(result.data).slice(0, 300));
 });
 
 test("the count covers BOTH halves — the shell fragments and the composed gates", async () => {
