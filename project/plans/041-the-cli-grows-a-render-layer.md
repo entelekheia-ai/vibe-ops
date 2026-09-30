@@ -16,7 +16,7 @@ vibe-ops-template: plan@3
 
 | Field | Value |
 |---|---|
-| Status | Backlog |
+| Status | In Progress |
 | Created | 2026-09-08 |
 | Author | Danilo Borges |
 
@@ -76,8 +76,9 @@ So the design is one door. `cli/packages/cli/src/render.ts` owns the decision �
 machine — and exposes the writers everything human-facing goes through: `out.help()`, `out.error()`,
 `out.summary()`, `out.result()`. Nothing else in the CLI decides about colour, framing or width. The
 detection is a single predicate: an explicit `--ui` forces rich, and otherwise rich requires an
-interactive stdout with no `--no-ui`, no `CI` and no `NO_COLOR`. Colour comes from `picocolors`, which
-honours `NO_COLOR` and `FORCE_COLOR` itself and carries no dependencies of its own.
+interactive stdout with no `--no-ui`, no `CI` and no `NO_COLOR`. Colour comes from Node's own
+`util.styleText`, applied only once `render` has already chosen rich, so the layer adds no dependency and
+no second place decides whether colour is wanted.
 
 `out.result()` is where the two audiences separate:
 
@@ -92,11 +93,13 @@ flowchart TD
     S -->|yes| B["report block"]
 ```
 
-`isReport()` and the `ReportData` type live in `cli/packages/core/src/report.ts` because the core is what
-already produces the shape: `runOps` in `cli/packages/core/src/ops.ts` returns
-`{ findings, skipped, repaired, population }`, and `check` returns the same `findings` and `skipped`
-alongside its own fields. The type is therefore a recognition of what exists rather than a form modules
-must be migrated onto, which is why goal 4 costs no module edits. A module joins by returning the shape;
+`isReport()`, `readReport()` and the `Report` type live in `cli/packages/core/src/report.ts` because the
+core is what already produces the shape: `runOps` in `cli/packages/core/src/ops.ts` returns
+`{ findings, skipped, repaired, population }`, and `check` returns `findings` and `skipped` alongside its
+own fields. The two name an entry's origin differently — `gate` in the ops, `check` once `check` has
+merged them — so `readReport()` accepts either and normalises both to `id`, and the report view never
+learns which producer it is drawing. The type is therefore a recognition of what exists rather than a
+form modules must be migrated onto, which is why goal 4 costs no module edits. A module joins by returning the shape;
 a module that returns something else falls through to the summary line and is not broken by the
 addition.
 
@@ -115,15 +118,16 @@ everything around it and must leave its text alone.
 The default plain output narrows at the same time. `module-check` currently repeats any line beginning
 with `composed` or two spaces, which passes through the composition preamble and its per-fragment source
 listing on every invocation. Those move behind `--verbose`, where the rest of the run's detail already
-lives. `FAIL`, `WARN` and `SKIP` continue to print unconditionally, because a finding is what the caller
-asked for.
+lives. `FAIL` and `WARN` continue to print unconditionally, because a finding is what the caller asked
+for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
 
 ## Tracks
 
-- [ ] **Track 1 — The report contract.** `cli/packages/core/src/report.ts` gains `ReportData` and an
-      `isReport()` guard, exported from the core's index, describing the shape `runOps` and `check`
-      already return. Nothing consumes it yet. At the end, a type exists that both producers satisfy and
-      a test proves the nouns' payloads do not, so the guard cannot silently widen.
+- [x] **Track 1 — The report contract.** `cli/packages/core/src/report.ts` gains the `Report` type, an
+      `isReport()` guard and the `readReport()` normaliser, exported from the core's index, describing
+      the shape `runOps` and `check` already return. Nothing consumes it yet. At the end, a type exists
+      that both producers satisfy and a test proves the nouns' payloads do not, so the guard cannot
+      silently widen. Task: tasks/012-the-report-contract.md
 
 - [ ] **Track 2 — The render layer, and the framing leaves the pipe.** `cli/packages/cli/src/render.ts`
       is written and the nine `@clack/prompts` call sites in `cli/packages/cli/src/bin.ts` move onto it,
@@ -213,6 +217,33 @@ invocation reports, not what a specially configured one reports.
   runs on `sonnet` at `high`; it moves to `opus` at `high` if the diff turns out to touch the totals
   line, which is the one output other repositories depend on.
   Date / Author: 2026-09-08 / Danilo Borges
+
+- Decision: Colour comes from `util.styleText`, not `picocolors`.
+  Rationale: `picocolors` is not in this repository's dependency tree — the design assumed a transitive
+  copy that does not exist — and `render` already decides rich before any colour is applied, so a
+  library's own `NO_COLOR` detection would be a second decider behind the first. The engines floor
+  (`>=22.18`) already carries `styleText`.
+  Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
+
+- Decision: The report contract normalises an entry's origin to `id`, accepting `gate` or `check`.
+  Rationale: The two producers share field names and not entry keys — `OpsFinding` carries `gate`, and
+  `check` re-keys to `check` when it merges the ops' findings — so a guard over one spelling sends the
+  other producer to the summary line, which is the narrowing the guard's test exists to prevent.
+  Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
+
+- Decision: `SKIP` stays behind `--verbose` in the plain default, as it is today.
+  Rationale: The Design first said `SKIP` prints unconditionally, which is not the present behaviour —
+  measured, a default run prints no `SKIP` line and `--verbose` prints eleven — and the module contract
+  already keeps `SKIP` with `ok` under `--verbose`. Printing it would make goal 1 unreachable in any
+  repository that declares a disablement.
+  Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
+
+- Decision: A delegated track runs on the model its agent definition fixes, and the brief names none.
+  Rationale: The delegation entry above named per-call models; the implementer and reviewer definitions
+  the run dispatches each fix their own, and a model passed on the call replaces the definition's, so a
+  per-call model is kept for escalation after a failed gate. The adversarial review therefore runs on the
+  reviewer definition's model rather than the `sonnet` at `high` written above.
+  Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
 
 ## Outcomes & Retrospective
 
