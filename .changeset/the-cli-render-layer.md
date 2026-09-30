@@ -4,8 +4,9 @@
 
 The terminal surface stops writing prompt framing into pipes, and gains `--ui` and `--no-ui`
 
-Every summary, error and `--help` block now goes through one render layer that decides, once per run,
-whether stdout is a person at a terminal or a machine. A pipe, a hook, continuous integration, or `CI` /
+Every summary, error and `--help` block — all but the summary of a `--print` run, which goes to stderr
+raw so it never lands inside the document — now goes through one render layer that decides, once per run,
+whether stdout is a person at a terminal or a machine. A pipe, a Claude Code hook, continuous integration, or `CI` /
 `NO_COLOR` in the environment gets plain lines — so a green `vibe-ops check` piped anywhere no longer
 carries the orphaned `│` and the `◆` bullet it used to. An interactive terminal gets a glyph and colour.
 `--ui` forces the rich output and `--no-ui` the plain one, anywhere on the command line; `--json` outranks

@@ -232,10 +232,14 @@ async function runComposedOps(context: ModuleContext): Promise<readonly OpsRun[]
       code: result.code,
       lines,
       gates: composed.size,
+      // `evidence` keeps the file folded in, as `--json` consumers of this module have always read it;
+      // `file` and `line` ride beside it so a reader that draws a location need not parse one back out.
       findings: findings.map((finding) => ({
         level: finding.level === "warn" ? "warn" : "fail",
         check: finding.gate,
         evidence: finding.file === undefined ? finding.evidence : `${finding.file}: ${finding.evidence}`,
+        ...(finding.file === undefined ? {} : { file: finding.file }),
+        ...(finding.line === undefined ? {} : { line: finding.line }),
       })),
       skipped: skips.map((entry) => ({ check: entry.gate, reason: entry.reason })),
     });
@@ -248,7 +252,7 @@ interface OpsRun {
   readonly code: number;
   readonly lines: readonly string[];
   readonly gates: number;
-  readonly findings: readonly { level: string; check: string; evidence: string }[];
+  readonly findings: readonly { level: string; check: string; evidence: string; file?: string; line?: number }[];
   readonly skipped: readonly { check: string; reason: string }[];
 }
 
@@ -509,7 +513,7 @@ export default defineModule(
       };
     }
 
-    const findings: { level: string; check: string; evidence: string }[] = [];
+    const findings: { level: string; check: string; evidence: string; file?: string; line?: number }[] = [];
     const skipped: { check: string; reason: string }[] = [];
     for (const line of output.split("\n")) {
       const parsed = REPORT_LINE.exec(line);

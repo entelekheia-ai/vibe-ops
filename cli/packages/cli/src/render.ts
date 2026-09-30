@@ -73,6 +73,9 @@ export function colourAllowed(env: NodeJS.ProcessEnv): boolean {
   return !envSet(env["NO_COLOR"]);
 }
 
+/** A line the report block redraws: `FAIL  [id] …`, `WARN  [id] …` or `SKIP  [id] …`, as the runners print them. */
+const FINDING_LINE = /^(FAIL|WARN|SKIP)\s+\[[^\]]+\]/;
+
 export interface Out {
   readonly rich: boolean;
   /** A titled block: `--help`, and the flag list after a refused flag. */
@@ -158,7 +161,11 @@ export function createOut(options: OutOptions): Out {
         line(`${result.code === 0 ? paint("green", "✔") : paint("red", "✖")} ${result.summary}`);
         return;
       }
-      if (resultOptions.keepHeld === true) for (const entry of held) line(entry);
+      // The block stands in for the finding lines only — the ones it redraws. Everything else a module
+      // wrote (a repair it made, a hint, a warning it passed through) is not in the report, and printing
+      // it above the block is the only way it reaches the terminal at all.
+      const kept = resultOptions.keepHeld === true ? held : held.filter((entry) => !FINDING_LINE.test(entry));
+      for (const entry of kept) line(entry);
       const header = { title: resultOptions.title ?? "vibe-ops", where: resultOptions.where ?? "", summary: result.summary, code: result.code };
       for (const entry of renderReport(report, header, paint)) line(entry);
     },

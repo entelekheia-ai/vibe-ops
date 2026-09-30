@@ -104,6 +104,25 @@ node cli/packages/cli/dist/bin.js check 2>&1 | tail -1              # the summar
 - Ruling: Skips are counted in the block and not listed; the list is one `--verbose` away — cost if
   wrong: a person has to ask for what a disablement says.
 
+- Observation: The review of `9547ed1` found the holding ruling above wrong in two ways, both reproduced
+  before the fix: a module that threw after logging lost every held line (the error handler in `main`
+  never saw them), and a drawn block dropped every held line, not only the findings it redraws — a
+  `FIXED [links] …` repair line and a `hint:` line vanished under `--ui` and printed under `--no-ui`.
+  Evidence: the reviewer's `throws.mjs` and `exits.mjs` probes, rerun against this worktree's build;
+  both are now tests in `render-plain.test.ts`, and each fails with its fix taken out.
+- Ruling (narrows the first ruling above): the block stands in for the finding lines only —
+  `FAIL|WARN|SKIP  [id] …`, the lines it redraws — and every other held line prints above it; a throw
+  writes the held lines to stdout before the error — cost if wrong: an indented continuation under a
+  finding, which no check prints today, would print above the block detached from its finding.
+- Ruling: `check`'s findings carry `file` and `line` beside the `evidence` that already folds the file in,
+  and the block strips that folded prefix when it draws the location on its own line — the merge
+  predated this track and dropped `line`, which the block made visible; `--json` readers of `evidence`
+  see it unchanged — cost if wrong: two new optional fields in `check`'s payload.
+- Deferred minor: under `check` the block groups by the gate label (`template-version-plan`) where the
+  plain line names the rule (`template-version-behind`); the rule is not carried through `check`'s merge.
+- Deferred minor: the block's fail count counts findings, while the summary counts failed checks, so the
+  two numbers can differ in one run.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually

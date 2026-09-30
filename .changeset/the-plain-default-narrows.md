@@ -14,3 +14,6 @@ bare line, and printing both gave a consumer's `--verbose` capture two matching 
 is a minor rather than a patch — paired with a CLI older than this release, `--verbose` would print the
 totals only behind the CLI's old prefix, and a gate grepping the bare line would find none. The released
 CLI depends on `^0.1.2`, which does not take `0.2.0`, so the pairing cannot happen through an install.
+
+Each finding in `check`'s `data` now carries `file` and `line` beside its `evidence` when the gate that
+raised it named them. `evidence` keeps the file folded in, as before.

@@ -138,6 +138,22 @@ filter change alters what `--self-test` prints, keep that mode's output as it is
   prefix so the bare form never appears, and that a clean run without `--verbose` prints nothing. Both
   are false after this plan. It is a promulgated file, so the correction is its own `harness sync`.
 
+- Observation: The second pass over `7622bff` found nothing standing: the totals line prints once on stdout
+  in the default run, `--verbose`, `--audit`, an exit-1 run and a refused target, through
+  `module-check/sh/check.sh` and a scaffolded consumer alike, where the parent build printed two under
+  `--verbose`; and `changeset version` on a scratch copy moved this package to `0.2.0`, the CLI to `0.3.0`,
+  and the CLI's range to `^0.2.0`.
+  Evidence: the second review's probes (`modes.sh`, `consumers.sh`), run against builds of `7622bff` and
+  `b85cc13`.
+- Deferred minor: a default `vibe-ops check <missing dir>` exits 2 and prints no reason — the runner's
+  `not a directory: …` goes to stderr and the passthrough keeps only FAIL/WARN. The filter before this
+  track dropped it too; `--verbose` shows it.
+- Observation: two tests outside this plan fail on this branch and on its base alike —
+  `cli/packages/gates/test/classification.test.ts:34` and `cli/packages/ops-exposure/test/ops.test.ts:68`,
+  where a private-name check reports 229 examined; a deny-list reaching the run from the environment is
+  the likely cause, not traced.
+  Evidence: the second review's full-suite run, 753 of 755 at `7622bff` and the same two at `b85cc13`.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually

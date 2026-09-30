@@ -27,6 +27,16 @@ function location(finding: ReportFinding): string | undefined {
   return finding.line === undefined ? finding.file : `${finding.file}:${String(finding.line)}`;
 }
 
+/**
+ * The evidence with its own leading `file: ` removed when the location is already drawn on the line above
+ * — `check` folds the file into `evidence` for its `--json` readers and carries it beside as well.
+ */
+function withoutLocation(finding: ReportFinding): string {
+  if (finding.file === undefined) return finding.evidence;
+  const prefix = `${finding.file}: `;
+  return finding.evidence.startsWith(prefix) ? finding.evidence.slice(prefix.length) : finding.evidence;
+}
+
 /** Findings grouped by the gate or check that produced them, failures first, in the order each id first appeared. */
 function grouped(findings: readonly ReportFinding[]): { id: string; level: "fail" | "warn"; items: ReportFinding[] }[] {
   const groups = new Map<string, { id: string; level: "fail" | "warn"; items: ReportFinding[] }>();
@@ -62,7 +72,7 @@ export function renderReport(report: Report, header: ReportHeader, paint: Paint)
     for (const item of group.items) {
       const where = location(item);
       if (where !== undefined) lines.push(`    ${where}`);
-      lines.push(`    ${paint("dim", item.evidence)}`);
+      lines.push(`    ${paint("dim", withoutLocation(item))}`);
     }
   }
 

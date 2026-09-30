@@ -20,7 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
 import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
-import type { ModuleCommand } from "@entelekheia/vibe-ops-core";
+import type { ModuleCommand, ModuleResult } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
 import { declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
@@ -174,20 +174,28 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
   const held: string[] = [];
   const holding = out.rich && !machineOutput;
 
-  const result = await runModule({
-    plugin,
-    flags: parsed.values as Record<string, string | boolean>,
-    args: parsed.positionals,
-    cwd: process.cwd(),
-    surface: "cli",
-    command,
-    // The terminal's consent is the prompt above; without a TTY there is nobody to prompt, and this
-    // surface keeps the behaviour it has always had — a skill invokes `task close` through a Bash tool,
-    // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
-    // surface with no such story, which is why the gate in runModule exists and why only it is refused.
-    confirmed: true,
-    sink: holding ? (message) => void held.push(message) : (message) => process.stdout.write(`${message}\n`),
-  });
+  // A module that throws after logging must not take its lines with it: the held ones reach stdout
+  // before the error does, in the order plain mode would have printed them.
+  let result: ModuleResult;
+  try {
+    result = await runModule({
+      plugin,
+      flags: parsed.values as Record<string, string | boolean>,
+      args: parsed.positionals,
+      cwd: process.cwd(),
+      surface: "cli",
+      command,
+      // The terminal's consent is the prompt above; without a TTY there is nobody to prompt, and this
+      // surface keeps the behaviour it has always had — a skill invokes `task close` through a Bash tool,
+      // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
+      // surface with no such story, which is why the gate in runModule exists and why only it is refused.
+      confirmed: true,
+      sink: holding ? (message) => void held.push(message) : (message) => process.stdout.write(`${message}\n`),
+    });
+  } catch (error) {
+    for (const line of held) process.stdout.write(`${line}\n`);
+    throw error;
+  }
 
   // `--json` renders `data` on stdout and the summary on stderr, raw — it is piped into `jq`, so no
   // framing may reach it. `--print` is a DOCUMENT a caller redirects into a file, so its summary goes to

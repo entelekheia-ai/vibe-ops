@@ -56,3 +56,13 @@ test("the last line is the module's summary, verbatim, behind one glyph", () => 
 test("with a painter that does not paint, no escape byte reaches the lines", () => {
   assert.equal(renderReport(report, header, plain).join("\n").includes("\x1b"), false);
 });
+
+test("a location drawn on its own line is not repeated at the head of the evidence", () => {
+  const folded: Report = {
+    findings: [{ id: "template-version-plan", level: "warn", file: "project/plans/008.md", line: 1, evidence: "project/plans/008.md: declares plan@0.1" }],
+    skipped: [],
+  };
+  const lines = renderReport(folded, header, plain);
+  assert.ok(lines.includes("    project/plans/008.md:1"));
+  assert.ok(lines.includes("    declares plan@0.1"));
+});

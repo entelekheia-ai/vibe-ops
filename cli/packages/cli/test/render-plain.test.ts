@@ -3,10 +3,10 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "bin.js");
@@ -104,4 +104,53 @@ test("check --ui --json prints the payload alone on stdout", async () => {
   const r = spawnSync("node", [BIN, "check", "--ui", "--json"], { cwd: await emptyRepo(), encoding: "utf8", env });
   assert.doesNotThrow(() => JSON.parse(r.stdout));
   assert.equal(COUNTS.test(r.stdout), false);
+});
+
+// Local fixture modules, loaded by path, for the three shapes a rich run must not swallow a line from: a
+// module that throws after logging, one whose report sits beside lines that are not findings, and one whose
+// data is not a report at all.
+const CORE = pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "core", "dist", "index.js")).href;
+
+async function fixtureModule(repoRoot: string, name: string, body: string): Promise<string> {
+  const file = path.join(repoRoot, `${name}.mjs`);
+  await writeFile(
+    file,
+    `import { defineModule } from ${JSON.stringify(CORE)};\n` +
+      `export default defineModule({ id: ${JSON.stringify(name)}, version: "0.0.0", summary: "fixture" }, async (context) => {\n${body}\n});\n`,
+  );
+  return file;
+}
+
+test("a module that throws after logging keeps its lines under --ui", async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(repo, "throws", `context.log("PROGRESS wrote a.md"); context.log("FAIL  [step] could not write b.md"); throw new Error("boom");`);
+  const out = stripAnsi(run(repo, [mod, "--ui"]).out);
+  assert.match(out, /PROGRESS wrote a\.md/);
+  assert.match(out, /FAIL {2}\[step\] could not write b\.md/);
+  assert.match(out, /boom/);
+});
+
+test("the block stands in for finding lines only; every other line a module wrote is printed", async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(
+    repo,
+    "fixer",
+    `context.log("FIXED [links] docs/a.md: rewrote 2 links"); context.log("hint: run with --verbose");` +
+      ` context.log("FAIL  [links] docs/b.md:7: dead link");` +
+      ` return { code: 1, summary: "1 gates, 1 failed, 1 repaired", data: { findings: [{ gate: "links", level: "fail", file: "docs/b.md", line: 7, evidence: "dead link" }], skipped: [] } };`,
+  );
+  const out = stripAnsi(run(repo, [mod, "--ui"]).out);
+  assert.match(out, /FIXED \[links\] docs\/a\.md: rewrote 2 links/);
+  assert.match(out, /hint: run with --verbose/);
+  assert.equal(/^FAIL {2}\[links\]/m.test(out), false, "the finding line was printed beside the block");
+  assert.match(out, /docs\/b\.md:7/);
+  assert.match(out, COUNTS);
+});
+
+test("a rich run whose data is not a report prints every line the module wrote", async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(repo, "plain-data", `context.log("PROGRESS one"); context.log("PROGRESS two"); return { code: 0, summary: "done", data: { rows: [] } };`);
+  const out = stripAnsi(run(repo, [mod, "--ui"]).out);
+  assert.match(out, /PROGRESS one\nPROGRESS two\n/);
+  assert.match(out, /✔ done/);
 });
