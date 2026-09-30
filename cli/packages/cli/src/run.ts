@@ -30,6 +30,21 @@ export interface RunOptions {
    * input. Absent on a destructive command, the run is refused rather than performed.
    */
   readonly confirmed?: boolean;
+  /**
+   * Where a module's warnings go, as the whole line `warning: <message>` without its newline. Absent,
+   * they are written straight to stderr. The terminal passes one in a rich run, to hold them in order
+   * with the module's own lines.
+   */
+  readonly warnSink?: (line: string) => void;
+}
+
+/**
+ * The name of what a module analysed, for the report block's title: the repository's name when `target`
+ * is inside a git repository — read from its common directory, so that a linked working tree names its
+ * repository rather than its own folder — and the folder's own name when it is not in one.
+ */
+export function anchorOf(_target: string): string {
+  throw new Error("not implemented: anchorOf");
 }
 
 /**

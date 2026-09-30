@@ -92,8 +92,27 @@ export function withoutRedrawnFindings(held: readonly string[]): string[] {
   return lines.filter((entry, index) => !FINDING_LINE.test(entry) || continues(index));
 }
 
+/**
+ * A line a rich run held back instead of writing as it came, with the stream it would have gone to: a
+ * module's log line is `out`, one of its warnings is `err`. Held together so they keep their order.
+ */
+export interface HeldLine {
+  readonly text: string;
+  readonly stream: "out" | "err";
+}
+
 export interface Out {
   readonly rich: boolean;
+  /**
+   * Writes held lines, in order, each to its own stream. In a rich run an `out` line is styled by the
+   * shapes the runners share; in a plain one every line is written as it was held.
+   */
+  flush(held: readonly HeldLine[]): void;
+  /**
+   * A status line on stderr while a module works, drawn only in a rich run whose stderr is a terminal.
+   * The returned `stop()` erases it, and is safe to call more than once.
+   */
+  progress(label: string): () => void;
   /** A titled block: `--help`, and the flag list after a refused flag. */
   help(title: string, lines: readonly string[]): void;
   /** Something went wrong before or around the module — a refused flag, an unknown verb, a crash. */
@@ -124,6 +143,8 @@ export interface OutOptions {
    * colour inside it — the variable is about colour, not layout.
    */
   readonly colour?: boolean;
+  /** Whether a status line may be drawn: stderr is an interactive terminal. Absent means no. */
+  readonly statusLine?: boolean;
   readonly stdout?: (text: string) => void;
   readonly stderr?: (text: string) => void;
 }
@@ -140,6 +161,14 @@ export function createOut(options: OutOptions): Out {
 
   return {
     rich,
+
+    flush(_held) {
+      throw new Error("not implemented: Out.flush");
+    },
+
+    progress(_label) {
+      throw new Error("not implemented: Out.progress");
+    },
 
     // The lines are printed as the caller wrote them: `bin.ts` already indents its verb and flag lines,
     // and a second indent here doubled them.
