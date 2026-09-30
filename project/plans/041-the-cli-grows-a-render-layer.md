@@ -19,6 +19,7 @@ vibe-ops-template: plan@3
 | Status | In Progress |
 | Created | 2026-09-08 |
 | Author | Danilo Borges |
+| Pipeline | track-lead |
 
 ---
 
