@@ -116,6 +116,28 @@ filter change alters what `--self-test` prints, keep that mode's output as it is
   repository three times, about 8–30 s a test and roughly 53 s for the module's suite — the assertions
   hold over any population, so a small fixture would serve them at a fraction of the cost.
 
+- Observation (review blocker): `check --verbose` piped printed the `N checks, M failed` line twice.
+  Evidence: `node cli/packages/cli/dist/bin.js check --verbose 2>&1 | grep -cE '^[0-9]+ checks, [0-9]+ failed'` gave 2; module-check logged
+  `totals` under `--verbose` and, since Track 2, the CLI prints the plain summary bare too. Removed the verbose
+  `context.log(totals)`; the count is now 1 for `check`, `check --verbose` and `check --audit`.
+  The existing "only one count line" test in `composition.test.ts` counted logged lines, so it now asserts none
+  is logged and the summary carries the one.
+
+- Ruling: `@entelekheia/vibe-ops-module-check` takes a minor bump rather than a patch — removing the
+  verbose totals is correct only beside a CLI that prints the summary bare, and the released CLI's
+  `^0.1.2` range then cannot pick up `0.2.0` alone — cost if wrong: one version number nobody needed.
+- Ruling: `composition.test.ts` now asserts no count line is logged and the summary carries the one —
+  the line it counted is the one the blocker fix removed, and the contract is one line in total —
+  cost if wrong: the test is looser about where the line comes from.
+- Observation: The blocker came from two tracks meeting, and the plan's success criteria measured only
+  the default run — none counted the totals under `--verbose`, the form every consumer gate runs. The plan
+  now carries that criterion for `check`, `check --verbose` and `check --audit`.
+  Evidence: the review of `84839f7` and `b85cc13`; `render-plain.test.ts` fails with the old verbose log
+  put back.
+- Deferred minor: `cli/packages/harness/scaffold/checks-run.sh:66-71` says the summary is rendered with a
+  prefix so the bare form never appears, and that a clean run without `--verbose` prints nothing. Both
+  are false after this plan. It is a promulgated file, so the correction is its own `harness sync`.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually

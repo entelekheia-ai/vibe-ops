@@ -133,6 +133,9 @@ Build only the foundation and the CLI, never the root `npm run build`: Track 4 i
   Evidence: `rtk proxy sh -c "cat -v <out> | grep -c '\^\['"` printed `0`, and a byte count over the same
   file gave `esc 0 frame 0`; the session's shell hook rewrites `cat`, and the rewritten form drops the count.
 
+- Deferred minor: `--ui=true` and `--no-ui=false` are refused as unknown options while `--help` lists
+  `--ui`; `extractGlobalFlags` strips only the bare token. Found by the Tracks 2–4 review.
+
 ## Closure
 
 - [ ] Run `/vibe-ops:close-task` — do not just delete this file. Stays unchecked until closure actually

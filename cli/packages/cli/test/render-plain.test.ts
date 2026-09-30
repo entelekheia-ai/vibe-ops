@@ -41,7 +41,21 @@ test("check --ui in a pipe draws the rich summary glyph", async () => {
 test("check --no-ui is accepted, and --ui may come before the command", async () => {
   const repo = await emptyRepo();
   assert.notEqual(run(repo, ["check", "--no-ui"]).status, 2);
-  assert.notEqual(run(repo, ["--ui", "check"]).status, 2);
+  const before = run(repo, ["--ui", "check"]);
+  assert.notEqual(before.status, 2);
+  // Without extraction `--ui` is read as a module name and exits 1 with no count line.
+  assert.match(before.out, /\d+ checks, \d+ failed/);
+});
+
+const COUNT = /^[0-9]+ checks, [0-9]+ failed/;
+const countLines = (out: string): number => out.split("\n").filter((line) => COUNT.test(line)).length;
+
+test("the `N checks, M failed` line is printed exactly once: default, --verbose and --audit", async () => {
+  const repo = await emptyRepo();
+  for (const argv of [["check"], ["check", "--verbose"], ["check", "--audit"]]) {
+    const { out } = run(repo, argv);
+    assert.equal(countLines(out), 1, `${argv.join(" ")}: ${out.split("\n").filter((l) => /checks,/.test(l)).join(" | ")}`);
+  }
 });
 
 test("an unknown flag still exits 2, with a line beginning error: ", async () => {

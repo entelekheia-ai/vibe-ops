@@ -163,6 +163,9 @@ invocation reports, not what a specially configured one reports.
   matches `^[0-9]+ checks, [0-9]+ failed`.
 - `vibe-ops check --verbose 2>&1 | grep -c '^composed'` is at least `1`. The preamble moved rather than
   disappeared.
+- `vibe-ops check`, `vibe-ops check --verbose` and `vibe-ops check --audit`, each piped through
+  `grep -cE '^[0-9]+ checks, [0-9]+ failed'`, print `1`. Consumer gates run the `--verbose` form, and a
+  line that appears twice is read as two answers.
 - `vibe-ops check --json | jq -e '.findings' >/dev/null` exits `0`. The payload is still a stream `jq`
   reads.
 - `npm test` passes, including the three tests the tracks add: that a non-terminal run emits no framing

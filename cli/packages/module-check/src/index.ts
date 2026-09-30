@@ -579,10 +579,6 @@ export default defineModule(
     // happened, where 1 means it happened and something failed.
     const merged = code === 2 ? 2 : code !== 0 || opsFailed ? 1 : 0;
 
-    if (context.surface === "cli" && context.flags["json"] !== true && context.flags["verbose"] === true) {
-      context.log(totals);
-    }
-
     return {
       code: audited ? 0 : merged,
       summary: `${totals}${staging}${audited && merged !== 0 ? " (audit: not blocking)" : ""}`,

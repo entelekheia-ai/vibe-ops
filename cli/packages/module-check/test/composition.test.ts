@@ -68,9 +68,12 @@ test("the count covers BOTH halves — the shell fragments and the composed gate
 
 test("only one count line is printed — a partial count would be read as the answer", async () => {
   const { context, logs } = await contextFor({ flags: { verbose: true } });
-  await check.run(context);
-  const counts = logs.join("\n").split("\n").filter((line) => /^\d+ checks, \d+ failed$/.test(line));
-  assert.equal(counts.length, 1, counts.join(" | "));
+  const result = await check.run(context);
+  // The CLI prints `result.summary` itself, bare, after the module logs — so the module must log no count
+  // line of its own, or a pipe shows two. One line in total = none logged + the summary.
+  const logged = logs.join("\n").split("\n").filter((line) => /^\d+ checks, \d+ failed/.test(line));
+  assert.deepEqual(logged, []);
+  assert.match(result.summary, /^\d+ checks, \d+ failed/);
 });
 
 test("a declared ops that does not resolve is named, never quietly composed out of the run", async () => {
