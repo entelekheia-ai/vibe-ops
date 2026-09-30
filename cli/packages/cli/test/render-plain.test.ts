@@ -154,3 +154,21 @@ test("a rich run whose data is not a report prints every line the module wrote",
   assert.match(out, /PROGRESS one\nPROGRESS two\n/);
   assert.match(out, /✔ done/);
 });
+
+// `check` passes each half of its run to the sink as one joined string, so a finding and the indented
+// detail under it arrive together. The block must not swallow the detail with the finding.
+test("check --ui keeps a finding's indented detail, which the block does not redraw", async () => {
+  const repo = await emptyRepo();
+  const fragments = await mkdtemp(path.join(tmpdir(), "vibeops-frag-"));
+  await writeFile(
+    path.join(fragments, "90-probe-detail.sh"),
+    'CHECK_VERSION=1\ncheck_probe_detail() {\n  fail probe-detail "docs/x.md: something is wrong"\n  echo "  detail: the fix is to rename docs/x.md"\n}\n',
+  );
+  const env: NodeJS.ProcessEnv = { ...process.env, VIBE_OPS_CHECK_DIRS: fragments };
+  delete env["CI"];
+  delete env["NO_COLOR"];
+  const r = spawnSync("node", [BIN, "check", "--ui"], { cwd: repo, encoding: "utf8", env });
+  const out = stripAnsi(`${r.stdout ?? ""}${r.stderr ?? ""}`);
+  assert.match(out, /detail: the fix is to rename docs\/x\.md/);
+  assert.match(out, /✖ probe-detail/);
+});

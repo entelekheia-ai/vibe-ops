@@ -3,7 +3,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createOut, extractGlobalFlags, wantsRich } from "../src/render.ts";
+import { createOut, extractGlobalFlags, wantsRich, withoutRedrawnFindings } from "../src/render.ts";
 
 const tty = { isTTY: true, env: {} };
 
@@ -75,4 +75,20 @@ test("createOut json: payload on stdout, summary on stderr, both raw", () => {
   c.out.result({ code: 0, summary: "done", data: { a: 1 } }, { json: true });
   assert.deepEqual(JSON.parse(c.stdout()), { a: 1 });
   assert.equal(c.stderr(), "done\n");
+});
+
+// `check` hands the sink one string per half of its run, so the filter is judged on joined entries.
+test("withoutRedrawnFindings works line by line inside a joined entry", () => {
+  assert.deepEqual(withoutRedrawnFindings(["warning: w\nFAIL  [links] docs/b.md:7: dead link"]), ["warning: w"]);
+  assert.deepEqual(withoutRedrawnFindings(["SKIP  [x] off", "FIXED [links] docs/a.md: rewrote 2 links"]), [
+    "FIXED [links] docs/a.md: rewrote 2 links",
+  ]);
+});
+
+test("a finding with lines indented under it is kept whole, never cut off from them", () => {
+  assert.deepEqual(withoutRedrawnFindings(["FAIL  [a] x\n  detail\nwarning: w\nFAIL  [b] y"]), [
+    "FAIL  [a] x",
+    "  detail",
+    "warning: w",
+  ]);
 });

@@ -176,6 +176,14 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
 
   // A module that throws after logging must not take its lines with it: the held ones reach stdout
   // before the error does, in the order plain mode would have printed them.
+  // Interrupted mid-run, a rich run would otherwise exit with everything it held unprinted; plain mode
+  // already streamed it. The default SIGINT exit status is kept.
+  const flushOnInterrupt = (): void => {
+    for (const line of held) process.stdout.write(`${line}\n`);
+    process.exit(130);
+  };
+  if (holding) process.once("SIGINT", flushOnInterrupt);
+
   let result: ModuleResult;
   try {
     result = await runModule({
@@ -195,6 +203,8 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
   } catch (error) {
     for (const line of held) process.stdout.write(`${line}\n`);
     throw error;
+  } finally {
+    process.removeListener("SIGINT", flushOnInterrupt);
   }
 
   // `--json` renders `data` on stdout and the summary on stderr, raw — it is piped into `jq`, so no

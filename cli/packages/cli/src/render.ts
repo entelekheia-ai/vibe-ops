@@ -76,6 +76,22 @@ export function colourAllowed(env: NodeJS.ProcessEnv): boolean {
 /** A line the report block redraws: `FAIL  [id] …`, `WARN  [id] …` or `SKIP  [id] …`, as the runners print them. */
 const FINDING_LINE = /^(FAIL|WARN|SKIP)\s+\[[^\]]+\]/;
 
+/**
+ * The held lines a drawn block does not stand in for. A module may hand the sink several lines at once —
+ * `check` passes each half of its run as one string — so the filter works line by line, never entry by
+ * entry. A finding line is dropped only when nothing is indented under it: the block redraws a finding's
+ * first line and no more, so one that carries continuation lines is printed whole, with them, rather than
+ * cut off from them.
+ */
+export function withoutRedrawnFindings(held: readonly string[]): string[] {
+  const lines = held.flatMap((entry) => entry.split("\n"));
+  const continues = (index: number): boolean => {
+    const next = lines[index + 1];
+    return next !== undefined && /^\s{2}/.test(next) && !FINDING_LINE.test(next);
+  };
+  return lines.filter((entry, index) => !FINDING_LINE.test(entry) || continues(index));
+}
+
 export interface Out {
   readonly rich: boolean;
   /** A titled block: `--help`, and the flag list after a refused flag. */
@@ -164,7 +180,7 @@ export function createOut(options: OutOptions): Out {
       // The block stands in for the finding lines only — the ones it redraws. Everything else a module
       // wrote (a repair it made, a hint, a warning it passed through) is not in the report, and printing
       // it above the block is the only way it reaches the terminal at all.
-      const kept = resultOptions.keepHeld === true ? held : held.filter((entry) => !FINDING_LINE.test(entry));
+      const kept = resultOptions.keepHeld === true ? held : withoutRedrawnFindings(held);
       for (const entry of kept) line(entry);
       const header = { title: resultOptions.title ?? "vibe-ops", where: resultOptions.where ?? "", summary: result.summary, code: result.code };
       for (const entry of renderReport(report, header, paint)) line(entry);

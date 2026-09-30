@@ -150,9 +150,12 @@ filter change alters what `--self-test` prints, keep that mode's output as it is
   track dropped it too; `--verbose` shows it.
 - Observation: two tests outside this plan fail on this branch and on its base alike —
   `cli/packages/gates/test/classification.test.ts:34` and `cli/packages/ops-exposure/test/ops.test.ts:68`,
-  where a private-name check reports 229 examined; a deny-list reaching the run from the environment is
-  the likely cause, not traced.
-  Evidence: the second review's full-suite run, 753 of 755 at `7622bff` and the same two at `b85cc13`.
+  where a private-name check reports 229 examined. The cause is `VIBE_OPS_DENYLIST` set in the shell that
+  ran them: both tests assert what happens when no deny-list is supplied, and one was. Neither test clears
+  the variable before running.
+  Evidence: `npm test` at `872d664` gave 766 of 768 with those two failing; `env -u VIBE_OPS_DENYLIST node
+  --test` over the two files gave 21 of 21; this branch changes neither package (`git diff --stat
+  29fefb6..HEAD -- cli/packages/gates cli/packages/ops-exposure` is empty).
 
 ## Closure
 

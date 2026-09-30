@@ -232,19 +232,32 @@ async function runComposedOps(context: ModuleContext): Promise<readonly OpsRun[]
       code: result.code,
       lines,
       gates: composed.size,
-      // `evidence` keeps the file folded in, as `--json` consumers of this module have always read it;
-      // `file` and `line` ride beside it so a reader that draws a location need not parse one back out.
-      findings: findings.map((finding) => ({
-        level: finding.level === "warn" ? "warn" : "fail",
-        check: finding.gate,
-        evidence: finding.file === undefined ? finding.evidence : `${finding.file}: ${finding.evidence}`,
-        ...(finding.file === undefined ? {} : { file: finding.file }),
-        ...(finding.line === undefined ? {} : { line: finding.line }),
-      })),
+      findings: findings.map(toCheckFinding),
       skipped: skips.map((entry) => ({ check: entry.gate, reason: entry.reason })),
     });
   }
   return runs;
+}
+
+/**
+ * One ops finding as `check` reports it. `evidence` keeps the file folded in, as `--json` consumers of
+ * this module have always read it; `file` and `line` ride beside it so a reader that draws a location need
+ * not parse one back out.
+ */
+export function toCheckFinding(finding: {
+  readonly gate: string;
+  readonly level: string;
+  readonly evidence: string;
+  readonly file?: string;
+  readonly line?: number;
+}): { level: string; check: string; evidence: string; file?: string; line?: number } {
+  return {
+    level: finding.level === "warn" ? "warn" : "fail",
+    check: finding.gate,
+    evidence: finding.file === undefined ? finding.evidence : `${finding.file}: ${finding.evidence}`,
+    ...(finding.file === undefined ? {} : { file: finding.file }),
+    ...(finding.line === undefined ? {} : { line: finding.line }),
+  };
 }
 
 interface OpsRun {

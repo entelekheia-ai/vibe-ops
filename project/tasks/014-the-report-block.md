@@ -112,8 +112,7 @@ node cli/packages/cli/dist/bin.js check 2>&1 | tail -1              # the summar
   both are now tests in `render-plain.test.ts`, and each fails with its fix taken out.
 - Ruling (narrows the first ruling above): the block stands in for the finding lines only —
   `FAIL|WARN|SKIP  [id] …`, the lines it redraws — and every other held line prints above it; a throw
-  writes the held lines to stdout before the error — cost if wrong: an indented continuation under a
-  finding, which no check prints today, would print above the block detached from its finding.
+  writes the held lines to stdout before the error. (Narrowed again below: its cost clause was wrong.)
 - Ruling: `check`'s findings carry `file` and `line` beside the `evidence` that already folds the file in,
   and the block strips that folded prefix when it draws the location on its own line — the merge
   predated this track and dropped `line`, which the block made visible; `--json` readers of `evidence`
@@ -122,6 +121,21 @@ node cli/packages/cli/dist/bin.js check 2>&1 | tail -1              # the summar
   plain line names the rule (`template-version-behind`); the rule is not carried through `check`'s merge.
 - Deferred minor: the block's fail count counts findings, while the summary counts failed checks, so the
   two numbers can differ in one run.
+
+- Observation: The second pass over `872d664` found the narrowed filter still wrong for `check`, which
+  hands the sink one joined string per half of its run: an entry beginning `FAIL` was dropped whole,
+  indented detail included, and one beginning otherwise kept its FAIL lines to print a second time. A
+  real `check` with a fragment printing a FAIL and an indented `detail:` line showed the detail under
+  `--no-ui` and lost it under `--ui`. It also found a rich run interrupted by SIGINT exiting 130 with
+  every held line unprinted.
+  Evidence: the reviewer's `check-continuation.sh` and `order.sh`, rerun against this worktree's build;
+  both are now tests or fixed paths, and the filter tests fail with the per-line split taken out.
+- Ruling (narrows the holding ruling a second time): the filter splits each held entry into lines, and a
+  finding line is dropped only when nothing is indented under it — the block redraws a finding's first
+  line and no more, so a finding with detail prints whole above the block; SIGINT writes the held lines
+  before exiting 130 — cost if wrong: a finding with detail appears twice, once whole and once redrawn.
+- Deferred minor: under `--ui`, a module's `context.warn` lines (written straight to stderr by
+  `cli/packages/cli/src/run.ts`) print before its held stdout lines rather than among them.
 
 ## Closure
 
