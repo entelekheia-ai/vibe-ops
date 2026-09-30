@@ -147,6 +147,15 @@ for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
       source lines, which move behind `--verbose`. At the end, a repository with no findings reports one
       line, and `--verbose` reports everything it reports today. Task: tasks/015-the-plain-default-narrows.md
 
+- [ ] **Track 5 — A rich run says it is running, styles its verbose lines, and names what it read.**
+      Added after the first four landed, from the maintainer running them at a terminal. A rich run
+      prints a status line on stderr while the module works and erases it before anything else is
+      drawn; the lines a `--verbose` run prints are styled by the shapes runner and ops share (`ok`,
+      `FAIL`, `WARN`, `SKIP`, the `[id]`, the composition preamble); and the block's title reads as a
+      sentence naming the anchor of the analysis — the repository when it was one, the folder when it
+      was not. In rich mode a module's warnings are held with its lines and keep their order and their
+      stream. At the end, a pipe sees none of it. Task: tasks/016-a-rich-run-says-it-is-running.md
+
 - [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
@@ -255,6 +264,25 @@ invocation reports, not what a specially configured one reports.
   rich, and never under `--json`, `--print` or plain, leaves every stream a machine reads exactly as it
   was; `--verbose` and `--list` still print the held lines, because they asked for the whole run.
   Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
+
+- Decision: A rich run shows a static status line while it works, not an animated spinner.
+  Rationale: `check` runs its shell half through `spawnSync`, which blocks the event loop, so a spinner
+  would freeze exactly where the wait is longest. Animating it means making that spawn asynchronous in
+  the module whose totals line is a contract, which is a larger change than the feedback asks for.
+  Date / Author: 2026-09-30 / Danilo Borges
+
+- Decision: The block's title is a sentence — `result of <what ran> – <anchor>` — where the anchor is
+  what the module analysed: the repository, named as the repository even from a linked working tree,
+  or the folder when it was not one.
+  Rationale: The title named the working tree's directory, which reads as a stray word beside the
+  command; the reader wants to know what was examined.
+  Date / Author: 2026-09-30 / Danilo Borges
+
+- Decision: Track 5 runs through a track lead — its own worktree, red tests, implementer, reviewer and
+  triage — rather than in the main loop.
+  Rationale: The maintainer asked for the reviews to run with it; the lead owns them end to end, and the
+  output a machine reads is frozen in the contract commit it starts from.
+  Date / Author: 2026-09-30 / Danilo Borges
 
 ## Outcomes & Retrospective
 
