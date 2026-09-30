@@ -81,6 +81,7 @@ against the core's own `OpsFinding`/`OpsSkip`/`OpsRepair`/`OpsPopulation`.
 - Ruling: This run's dossiers are numbered 012–015, skipping the resolver's `008` — an unmerged branch
   already holds 008–011, the same collision that cost Plan-041 its first number — cost if wrong: a
   renumber at merge, if that branch is abandoned.
+  > Routed out of this repository on 2026-09-30
 
 - Observation: The review of this track (range `f63f349~1..f63f349`) raised five findings, every one
   reproduced before it was acted on. The two SHOULD-FIX: `satisfies` catches a renamed or newly required

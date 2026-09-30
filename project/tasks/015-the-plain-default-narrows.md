@@ -134,6 +134,7 @@ filter change alters what `--self-test` prints, keep that mode's output as it is
   now carries that criterion for `check`, `check --verbose` and `check --audit`.
   Evidence: the review of `84839f7` and `b85cc13`; `render-plain.test.ts` fails with the old verbose log
   put back.
+  > Routed to cli/packages/governance-plan/authoring.md on 2026-09-30
 - Deferred minor: `cli/packages/harness/scaffold/checks-run.sh:66-71` says the summary is rendered with a
   prefix so the bare form never appears, and that a clean run without `--verbose` prints nothing. Both
   are false after this plan. It is a promulgated file, so the correction is its own `harness sync`.

@@ -131,7 +131,8 @@ Build only the foundation and the CLI, never the root `npm run build`: Track 4 i
 - Observation: The gate's escape-byte line (`… | cat -v | grep -c '\^\['`) printed nothing at all in this
   session's shell, for the implementer and for the caller alike, while the bytes held no escape.
   Evidence: `rtk proxy sh -c "cat -v <out> | grep -c '\^\['"` printed `0`, and a byte count over the same
-  file gave `esc 0 frame 0`; the session's shell hook rewrites `cat`, and the rewritten form drops the count.
+  file gave `esc 0 frame 0`. The cause was not reproduced: the same pipeline run alone over a file holding
+  one escape byte printed `1`, both directly and through `rtk proxy`.
 
 - Deferred minor: `--ui=true` and `--no-ui=false` are refused as unknown options while `--help` lists
   `--ui`; `extractGlobalFlags` strips only the bare token. Found by the Tracks 2–4 review.
