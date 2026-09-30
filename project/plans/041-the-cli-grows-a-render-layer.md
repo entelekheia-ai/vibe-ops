@@ -148,7 +148,7 @@ for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
       source lines, which move behind `--verbose`. At the end, a repository with no findings reports one
       line, and `--verbose` reports everything it reports today. Task: tasks/015-the-plain-default-narrows.md
 
-- [ ] **Track 5 — A rich run says it is running, styles its verbose lines, and names what it read.**
+- [x] **Track 5 — A rich run says it is running, styles its verbose lines, and names what it read.**
       Added after the first four landed, from the maintainer running them at a terminal. A rich run
       prints a status line on stderr while the module works and erases it before anything else is
       drawn; the lines a `--verbose` run prints are styled by the shapes runner and ops share (`ok`,

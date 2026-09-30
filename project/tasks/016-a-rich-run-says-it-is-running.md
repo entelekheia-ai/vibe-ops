@@ -16,7 +16,7 @@ vibe-ops-template: task@3
 
 | Field | Value |
 |---|---|
-| Status | In Progress |
+| Status | Done |
 | Created | 2026-09-30 |
 | Author | Danilo Borges |
 | Issue | pending |
@@ -89,11 +89,11 @@ rich output is what this track exists to change.
 
 ## Implementation order
 
-- [ ] P0 — items 1–4
-- [ ] P0 — tests: a pipe gets no status line and no styled line; `--ui --verbose` styles; a warning keeps
+- [x] P0 — items 1–4
+- [x] P0 — tests: a pipe gets no status line and no styled line; `--ui --verbose` styles; a warning keeps
       its place among held lines; the title names a plain repository and a linked working tree's
       repository
-- [ ] P0 — the gate: `npm run build:foundation && npm run build -w @entelekheia/vibe-ops-cli`,
+- [x] P0 — the gate: `npm run build:foundation && npm run build -w @entelekheia/vibe-ops-cli`,
       `npm run typecheck -w @entelekheia/vibe-ops-cli`, `node --test cli/packages/cli/test/*.test.ts`,
       and a run under `script -q /dev/null`
 
@@ -116,6 +116,33 @@ rich output is what this track exists to change.
   are still written to stderr when flushed — the status line then owns stderr while the module runs, and
   the deferred minor about warnings jumping ahead of held lines goes away with it — cost if wrong: a
   rich run's warnings appear at the end of the run rather than as they happen.
+
+- Observation: The track ran in the track-lead pipeline over two contracts (`0f210b5`, then `f44e679`) and
+  an accidental editor interruption that stopped the first lead; a second lead resumed from the commits on
+  disk. Five RED commits, three implementation commits, two reviews, eight findings — all eight fixed, none
+  rejected. The machine-read output was compared per case in an empty repository against the contract
+  sources: 45 invocations, 0 differences. `env -u VIBE_OPS_DENYLIST npm test`: 809 of 809.
+  Evidence: the lead's triage file and reviews (in the run's scratch space); the main session reran RED 4
+  and RED 5 in a scratch working tree (7 failing each, as recorded) and the full suite at `f0e9b2c`.
+- Ruling (lead): the status line is not redrawn after a direct write erases it — the wrapper stays simple
+  and never draws over output — cost if wrong: a long run that emits a warning early shows no status for
+  the rest of the run.
+- Ruling (implementer, accepted by the lead): the stream wrapper is installed only inside `progress()`,
+  which already requires rich mode and a terminal on stderr, so no plain, `--json` or `--print` run is
+  touched — cost if wrong: a caller injecting writers with `statusLine: true` gets the process streams
+  wrapped too, harmlessly.
+- Ruling (lead): outside a repository the anchor falls back to `basename(repoRootFrom(target))`, on the
+  fallback path only — `--show-toplevel` predates `--path-format` — cost if wrong: git is spawned twice
+  outside a repository.
+- Ruling (lead): the parent rule of Q3 applies only to a hidden common dir; a visible bare `name.git`
+  keeps its own name — taken for any basename, the rule would name a bare `super/vendor.git` `super`,
+  because `super/.git` sits beside it — cost if wrong: a visible common dir whose parent is the repository
+  would be named for itself.
+- Ruling (lead): the unanchored "no raw `FAIL  [budget]` beside the block" guard lives in
+  `rich-run.test.ts`, since the glyph leaves `render-plain.test.ts`'s `^FAIL` check unable to see a leaked
+  line and only one of that file's assertions was authorised to change — cost if wrong: the claim is
+  asserted in two files.
+- Deferred minor: a status line erased by a direct write is not redrawn for the rest of the run.
 
 ## Closure
 
