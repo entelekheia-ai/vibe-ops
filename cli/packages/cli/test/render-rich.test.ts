@@ -40,16 +40,18 @@ test("flush, rich: each verdict word takes its colour and the [id] is bold; the 
   const c = capture({ rich: true });
   c.out.flush(lines.map(outLine));
   const written = c.stdout();
-  // Each verdict is checked on its own: a painter that styles only `ok` fails the other three.
-  assert.ok(written.includes(paint("green", "ok")), `ok is not green: ${JSON.stringify(written)}`);
-  assert.ok(written.includes(paint("red", "FAIL")), `FAIL is not red: ${JSON.stringify(written)}`);
-  assert.ok(written.includes(paint("yellow", "WARN")), `WARN is not yellow: ${JSON.stringify(written)}`);
-  assert.ok(written.includes(paint("dim", "SKIP")), `SKIP is not dim: ${JSON.stringify(written)}`);
+  // Each verdict is checked on its own: a painter that styles only `ok` fails the other three. The glyph
+  // and the word are painted as one, as the block paints its own counts.
+  assert.ok(written.includes(paint("green", "✔ ok")), `ok is not green with its glyph: ${JSON.stringify(written)}`);
+  assert.ok(written.includes(paint("red", "✖ FAIL")), `FAIL is not red with its glyph: ${JSON.stringify(written)}`);
+  assert.ok(written.includes(paint("yellow", "⚠ WARN")), `WARN is not yellow with its glyph: ${JSON.stringify(written)}`);
+  assert.ok(written.includes(paint("dim", "⊘ SKIP")), `SKIP is not dim with its glyph: ${JSON.stringify(written)}`);
   for (const id of ["[first-publish]", "[budget]", "[template-version-behind]", "[bridge]"]) {
     assert.ok(written.includes(paint("bold", id)), `${id} is not bold: ${JSON.stringify(written)}`);
   }
-  // Styling adds colour and nothing else to a verdict line: stripped, the bytes are what the runner wrote.
-  assert.equal(stripSgr(written), lines.map((line) => `${line}\n`).join(""));
+  // Styling adds colour and the glyph in front, nothing else: stripped, the rest is what the runner wrote.
+  const glyphs = ["✔", "✖", "⚠", "⊘"];
+  assert.equal(stripSgr(written), lines.map((line, index) => `${glyphs[index]!} ${line}\n`).join(""));
 });
 
 test("flush, rich: the composition preamble — header name bold, Composed capitalised, id@N bold", () => {
@@ -83,15 +85,15 @@ test("flush, rich: a held entry carrying several lines is styled line by line", 
   const c = capture({ rich: true });
   c.out.flush([outLine("ok    [a] one\nFAIL  [b] two\n  detail under b")]);
   const written = c.stdout();
-  assert.ok(written.includes(paint("green", "ok")) && written.includes(paint("red", "FAIL")), JSON.stringify(written));
+  assert.ok(written.includes(paint("green", "✔ ok")) && written.includes(paint("red", "✖ FAIL")), JSON.stringify(written));
   assert.ok(written.includes(paint("bold", "[a]")) && written.includes(paint("bold", "[b]")), JSON.stringify(written));
-  assert.equal(stripSgr(written), "ok    [a] one\nFAIL  [b] two\n  detail under b\n");
+  assert.equal(stripSgr(written), "✔ ok    [a] one\n✖ FAIL  [b] two\n  detail under b\n");
 });
 
-test("flush, rich with colour off: no escape byte, and Composed still capitalised", () => {
+test("flush, rich with colour off: no escape byte, Composed still capitalised, the glyph still drawn", () => {
   const c = capture({ rich: true, colour: false });
   c.out.flush([outLine("composed 2 checks:"), outLine("FAIL  [budget] no AGENTS.md")]);
-  assert.equal(c.stdout(), "Composed 2 checks:\nFAIL  [budget] no AGENTS.md\n");
+  assert.equal(c.stdout(), "Composed 2 checks:\n✖ FAIL  [budget] no AGENTS.md\n");
 });
 
 test("flush: every held line goes to its own stream, in the order it was held", () => {
@@ -115,6 +117,30 @@ test("flush, plain: every line is written as held, lowercase preamble included, 
   c.out.flush([outLine("composed 7 checks:"), outLine("ok    [a] one"), { text: "warning: w", stream: "err" }, outLine("FAIL  [b] two")]);
   assert.equal(c.stdout(), "composed 7 checks:\nok    [a] one\nFAIL  [b] two\n");
   assert.equal(c.stderr(), "warning: w\n");
+});
+
+// --- the block standing in for finding lines ----------------------------------------------------------
+
+test("a warning held between a finding and its detail keeps the finding whole, the warning in its place", () => {
+  // Rich, with a report block: a finding carrying indented detail is printed with it (dossier 014), and a
+  // warning the module raised in between neither drops the finding nor orphans the detail.
+  const c = capture({ rich: true, colour: false });
+  const report = { findings: [{ level: "fail", check: "x", evidence: "thing" }], skipped: [] };
+  c.out.result(
+    { code: 1, summary: "1 checks, 1 failed", data: report },
+    {
+      json: false,
+      title: "vibe-ops check",
+      where: "repo",
+      held: [outLine("FAIL  [x] thing"), { text: "warning: careful", stream: "err" }, outLine("  detail under x")],
+    },
+  );
+  const order = c.writes.map((w) => `${w.stream}:${w.text}`);
+  const finding = order.findIndex((w) => w.startsWith("out:") && w.includes("[x] thing"));
+  const warning = order.indexOf("err:warning: careful\n");
+  const detail = order.indexOf("out:  detail under x\n");
+  assert.ok(finding !== -1 && warning !== -1 && detail !== -1, JSON.stringify(order));
+  assert.ok(finding < warning && warning < detail, `out of order: ${JSON.stringify(order)}`);
 });
 
 // --- progress: the status line --------------------------------------------------------------------------

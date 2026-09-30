@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -42,6 +42,41 @@ test("anchorOf names a bare repository without its .git suffix", async () => {
   const bare = path.join(await mkdtemp(path.join(tmpdir(), "vibeops-anchor-bare-")), "named.git");
   git("init", "-q", "--bare", bare);
   assert.equal(anchorOf(bare), "named");
+});
+
+test("anchorOf names a repository kept in the .bare layout by its folder, from the root and a linked working tree", async () => {
+  // The layout: `project/.bare` is a bare clone, `project/.git` a gitfile pointing at it, and each branch a
+  // linked working tree beside it. The common dir is `project/.bare`, whose name is not the repository's.
+  const source = await repoWithCommit();
+  const project = path.join(await mkdtemp(path.join(tmpdir(), "vibeops-anchor-dotbare-")), "project");
+  await mkdir(project);
+  git("clone", "-q", "--bare", source, path.join(project, ".bare"));
+  await writeFile(path.join(project, ".git"), "gitdir: ./.bare\n");
+  git("-C", project, "worktree", "add", "-q", path.join(project, "main"));
+  assert.equal(anchorOf(project), "project");
+  assert.equal(anchorOf(path.join(project, "main")), "project");
+});
+
+test("anchorOf falls back to the toplevel's name when git does not understand --path-format", async () => {
+  // Emulates git before 2.31: the unknown `--path-format=absolute` is echoed back and the common dir is
+  // printed relative. `--show-toplevel` is understood, as it has been for much longer.
+  const repo = await repoWithCommit();
+  const inside = path.join(repo, "docs");
+  await mkdir(inside);
+  const bin = await mkdtemp(path.join(tmpdir(), "vibeops-anchor-oldgit-"));
+  const fake = path.join(bin, "git");
+  await writeFile(
+    fake,
+    `#!/bin/sh\ncase "$*" in\n  *--show-toplevel*) echo ${JSON.stringify(repo)} ;;\n  *) echo "--path-format=absolute"; echo ".git" ;;\nesac\n`,
+  );
+  await chmod(fake, 0o755);
+  const saved = process.env["PATH"];
+  process.env["PATH"] = `${bin}${path.delimiter}${saved ?? ""}`;
+  try {
+    assert.equal(anchorOf(inside), path.basename(repo));
+  } finally {
+    process.env["PATH"] = saved;
+  }
 });
 
 test("anchorOf names a folder outside any repository by its own name", async () => {

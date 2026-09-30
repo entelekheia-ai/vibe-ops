@@ -105,16 +105,68 @@ test("at a terminal, a module's warning is printed after the status line is eras
   assert.ok(text.indexOf("warning: careful") > erased, `the warning came before the erase: ${JSON.stringify(text)}`);
 });
 
+/** Where a fixture module's status line ends, asserting it is followed at once by its erase. */
+function erasedAt(text: string, id: string): number {
+  const status = `◌ vibe-ops ${id} · running…`;
+  const at = text.indexOf(status);
+  assert.notEqual(at, -1, `no status line: ${JSON.stringify(text)}`);
+  assert.equal(text.slice(at + status.length, at + status.length + ERASE.length), ERASE, `not erased at once: ${JSON.stringify(text)}`);
+  assert.equal(text.indexOf(status, at + 1), -1, `the status line was drawn again: ${JSON.stringify(text)}`);
+  return at + status.length + ERASE.length;
+}
+
+test("at a terminal, a module that throws has its status line erased before its lines and the error", { skip: !HAS_SCRIPT }, async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(repo, "throws", `context.log("PROGRESS one"); throw new Error("boom");`);
+  const text = stripSgr(runInPty(repo, [mod]));
+  const after = erasedAt(text, "throws");
+  assert.ok(text.indexOf("PROGRESS one") >= after && text.indexOf("boom") > after, JSON.stringify(text));
+});
+
+test("at a terminal, an interrupted run has its status line erased before its held lines", { skip: !HAS_SCRIPT }, async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(
+    repo,
+    "interrupted",
+    `context.log("PROGRESS one"); process.kill(process.pid, "SIGINT"); await new Promise((resolve) => setTimeout(resolve, 5000)); return { code: 0, summary: "done" };`,
+  );
+  const text = stripSgr(runInPty(repo, [mod]));
+  const after = erasedAt(text, "interrupted");
+  assert.ok(text.indexOf("PROGRESS one") >= after, JSON.stringify(text));
+  assert.equal(text.includes("done"), false, "the run was not interrupted");
+});
+
+test("at a terminal, a direct write to stdout during the run erases the status line first", { skip: !HAS_SCRIPT }, async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(repo, "direct", `console.log("DIRECT-OUT line"); context.log("PROGRESS one"); return { code: 0, summary: "done" };`);
+  const text = stripSgr(runInPty(repo, [mod]));
+  const after = erasedAt(text, "direct");
+  assert.ok(text.indexOf("DIRECT-OUT line") >= after, JSON.stringify(text));
+});
+
+test("at a terminal, a process warning during the run erases the status line first", { skip: !HAS_SCRIPT }, async () => {
+  const repo = await emptyRepo();
+  const mod = await fixtureModule(
+    repo,
+    "nodewarn",
+    `process.emitWarning("a runtime warning"); await new Promise((resolve) => setTimeout(resolve, 50)); context.log("PROGRESS one"); return { code: 0, summary: "done" };`,
+  );
+  const text = stripSgr(runInPty(repo, [mod]));
+  const after = erasedAt(text, "nodewarn");
+  assert.ok(text.indexOf("a runtime warning") >= after, JSON.stringify(text));
+  assert.ok(text.indexOf("PROGRESS one") > after, JSON.stringify(text));
+});
+
 // --- styled held lines ----------------------------------------------------------------------------------
 
 test("check --ui --verbose styles the runner's lines and keeps their text", async () => {
   const { stdout } = run(await emptyRepo(), ["check", "--ui", "--verbose"]);
   assert.ok(stdout.includes("\x1b[1m[budget]\x1b[22m"), `[budget] is not bold: ${JSON.stringify(stdout.slice(0, 400))}`);
-  assert.ok(stdout.includes("\x1b[31mFAIL\x1b[39m"), "FAIL is not red");
+  assert.ok(stdout.includes("\x1b[31m✖ FAIL\x1b[39m"), "FAIL is not red with its glyph");
   const text = stripSgr(stdout);
   assert.match(text, /^Composed \d+ checks:$/m);
-  assert.match(text, /^FAIL {2}\[budget\] no AGENTS\.md/m);
-  assert.match(text, /^SKIP {2}\[bridge\]/m);
+  assert.match(text, /^✖ FAIL {2}\[budget\] no AGENTS\.md/m);
+  assert.match(text, /^⊘ SKIP {2}\[bridge\]/m);
 });
 
 test("check --verbose into a pipe prints the runner's lines exactly as written", async () => {
