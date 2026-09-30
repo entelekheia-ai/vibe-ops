@@ -81,15 +81,22 @@ const FINDING_LINE = /^(FAIL|WARN|SKIP)\s+\[[^\]]+\]/;
  * `check` passes each half of its run as one string — so the filter works line by line, never entry by
  * entry. A finding line is dropped only when nothing is indented under it: the block redraws a finding's
  * first line and no more, so one that carries continuation lines is printed whole, with them, rather than
- * cut off from them.
+ * cut off from them. Only `out` lines are candidates; an `err` line keeps its position.
  */
-export function withoutRedrawnFindings(held: readonly string[]): string[] {
-  const lines = held.flatMap((entry) => entry.split("\n"));
+export function withoutRedrawnFindings(held: readonly string[]): string[];
+export function withoutRedrawnFindings(held: readonly HeldLine[]): HeldLine[];
+export function withoutRedrawnFindings(held: readonly (string | HeldLine)[]): (string | HeldLine)[] {
+  const plainStrings = held.every((entry) => typeof entry === "string");
+  const lines: HeldLine[] = held.flatMap((entry) => {
+    const item: HeldLine = typeof entry === "string" ? { text: entry, stream: "out" } : entry;
+    return item.stream === "out" ? item.text.split("\n").map((text): HeldLine => ({ text, stream: "out" })) : [item];
+  });
   const continues = (index: number): boolean => {
     const next = lines[index + 1];
-    return next !== undefined && /^\s{2}/.test(next) && !FINDING_LINE.test(next);
+    return next !== undefined && next.stream === "out" && /^\s{2}/.test(next.text) && !FINDING_LINE.test(next.text);
   };
-  return lines.filter((entry, index) => !FINDING_LINE.test(entry) || continues(index));
+  const kept = lines.filter((entry, index) => entry.stream === "err" || !FINDING_LINE.test(entry.text) || continues(index));
+  return plainStrings ? kept.map((entry) => entry.text) : kept;
 }
 
 /**
@@ -131,7 +138,7 @@ export interface ResultOptions {
    * which it does only in rich mode, so that a report block can stand in for them rather than repeat
    * every finding a second time underneath.
    */
-  readonly held?: readonly string[];
+  readonly held?: readonly HeldLine[];
   /** Print the held lines even when a block is drawn: `--verbose` asked for the whole run. */
   readonly keepHeld?: boolean;
 }
@@ -159,15 +166,45 @@ export function createOut(options: OutOptions): Out {
   const paint = (style: Style, text: string): string => (colour ? styleText(style, text, { validateStream: false }) : text);
   const line = (text: string): void => stdout(`${text}\n`);
 
+  /** One held `out` line in a rich run: colour and the `Composed` capital, nothing else. */
+  const styled = (text: string): string => {
+    const verdict = /^(ok|FAIL|WARN|SKIP)(\s+)(\[[^\]]+\])(.*)$/.exec(text);
+    if (verdict !== null) {
+      const style = { ok: "green", FAIL: "red", WARN: "yellow", SKIP: "dim" }[verdict[1]!] as Style;
+      return `${paint(style, verdict[1]!)}${verdict[2]!}${paint("bold", verdict[3]!)}${verdict[4]!}`;
+    }
+    if (text.startsWith("composed ")) return `Composed ${text.slice("composed ".length)}`;
+    const step = /^(\s+)(\S+@\d+)(\s.*)$/.exec(text);
+    if (step !== null) return `${step[1]!}${paint("bold", step[2]!)}${step[3]!}`;
+    const header = /^(\S+) — (.*)$/.exec(text);
+    if (header !== null) return `${paint("bold", header[1]!)} — ${header[2]!}`;
+    return text;
+  };
+
+  const writeHeld = (held: readonly HeldLine[], style: boolean): void => {
+    for (const entry of held) {
+      if (entry.stream === "err") stderr(`${entry.text}\n`);
+      else if (style) for (const text of entry.text.split("\n")) line(styled(text));
+      else line(entry.text);
+    }
+  };
+
   return {
     rich,
 
-    flush(_held) {
-      throw new Error("not implemented: Out.flush");
+    flush(held) {
+      writeHeld(held, rich);
     },
 
-    progress(_label) {
-      throw new Error("not implemented: Out.progress");
+    progress(label) {
+      if (!rich || options.statusLine !== true) return () => {};
+      stderr(paint("dim", `◌ ${label} · running…`));
+      let stopped = false;
+      return () => {
+        if (stopped) return;
+        stopped = true;
+        stderr("\r\x1b[2K");
+      };
     },
 
     // The lines are printed as the caller wrote them: `bin.ts` already indents its verb and flag lines,
@@ -185,24 +222,24 @@ export function createOut(options: OutOptions): Out {
     result(result, resultOptions) {
       const { json } = resultOptions;
       // Held lines keep the position they always had — before whatever closes the run.
-      const held = resultOptions.held ?? [];
+      const held: readonly HeldLine[] = resultOptions.held ?? [];
       // Raw on both streams: the payload is piped into `jq`, and the summary goes to stderr where a
       // person still reads it and a pipe never sees it. Neither is styled — `--json` names a machine
       // format, which outranks `--ui`.
       if (json) {
-        for (const entry of held) line(entry);
+        writeHeld(held, false);
         if (result.data !== undefined) stdout(`${JSON.stringify(result.data, null, 2)}\n`);
         stderr(`${result.summary}\n`);
         return;
       }
       if (!rich) {
-        for (const entry of held) line(entry);
+        writeHeld(held, false);
         line(result.summary);
         return;
       }
       const report = readReport(result.data);
       if (report === undefined) {
-        for (const entry of held) line(entry);
+        writeHeld(held, true);
         line(`${result.code === 0 ? paint("green", "✔") : paint("red", "✖")} ${result.summary}`);
         return;
       }
@@ -210,7 +247,7 @@ export function createOut(options: OutOptions): Out {
       // wrote (a repair it made, a hint, a warning it passed through) is not in the report, and printing
       // it above the block is the only way it reaches the terminal at all.
       const kept = resultOptions.keepHeld === true ? held : withoutRedrawnFindings(held);
-      for (const entry of kept) line(entry);
+      writeHeld(kept, true);
       const header = { title: resultOptions.title ?? "vibe-ops", where: resultOptions.where ?? "", summary: result.summary, code: result.code };
       for (const entry of renderReport(report, header, paint)) line(entry);
     },

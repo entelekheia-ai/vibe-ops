@@ -14,7 +14,7 @@ export type Paint = (style: "bold" | "dim" | "red" | "yellow" | "green", text: s
 export interface ReportHeader {
   /** What ran, e.g. `vibe-ops check`. */
   readonly title: string;
-  /** Where it ran — the repository's directory name. */
+  /** What the run analysed: the anchor — the repository's name, even from a linked working tree. */
   readonly where: string;
   readonly summary: string;
   readonly code: number;
@@ -63,7 +63,7 @@ export function renderReport(report: Report, header: ReportHeader, paint: Paint)
     paint("dim", `${GLYPH.skip} ${String(skips)} skip`),
   ].join("    ");
 
-  const lines = ["", `  ${paint("bold", header.title)} ${paint("dim", `· ${header.where}`)}`, "", `  ${counts}`];
+  const lines = ["", `  ${paint("dim", "result of")} ${paint("bold", header.title)} ${paint("dim", `– ${header.where}`)}`, "", `  ${counts}`];
 
   for (const group of grouped(report.findings)) {
     const colour = group.level === "fail" ? "red" : "yellow";

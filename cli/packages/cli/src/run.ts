@@ -43,8 +43,13 @@ export interface RunOptions {
  * is inside a git repository — read from its common directory, so that a linked working tree names its
  * repository rather than its own folder — and the folder's own name when it is not in one.
  */
-export function anchorOf(_target: string): string {
-  throw new Error("not implemented: anchorOf");
+export function anchorOf(target: string): string {
+  const result = spawnSync("git", ["-C", target, "rev-parse", "--path-format=absolute", "--git-common-dir"], { encoding: "utf8" });
+  const common = result.status === 0 ? (result.stdout ?? "").trim() : "";
+  if (common === "") return path.basename(path.resolve(target));
+  const base = path.basename(common);
+  if (base === ".git") return path.basename(path.dirname(common));
+  return base.endsWith(".git") ? base.slice(0, -".git".length) : base;
 }
 
 /**
@@ -92,7 +97,7 @@ export function resolveSourceRoot(
 }
 
 export async function runModule(options: RunOptions): Promise<ModuleResult> {
-  const { plugin, flags, args, cwd, surface, sink, command, confirmed } = options;
+  const { plugin, flags, args, cwd, surface, sink, command, confirmed, warnSink } = options;
 
   // Authoritative here, not only in the terminal's own dispatch — the terminal validates early to pick
   // the right flag set to parse, but MCP hands `command` straight through with no such gate, so an
@@ -234,7 +239,7 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     // into a file, and a warning line landing in the middle of it silently poisons every document
     // written from a style stack. Stderr also keeps a warning safe under the MCP surface, where anything
     // on stdout corrupts the transport.
-    warn: (message) => process.stderr.write(`warning: ${message}\n`),
+    warn: (message) => (warnSink !== undefined ? warnSink(`warning: ${message}`) : void process.stderr.write(`warning: ${message}\n`)),
   };
 
   return plugin.run(context);

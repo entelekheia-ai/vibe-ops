@@ -22,19 +22,20 @@ import * as p from "@clack/prompts";
 import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
 import type { ModuleCommand, ModuleResult } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
-import { declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
+import { anchorOf, declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook, HOOK_SURFACES } from "./hook.ts";
 import { BUILTINS, exposedModules } from "./builtins.ts";
 import { GLOBAL_FLAGS, colourAllowed, createOut, extractGlobalFlags, wantsRich } from "./render.ts";
-import type { Out, UiChoice } from "./render.ts";
+import type { HeldLine, Out, UiChoice } from "./render.ts";
 
 /** The one `Out` for a run: rich only for a person at a terminal (or on request), plain for every pipe. */
 function buildOut(ui: UiChoice): Out {
   return createOut({
     rich: wantsRich(ui, { isTTY: process.stdout.isTTY === true, env: process.env }),
     colour: colourAllowed(process.env),
+    statusLine: process.stderr.isTTY === true,
   });
 }
 
@@ -171,20 +172,26 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
   // block can stand in for them instead of repeating every finding underneath. Never under `--json` or
   // `--print`, whose output is a stream or a document and must stay exactly what the module wrote.
   const machineOutput = parsed.values.json === true || parsed.values.print === true;
-  const held: string[] = [];
+  const held: HeldLine[] = [];
   const holding = out.rich && !machineOutput;
 
   // A module that throws after logging must not take its lines with it: the held ones reach stdout
   // before the error does, in the order plain mode would have printed them.
   // Interrupted mid-run, a rich run would otherwise exit with everything it held unprinted; plain mode
   // already streamed it. The default SIGINT exit status is kept.
+  const title = command === undefined ? `vibe-ops ${plugin.definition.id}` : `vibe-ops ${plugin.definition.id} ${command}`;
+  // The status line is erased before anything is written, on every path out: a flushed line drawn onto it
+  // would leave its text behind.
+  let stopProgress: () => void = () => {};
   const flushOnInterrupt = (): void => {
-    for (const line of held) process.stdout.write(`${line}\n`);
+    stopProgress();
+    out.flush(held);
     process.exit(130);
   };
   if (holding) process.once("SIGINT", flushOnInterrupt);
 
   let result: ModuleResult;
+  if (holding) stopProgress = out.progress(title);
   try {
     result = await runModule({
       plugin,
@@ -198,14 +205,17 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
       // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
       // surface with no such story, which is why the gate in runModule exists and why only it is refused.
       confirmed: true,
-      sink: holding ? (message) => void held.push(message) : (message) => process.stdout.write(`${message}\n`),
+      sink: holding ? (message) => void held.push({ text: message, stream: "out" }) : (message) => process.stdout.write(`${message}\n`),
+      warnSink: holding ? (line) => void held.push({ text: line, stream: "err" }) : undefined,
     });
   } catch (error) {
-    for (const line of held) process.stdout.write(`${line}\n`);
+    stopProgress();
+    out.flush(held);
     throw error;
   } finally {
     process.removeListener("SIGINT", flushOnInterrupt);
   }
+  stopProgress();
 
   // `--json` renders `data` on stdout and the summary on stderr, raw — it is piped into `jq`, so no
   // framing may reach it. `--print` is a DOCUMENT a caller redirects into a file, so its summary goes to
@@ -220,8 +230,8 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
       : process.cwd();
     out.result(result, {
       json: parsed.values.json === true,
-      title: command === undefined ? `vibe-ops ${plugin.definition.id}` : `vibe-ops ${plugin.definition.id} ${command}`,
-      where: path.basename(repoRootFrom(target)),
+      title,
+      where: anchorOf(target),
       held,
       keepHeld: parsed.values.verbose === true || parsed.values.list === true,
     });
