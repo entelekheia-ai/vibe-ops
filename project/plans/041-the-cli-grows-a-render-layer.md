@@ -137,10 +137,10 @@ for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
       anything contains no escape bytes and no framing characters, and the orphaned `│` that a run with
       no `p.intro` emits today is gone. Task: tasks/013-the-render-layer.md
 
-- [ ] **Track 3 — The report block.** `cli/packages/cli/src/report-view.ts` draws counts by state
+- [x] **Track 3 — The report block.** `cli/packages/cli/src/report-view.ts` draws counts by state
       followed by each finding with its location, and `out.result()` routes to it. At the end, a run at
       an interactive terminal shows the block, the same run piped shows the summary line, and `--json`
-      shows neither.
+      shows neither. Task: tasks/014-the-report-block.md
 
 - [x] **Track 4 — The plain default narrows.** The passthrough filter in
       `cli/packages/module-check/src/index.ts` stops repeating the composition preamble and its indented
@@ -246,6 +246,14 @@ invocation reports, not what a specially configured one reports.
   the run dispatches each fix their own, and a model passed on the call replaces the definition's, so a
   per-call model is kept for escalation after a failed gate. The adversarial review therefore runs on the
   reviewer definition's model rather than the `sonnet` at `high` written above.
+  Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
+
+- Decision: In rich mode the CLI holds a module's own lines back, and a drawn report block stands in for
+  them.
+  Rationale: `check` writes its findings through the module sink as it runs and returns the same findings
+  in `data`, so a block drawn after them repeats every finding. Holding the lines only when the output is
+  rich, and never under `--json`, `--print` or plain, leaves every stream a machine reads exactly as it
+  was; `--verbose` and `--list` still print the held lines, because they asked for the whole run.
   Date / Author: 2026-09-30 / ruled during the run of this plan (Claude)
 
 ## Outcomes & Retrospective

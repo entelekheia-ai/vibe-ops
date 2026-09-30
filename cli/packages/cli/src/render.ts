@@ -14,7 +14,9 @@
 // and `prefer-mcp` modules) write JSON another program parses, and never import this file.
 
 import { styleText } from "node:util";
+import { readReport } from "@entelekheia/vibe-ops-core";
 import type { ModuleResult } from "@entelekheia/vibe-ops-core";
+import { renderReport } from "./report-view.ts";
 
 type Style = Parameters<typeof styleText>[0];
 
@@ -78,7 +80,22 @@ export interface Out {
   /** Something went wrong before or around the module — a refused flag, an unknown verb, a crash. */
   error(message: string): void;
   /** The end of every module run: its summary, or its `--json` payload with the summary beside it. */
-  result(result: ModuleResult, options: { readonly json: boolean }): void;
+  result(result: ModuleResult, options: ResultOptions): void;
+}
+
+export interface ResultOptions {
+  readonly json: boolean;
+  /** What ran and where, for the report block's title line. */
+  readonly title?: string;
+  readonly where?: string;
+  /**
+   * The module's own log lines, when the caller held them back instead of writing them as they came —
+   * which it does only in rich mode, so that a report block can stand in for them rather than repeat
+   * every finding a second time underneath.
+   */
+  readonly held?: readonly string[];
+  /** Print the held lines even when a block is drawn: `--verbose` asked for the whole run. */
+  readonly keepHeld?: boolean;
 }
 
 export interface OutOptions {
@@ -117,21 +134,33 @@ export function createOut(options: OutOptions): Out {
       line(rich ? `${paint("red", "✖")} ${message}` : `error: ${message}`);
     },
 
-    result(result, { json }) {
+    result(result, resultOptions) {
+      const { json } = resultOptions;
+      // Held lines keep the position they always had — before whatever closes the run.
+      const held = resultOptions.held ?? [];
       // Raw on both streams: the payload is piped into `jq`, and the summary goes to stderr where a
       // person still reads it and a pipe never sees it. Neither is styled — `--json` names a machine
       // format, which outranks `--ui`.
       if (json) {
+        for (const entry of held) line(entry);
         if (result.data !== undefined) stdout(`${JSON.stringify(result.data, null, 2)}\n`);
         stderr(`${result.summary}\n`);
         return;
       }
       if (!rich) {
+        for (const entry of held) line(entry);
         line(result.summary);
         return;
       }
-      const ok = result.code === 0;
-      line(`${ok ? paint("green", "✔") : paint("red", "✖")} ${result.summary}`);
+      const report = readReport(result.data);
+      if (report === undefined) {
+        for (const entry of held) line(entry);
+        line(`${result.code === 0 ? paint("green", "✔") : paint("red", "✖")} ${result.summary}`);
+        return;
+      }
+      if (resultOptions.keepHeld === true) for (const entry of held) line(entry);
+      const header = { title: resultOptions.title ?? "vibe-ops", where: resultOptions.where ?? "", summary: result.summary, code: result.code };
+      for (const entry of renderReport(report, header, paint)) line(entry);
     },
   };
 }

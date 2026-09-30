@@ -70,3 +70,38 @@ test("--help lists the global flags, plain", async () => {
   assert.match(out, /--no-ui/);
   assert.equal(/[│◆]/.test(out), false);
 });
+
+// The report block (Plan-041 Track 3). An empty repository fails exactly one check — no AGENTS.md — which
+// is enough to see a finding drawn, and not drawn twice.
+const stripAnsi = (text: string): string => text.replace(/\x1b\[[0-9;]*m/g, "");
+const COUNTS = /\d+ fail\s+⚠ \d+ warn\s+⊘ \d+ skip/;
+
+test("check --ui draws the report block in place of the module's own finding lines", async () => {
+  const out = stripAnsi(run(await emptyRepo(), ["check", "--ui"]).out);
+  assert.match(out, COUNTS);
+  assert.match(out, /✖ budget/);
+  assert.equal(/^FAIL {2}\[budget\]/m.test(out), false, "the raw finding line was printed beside the block");
+  const lines = out.split("\n").filter((line) => line.trim() !== "");
+  assert.match(lines.at(-1)!, /✖ \d+ checks, \d+ failed$/);
+});
+
+test("check --ui --verbose keeps the module's own lines above the block", async () => {
+  const out = stripAnsi(run(await emptyRepo(), ["check", "--ui", "--verbose"]).out);
+  assert.match(out, /^FAIL {2}\[budget\]/m);
+  assert.match(out, COUNTS);
+});
+
+test("plain check draws no block", async () => {
+  const { out } = run(await emptyRepo(), ["check"]);
+  assert.equal(COUNTS.test(out), false);
+  assert.match(out, /^FAIL {2}\[budget\]/m);
+});
+
+test("check --ui --json prints the payload alone on stdout", async () => {
+  const env = { ...process.env };
+  delete env["CI"];
+  delete env["NO_COLOR"];
+  const r = spawnSync("node", [BIN, "check", "--ui", "--json"], { cwd: await emptyRepo(), encoding: "utf8", env });
+  assert.doesNotThrow(() => JSON.parse(r.stdout));
+  assert.equal(COUNTS.test(r.stdout), false);
+});

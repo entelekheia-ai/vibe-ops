@@ -167,6 +167,13 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
     }
   }
 
+  // In rich mode the module's own lines are held back rather than written as they come, so that a report
+  // block can stand in for them instead of repeating every finding underneath. Never under `--json` or
+  // `--print`, whose output is a stream or a document and must stay exactly what the module wrote.
+  const machineOutput = parsed.values.json === true || parsed.values.print === true;
+  const held: string[] = [];
+  const holding = out.rich && !machineOutput;
+
   const result = await runModule({
     plugin,
     flags: parsed.values as Record<string, string | boolean>,
@@ -179,7 +186,7 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
     // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
     // surface with no such story, which is why the gate in runModule exists and why only it is refused.
     confirmed: true,
-    sink: (message) => process.stdout.write(`${message}\n`),
+    sink: holding ? (message) => void held.push(message) : (message) => process.stdout.write(`${message}\n`),
   });
 
   // `--json` renders `data` on stdout and the summary on stderr, raw — it is piped into `jq`, so no
@@ -188,7 +195,18 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
   if (parsed.values.print === true && parsed.values.json !== true) {
     process.stderr.write(`${result.summary}\n`);
   } else {
-    out.result(result, { json: parsed.values.json === true });
+    // The repository the module acted on, for the block's title: its first positional when the module
+    // takes one (`check <path>`), the working directory's otherwise.
+    const target = plugin.definition.repoFromFirstArg === true && parsed.positionals[0] !== undefined
+      ? path.resolve(parsed.positionals[0])
+      : process.cwd();
+    out.result(result, {
+      json: parsed.values.json === true,
+      title: command === undefined ? `vibe-ops ${plugin.definition.id}` : `vibe-ops ${plugin.definition.id} ${command}`,
+      where: path.basename(repoRootFrom(target)),
+      held,
+      keepHeld: parsed.values.verbose === true || parsed.values.list === true,
+    });
   }
   return result.code;
 }
