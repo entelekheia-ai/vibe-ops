@@ -16,7 +16,7 @@
 import { styleText } from "node:util";
 import { readReport } from "@entelekheia/vibe-ops-core";
 import type { ModuleResult } from "@entelekheia/vibe-ops-core";
-import { renderReport } from "./report-view.ts";
+import { GLYPH, renderReport } from "./report-view.ts";
 
 type Style = Parameters<typeof styleText>[0];
 
@@ -169,12 +169,14 @@ export function createOut(options: OutOptions): Out {
   const paint = (style: Style, text: string): string => (colour ? styleText(style, text, { validateStream: false }) : text);
   const line = (text: string): void => stdout(`${text}\n`);
 
-  /** One held `out` line in a rich run: colour and the `Composed` capital, nothing else. */
+  /** One held `out` line in a rich run: glyph, colour and the `Composed` capital, nothing else. */
   const styled = (text: string): string => {
     const verdict = /^(ok|FAIL|WARN|SKIP)(\s+)(\[[^\]]+\])(.*)$/.exec(text);
     if (verdict !== null) {
-      const style = { ok: "green", FAIL: "red", WARN: "yellow", SKIP: "dim" }[verdict[1]!] as Style;
-      return `${paint(style, verdict[1]!)}${verdict[2]!}${paint("bold", verdict[3]!)}${verdict[4]!}`;
+      const word = verdict[1]!;
+      const style = { ok: "green", FAIL: "red", WARN: "yellow", SKIP: "dim" }[word] as Style;
+      const glyph = { ok: GLYPH.ok, FAIL: GLYPH.fail, WARN: GLYPH.warn, SKIP: GLYPH.skip }[word]!;
+      return `${paint(style, `${glyph} ${word}`)}${verdict[2]!}${paint("bold", verdict[3]!)}${verdict[4]!}`;
     }
     if (text.startsWith("composed ")) return `Composed ${text.slice("composed ".length)}`;
     const step = /^(\s+)(\S+@\d+)(\s.*)$/.exec(text);

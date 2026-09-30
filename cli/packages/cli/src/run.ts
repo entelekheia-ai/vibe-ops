@@ -13,6 +13,7 @@ import type {
   VibeOpsConfig,
 } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 export interface RunOptions {
@@ -51,8 +52,15 @@ export function anchorOf(target: string): string {
   const common = lines.length === 1 && path.isAbsolute(lines[0]!) ? lines[0]! : "";
   if (common === "") return path.basename(repoRootFrom(target));
   const base = path.basename(common);
-  // `.git`, or a hidden directory such as `project/.bare` of a bare-clone layout, stands for its parent.
-  if (base.startsWith(".")) return path.basename(path.dirname(common));
+  // `.git` stands for its parent. So does another hidden directory (`project/.bare` of a bare-clone
+  // layout) when `<parent>/.git` exists — a pointer file or a directory; a hidden one without it names
+  // the folder. A visible directory never consults `<parent>/.git`: a bare repository kept inside
+  // another repository's working tree is named by its own name (`name.git` → `name`).
+  const parent = path.dirname(common);
+  if (base === ".git") return path.basename(parent);
+  if (base.startsWith(".")) {
+    return existsSync(path.join(parent, ".git")) ? path.basename(parent) : path.basename(repoRootFrom(target));
+  }
   return base.endsWith(".git") ? base.slice(0, -".git".length) : base;
 }
 

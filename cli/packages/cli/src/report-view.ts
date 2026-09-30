@@ -20,7 +20,7 @@ export interface ReportHeader {
   readonly code: number;
 }
 
-const GLYPH = { fail: "✖", warn: "⚠", skip: "⊘", ok: "✔" } as const;
+export const GLYPH = { fail: "✖", warn: "⚠", skip: "⊘", ok: "✔" } as const;
 
 function location(finding: ReportFinding): string | undefined {
   if (finding.file === undefined) return undefined;
