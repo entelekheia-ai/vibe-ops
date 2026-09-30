@@ -190,7 +190,8 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
   };
   if (holding) process.once("SIGINT", flushOnInterrupt);
 
-  let result: ModuleResult;
+  let result: ModuleResult | undefined;
+  let failure: { error: unknown } | undefined;
   if (holding) stopProgress = out.progress(title);
   try {
     result = await runModule({
@@ -209,13 +210,24 @@ async function runNamed(name: string, argv: string[], out: Out): Promise<number>
       warnSink: holding ? (line) => void held.push({ text: line, stream: "err" }) : undefined,
     });
   } catch (error) {
-    stopProgress();
-    out.flush(held);
-    throw error;
-  } finally {
+    failure = { error };
+  }
+  if (holding) {
+    // A Ctrl-C that came while the module was blocked in a synchronous child (`spawnSync`) is already
+    // queued on the event loop, but only a poll phase dispatches it — and nothing between here and the
+    // exit would reach one. Removing the handler first would drop the signal, the run would draw its
+    // result and exit 0. So the handler stays installed while the loop turns twice: the first immediate
+    // runs in this turn's check phase, the second only after the next turn's poll phase has dispatched
+    // every signal already delivered. Ordering, not a delay: nothing here waits for a signal to arrive.
+    await new Promise<void>((resolve) => setImmediate(() => setImmediate(resolve)));
     process.removeListener("SIGINT", flushOnInterrupt);
   }
   stopProgress();
+  if (failure !== undefined) {
+    out.flush(held);
+    throw failure.error;
+  }
+  if (result === undefined) throw new Error("runModule returned nothing");
 
   // `--json` renders `data` on stdout and the summary on stderr, raw — it is piped into `jq`, so no
   // framing may reach it. `--print` is a DOCUMENT a caller redirects into a file, so its summary goes to

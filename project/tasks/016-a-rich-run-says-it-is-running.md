@@ -143,6 +143,26 @@ rich output is what this track exists to change.
   line and only one of that file's assertions was authorised to change — cost if wrong: the claim is
   asserted in two files.
 - Deferred minor: a status line erased by a direct write is not redrawn for the rest of the run.
+- Observation (final review follow-up): a rich run lost a Ctrl-C that arrived while the module was
+  blocked in `spawnSync`. The terminal's SIGINT killed the child and was queued on the main event loop,
+  but only a poll phase dispatches a queued signal; `bin.ts` removed its `SIGINT` listener in the
+  `finally` and went on to draw the result and `process.exit(0)` without reaching one, so no handler ever
+  saw it. Evidence: the reproducer (`node sigint.mjs head tty 1500 …/mods/syncsleep.mjs`, Ctrl-C to the
+  process group under `script`) printed `LOG after child signal=SIGINT` then `✔ done` and exited 0;
+  `--no-ui` stopped. Red test: `rich-run.test.ts` "Ctrl-C while the module waits on a synchronous child
+  …" failed with `exit status 0: "…PROGRESS two\r\n✔ done\r\n"` before the fix, passed after (3/3 runs);
+  the reproducer then exited 130 with both held lines and no result, 3/3.
+- Ruling: after `runModule` settles in a rich run, `bin.ts` keeps the `SIGINT` handler installed across
+  two nested `setImmediate` hops, then removes it and only then erases the status line and flushes or
+  draws — the first immediate runs in the current turn's check phase, the second only after the next
+  turn's poll phase, which dispatches every signal already delivered to the process; the throw path
+  goes through the same wait before flushing, so a signal on that path flushes once, not twice — this
+  is event-loop ordering, not a wall-clock wait (a flag checked after `runModule` alone cannot work:
+  the handler that would set it has not run yet), and Ctrl-C after the listener is removed falls back
+  to Node's default (death by SIGINT, 130 at a shell) — cost if wrong: if a platform delivers the
+  signal to the loop's pipe later than the child's exit is reaped, the run is lost as before, and the
+  red test would catch it; an uninterrupted rich run pays two loop turns, and a stray timer of the
+  module's due in them could run before the result is drawn.
 
 ## Closure
 

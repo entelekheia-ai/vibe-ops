@@ -181,7 +181,7 @@ invocation reports, not what a specially configured one reports.
 - `npm test` passes, including the three tests the tracks add: that a non-terminal run emits no framing
   and no escapes, that a finding-free run prints one line while `--verbose` prints the preamble, and that
   `isReport()` accepts both producers' payloads and rejects a noun's.
-- `grep -o 'p\.[a-zA-Z.]*' cli/packages/cli/src/bin.ts | sort -u` lists only `p.cancel`, `p.confirm` and
+- `grep -o 'p\.[a-zA-Z.]*(' cli/packages/cli/src/bin.ts | sort -u` lists only `p.cancel`, `p.confirm` and
   `p.isCancel` — the confirmation and its cancellation. Measured before this plan, the same command also
   lists `p.note`, `p.log.error` and `p.log.success`.
 
