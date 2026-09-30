@@ -45,10 +45,14 @@ export interface RunOptions {
  */
 export function anchorOf(target: string): string {
   const result = spawnSync("git", ["-C", target, "rev-parse", "--path-format=absolute", "--git-common-dir"], { encoding: "utf8" });
-  const common = result.status === 0 ? (result.stdout ?? "").trim() : "";
-  if (common === "") return path.basename(path.resolve(target));
+  // Git's answer is taken only when it is one line holding an absolute path; an older git that does not
+  // know the flag prints something else, and anything else falls back to the folder's own name.
+  const lines = result.status === 0 ? (result.stdout ?? "").split("\n").filter((l) => l !== "") : [];
+  const common = lines.length === 1 && path.isAbsolute(lines[0]!) ? lines[0]! : "";
+  if (common === "") return path.basename(repoRootFrom(target));
   const base = path.basename(common);
-  if (base === ".git") return path.basename(path.dirname(common));
+  // `.git`, or a hidden directory such as `project/.bare` of a bare-clone layout, stands for its parent.
+  if (base.startsWith(".")) return path.basename(path.dirname(common));
   return base.endsWith(".git") ? base.slice(0, -".git".length) : base;
 }
 

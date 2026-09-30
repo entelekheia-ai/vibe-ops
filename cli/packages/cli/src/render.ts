@@ -92,7 +92,10 @@ export function withoutRedrawnFindings(held: readonly (string | HeldLine)[]): (s
     return item.stream === "out" ? item.text.split("\n").map((text): HeldLine => ({ text, stream: "out" })) : [item];
   });
   const continues = (index: number): boolean => {
-    const next = lines[index + 1];
+    // Past any `err` lines: a warning held between a finding and its detail must not cut them apart.
+    let at = index + 1;
+    while (lines[at]?.stream === "err") at += 1;
+    const next = lines[at];
     return next !== undefined && next.stream === "out" && /^\s{2}/.test(next.text) && !FINDING_LINE.test(next.text);
   };
   const kept = lines.filter((entry, index) => entry.stream === "err" || !FINDING_LINE.test(entry.text) || continues(index));
@@ -200,11 +203,30 @@ export function createOut(options: OutOptions): Out {
       if (!rich || options.statusLine !== true) return () => {};
       stderr(paint("dim", `◌ ${label} · running…`));
       let stopped = false;
-      return () => {
+      // Anything else written to the terminal while the status line is up would land after its text on
+      // the same row. Modules and Node itself (a process warning) write to the streams directly, past this
+      // file, so the first such write erases the line (the same `stop()`) and is not redrawn afterwards.
+      // Installed only here, where a line is actually drawn, so no other run sees its streams touched.
+      const originals = { out: process.stdout.write, err: process.stderr.write };
+      const guardOut = function (this: unknown, ...args: unknown[]): boolean {
+        stop();
+        return (originals.out as (...a: unknown[]) => boolean).apply(process.stdout, args);
+      } as typeof process.stdout.write;
+      const guardErr = function (this: unknown, ...args: unknown[]): boolean {
+        stop();
+        return (originals.err as (...a: unknown[]) => boolean).apply(process.stderr, args);
+      } as typeof process.stderr.write;
+      process.stdout.write = guardOut;
+      process.stderr.write = guardErr;
+      function stop(): void {
         if (stopped) return;
         stopped = true;
+        // Restored first, so the erase below is not itself taken for a foreign write.
+        if (process.stdout.write === guardOut) process.stdout.write = originals.out;
+        if (process.stderr.write === guardErr) process.stderr.write = originals.err;
         stderr("\r\x1b[2K");
-      };
+      }
+      return stop;
     },
 
     // The lines are printed as the caller wrote them: `bin.ts` already indents its verb and flag lines,
