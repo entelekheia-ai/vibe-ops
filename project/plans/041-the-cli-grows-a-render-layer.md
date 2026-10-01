@@ -315,3 +315,10 @@ fails without the fix. The full suite passes, 812 of 812, with `VIBE_OPS_DENYLIS
 ## Open questions
 
 *None. The design questions were settled before this file was written; what remains is the work.*
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/012-the-report-contract.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/013-the-render-layer.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/014-the-report-block.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/015-the-plain-default-narrows.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/016-a-rich-run-says-it-is-running.md`
