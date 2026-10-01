@@ -85,6 +85,12 @@ A clean run prints one summary line. The expensive reader is an agent, not a ter
 lines — the eight surviving shell fragments plus every gate the composed ops run — say nothing the
 summary does not.
 
+That plain output is what every pipe, hook and CI job gets. At an interactive terminal the same run shows
+a `◌ … running…` status line while it works and ends with a report block — counts by state, then each
+finding grouped by the gate that raised it, then the summary line. `--ui` forces the block, `--no-ui`
+forces plain lines, and `CI` or `NO_COLOR` in the environment keep a terminal plain; `--json` and
+`--print` outrank both. The `N checks, M failed` line keeps its exact text in every mode.
+
 ## Configuration
 
 `vibeops.config.ts` is searched from the repository root **upward to your home directory**, so per-repo
