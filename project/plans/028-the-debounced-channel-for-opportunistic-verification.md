@@ -165,3 +165,6 @@ not only *a quiet timer* — the two differ in what starts them and agree on eve
 - [Plan-026](./shipped/026-the-commands-the-agent-had-to-work-around.md) — Track 7 and its Decision Log carry the
   measurements that produced this plan: the ~3.1s sweep, the mid-edit objection, and the documented
   turn continuation on `Stop`.
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show 3d4eff03f12ca84217eae340e6e6e91aa7e4d68f:project/tasks/052-the-stop-hook-counts-skips-instead-of-listing-them.md`
