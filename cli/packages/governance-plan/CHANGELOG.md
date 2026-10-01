@@ -1,5 +1,17 @@
 # @entelekheia/governance-plan
 
+## 0.2.2
+
+### Patch Changes
+
+- 1cccba8: The plan authoring rubric asks that a criterion over output another program reads be run the way that
+  program runs it — with its flags — and names the case that taught it: a totals line counted once in a
+  default run while every consumer gate ran the verbose form, where it printed twice.
+- Updated dependencies [b542c32]
+- Updated dependencies [f63f349]
+  - @entelekheia/governance-base@0.3.0
+  - @entelekheia/vibe-ops-core@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

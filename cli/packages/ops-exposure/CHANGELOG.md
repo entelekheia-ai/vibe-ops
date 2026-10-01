@@ -1,5 +1,13 @@
 # @entelekheia/vibe-ops-exposure
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [f63f349]
+  - @entelekheia/vibe-ops-core@0.3.0
+  - @entelekheia/vibe-ops-gates@0.2.1
+
 ## 0.1.1
 
 ### Patch Changes
