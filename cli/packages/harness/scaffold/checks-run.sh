@@ -63,14 +63,12 @@ The gate cannot check this repository's own fragments without it — scripts/che
     return 1
   fi
 
-  # --verbose, and it is load-bearing rather than taste — measured, not assumed. `vibe-ops check`
-  # filters its own output by default, and the line it drops is `N checks, M failed`: the CLI returns
-  # that as the module's summary and renders it with a prefix, so the bare form both check.sh and the
-  # hook grep for never appears. Without --verbose a clean run prints NOTHING and exits 0 — a gate that
-  # says nothing whether or not it ran. (The composition list survives the filter either way; it is the
-  # summary that does not, which is the opposite of what it looks like from the filter's own regex.)
-  # This function captures everything and filters at print time (run_actionable_lines), so asking for
-  # the full run costs the caller no noise.
+  # --verbose, and it is load-bearing rather than taste — measured, not assumed. The default run prints
+  # the findings and the bare `N checks, M failed` line, but not the composition listing: `composed N
+  # checks:` and the `id@N  <source>` lines under it appear only under --verbose. The check below proves
+  # this repository's own fragments were composed by finding $check_dir in that listing, so without
+  # --verbose it would report them missing on every run. This function captures everything and filters
+  # at print time (run_actionable_lines), so asking for the full run costs the caller no noise.
   RUN_OUTPUT=$(VIBE_OPS_CHECK_DIRS="$check_dir" vibe-ops check --verbose "$root" 2>&1)
   RUN_RC=$?
 
