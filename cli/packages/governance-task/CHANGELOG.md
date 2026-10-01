@@ -1,5 +1,14 @@
 # @entelekheia/governance-task
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [b542c32]
+- Updated dependencies [f63f349]
+  - @entelekheia/governance-base@0.3.0
+  - @entelekheia/vibe-ops-core@0.3.0
+
 ## 0.1.2
 
 ### Patch Changes

@@ -1,5 +1,121 @@
 # @entelekheia/vibe-ops-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- 5ab5a4d: At a terminal, a run now tells you it is working and reads more easily. While a module runs, a `◌ vibe-ops check · running…` status line shows on stderr (only when stderr is a terminal) and is erased before anything else is drawn, including output written through `process.stdout` or `process.stderr`, such as `console` or a Node warning. With `--verbose`, the runners' `ok`, `FAIL`, `WARN` and `SKIP` lines carry a glyph (`✔`, `✖`, `⚠`, `⊘`) and are coloured, their `[id]` is bold, and the composition preamble is capitalised. A module's warnings stay in order with its other lines instead of landing ahead of them on stderr. The report block now opens with a sentence, `result of vibe-ops check – <repository>`, that names the repository even when you run from a linked git working tree. Output into a pipe, with `--no-ui`, under `CI`, under `NO_COLOR` without `--ui`, and with `--json` or `--print` is unchanged.
+- ff66955: `harness status` reads this repository's own templates, not only the promulgation receipt
+
+  `config.harness.applied` is a receipt, and a repository whose templates arrived any other way — scaffolded,
+  copied, or written by hand — has none. `harness status` bailed on that absence and answered `behind: []`,
+  which reads as clean. So did the `SessionStart` hook, which shares the comparison.
+
+  The generator is now read off disk alongside the receipt, through the repository's own
+  `records.templates` declaration or the first `project/templates/<type>.md` present. The receipt still wins
+  where both answer: a template newer than the receipt is a promulgation in flight, not a finding.
+
+  Measured across a nine-repository workspace on 2026-09-26: of six repositories reporting the empty answer,
+  three had a drifted or unstamped generator. One was authoring `plan@0.1` records the day before, against a
+  `plan@3` norm, with its `template-version` gate reporting `ok, 12 examined` — correctly, because that
+  gate's ruler is the local template by design. Nothing else compared the ruler to the norm.
+
+  A finding now says which reading it came from, because the repair differs: a `promulgated` entry means the
+  records are behind and `/vibe-ops:migrate` converts them, while a `template` entry means every record
+  produced from now on is born behind, so the template is replaced first.
+
+  A template that exists and declares no orderable version is reported apart from one that is behind, and is
+  never resolved to a number — including the pre-integer spelling (`plan@0.1`), which is reported as the
+  declaration it is rather than as declaring nothing.
+
+  **Precision is unchanged for a repository this norm does not govern.** A type with no template file and no
+  receipt still says nothing, and an undeclared template is reported only for a type the installed norm
+  actually ships — this reading runs at the start of every session in every repository the operator opens.
+
+- b542c32: A style package's fragments are read from `<package>/style/`, not from the package root
+
+  `general.md` and `<target>.md` now resolve as `style/general.md` and `style/<target>.md`, through a
+  case-exact directory read rather than `existsSync`. At the root, `readme.md` occupied `README.md` on any
+  case-insensitive filesystem (APFS, NTFS), so a package targeting `readme` could not document itself — and
+  the existence test answered true for either spelling, serving a package's own README as its `readme`
+  fragment. See ADR-0022.
+
+  **Breaking for style packages.** A package still shipping fragments at its root contributes nothing;
+  there is no fallback, because the layout it would fall back to is the one that cannot be trusted. Move
+  `general.md` and each `<target>.md` into `style/`, and add `"style"` to the package's `files`.
+
+  `@entelekheia/governance-style` is migrated and now ships a README of its own.
+
+  `vibe-ops-cli` and `module-records` take the same bump rather than the patch a dependency rewrite would
+  give them: the CLI is the globally installed surface, and a user reading a patch bump would take it and
+  silently lose an externally authored style layer.
+
+  A layer with no readable `style/` is now reported as a warning, so an unmigrated package says so instead
+  of composing nothing. The warning arrives with the new CLI, so a package migrated before that CLI is
+  installed loses its layer in the meantime, quietly — migrate the reader first.
+
+- 84839f7: The terminal surface stops writing prompt framing into pipes, and gains `--ui` and `--no-ui`
+
+  Every summary, error and `--help` block — all but the summary of a `--print` run, which goes to stderr
+  raw so it never lands inside the document — now goes through one render layer that decides, once per run,
+  whether stdout is a person at a terminal or a machine. A pipe, a Claude Code hook, continuous integration, or `CI` /
+  `NO_COLOR` in the environment gets plain lines — so a green `vibe-ops check` piped anywhere no longer
+  carries the orphaned `│` and the `◆` bullet it used to. An interactive terminal gets a glyph and colour.
+  `--ui` forces the rich output and `--no-ui` the plain one, anywhere on the command line; `--json` outranks
+  both.
+
+  A refused flag or unknown verb now prints `error: <message>` in plain mode. Every line keeps the stream it
+  had: the summary of a failing run stays on stdout, where consumer gates read `N checks, M failed`.
+
+  A module's `--help` lists its own flags under `flags:` and the two CLI-wide ones under
+  `flags on every command:`.
+
+- 9547ed1: At a terminal, a run whose answer is a list of findings ends with a report block
+
+  `vibe-ops check`, and every ops (`governance`, `agents-md`, `exposure`, `mirror`, `for-vibe-ops`), now
+  close a rich run with a counts line — fail, warn, skip — then each finding grouped under the gate that
+  produced it, failures first, then the module's own summary line, unchanged. The block stands in for the
+  module's finding lines, which are not printed a second time — except a finding with indented detail under
+  it, which prints whole above the block so the detail stays with it; every other line the module wrote — a repair,
+  a hint — is printed above it, and `--verbose` prints the finding lines there too. A pipe, `--no-ui`, `CI`, `NO_COLOR` without `--ui`, and `--json` see none of this.
+
+### Patch Changes
+
+- 177042b: `vibe-ops hook check-global` no longer lists each skipped check. The summary line carries the count
+  instead — `70 checks, 0 failed, 11 skipped` — and the reasons stay where the repository declared them,
+  readable with `vibe-ops check --verbose`. A skip is a declaration that is identical on every turn, and the
+  Stop hook speaks into the conversation on every turn; the terminal already hid it outside `--verbose`.
+  Failing and warning findings are reported exactly as before.
+- Updated dependencies [1cccba8]
+- Updated dependencies [ff66955]
+- Updated dependencies [eb3e292]
+- Updated dependencies [b542c32]
+- Updated dependencies [b85cc13]
+- Updated dependencies [f63f349]
+  - @entelekheia/governance-plan@0.2.2
+  - @entelekheia/vibe-ops-harness@0.3.0
+  - @entelekheia/vibe-ops-module-check@0.2.0
+  - @entelekheia/governance-base@0.3.0
+  - @entelekheia/governance-style@0.3.0
+  - @entelekheia/vibe-ops-module-records@0.3.0
+  - @entelekheia/vibe-ops-core@0.3.0
+  - @entelekheia/vibe-ops-module-ownership@0.1.2
+  - @entelekheia/vibe-ops-gates@0.2.1
+  - @entelekheia/governance-adr@0.1.3
+  - @entelekheia/governance-classification@0.2.1
+  - @entelekheia/governance-instructions@0.2.1
+  - @entelekheia/governance-knowledge@0.2.2
+  - @entelekheia/governance-license@0.2.1
+  - @entelekheia/governance-rfc@0.1.3
+  - @entelekheia/governance-task@0.1.3
+  - @entelekheia/vibe-ops-module-setup@0.2.1
+  - @entelekheia/vibe-ops-module-config@0.1.2
+  - @entelekheia/vibe-ops-agents-md@0.1.2
+  - @entelekheia/vibe-ops-exposure@0.1.2
+  - @entelekheia/vibe-ops-for-vibe-ops@0.1.2
+  - @entelekheia/vibe-ops-governance@0.2.1
+  - @entelekheia/vibe-ops-mirror@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
