@@ -16,7 +16,7 @@
     "_comment_clean": "`tsc` only ever writes; it never removes. So a renamed or deleted source leaves its old artifact in dist/ and every consumer keeps resolving it — and because most tests import ../src directly while a module loaded through its package `exports` resolves to dist/, a run can exercise the new source and the stale build at once and pass. Not folded into `build`, which stays incremental for the edit loop; folded into `pretest`, where a wrong green is the expensive outcome.",
     "clean": "rm -rf cli/packages/*/dist cli/packages/*/*.tsbuildinfo",
     "pretest": "npm run clean && npm run build",
-    "test": "node --test \"cli/packages/*/test/*.test.ts\"",
+    "test": "node --import ./cli/test-env.mjs --test \"cli/packages/*/test/*.test.ts\"",
     "check": "sh cli/packages/module-check/sh/check.sh",
     "_comment_release": "`version` runs on the release workflow after it consumes the changesets: `changeset version` rewrites every manifest, and the lockfile has to follow or the next `npm ci` installs the previous versions. `release` publishes in dependency order — plain `changeset publish` is concurrent and order-blind, which would leave a dependent on the registry un-installable until its dependency landed.",
     "version": "changeset version && npm install --package-lock-only",

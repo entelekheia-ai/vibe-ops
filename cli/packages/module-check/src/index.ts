@@ -21,6 +21,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // dist/index.js -> ../sh
 const RUNNER = path.join(here, "..", "sh", "unported", "check-agents-md.sh");
 
+/** `env` without any `GIT_*` variable — for a git call that targets a throwaway repository. */
+function withoutGitEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(env).filter(([key]) => !key.startsWith("GIT_")));
+}
+
 /** One ops's self-test, as its own exit code and its own text. An ops that cannot be loaded is a failure,
  *  never a silent pass — an absent suite and a clean one are the same output otherwise. */
 async function runOpsSelfTest(
@@ -98,8 +103,11 @@ async function runPortsAgainstFixture(): Promise<{ id: string; code: number; out
         mkdirSync(path.dirname(destination), { recursive: true });
         writeFileSync(destination, content);
       }
-      spawnSync("git", ["-C", tmp, "init", "-q"], { encoding: "utf8" });
-      spawnSync("git", ["-C", tmp, "add", "-A"], { encoding: "utf8" });
+      // `GIT_DIR` / `GIT_INDEX_FILE` from a running hook outrank `-C`: with them inherited, `init` re-initialises
+      // the real gitdir and `add -A` stages the fixture into the real index. Mirrors the shell runner's `unset`.
+      const env = withoutGitEnv(process.env);
+      spawnSync("git", ["-C", tmp, "init", "-q"], { encoding: "utf8", env });
+      spawnSync("git", ["-C", tmp, "add", "-A"], { encoding: "utf8", env });
     } catch (error) {
       const why = error instanceof Error ? error.message : String(error);
       return { id: "ports", code: 2, output: `FAIL  [ports] could not build the parity fixture: ${why}` };
