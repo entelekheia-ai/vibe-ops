@@ -26,11 +26,11 @@
 // which is the behaviour this whole surface exists to remove. Reporting the green run is what makes the
 // manual one unnecessary. Recorded in Plan-026's Decision Log rather than left as an inconsistency.
 //
-// IT DECLARES NO SEVERITY OF ITS OWN. Whatever the run resolved — a check that fails, one that warns,
-// one declared off through VIBE_OPS_DISABLED_CHECKS reporting SKIP with its reason — is passed through
-// as it came. The hook is a second invocation path for the same run, never a second policy, so
-// `git grep VIBE_OPS_DISABLED_CHECKS` stays the one answer to "what is switched off here" whether the
-// gate was reached by hook, by hand, or by pre-commit.
+// IT DECLARES NO SEVERITY OF ITS OWN. Whatever the run resolved — a check that fails, one that warns —
+// is passed through as it came; a check declared off reaches the summary line as a count, its reason left
+// where the repository declared it. The hook is a second invocation path for the same run, never a second
+// policy, so `vibe-ops check --verbose` and the config's `disabled` ledger stay the answer to "what is
+// switched off here" whether the gate was reached by hook, by hand, or by pre-commit.
 
 import { loadConfig } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
@@ -103,11 +103,20 @@ export async function runCheckGlobalHook(): Promise<number> {
   const skipped = data?.skipped ?? [];
 
   // Severity as the run resolved it. `level` comes from the fragment that produced the line; nothing
-  // here reclassifies, and `SKIP` keeps the reason the repository declared.
+  // here reclassifies.
+  //
+  // A SKIP IS COUNTED, NEVER LISTED. Each one is a declaration the repository already made, with its
+  // reason, and it is identical on every turn — the terminal hides it outside `--verbose` for exactly that
+  // reason, and this surface speaks into the conversation on every Stop. Measured on this repository: eleven
+  // SKIP lines per turn beside two findings. The count is inserted after `M failed` because the summary may
+  // carry further clauses (`; N untracked …`, `(audit: …)`) that belong after it.
+  const summary =
+    skipped.length === 0
+      ? result.summary
+      : result.summary.replace(/^(\d+ checks, \d+ failed)/, `$1, ${String(skipped.length)} skipped`);
   const lines = [
-    result.summary,
+    summary,
     ...findings.map((finding) => `${finding.level.toUpperCase()}  [${finding.check}] ${finding.evidence}`),
-    ...skipped.map((skip) => `SKIP  [${skip.check}] ${skip.reason}`),
   ];
 
   // THE FIRST LINE IS LOAD-BEARING, and it is there because `additionalContext` on `Stop` continues the

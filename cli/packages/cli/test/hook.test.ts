@@ -72,6 +72,23 @@ test("check-global: a managed vibeops.config.json alone leaves the Stop gate off
   assert.notEqual(declared.stdout, "", "the repository's own declared file is what asks for the gate");
 });
 
+// A SKIP is a declaration the repository already made, with its reason, and it is the same every turn.
+// The terminal hides it outside --verbose; the hook speaks into the conversation on every Stop, so it
+// carries the count and leaves the reasons to the ledger.
+test("check-global: a skipped check is counted on the summary line, never listed", async () => {
+  const repoRoot = await gitRepo();
+  // A bare declared config leaves the config-cascade gates nothing to read, so they report SKIP.
+  await writeFile(path.join(repoRoot, "vibeops.config.mjs"), "export default {};\n");
+
+  const { stdout, status } = runCheckGlobal(repoRoot);
+  assert.equal(status, 0);
+  const context: string = JSON.parse(stdout.trim()).hookSpecificOutput.additionalContext;
+  const lines = context.split("\n");
+
+  assert.match(lines[1]!, /^\d+ checks, \d+ failed, [1-9]\d* skipped/, context);
+  assert.equal(lines.filter((line) => line.startsWith("SKIP")).length, 0, context);
+});
+
 test("a payload naming an unrelated file produces no output at all", async () => {
   const repoRoot = await gitRepo();
   await writeFile(path.join(repoRoot, "README.md"), "hello\n");
