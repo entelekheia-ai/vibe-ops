@@ -157,7 +157,7 @@ for; `SKIP`, like `ok`, stays behind `--verbose`, where it already is.
       was not. In rich mode a module's warnings are held with its lines and keep their order and their
       stream. At the end, a pipe sees none of it. Task: tasks/016-a-rich-run-says-it-is-running.md
 
-- [ ] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
+- [x] Run `/vibe-ops:close-plan` — retrospective against the goals, the demotion check, the tracking
       issue closed. The plan file itself is kept.
 
 ## Success criteria
@@ -310,8 +310,33 @@ unannounced byte changed in plain, `--json` or `--print` output, and one defect 
 tracks produced: a Ctrl-C during a synchronous child was lost in a rich run. It is fixed with a test that
 fails without the fix. The full suite passes, 812 of 812, with `VIBE_OPS_DENYLIST` unset.
 
+**2026-10-01 — closure, against the goals.** All five goals hold on `main`. (1) A clean piped `check`
+prints the totals line alone — measured on the merged tree, once each in the default run, `--verbose` and
+`--audit`, with no framing character and no escape byte. (2) At a pseudo-terminal the run ends with the
+report block, and `governance` draws the same block with `file:line`. (3) `--ui` and `--no-ui` work
+anywhere before `--`, and `--json` outranks both. (4) `check` and every ops draw the block with no edit to
+any module except `check`'s merge, which gained `file` and `line`; the nouns keep their summary line. (5)
+`bin.ts` calls clack for the confirmation and its cancellation only. Nothing promised was cut. Track 5 was
+added after the first four landed, from the maintainer running them, and is the one track no goal
+predicted.
+
+Two success criteria were wrong as written, both too narrow. The `@clack/prompts` grep also matched the
+`p.ts` at the end of an import path, and was rewritten to match calls only. And no criterion counted the
+totals line under `--verbose`, the form every consumer gate runs — where Tracks 2 and 4 together printed
+it twice. A review found that before merge, and the criterion was added. Working on the self-test fixture
+for this plan also exposed a defect older than it — `check --self-test` from inside a hook acted on the
+real repository — fixed separately. Open and inherited by the issue tracker: nine follow-ups (one marked
+critical, a query-shaped `--json` flag that writes) filed from the dossiers' deferred minors.
+
 ---
 
 ## Open questions
 
 *None. The design questions were settled before this file was written; what remains is the work.*
+
+- Task dossiers closed and removed per the task lifecycle (`Planned → In Progress → Done → file removed, git history is the archive`):
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/012-the-report-contract.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/013-the-render-layer.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/014-the-report-block.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/015-the-plain-default-narrows.md`
+  - `git show debd8b955dada9abd8c0cd252251f4bbd2f92c29:project/tasks/016-a-rich-run-says-it-is-running.md`
