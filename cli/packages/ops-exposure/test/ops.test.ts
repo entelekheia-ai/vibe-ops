@@ -11,6 +11,10 @@ import ops from "../src/index.ts";
 import { loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext, VibeOpsConfig } from "@entelekheia/vibe-ops-core";
 
+// `private-name` falls back to VIBE_OPS_DENYLIST, which an operator running the exposure check locally
+// has exported. These cases assert the run as it reads with no list supplied.
+delete process.env["VIBE_OPS_DENYLIST"];
+
 function contextFor(
   repoRoot: string,
   config: VibeOpsConfig,

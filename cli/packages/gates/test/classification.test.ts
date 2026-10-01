@@ -13,6 +13,10 @@ import { createDocumentStore } from "@entelekheia/vibe-ops-core";
 import type { GateRunContext } from "@entelekheia/vibe-ops-core";
 import classification from "../src/classification/index.ts";
 
+// The gate falls back to VIBE_OPS_DENYLIST when an entry names no list, and an operator who runs the
+// exposure check locally has it exported. The cases here assert what happens when no list was supplied.
+delete process.env["VIBE_OPS_DENYLIST"];
+
 async function repo(): Promise<string> {
   return mkdtemp(path.join(tmpdir(), "vibeops-classification-"));
 }
