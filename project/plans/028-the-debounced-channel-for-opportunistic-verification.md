@@ -135,6 +135,18 @@ not only *a quiet timer* — the two differ in what starts them and agree on eve
   unconditional `Stop` version in the meantime, which is worse and works.
   Date / Author: 2026-08-13 / Danilo Borges
 
+- Decision: The `Stop` report's shape is settled ahead of Track 2 — skipped checks are a count on the
+  summary line (`N checks, M failed, K skipped`), never listed (task 052, PR #53). Warning findings keep
+  their current behaviour: a warn-only run still opens with "findings below" and still continues the
+  turn.
+  Rationale: A skip is a declaration the repository already made and is identical on every turn; the
+  terminal already hid it outside `--verbose`. Warnings were left alone because the report reaches the
+  maintainer directly in the terminal client and only the model in an IDE client, so whether a warning
+  should cost a continuation differs per client and is being observed before it is decided. When Track 2
+  revisits warnings, note that `check`'s `data.findings` folds a finding's `file` into its `evidence`
+  string, so filtering warnings by the files a turn touched needs that field kept structured first.
+  Date / Author: 2026-10-01 / Danilo Borges
+
 ## Outcomes & Retrospective
 
 <!-- Filled at each track completion. -->
