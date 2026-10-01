@@ -6,8 +6,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createTargetResolver } from "../src/targets.ts";
 
+// Every fixture repository is built with the caller's git environment scrubbed. Run from a hook, git
+// exports GIT_DIR and GIT_INDEX_FILE, which override `-C`: `git init` then re-initialises the CALLER's
+// repository (from a linked worktree, writing core.bare=true into the shared config), `git config`
+// writes the fixture identity there, and `git add` stages the fixture over its index (vibe-ops#36).
+const fixtureEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")));
+
 function git(cwd: string, ...args: string[]): void {
-  const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8" });
+  const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8", env: fixtureEnv });
   assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
 }
 
