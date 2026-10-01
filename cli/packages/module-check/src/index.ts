@@ -232,15 +232,32 @@ async function runComposedOps(context: ModuleContext): Promise<readonly OpsRun[]
       code: result.code,
       lines,
       gates: composed.size,
-      findings: findings.map((finding) => ({
-        level: finding.level === "warn" ? "warn" : "fail",
-        check: finding.gate,
-        evidence: finding.file === undefined ? finding.evidence : `${finding.file}: ${finding.evidence}`,
-      })),
+      findings: findings.map(toCheckFinding),
       skipped: skips.map((entry) => ({ check: entry.gate, reason: entry.reason })),
     });
   }
   return runs;
+}
+
+/**
+ * One ops finding as `check` reports it. `evidence` keeps the file folded in, as `--json` consumers of
+ * this module have always read it; `file` and `line` ride beside it so a reader that draws a location need
+ * not parse one back out.
+ */
+export function toCheckFinding(finding: {
+  readonly gate: string;
+  readonly level: string;
+  readonly evidence: string;
+  readonly file?: string;
+  readonly line?: number;
+}): { level: string; check: string; evidence: string; file?: string; line?: number } {
+  return {
+    level: finding.level === "warn" ? "warn" : "fail",
+    check: finding.gate,
+    evidence: finding.file === undefined ? finding.evidence : `${finding.file}: ${finding.evidence}`,
+    ...(finding.file === undefined ? {} : { file: finding.file }),
+    ...(finding.line === undefined ? {} : { line: finding.line }),
+  };
 }
 
 interface OpsRun {
@@ -248,8 +265,27 @@ interface OpsRun {
   readonly code: number;
   readonly lines: readonly string[];
   readonly gates: number;
-  readonly findings: readonly { level: string; check: string; evidence: string }[];
+  readonly findings: readonly { level: string; check: string; evidence: string; file?: string; line?: number }[];
   readonly skipped: readonly { check: string; reason: string }[];
+}
+
+// The default passthrough: failing and warning lines, and the indented continuation of one. The
+// `composed N checks:` preamble, its indented per-fragment listing and `composed deny-list: …` belong to
+// `--verbose`; an indented line is kept only while it follows a FAIL, WARN or SELF-TEST line.
+function passthrough(lines: readonly string[]): string[] {
+  const kept: string[] = [];
+  let following = false;
+  for (const line of lines) {
+    if (/^(FAIL|WARN|SELF-TEST)/.test(line)) {
+      kept.push(line);
+      following = true;
+    } else if (/^\s{2}/.test(line) && following) {
+      kept.push(line);
+    } else {
+      following = false;
+    }
+  }
+  return kept;
 }
 
 const SUMMARY_PATTERN = /^(\d+) checks, (\d+) failed$/m;
@@ -425,7 +461,10 @@ export default defineModule(
       const shown = output.split("\n").filter((line) => !/^\d+ checks, \d+ failed$/.test(line));
       const interesting = context.flags["verbose"] === true || context.flags["list"] === true
         ? shown.join("\n")
-        : shown.filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n");
+        : context.flags["self-test"] === true
+          // The one mode whose text is the answer: its report is unchanged, preamble included.
+          ? shown.filter((line) => /^(FAIL|WARN|SELF-TEST|composed|\s{2})/.test(line)).join("\n")
+          : passthrough(shown).join("\n");
       if (interesting.trim() !== "") context.log(interesting.trimEnd());
     }
 
@@ -487,7 +526,7 @@ export default defineModule(
       };
     }
 
-    const findings: { level: string; check: string; evidence: string }[] = [];
+    const findings: { level: string; check: string; evidence: string; file?: string; line?: number }[] = [];
     const skipped: { check: string; reason: string }[] = [];
     for (const line of output.split("\n")) {
       const parsed = REPORT_LINE.exec(line);
@@ -556,10 +595,6 @@ export default defineModule(
     // Exit 2 is the runner refusing the target and outranks a finding — it means the reading never
     // happened, where 1 means it happened and something failed.
     const merged = code === 2 ? 2 : code !== 0 || opsFailed ? 1 : 0;
-
-    if (context.surface === "cli" && context.flags["json"] !== true && context.flags["verbose"] === true) {
-      context.log(totals);
-    }
 
     return {
       code: audited ? 0 : merged,

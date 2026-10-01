@@ -20,13 +20,26 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
 import { loadConfig, SOURCE_FLAG } from "@entelekheia/vibe-ops-core";
-import type { ModuleCommand } from "@entelekheia/vibe-ops-core";
+import type { ModuleCommand, ModuleResult } from "@entelekheia/vibe-ops-core";
 import { loadModule } from "./resolve.ts";
-import { declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
+import { anchorOf, declaredFlagsFor, runModule, repoRootFrom } from "./run.ts";
 import { serveHttp, serveStdio } from "./mcp.ts";
 import { applyImplicitFlags } from "./flags.ts";
 import { runHook, HOOK_SURFACES } from "./hook.ts";
 import { BUILTINS, exposedModules } from "./builtins.ts";
+import { GLOBAL_FLAGS, colourAllowed, createOut, extractGlobalFlags, wantsRich } from "./render.ts";
+import type { HeldLine, Out, UiChoice } from "./render.ts";
+
+/** The one `Out` for a run: rich only for a person at a terminal (or on request), plain for every pipe. */
+function buildOut(ui: UiChoice): Out {
+  return createOut({
+    rich: wantsRich(ui, { isTTY: process.stdout.isTTY === true, env: process.env }),
+    colour: colourAllowed(process.env),
+    statusLine: process.stderr.isTTY === true,
+  });
+}
+
+const globalFlagLines = (): string[] => ["flags on every command:", ...GLOBAL_FLAGS.map((f) => `  --${f.name.padEnd(12)} ${f.description}`)];
 
 /**
  * A built-in declaring `commands` gets its verbs listed under it in `--help` — otherwise a noun module
@@ -47,9 +60,10 @@ async function verbLinesFor(names: readonly string[]): Promise<string[]> {
   return lines;
 }
 
-async function usage(): Promise<void> {
+async function usage(out: Out): Promise<void> {
   const verbLines = await verbLinesFor(BUILTINS);
-  p.note(
+  out.help(
+    "vibe-ops",
     [
       "vibe-ops <module> [flags]     run a module (built-in: " + BUILTINS.join(", ") + ")",
       ...verbLines,
@@ -61,13 +75,14 @@ async function usage(): Promise<void> {
       "vibe-ops <module> --help      one module's verbs and flags",
       "",
       "Configuration cascades from vibeops.config.ts in the repository up to your home directory.",
-    ].join("\n"),
-    "vibe-ops",
+      "",
+      ...globalFlagLines(),
+    ],
   );
 }
 
 /** Flags are parsed against what the module declares, so an unknown flag is caught rather than ignored. */
-async function runNamed(name: string, argv: string[]): Promise<number> {
+async function runNamed(name: string, argv: string[], out: Out): Promise<number> {
   // The working directory's config is what routes a governance noun (ADR-0019). Loaded here only for
   // routing; runModule loads the acting repository's cascade itself, which may differ when a module
   // resolves its repo from a positional.
@@ -86,15 +101,14 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
       `  ${c.name.padEnd(10)} ${c.summary}`,
       ...(c.flags ?? []).map((f) => `      --${f.name.padEnd(12)} ${f.description}`),
     ]);
-    p.note(
-      [
+    out.help(`vibe-ops ${plugin.definition.id}`, [
         plugin.definition.summary,
         ...(verbLine.length > 0 ? ["", ...verbLine] : []),
         ...(commandLines.length > 0 ? ["", ...commandLines] : []),
-        ...(flagLines.length > 0 ? ["", "flags on every command:", ...flagLines] : []),
-      ].join("\n"),
-      `vibe-ops ${plugin.definition.id}`,
-    );
+        ...(flagLines.length > 0 ? ["", "flags:", ...flagLines] : []),
+        "",
+        ...globalFlagLines(),
+    ]);
     return 0;
   }
 
@@ -109,7 +123,7 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     commandDef = commands.find((c) => c.name === first);
     if (commandDef === undefined) {
       const names = commands.map((c) => c.name).join(", ");
-      p.log.error(
+      out.error(
         first === undefined
           ? `${plugin.definition.id} needs a command: ${names}`
           : `${plugin.definition.id} has no command "${first}" — valid: ${names}`,
@@ -136,10 +150,10 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
       strict: true,
     });
   } catch (error) {
-    p.log.error(`${(error as Error).message}`);
-    p.note(
-      declaredFlags.map((f) => `--${f.name.padEnd(12)} ${f.description}`).join("\n") || "(no flags)",
+    out.error(`${(error as Error).message}`);
+    out.help(
       command !== undefined ? `${plugin.definition.id} ${command} flags` : `${plugin.definition.id} flags`,
+      declaredFlags.length > 0 ? declaredFlags.map((f) => `--${f.name.padEnd(12)} ${f.description}`) : ["(no flags)"],
     );
     return 2;
   }
@@ -154,49 +168,85 @@ async function runNamed(name: string, argv: string[]): Promise<number> {
     }
   }
 
-  const result = await runModule({
-    plugin,
-    flags: parsed.values as Record<string, string | boolean>,
-    args: parsed.positionals,
-    cwd: process.cwd(),
-    surface: "cli",
-    command,
-    // The terminal's consent is the prompt above; without a TTY there is nobody to prompt, and this
-    // surface keeps the behaviour it has always had — a skill invokes `task close` through a Bash tool,
-    // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
-    // surface with no such story, which is why the gate in runModule exists and why only it is refused.
-    confirmed: true,
-    sink: (message) => process.stdout.write(`${message}\n`),
-  });
+  // In rich mode the module's own lines are held back rather than written as they come, so that a report
+  // block can stand in for them instead of repeating every finding underneath. Never under `--json` or
+  // `--print`, whose output is a stream or a document and must stay exactly what the module wrote.
+  const machineOutput = parsed.values.json === true || parsed.values.print === true;
+  const held: HeldLine[] = [];
+  const holding = out.rich && !machineOutput;
 
-  // A module that declares `--json` stops writing lines and returns `data` instead, and until now only
-  // MCP ever rendered that field — so on a terminal `--json` printed NOTHING and exited 0, for every
-  // module that has the flag. An empty success is the worst shape a query can have: it reads as "there
-  // is nothing", which is a real answer, rather than as "this surface did not render it".
-  //
-  // Raw stdout, not `p.log`: the whole point of the flag is to be piped into `jq`, and the prompt
-  // library's framing characters would corrupt it.
-  if (parsed.values.json === true && result.data !== undefined) {
-    process.stdout.write(`${JSON.stringify(result.data, null, 2)}\n`);
+  // A module that throws after logging must not take its lines with it: the held ones reach stdout
+  // before the error does, in the order plain mode would have printed them.
+  // Interrupted mid-run, a rich run would otherwise exit with everything it held unprinted; plain mode
+  // already streamed it. The default SIGINT exit status is kept.
+  const title = command === undefined ? `vibe-ops ${plugin.definition.id}` : `vibe-ops ${plugin.definition.id} ${command}`;
+  // The status line is erased before anything is written, on every path out: a flushed line drawn onto it
+  // would leave its text behind.
+  let stopProgress: () => void = () => {};
+  const flushOnInterrupt = (): void => {
+    stopProgress();
+    out.flush(held);
+    process.exit(130);
+  };
+  if (holding) process.once("SIGINT", flushOnInterrupt);
+
+  let result: ModuleResult | undefined;
+  let failure: { error: unknown } | undefined;
+  if (holding) stopProgress = out.progress(title);
+  try {
+    result = await runModule({
+      plugin,
+      flags: parsed.values as Record<string, string | boolean>,
+      args: parsed.positionals,
+      cwd: process.cwd(),
+      surface: "cli",
+      command,
+      // The terminal's consent is the prompt above; without a TTY there is nobody to prompt, and this
+      // surface keeps the behaviour it has always had — a skill invokes `task close` through a Bash tool,
+      // never a terminal, and does its own previewing and confirming before it gets here. MCP is the
+      // surface with no such story, which is why the gate in runModule exists and why only it is refused.
+      confirmed: true,
+      sink: holding ? (message) => void held.push({ text: message, stream: "out" }) : (message) => process.stdout.write(`${message}\n`),
+      warnSink: holding ? (line) => void held.push({ text: line, stream: "err" }) : undefined,
+    });
+  } catch (error) {
+    failure = { error };
   }
+  if (holding) {
+    // A Ctrl-C that came while the module was blocked in a synchronous child (`spawnSync`) is already
+    // queued on the event loop, but only a poll phase dispatches it — and nothing between here and the
+    // exit would reach one. Removing the handler first would drop the signal, the run would draw its
+    // result and exit 0. So the handler stays installed while the loop turns twice: the first immediate
+    // runs in this turn's check phase, the second only after the next turn's poll phase has dispatched
+    // every signal already delivered. Ordering, not a delay: nothing here waits for a signal to arrive.
+    await new Promise<void>((resolve) => setImmediate(() => setImmediate(resolve)));
+    process.removeListener("SIGINT", flushOnInterrupt);
+  }
+  stopProgress();
+  if (failure !== undefined) {
+    out.flush(held);
+    throw failure.error;
+  }
+  if (result === undefined) throw new Error("runModule returned nothing");
 
-  // `summary` is required of every module, so there is always a line to print — which is the point: a run
-  // that found nothing says where it looked instead of exiting silently. Under `--json` that line would
-  // land in the middle of the payload and break `jq`, so it goes to stderr, where a human still reads it
-  // and a pipe never sees it. Printing it on stdout is what a test caught the moment summary stopped
-  // being optional.
-  // `--print` gets the same treatment for the same reason. Its output is a DOCUMENT — a policy text a
-  // caller redirects into a file or hands to a subagent — and the framing characters plus the summary
-  // landed inside it, so `records norm … --print > POLICY.md` produced a file ending in `│` and a line
-  // about section counts. `--json` was special-cased here the day summary became mandatory; `--print`
-  // is the same shape of output and was missed because until Plan-040 nothing served a whole document
-  // through it.
-  if (parsed.values.json === true || parsed.values.print === true) {
+  // `--json` renders `data` on stdout and the summary on stderr, raw — it is piped into `jq`, so no
+  // framing may reach it. `--print` is a DOCUMENT a caller redirects into a file, so its summary goes to
+  // stderr too and never lands inside it. Everything else is the summary through `out`.
+  if (parsed.values.print === true && parsed.values.json !== true) {
     process.stderr.write(`${result.summary}\n`);
-  } else if (result.code === 0) {
-    p.log.success(result.summary);
   } else {
-    p.log.error(result.summary);
+    // The repository the module acted on, for the block's title: its first positional when the module
+    // takes one (`check <path>`), the working directory's otherwise.
+    const target = plugin.definition.repoFromFirstArg === true && parsed.positionals[0] !== undefined
+      ? path.resolve(parsed.positionals[0])
+      : process.cwd();
+    out.result(result, {
+      json: parsed.values.json === true,
+      title,
+      where: anchorOf(target),
+      held,
+      keepHeld: parsed.values.verbose === true || parsed.values.list === true,
+    });
   }
   return result.code;
 }
@@ -219,11 +269,15 @@ function ownVersion(): string {
   }
 }
 
-async function main(argv: readonly string[]): Promise<number> {
+async function main(rawArgv: readonly string[]): Promise<number> {
+  // Before anything reads the arguments: `--ui` and `--no-ui` belong to the CLI, and a module's strict
+  // parse would refuse them as unknown.
+  const { rest: argv, ui } = extractGlobalFlags(rawArgv);
+  const out = buildOut(ui);
   const [command, ...rest] = argv;
 
   if (command === undefined || command === "-h" || command === "--help") {
-    await usage();
+    await usage(out);
     return command === undefined ? 2 : 0;
   }
 
@@ -238,7 +292,7 @@ async function main(argv: readonly string[]): Promise<number> {
 
   if (command === "mcp") {
     if (rest.includes("--help") || rest.includes("-h")) {
-      p.note(["vibe-ops mcp [--http] [--port N]", "", "Serves every exposed module as MCP tools."].join("\n"), "vibe-ops mcp");
+      out.help("vibe-ops mcp", ["vibe-ops mcp [--http] [--port N]", "", "Serves every exposed module as MCP tools.", "", ...globalFlagLines()]);
       return 0;
     }
     const { values } = parseArgs({
@@ -259,12 +313,12 @@ async function main(argv: readonly string[]): Promise<number> {
     return runHook(rest);
   }
 
-  return runNamed(command, rest);
+  return runNamed(command, rest, out);
 }
 
 main(process.argv.slice(2))
   .then((code) => process.exit(code))
   .catch((error: unknown) => {
-    p.log.error(error instanceof Error ? error.message : String(error));
+    buildOut(extractGlobalFlags(process.argv.slice(2)).ui).error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   });

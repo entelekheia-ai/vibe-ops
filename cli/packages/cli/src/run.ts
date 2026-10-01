@@ -13,6 +13,7 @@ import type {
   VibeOpsConfig,
 } from "@entelekheia/vibe-ops-core";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 export interface RunOptions {
@@ -30,6 +31,37 @@ export interface RunOptions {
    * input. Absent on a destructive command, the run is refused rather than performed.
    */
   readonly confirmed?: boolean;
+  /**
+   * Where a module's warnings go, as the whole line `warning: <message>` without its newline. Absent,
+   * they are written straight to stderr. The terminal passes one in a rich run, to hold them in order
+   * with the module's own lines.
+   */
+  readonly warnSink?: (line: string) => void;
+}
+
+/**
+ * The name of what a module analysed, for the report block's title: the repository's name when `target`
+ * is inside a git repository — read from its common directory, so that a linked working tree names its
+ * repository rather than its own folder — and the folder's own name when it is not in one.
+ */
+export function anchorOf(target: string): string {
+  const result = spawnSync("git", ["-C", target, "rev-parse", "--path-format=absolute", "--git-common-dir"], { encoding: "utf8" });
+  // Git's answer is taken only when it is one line holding an absolute path; an older git that does not
+  // know the flag prints something else, and anything else falls back to the folder's own name.
+  const lines = result.status === 0 ? (result.stdout ?? "").split("\n").filter((l) => l !== "") : [];
+  const common = lines.length === 1 && path.isAbsolute(lines[0]!) ? lines[0]! : "";
+  if (common === "") return path.basename(repoRootFrom(target));
+  const base = path.basename(common);
+  // `.git` stands for its parent. So does another hidden directory (`project/.bare` of a bare-clone
+  // layout) when `<parent>/.git` exists — a pointer file or a directory; a hidden one without it names
+  // the folder. A visible directory never consults `<parent>/.git`: a bare repository kept inside
+  // another repository's working tree is named by its own name (`name.git` → `name`).
+  const parent = path.dirname(common);
+  if (base === ".git") return path.basename(parent);
+  if (base.startsWith(".")) {
+    return existsSync(path.join(parent, ".git")) ? path.basename(parent) : path.basename(repoRootFrom(target));
+  }
+  return base.endsWith(".git") ? base.slice(0, -".git".length) : base;
 }
 
 /**
@@ -77,7 +109,7 @@ export function resolveSourceRoot(
 }
 
 export async function runModule(options: RunOptions): Promise<ModuleResult> {
-  const { plugin, flags, args, cwd, surface, sink, command, confirmed } = options;
+  const { plugin, flags, args, cwd, surface, sink, command, confirmed, warnSink } = options;
 
   // Authoritative here, not only in the terminal's own dispatch — the terminal validates early to pick
   // the right flag set to parse, but MCP hands `command` straight through with no such gate, so an
@@ -219,7 +251,7 @@ export async function runModule(options: RunOptions): Promise<ModuleResult> {
     // into a file, and a warning line landing in the middle of it silently poisons every document
     // written from a style stack. Stderr also keeps a warning safe under the MCP surface, where anything
     // on stdout corrupts the transport.
-    warn: (message) => process.stderr.write(`warning: ${message}\n`),
+    warn: (message) => (warnSink !== undefined ? warnSink(`warning: ${message}`) : void process.stderr.write(`warning: ${message}\n`)),
   };
 
   return plugin.run(context);

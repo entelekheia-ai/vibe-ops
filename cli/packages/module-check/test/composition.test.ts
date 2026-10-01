@@ -9,9 +9,10 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
+import { isReport, loadConfig, settingsFor } from "@entelekheia/vibe-ops-core";
 import type { ModuleContext } from "@entelekheia/vibe-ops-core";
-import check from "../src/index.ts";
+import check, { toCheckFinding } from "../src/index.ts";
+import { readReport } from "@entelekheia/vibe-ops-core";
 
 const repoRoot = new URL("../../../..", import.meta.url).pathname.replace(/\/$/, "");
 
@@ -40,6 +41,15 @@ test("the summary keeps the `N checks, M failed` shape every consumer's gate gre
   assert.match(result.summary, /^\d+ checks, \d+ failed/, result.summary);
 });
 
+// The terminal draws its report block for whatever passes `isReport`, and nothing else ties this module's
+// `data` to that shape: its type is local and its `level` is a plain string. Renaming a key here would
+// drop every `check` to the summary line with the whole suite still green.
+test("a run's data is a report the terminal can draw", async () => {
+  const { context } = await contextFor();
+  const result = await check.run(context);
+  assert.ok(isReport(result.data), JSON.stringify(result.data).slice(0, 300));
+});
+
 test("the count covers BOTH halves — the shell fragments and the composed gates", async () => {
   const { context } = await contextFor();
   const result = await check.run(context);
@@ -59,9 +69,12 @@ test("the count covers BOTH halves — the shell fragments and the composed gate
 
 test("only one count line is printed — a partial count would be read as the answer", async () => {
   const { context, logs } = await contextFor({ flags: { verbose: true } });
-  await check.run(context);
-  const counts = logs.join("\n").split("\n").filter((line) => /^\d+ checks, \d+ failed$/.test(line));
-  assert.equal(counts.length, 1, counts.join(" | "));
+  const result = await check.run(context);
+  // The CLI prints `result.summary` itself, bare, after the module logs — so the module must log no count
+  // line of its own, or a pipe shows two. One line in total = none logged + the summary.
+  const logged = logs.join("\n").split("\n").filter((line) => /^\d+ checks, \d+ failed/.test(line));
+  assert.deepEqual(logged, []);
+  assert.match(result.summary, /^\d+ checks, \d+ failed/);
 });
 
 test("a declared ops that does not resolve is named, never quietly composed out of the run", async () => {
@@ -135,4 +148,25 @@ export default defineGate(
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// The merge is what gives `check`'s report a location to draw; without `file` and `line` beside the folded
+// `evidence`, the block shows a finding with no line number while a plain run shows one.
+test("an ops finding merged into check keeps its file and line beside the folded evidence", () => {
+  const merged = toCheckFinding({ gate: "template-version-plan", level: "warn", file: "project/plans/008.md", line: 1, evidence: "declares plan@0.1" });
+  assert.deepEqual(merged, {
+    level: "warn",
+    check: "template-version-plan",
+    evidence: "project/plans/008.md: declares plan@0.1",
+    file: "project/plans/008.md",
+    line: 1,
+  });
+  assert.deepEqual(readReport({ findings: [merged], skipped: [] })?.findings[0], {
+    id: "template-version-plan",
+    level: "warn",
+    evidence: "project/plans/008.md: declares plan@0.1",
+    file: "project/plans/008.md",
+    line: 1,
+  });
+  assert.deepEqual(toCheckFinding({ gate: "g", level: "fail", evidence: "e" }), { level: "fail", check: "g", evidence: "e" });
 });

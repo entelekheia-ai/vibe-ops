@@ -39,6 +39,14 @@ repository reaches on its own: what an ordinary run reports, not what a run with
 (Measured 2026-08-23: a boundary shipped its acceptance at "15 skips to 0" with the selector passed by
 hand, while every adopted repository still composed the full set. The field was reverted unshipped.)
 
+**For output another program reads, the ordinary run is that program's invocation, flags included.** A
+criterion that counts what the default command prints proves nothing about a consumer that always passes
+`--verbose` and captures `2>&1`, and a change to the output is exactly where the two diverge. Find the
+consumers' command lines first and write one criterion per distinct form. (Measured 2026-09-30: a plan
+that restyled a CLI's summary counted its totals line once in the default run, while every consumer gate
+ran the verbose form, where two tracks together printed it twice. Its criteria never ran that form; a
+review found it.)
+
 ## The exposure contract, and why a plan is the record most exposed to it
 
 Everything the exposure policy states (`vibe-ops records norm --type classification --facet policy --name exposure --print`)
