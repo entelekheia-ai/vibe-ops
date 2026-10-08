@@ -13,9 +13,8 @@
 // uniformly. `shortcut_link` carries no such child and needs no explicit skip — it is simply never
 // collected.
 
-import { defineGate, lineAt, walkLayersWithHostPositions } from "@entelekheia/vibe-ops-core";
-import type { GateFinding } from "@entelekheia/vibe-ops-core";
-import { existsSync } from "node:fs";
+import { createTargetResolver, defineGate, lineAt, walkLayersWithHostPositions } from "@entelekheia/vibe-ops-core";
+import type { GateFinding, TargetReading, TargetState } from "@entelekheia/vibe-ops-core";
 import path from "node:path";
 
 const LINK_NODE_TYPES = ["inline_link", "image"];
@@ -51,14 +50,56 @@ function normalizeRelative(dirRel: string, target: string): string | "OUTSIDE" {
   return out.join("/");
 }
 
+/**
+ * What one classified target means for this gate: nothing when the link holds, otherwise the rule it
+ * breaks, the words a reader needs to fix it, and — only where it should differ from `fail` — a level.
+ *
+ * The rule is the repository's handle on the finding: `settings.<ops>.level` and `ignore` key on it, so a
+ * state that deserves its own policy needs its own rule rather than a different sentence under `links`.
+ * `reading.followed` is set only for an `ignored` target under `targets.ignored: "follow"`.
+ */
+function verdictFor(
+  reading: TargetReading,
+  target: string,
+  source: TargetState,
+): Pick<GateFinding, "rule" | "evidence" | "level"> | undefined {
+  switch (reading.state) {
+    case "tracked":
+      return undefined;
+    case "absent":
+      return { rule: "links", evidence: `link does not resolve: ${target}` };
+    case "untracked":
+      // Resolves on this machine and in no other checkout — and this commit is the last moment the author
+      // can still fix it, so it blocks.
+      return { rule: "links-untracked", evidence: `link points at a file git does not track as written: ${target} — add it, or match the spelling git tracks (case, Unicode form); otherwise the link breaks in every other checkout` };
+    case "ignored": {
+      if (reading.followed !== undefined) {
+        return reading.followed.exists
+          ? undefined
+          : { rule: "links", evidence: `link does not resolve: ${target} (followed into the main working tree: ${reading.followed.where})` };
+      }
+      // An ignored document linking into an ignored path never reaches a clone, so neither end can break
+      // there — worth a word, not a refusal. A tracked one carries the link into every checkout that lacks it.
+      return {
+        rule: "links-ignored",
+        evidence: `link points into a path this repository ignores: ${target} — declare targets.ignored "follow" if the repository means it`,
+        ...(source === "ignored" ? { level: "warn" as const } : {}),
+      };
+    }
+  }
+}
+
 export default defineGate(
   {
     id: "markdown-link",
-    version: 1,
+    // 2: the verdict reads the repository (the index and its ignore rules) instead of the disk, and a
+    // target the repository ignores or does not track is a finding under a rule of its own.
+    version: 2,
     summary: "Every relative link in tracked markdown resolves inside the repository",
     defaultPaths: ["**/*.md"],
   },
-  async ({ repoRoot, files, documents }) => {
+  async ({ repoRoot, files, documents, targets: given }) => {
+    const targets = given ?? createTargetResolver(repoRoot);
     const findings: GateFinding[] = [];
     let examined = 0;
 
@@ -104,14 +145,8 @@ export default defineGate(
             });
             continue;
           }
-          if (!existsSync(path.join(repoRoot, normalized))) {
-            findings.push({
-              rule: "links",
-              file,
-              line,
-              evidence: `link does not resolve: ${target}`,
-            });
-          }
+          const verdict = verdictFor(targets.classify(normalized), target, targets.classify(file).state);
+          if (verdict !== undefined) findings.push({ file, line, ...verdict });
         }
       }
     }

@@ -255,6 +255,15 @@ running at all. A run also reports `ignored` beside `examined`: a population tha
 indistinguishable from a clean run, and only one of the two is a reading. `SKIP` (like `ok`) prints only
 under `--verbose` — silence is the default outcome for a clean or disabled entry, matching `check.sh`.
 
+**A gate that resolves a reference asks `context.targets`, never `existsSync`** (`packages/core/src/targets.ts`).
+The disk answered for the working tree while the contract spoke of the repository, so one commit got
+opposite verdicts from the main checkout and a `git worktree` (#41). The classifier reads the index and the
+ignore rules — `tracked`, `untracked`, `ignored`, `absent` — and carries the repository's `targets` policy:
+top-level in `vibeops.config`, overridden per ops in `settings.<ops>.targets`. Under
+`{ ignored: "follow" }` an ignored target is looked up in the **main** working tree, the only one that can
+hold it. `breadcrumb` still checks its path with `existsSync` and is the next to move; `pairing` tests for a
+sibling it expects rather than a reference someone wrote, so it stays on the disk.
+
 ## The eita seam
 
 A module that observes something worth recording declares `emits`; everything else has no emitter and

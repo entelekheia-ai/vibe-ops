@@ -72,6 +72,8 @@ export { allGrammars, grammarForExtension } from "./grammars.ts";
 export type { GrammarDescriptor } from "./grammars.ts";
 export { createDocumentStore, documentFromText } from "./document.ts";
 export type { Document, DocumentStore } from "./document.ts";
+export { createTargetResolver } from "./targets.ts";
+export type { TargetReading, TargetResolver, TargetsPolicy, TargetState } from "./targets.ts";
 export type { Layer, UncoveredLayer } from "./injections.ts";
 export { describedText, lineAt, proseText, walkLayersWithHostPositions } from "./position.ts";
 export type { HostPositionedLayer } from "./position.ts";
