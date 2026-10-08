@@ -109,8 +109,14 @@ test("a file the model could not parse is not examined, and produces no crash", 
 // vibe-ops#41 — the verdict reads the repository, not the disk. A real repository is needed from here on:
 // in a bare temporary directory the classifier falls back to the disk, which is the defect itself.
 
+// Every fixture repository is built with the caller's git environment scrubbed. Run from a hook, git
+// exports GIT_DIR and GIT_INDEX_FILE, which override `-C`: `git init` then re-initialises the CALLER's
+// repository (from a linked worktree, writing core.bare=true into the shared config), `git config`
+// writes the fixture identity there, and `git add` stages the fixture over its index (vibe-ops#36).
+const fixtureEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")));
+
 function git(cwd: string, ...args: string[]): void {
-  const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8" });
+  const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8", env: fixtureEnv });
   assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
 }
 

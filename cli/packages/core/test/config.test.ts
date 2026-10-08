@@ -570,3 +570,22 @@ test("records.dirs.<type> is writable per type, refused under R1 when declared, 
   onDisk = JSON.parse(await readFile(path.join(dir, MANAGED_FILENAME), "utf8"));
   assert.deepEqual(onDisk, { types: { plan: "@acme/plan" } }, "an emptied records.dirs and records are dropped, not left as {}");
 });
+
+test("targets merges per key across the cascade, and is undefined when nobody declares it", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "vibeops-home-"));
+  const repo = path.join(home, "nested", "repo");
+  await mkdir(repo, { recursive: true });
+  await writeFile(path.join(home, "vibeops.config.mjs"), `export default { targets: { ignored: "follow" } };`);
+  await writeFile(path.join(repo, "vibeops.config.mjs"), `export default { artifactDir: "x" };`);
+  assert.deepEqual((await loadConfig(repo, home)).config.targets, { ignored: "follow" }, "a silent nearer file is not an answer");
+
+  // A second repository: `import()` caches a config module by its path, so rewriting the first is not read.
+  const nearer = path.join(home, "nested", "other");
+  await mkdir(nearer, { recursive: true });
+  await writeFile(path.join(nearer, "vibeops.config.mjs"), `export default { targets: { ignored: "report" } };`);
+  assert.deepEqual((await loadConfig(nearer, home)).config.targets, { ignored: "report" }, "the nearer file wins the key");
+
+  const bare = await mkdtemp(path.join(tmpdir(), "vibeops-notargets-"));
+  await writeFile(path.join(bare, "vibeops.config.mjs"), `export default { artifactDir: "x" };`);
+  assert.equal((await loadConfig(bare, bare)).config.targets, undefined);
+});

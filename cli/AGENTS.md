@@ -261,7 +261,8 @@ opposite verdicts from the main checkout and a `git worktree` (#41). The classif
 ignore rules — `tracked`, `untracked`, `ignored`, `absent` — and carries the repository's `targets` policy:
 top-level in `vibeops.config`, overridden per ops in `settings.<ops>.targets`. Under
 `{ ignored: "follow" }` an ignored target is looked up in the **main** working tree, the only one that can
-hold it.
+hold it. `breadcrumb` still checks its path with `existsSync` and is the next to move; `pairing` tests for a
+sibling it expects rather than a reference someone wrote, so it stays on the disk.
 
 ## The eita seam
 

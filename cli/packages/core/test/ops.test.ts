@@ -524,3 +524,20 @@ test("an overridden level still never reaches the emitted observation", async ()
   // Both rules are recorded, and the override changed neither of them — it is a reporting tier only.
   assert.deepEqual(lines.slice(1).map((l) => JSON.parse(l).rule).sort(), ["hard", "soft"]);
 });
+
+// The ops builds one target resolver per run and hands it to every gate, carrying the repository's
+// `targets` policy — overridden, for this ops only, by `settings.<ops>.targets`.
+async function policySeen(config: VibeOpsConfig, settings: unknown): Promise<string | undefined> {
+  const dir = await mkdtemp(path.join(tmpdir(), "vibeops-ops-targets-"));
+  await writeFakeGate(dir, "policy", `{ findings: [{ rule: "policy", evidence: String(ctx.targets?.policy.ignored) }], examined: 1 }`);
+  const plugin = defineOps({ id: "demo", version: "1", summary: "s", gates: [{ gate: path.join(dir, "policy.mjs") }] });
+  const { context } = contextFor(dir, config, {}, settings);
+  const result = await plugin.run(context);
+  return (result.data as { findings: { evidence: string }[] }).findings[0]?.evidence;
+}
+
+test("every gate receives the repository's targets policy, and an ops's own settings win over it", async () => {
+  assert.equal(await policySeen({}, undefined), "report", "the default");
+  assert.equal(await policySeen({ targets: { ignored: "follow" } }, undefined), "follow");
+  assert.equal(await policySeen({ targets: { ignored: "follow" } }, { targets: { ignored: "report" } }), "report");
+});

@@ -71,7 +71,7 @@ function verdictFor(
     case "untracked":
       // Resolves on this machine and in no other checkout — and this commit is the last moment the author
       // can still fix it, so it blocks.
-      return { rule: "links-untracked", evidence: `link points at a file git does not track: ${target} — add it, or the link breaks in every other checkout` };
+      return { rule: "links-untracked", evidence: `link points at a file git does not track as written: ${target} — add it, or match the spelling git tracks (case, Unicode form); otherwise the link breaks in every other checkout` };
     case "ignored": {
       if (reading.followed !== undefined) {
         return reading.followed.exists

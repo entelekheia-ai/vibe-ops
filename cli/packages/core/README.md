@@ -51,7 +51,7 @@ a gate must never filter its own files by a repository-specific rule.
 
 ## Where a reference points
 
-A gate that resolves a path written in a document — a link, a breadcrumb, a named file — asks
+A gate that resolves a path written in a document — a link, a named file — asks
 `GateRunContext.targets`, never `existsSync`. The disk answers for one working tree; the classifier
 answers for the repository, so a linked `git worktree`, CI and the main checkout agree.
 
