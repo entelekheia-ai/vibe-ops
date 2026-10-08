@@ -1,5 +1,15 @@
 # @entelekheia/governance-classification
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [1e961e8]
+- Updated dependencies [b542c32]
+- Updated dependencies [f63f349]
+  - @entelekheia/vibe-ops-core@0.3.0
+  - @entelekheia/governance-base@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

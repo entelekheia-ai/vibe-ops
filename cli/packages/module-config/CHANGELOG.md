@@ -1,5 +1,13 @@
 # @entelekheia/vibe-ops-module-config
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [1e961e8]
+- Updated dependencies [f63f349]
+  - @entelekheia/vibe-ops-core@0.3.0
+
 ## 0.1.1
 
 ### Patch Changes
