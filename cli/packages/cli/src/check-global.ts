@@ -114,10 +114,7 @@ export async function runCheckGlobalHook(): Promise<number> {
     skipped.length === 0
       ? result.summary
       : result.summary.replace(/^(\d+ checks, \d+ failed)/, `$1, ${String(skipped.length)} skipped`);
-  const lines = [
-    summary,
-    ...findings.map((finding) => `${finding.level.toUpperCase()}  [${finding.check}] ${finding.evidence}`),
-  ];
+  const lines = [summary, ...findingLines(findings)];
 
   // THE FIRST LINE IS LOAD-BEARING, and it is there because `additionalContext` on `Stop` continues the
   // conversation: the documentation says it "keeps the conversation going through the same loop
@@ -146,4 +143,39 @@ export async function runCheckGlobalHook(): Promise<number> {
   // Advisory, never blocking: the gate reports, the human or the commit hook decides. Exiting non-zero
   // here would turn a reading into a refusal to end the turn.
   return 0;
+}
+
+/** How many of a grouped check's findings are quoted in full. */
+const WARN_EXAMPLES = 2;
+
+/**
+ * A FAILURE IS LISTED WHOLE, A WARNING IS GROUPED BY CHECK. A failure is what the turn must act on, so
+ * every one of them is named. Warnings are the backlog a repository declared advisory, and they repeat
+ * on every Stop: measured 2026-10-01 at a workspace root, 69 lines and 11 352 bytes per turn, 38 of them
+ * one template-version backlog and 28 one delegation backlog. Claude Code moves a hook output that large
+ * into a file and shows the model a 2 KB preview, so the warnings past the preview — the ones that were
+ * new — were the ones nobody read. A check with one warning keeps its full line; a check with more gets
+ * one line with the count and the first few examples, and `vibe-ops check` prints the rest.
+ */
+export function findingLines(findings: readonly { level: string; check: string; evidence: string }[]): string[] {
+  const out: string[] = [];
+  const warnings = new Map<string, string[]>();
+  for (const finding of findings) {
+    if (finding.level !== "warn") {
+      out.push(`${finding.level.toUpperCase()}  [${finding.check}] ${finding.evidence}`);
+      continue;
+    }
+    const group = warnings.get(finding.check) ?? [];
+    group.push(finding.evidence);
+    warnings.set(finding.check, group);
+  }
+  for (const [check, evidence] of warnings) {
+    if (evidence.length === 1) {
+      out.push(`WARN  [${check}] ${evidence[0]}`);
+      continue;
+    }
+    out.push(`WARN  [${check}] ×${String(evidence.length)} — run \`vibe-ops check\` for the full list; e.g.`);
+    for (const example of evidence.slice(0, WARN_EXAMPLES)) out.push(`        ${example}`);
+  }
+  return out;
 }
